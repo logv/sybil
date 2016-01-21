@@ -1,27 +1,38 @@
 package edb
 
 import "fmt"
+import "sync"
+import "time"
+
+func make_records() {
+  for i := 0; i < 1000; i++ {
+    NewRandomRecord(); 
+  }
+}
 
 func Start() {
   fmt.Println("Starting DB");
+  start := time.Now()
 
-  r := NewRecord(
-    IntArr{ NewIntField("age", 10) },
-    StrArr{ NewStrField("name", "okay") },
-    SetArr{});
+  var wg sync.WaitGroup
+  for j := 0; j < 100; j++ {
+    wg.Add(1);
+    go func() {
+      make_records()
+      defer wg.Done()
+    }();
+  }
 
-  r = NewRecord(
-    IntArr{ NewIntField("age", 20) },
-    StrArr{ NewStrField("name", "nokay") },
-    SetArr{});
+  wg.Wait()
+  end := time.Now()
+  fmt.Println("CREATED RECORDS, TOOK", end.Sub(start));
 
 
-  r = NewRecord(
-    IntArr{ NewIntField("age", 20) },
-    StrArr{ NewStrField("name", "bokay") },
-    SetArr{});
+  start = time.Now()
+  filters := []Filter{NoFilter{}}
+  ret := MatchRecords(filters);
+  end = time.Now()
+  fmt.Println("RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start));
 
-  fmt.Println("Created new record", r);
 
-  PrintRecords()
 }

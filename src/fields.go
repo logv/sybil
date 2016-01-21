@@ -1,5 +1,7 @@
 package edb
 
+import "sync"
+
 type IntArr []IntField;
 type StrArr []StrField;
 type SetArr []SetField;
@@ -12,6 +14,7 @@ type IntField struct {
   value int;
 }
 
+var string_id_m = &sync.Mutex{}
 func get_string_id(name string) int {
   id, ok := STRING_LOOKUP[name]
 
@@ -19,7 +22,10 @@ func get_string_id(name string) int {
     return id;
   }
 
+
+  string_id_m.Lock();
   STRING_LOOKUP[name] = len(STRING_LOOKUP);
+  string_id_m.Unlock();
   return STRING_LOOKUP[name];
 }
 func NewIntField(name string, value int) IntField {
