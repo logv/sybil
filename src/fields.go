@@ -10,8 +10,8 @@ var STRING_LOOKUP = make(map[string]int);
 
 
 type IntField struct {
-  name int;
-  value int;
+  Name int;
+  Value int;
 }
 
 var string_id_m = &sync.Mutex{}
@@ -36,8 +36,8 @@ func NewIntField(name string, value int) IntField {
 
 // value is held in the look up table!
 type StrField struct {
-  name int;
-  value int;
+  Name int;
+  Value int;
 }
 
 func NewStrField(name string, value string) StrField {
@@ -49,8 +49,8 @@ func NewStrField(name string, value string) StrField {
 
 // a set field holds sets of strings
 type SetField struct {
-  name int;
-  value []int;
+  Name int;
+  Value []int;
 }
 
 func NewSetField(name string, value []int) SetField {
