@@ -62,6 +62,7 @@ func (r *Record) getVal(name string) (int, bool) {
 
   
 var RECORD_LIST = make([]Record, 0)
+var DIRTY = false;
 
 // TODO: insert timestamp (or verify it exists)
 // TODO: also verify the session_id exists
@@ -72,6 +73,7 @@ func NewRecord(Ints IntArr, Strs StrArr, Sets SetArr) Record {
   record_m.Lock();
   r := Record{Sets: Sets, Ints: Ints, Strs: Strs}
   RECORD_LIST = append(RECORD_LIST, r)
+  DIRTY = true;
   record_m.Unlock();
   return r
 }
@@ -121,6 +123,10 @@ func PrintRecords() {
 
 func SaveRecords() {
 
+  if (!DIRTY) {
+    return;
+  }
+
   var network bytes.Buffer // Stand-in for the network.
 
   // Create an encoder and send a value.
@@ -135,6 +141,8 @@ func SaveRecords() {
 
   w, _ := os.Create("edb.db")
   network.WriteTo(w);
+
+  DIRTY = false;
 
 
 }
