@@ -7,6 +7,7 @@ import "time"
 import "bytes"
 import "os"
 import "log"
+import "strconv"
 
 import "encoding/gob"
 
@@ -19,6 +20,11 @@ type Record struct {
 
   session_id int
   timestamp  int
+}
+
+func get_string_from_id(id int) string {
+  val, _ := STRING_ID_LOOKUP[id];
+  return val
 }
 
 func (r *Record) getStrVal(name string) (int, bool) {
@@ -85,7 +91,7 @@ func NewRandomRecord() Record{
       NewStrField("friend", randomdata.FirstName(randomdata.RandomGender)),
       NewStrField("enemy", randomdata.FirstName(randomdata.RandomGender)),
       NewStrField("event", randomdata.City()),
-      NewStrField("session_id", string(rand.Intn(5000)))}, 
+      NewStrField("session_id", strconv.FormatInt(int64(rand.Intn(5000)), 16))}, 
     SetArr{});
 
   return r;
@@ -117,7 +123,14 @@ func MatchRecords(filters []Filter) []*Record {
 
 func PrintRecords() {
   for i := 0; i < len(RECORD_LIST); i++ {
-    fmt.Println("RECORD", RECORD_LIST[i])
+    fmt.Println("\nRECORD");
+    r := RECORD_LIST[i]
+    for _, val := range r.Ints {
+      fmt.Println("  ", get_string_from_id(val.Name), val.Value);
+    }
+    for _, val := range r.Strs {
+      fmt.Println("  ", get_string_from_id(val.Name), get_string_from_id(val.Value));
+    }
   }
 }
 
@@ -165,6 +178,9 @@ func LoadRecords() []Record {
     fmt.Println("DECODE:", err);
     return nil;
   }
+
+  populate_string_id_lookup();
+  fmt.Println("LOADED", len(RECORD_LIST), "RECORDS");
 
   return RECORD_LIST;
 

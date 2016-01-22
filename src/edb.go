@@ -12,11 +12,11 @@ func make_records() {
 
 func load_or_create_records() {
   start := time.Now()
-  records := LoadRecords();
+  records := LoadRecords()
   end := time.Now()
 
   if len(records) > 0 {
-    fmt.Println("LOADED DB, TOOK", end.Sub(start));
+    fmt.Println("LOADED DB, TOOK", end.Sub(start))
     return
   }
 
@@ -24,21 +24,21 @@ func load_or_create_records() {
 
   var wg sync.WaitGroup
   for j := 0; j < 10; j++ {
-    wg.Add(1);
+    wg.Add(1)
     go func() {
       make_records()
       defer wg.Done()
-    }();
+    }()
   }
 
   wg.Wait()
   end = time.Now()
-  fmt.Println("CREATED RECORDS, TOOK", end.Sub(start));
+  fmt.Println("CREATED RECORDS, TOOK", end.Sub(start))
 
 }
 
 func Start() {
-  fmt.Println("Starting DB");
+  fmt.Println("Starting DB")
 
   load_or_create_records()
 
@@ -46,20 +46,20 @@ func Start() {
 
   start := time.Now()
   filters := []Filter{NoFilter{}}
-  ret := MatchRecords(filters);
+  ret := MatchRecords(filters)
   end := time.Now()
-  fmt.Println("RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start));
+  fmt.Println("RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
 
   start = time.Now()
-  session_maps := SessionizeRecords(ret, "session_id");
+  session_maps := SessionizeRecords(ret, "session_id")
   end = time.Now()
-  fmt.Println("RETURNED", len(session_maps), "SESSIONS, TOOK", end.Sub(start));
+  fmt.Println("RETURNED", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
   start = time.Now()
-  saved := SaveRecords();
+  saved := SaveRecords()
   end = time.Now()
   if saved {
-    fmt.Println("SERIALIZED DB TOOK", end.Sub(start));
+    fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
   }
 
 

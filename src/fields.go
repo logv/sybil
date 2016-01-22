@@ -7,11 +7,18 @@ type StrArr []StrField;
 type SetArr []SetField;
 
 var STRING_LOOKUP = make(map[string]int);
+var STRING_ID_LOOKUP = make(map[int] string);
 
 
 type IntField struct {
   Name int;
   Value int;
+}
+
+func populate_string_id_lookup() {
+  for k, v := range STRING_LOOKUP {
+    STRING_ID_LOOKUP[v] = k; 
+  }
 }
 
 var string_id_m = &sync.Mutex{}
@@ -25,6 +32,7 @@ func get_string_id(name string) int {
 
   string_id_m.Lock();
   STRING_LOOKUP[name] = len(STRING_LOOKUP);
+  STRING_ID_LOOKUP[STRING_LOOKUP[name]] = name;
   string_id_m.Unlock();
   return STRING_LOOKUP[name];
 }
