@@ -23,7 +23,7 @@ func load_or_create_records() {
   start = time.Now()
 
   var wg sync.WaitGroup
-  for j := 0; j < 1000; j++ {
+  for j := 0; j < 10; j++ {
     wg.Add(1);
     go func() {
       make_records()
