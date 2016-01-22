@@ -121,17 +121,23 @@ func PrintRecords() {
   }
 }
 
-func SaveRecords() {
+type PersistedData struct {
+   RecordList *[]Record;
+   StringTable *map[string]int;
+}
+
+func SaveRecords() bool {
 
   if (!DIRTY) {
-    return;
+    return false;
   }
 
   var network bytes.Buffer // Stand-in for the network.
+  pd := PersistedData{&RECORD_LIST, &STRING_LOOKUP}
 
   // Create an encoder and send a value.
   enc := gob.NewEncoder(&network)
-  err := enc.Encode(RECORD_LIST);
+  err := enc.Encode(pd)
 
   if err != nil {
     log.Fatal("encode:", err)
@@ -144,6 +150,8 @@ func SaveRecords() {
 
   DIRTY = false;
 
+  return true;
+
 
 }
 
@@ -151,9 +159,11 @@ func LoadRecords() []Record {
   file, _ := os.Open("edb.db")
   // TODO: LOAD FROM FILE
   dec := gob.NewDecoder(file)
-  err := dec.Decode(&RECORD_LIST);
+  pd := PersistedData{&RECORD_LIST, &STRING_LOOKUP}
+  err := dec.Decode(&pd);
   if err != nil {
     fmt.Println("DECODE:", err);
+    return nil;
   }
 
   return RECORD_LIST;

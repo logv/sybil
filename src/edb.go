@@ -56,9 +56,11 @@ func Start() {
   fmt.Println("RETURNED", len(session_maps), "SESSIONS, TOOK", end.Sub(start));
 
   start = time.Now()
-  SaveRecords();
+  saved := SaveRecords();
   end = time.Now()
-  fmt.Println("SERIALIZED DB TOOK", end.Sub(start));
+  if saved {
+    fmt.Println("SERIALIZED DB TOOK", end.Sub(start));
+  }
 
 
 }
