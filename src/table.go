@@ -24,9 +24,13 @@ type Table struct {
 var LOADED_TABLES = make(map[string]*Table);
 
 
+var table_m sync.Mutex
+
 // This is a singleton constructor for Tables
 func getTable(name string) *Table{
-  
+  table_m.Lock()
+  defer table_m.Unlock()
+
   t, ok := LOADED_TABLES[name]
   if ok {
     return t;
@@ -48,14 +52,22 @@ func getTable(name string) *Table{
 func LoadTables() []Table {
   files, _ := ioutil.ReadDir("db/")
 
+  var wg sync.WaitGroup
   for _, v := range files {
     if strings.HasSuffix(v.Name(), ".db") {
+      wg.Add(1)
       name := strings.TrimSuffix(v.Name(), ".db")
       table := getTable(name)
-      table.LoadRecords();
+      go func() {
+        defer wg.Done()
+        table.LoadRecords();
+      }()
     }
 
+
   }
+
+  wg.Wait()
 
   tables := make([]Table, len(LOADED_TABLES))
   for _, v := range LOADED_TABLES {
@@ -122,6 +134,9 @@ func (t *Table) get_string_from_id(id int) string {
 }
 
 func (t *Table) populate_string_id_lookup() {
+  t.string_id_m.Lock()
+  defer t.string_id_m.Unlock()
+
   t.string_id_lookup = make(map[int]string)
 
   for k, v := range t.StringTable {
@@ -130,8 +145,6 @@ func (t *Table) populate_string_id_lookup() {
 }
 
 func (t *Table) get_string_id(name string) int {
-  t.string_id_m.Lock();
-  defer t.string_id_m.Unlock();
   id, ok := t.StringTable[name]
 
   if ok {
@@ -139,8 +152,10 @@ func (t *Table) get_string_id(name string) int {
   }
 
 
+  t.string_id_m.Lock();
   t.StringTable[name] = len(t.StringTable);
   t.string_id_lookup[t.StringTable[name]] = name;
+  t.string_id_m.Unlock();
   return t.StringTable[name];
 }
 

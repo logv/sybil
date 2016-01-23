@@ -23,7 +23,7 @@ func NewRandomRecord(table_name string) *Record {
 }
 
 func make_records(name string) {
-  for i := 0; i < 10000; i++ {
+  for i := 0; i < 100000; i++ {
     NewRandomRecord(name); 
   }
 
@@ -54,7 +54,7 @@ func load_or_create_records() {
 
   wg.Wait()
   end = time.Now()
-  t := getTable("test")
+  t := getTable("test0")
 
   fmt.Println("CREATED RECORDS", len(t.RecordList), "TOOK", end.Sub(start))
 
@@ -65,8 +65,6 @@ func Start() {
 
   load_or_create_records()
   table := getTable("test0")
-
-
 
   start := time.Now()
   filters := []Filter{}
@@ -91,7 +89,4 @@ func Start() {
   SaveTables()
   end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
-
-
-  
 }
