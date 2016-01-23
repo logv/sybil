@@ -5,8 +5,6 @@ type Record struct {
   Strs []StrField
   Sets []SetField
 
-  session_id int
-  timestamp  int
   table *Table;
 }
 
