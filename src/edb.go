@@ -94,14 +94,19 @@ func Start() {
   age_filter := table.IntFilter("age", "lt", 20)
   filters = append(filters, age_filter)
 
-  ret = table.MatchRecords(filters)
+  filt_ret := table.MatchRecords(filters)
   end = time.Now()
-  fmt.Println("INT FILTER RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
+  fmt.Println("INT FILTER RETURNED", len(filt_ret), "RECORDS, TOOK", end.Sub(start))
 
   start = time.Now()
   session_maps := SessionizeRecords(ret, "session_id")
   end = time.Now()
-  fmt.Println("SESSIONIZED", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+  fmt.Println("SESSIONIZED", len(ret), "RECORDS INT", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+
+  start = time.Now()
+  session_maps = SessionizeRecords(filt_ret, "session_id")
+  end = time.Now()
+  fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INT", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
   start = time.Now()
   SaveTables()

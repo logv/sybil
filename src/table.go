@@ -78,9 +78,16 @@ func LoadTables() []Table {
 }
 
 func SaveTables() {
+  var wg sync.WaitGroup
   for _, t := range LOADED_TABLES {
-    t.SaveRecords();
+    wg.Add(1)
+    go func() {
+      defer wg.Done()
+      t.SaveRecords();
+    }()
   }
+
+  wg.Wait()
 
 }
 
