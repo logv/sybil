@@ -2,12 +2,29 @@ package edb
 
 import "fmt"
 import "sync"
+import "math/rand"
+import "github.com/Pallinder/go-randomdata"
 import "time"
+import "strconv"
 
-func make_records() {
-  t := getTable("test")
-  for i := 0; i < 1000; i++ {
-    t.NewRandomRecord(); 
+func NewRandomRecord(table_name string) *Record {
+  t := getTable(table_name)
+  r := t.NewRecord()
+  r.AddIntField("age", rand.Intn(50) + 10)
+  r.AddIntField("time", int(time.Now().Unix()))
+  r.AddStrField("name", randomdata.FirstName(randomdata.RandomGender))
+  r.AddStrField("friend", randomdata.FirstName(randomdata.RandomGender))
+  r.AddStrField("enemy", randomdata.FirstName(randomdata.RandomGender))
+  r.AddStrField("event", randomdata.City())
+  r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(5000)), 16))
+
+  return r;
+
+}
+
+func make_records(name string) {
+  for i := 0; i < 10000; i++ {
+    NewRandomRecord(name); 
   }
 
 }
@@ -27,9 +44,11 @@ func load_or_create_records() {
   var wg sync.WaitGroup
   for j := 0; j < 10; j++ {
     wg.Add(1)
+    q := j
     go func() {
       defer wg.Done()
-      make_records()
+      table_name := fmt.Sprintf("test%v", q)
+      make_records(table_name)
     }()
   }
 
@@ -50,7 +69,7 @@ func Start() {
 
   start := time.Now()
   filters := []Filter{NoFilter{}}
-  table := getTable("test")
+  table := getTable("test0")
 
   ret := table.MatchRecords(filters)
   end := time.Now()
@@ -59,7 +78,7 @@ func Start() {
   start = time.Now()
   session_maps := SessionizeRecords(ret, "session_id")
   end = time.Now()
-  fmt.Println("RETURNED", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+  fmt.Println("SESSIONIZED", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
   start = time.Now()
   SaveTables()

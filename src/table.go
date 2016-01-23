@@ -9,10 +9,6 @@ import "sync"
 import "bytes"
 import "io/ioutil"
 import "encoding/gob"
-import "math/rand"
-import "time"
-import "strconv"
-import "github.com/Pallinder/go-randomdata"
 
 type Table struct {
   Name string;
@@ -27,6 +23,8 @@ type Table struct {
 
 var LOADED_TABLES = make(map[string]*Table);
 
+
+// This is a singleton constructor for Tables
 func getTable(name string) *Table{
   
   t, ok := LOADED_TABLES[name]
@@ -34,7 +32,7 @@ func getTable(name string) *Table{
     return t;
   }
 
-  t = &Table{Name: name, dirty: true}
+  t = &Table{Name: name, dirty: false}
   LOADED_TABLES[name] = t
   t.string_id_lookup = make(map[int]string)
   t.StringTable = make(map[string]int)
@@ -69,17 +67,15 @@ func LoadTables() []Table {
 
 func SaveTables() {
   for _, t := range LOADED_TABLES {
-    fmt.Println("SAVING TABLE", t.Name);
     t.SaveRecords();
   }
 
 }
 
 func (t *Table) SaveRecords() bool {
+  if (!t.dirty) { return false; }
 
-  if (!t.dirty) {
-    return false;
-  }
+  fmt.Println("SAVING TABLE", t.Name);
 
   var network bytes.Buffer // Stand-in for the network.
 
@@ -117,7 +113,7 @@ func (t *Table) LoadRecords() {
   for _, r := range(t.RecordList) {
     r.table = t;
   }
-  fmt.Println("LOADED", len(t.RecordList), "RECORDS");
+  fmt.Println("LOADED", len(t.RecordList), "RECORDS INTO", t.Name);
 }
 
 func (t *Table) get_string_from_id(id int) string {
@@ -159,20 +155,6 @@ func (t *Table) NewRecord() *Record {
   t.RecordList = append(t.RecordList, &r)
   t.record_m.Unlock();
   return &r
-}
-
-func (t *Table) NewRandomRecord() *Record {
-  r := t.NewRecord()
-  r.AddIntField("age", rand.Intn(50) + 10)
-  r.AddIntField("time", int(time.Now().Unix()))
-  r.AddStrField("name", randomdata.FirstName(randomdata.RandomGender))
-  r.AddStrField("friend", randomdata.FirstName(randomdata.RandomGender))
-  r.AddStrField("enemy", randomdata.FirstName(randomdata.RandomGender))
-  r.AddStrField("event", randomdata.City())
-  r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(5000)), 16))
-
-  return r;
-
 }
 
 
