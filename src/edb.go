@@ -10,9 +10,8 @@ import "strconv"
 
 
 var f_RESET = flag.Bool("reset", false, "Reset the DB")
-var f_TABLE = flag.String("table", "test0", "Table to operate on")
-var f_ADD_DATA = flag.Bool("add", false, "Add data?")
-var f_NEW_RECORDS = flag.Int("n", 10000, "number of records to add")
+var f_TABLE = flag.String("table", "", "Table to operate on")
+var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 
 
 func NewRandomRecord(table_name string) *Record {
@@ -31,31 +30,24 @@ func NewRandomRecord(table_name string) *Record {
 }
 
 func make_records(name string) {
-  fmt.Println("Adding", *f_NEW_RECORDS, "to", name)
-  for i := 0; i < *f_NEW_RECORDS; i++ {
+  fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
+  for i := 0; i < *f_ADD_RECORDS; i++ {
     NewRandomRecord(name); 
   }
 
 }
 
-func load_or_create_records() {
-  start := time.Now()
-
-  tables := make([]Table, 0)
-  if (*f_RESET == false) {
-    tables = LoadTables()
-  }
-  end := time.Now()
-
-  if len(tables) > 0 {
-    fmt.Println("LOADED DB, TOOK", end.Sub(start))
-
-    if (*f_ADD_DATA == false) {
-      return
-    }
+func add_records() {
+  if (*f_ADD_RECORDS == 0) {
+    return
   }
 
-  start = time.Now()
+
+  fmt.Println("MAKING RECORDS FOR TABLE", *f_TABLE)
+  if *f_TABLE != "" {
+    make_records(*f_TABLE)
+    return
+  }
 
   var wg sync.WaitGroup
   for j := 0; j < 10; j++ {
@@ -69,20 +61,11 @@ func load_or_create_records() {
   }
 
   wg.Wait()
-  end = time.Now()
-  t := getTable("test0")
-
-  fmt.Println("CREATED RECORDS", len(t.RecordList), "TOOK", end.Sub(start))
 
 }
 
-func Start() {
-  flag.Parse()
-
-  fmt.Println("Starting DB")
-
-  load_or_create_records()
-  table := getTable("test0")
+func testTable(name string) {
+  table := getTable(name)
 
   start := time.Now()
   filters := []Filter{}
@@ -108,8 +91,26 @@ func Start() {
   end = time.Now()
   fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INT", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
-  start = time.Now()
+
+}
+
+func Start() {
+  flag.Parse()
+
+  fmt.Println("Starting DB")
+  fmt.Println("TABLE", *f_TABLE);
+
+  add_records()
+
+  table := *f_TABLE
+  if table == "" {
+    table = "test0"
+  }
+  testTable(table)
+
+  start := time.Now()
   SaveTables()
-  end = time.Now()
+  end := time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
+
 }

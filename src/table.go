@@ -43,6 +43,7 @@ func getTable(name string) *Table{
   t.RecordList = make([]*Record, 0)
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
+  t.LoadRecords();
 
 
   return t;
@@ -81,9 +82,10 @@ func SaveTables() {
   var wg sync.WaitGroup
   for _, t := range LOADED_TABLES {
     wg.Add(1)
+    qt := t
     go func() {
       defer wg.Done()
-      t.SaveRecords();
+      qt.SaveRecords();
     }()
   }
 
