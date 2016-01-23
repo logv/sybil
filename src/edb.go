@@ -5,17 +5,19 @@ import "sync"
 import "time"
 
 func make_records() {
+  t := getTable("test")
   for i := 0; i < 1000; i++ {
-    NewRandomRecord(); 
+    t.NewRandomRecord(); 
   }
+
 }
 
 func load_or_create_records() {
   start := time.Now()
-  records := LoadRecords()
+  tables := LoadTables()
   end := time.Now()
 
-  if len(records) > 0 {
+  if len(tables) > 0 {
     fmt.Println("LOADED DB, TOOK", end.Sub(start))
     return
   }
@@ -26,14 +28,16 @@ func load_or_create_records() {
   for j := 0; j < 10; j++ {
     wg.Add(1)
     go func() {
-      make_records()
       defer wg.Done()
+      make_records()
     }()
   }
 
   wg.Wait()
   end = time.Now()
-  fmt.Println("CREATED RECORDS, TOOK", end.Sub(start))
+  t := getTable("test")
+
+  fmt.Println("CREATED RECORDS", len(t.RecordList), "TOOK", end.Sub(start))
 
 }
 
@@ -46,7 +50,9 @@ func Start() {
 
   start := time.Now()
   filters := []Filter{NoFilter{}}
-  ret := MatchRecords(filters)
+  table := getTable("test")
+
+  ret := table.MatchRecords(filters)
   end := time.Now()
   fmt.Println("RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
 
@@ -56,11 +62,9 @@ func Start() {
   fmt.Println("RETURNED", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
   start = time.Now()
-  saved := SaveRecords()
+  SaveTables()
   end = time.Now()
-  if saved {
-    fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
-  }
+  fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
 
 }
