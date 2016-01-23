@@ -2,10 +2,18 @@ package edb
 
 import "fmt"
 import "sync"
+import "flag"
 import "math/rand"
 import "github.com/Pallinder/go-randomdata"
 import "time"
 import "strconv"
+
+
+var f_RESET = flag.Bool("reset", false, "Reset the DB")
+var f_TABLE = flag.String("table", "test0", "Table to operate on")
+var f_ADD_DATA = flag.Bool("add", false, "Add data?")
+var f_NEW_RECORDS = flag.Int("n", 10000, "number of records to add")
+
 
 func NewRandomRecord(table_name string) *Record {
   t := getTable(table_name)
@@ -23,7 +31,8 @@ func NewRandomRecord(table_name string) *Record {
 }
 
 func make_records(name string) {
-  for i := 0; i < 100000; i++ {
+  fmt.Println("Adding", *f_NEW_RECORDS, "to", name)
+  for i := 0; i < *f_NEW_RECORDS; i++ {
     NewRandomRecord(name); 
   }
 
@@ -31,12 +40,19 @@ func make_records(name string) {
 
 func load_or_create_records() {
   start := time.Now()
-  tables := LoadTables()
+
+  tables := make([]Table, 0)
+  if (*f_RESET == false) {
+    tables = LoadTables()
+  }
   end := time.Now()
 
   if len(tables) > 0 {
     fmt.Println("LOADED DB, TOOK", end.Sub(start))
-    return
+
+    if (*f_ADD_DATA == false) {
+      return
+    }
   }
 
   start = time.Now()
@@ -61,6 +77,8 @@ func load_or_create_records() {
 }
 
 func Start() {
+  flag.Parse()
+
   fmt.Println("Starting DB")
 
   load_or_create_records()
