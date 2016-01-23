@@ -64,16 +64,23 @@ func Start() {
   fmt.Println("Starting DB")
 
   load_or_create_records()
+  table := getTable("test0")
 
 
 
   start := time.Now()
-  filters := []Filter{NoFilter{}}
-  table := getTable("test0")
+  filters := []Filter{}
 
   ret := table.MatchRecords(filters)
   end := time.Now()
-  fmt.Println("RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
+  fmt.Println("NO FILTER RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
+
+  age_filter := table.IntFilter("age", "lt", 20)
+  filters = append(filters, age_filter)
+
+  ret = table.MatchRecords(filters)
+  end = time.Now()
+  fmt.Println("INT FILTER RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
 
   start = time.Now()
   session_maps := SessionizeRecords(ret, "session_id")
@@ -86,4 +93,5 @@ func Start() {
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
 
+  
 }

@@ -7,7 +7,7 @@ func SessionizeRecords(records []*Record, session_field string) SessionMap {
 
   for i := 0; i < len(records); i++ {
     r := records[i];
-
+  
     session_id, ok := r.getVal(session_field)
 
     if ok {

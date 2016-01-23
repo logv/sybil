@@ -166,7 +166,7 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
     r := t.RecordList[i];
 
     for j := 0; j < len(filters); j++ { 
-      if filters[j].Filter(*r) {
+      if filters[j].Filter(r) {
         add = false;
         break;
       }
@@ -181,10 +181,10 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
 }
 
 
-func (t *Table) PrintRecords() {
-  for i := 0; i < len(t.RecordList); i++ {
+func (t *Table) PrintRecords(records []*Record) {
+  for i := 0; i < len(records); i++ {
     fmt.Println("\nRECORD");
-    r := t.RecordList[i]
+    r := records[i]
     fmt.Println(r)
     for _, val := range r.Ints {
       fmt.Println("  ", t.get_string_from_id(val.Name), val.Value);
