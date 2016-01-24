@@ -4,7 +4,6 @@ import "fmt"
 import "sync"
 import "flag"
 import "math/rand"
-import "github.com/Pallinder/go-randomdata"
 import "time"
 import "strconv"
 
@@ -17,13 +16,12 @@ var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 func NewRandomRecord(table_name string) *Record {
   t := getTable(table_name)
   r := t.NewRecord()
-  r.AddIntField("age", rand.Intn(50) + 10)
+  r.AddIntField("f1", rand.Intn(50) + 30)
+  r.AddIntField("f2", rand.Intn(50) + 2000000)
+  r.AddIntField("f3", rand.Intn(50) * rand.Intn(1000) + 10)
   r.AddIntField("time", int(time.Now().Unix()))
-  r.AddStrField("name", randomdata.FirstName(randomdata.RandomGender))
-  r.AddStrField("friend", randomdata.FirstName(randomdata.RandomGender))
-  r.AddStrField("enemy", randomdata.FirstName(randomdata.RandomGender))
-  r.AddStrField("event", randomdata.City())
   r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(5000)), 16))
+  r.AddStrField("random_number", strconv.FormatInt(int64(time.Now().Unix() % 20000), 10))
 
   return r;
 

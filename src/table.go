@@ -6,9 +6,9 @@ import "time"
 import "os"
 import "math"
 import "strings"
+import "strconv"
 import "sync"
 import "bytes"
-import "strconv"
 import "io/ioutil"
 import "encoding/gob"
 
@@ -16,6 +16,12 @@ type Table struct {
   Name string;
   RecordList []*Record
   StringTable map[string]int
+
+  // Need to keep track of the last block we've used, right?
+  LastBlockId int
+
+  // List of new records that haven't been saved to file yet
+  newRecords []*Record
 
   dirty bool;
   string_id_lookup map[int]string
@@ -25,8 +31,19 @@ type Table struct {
 
 var LOADED_TABLES = make(map[string]*Table);
 
+var CHUNK_SIZE = 1024 * 64;
+
 
 var table_m sync.Mutex
+
+func getBlockName(id int) string {
+  return strconv.FormatInt(int64(id), 10)
+}
+
+func getBlockFilename(name string, id int) string {
+  return fmt.Sprintf("db/%s/%05s.db", name, getBlockName(id))
+}
+
 
 // This is a singleton constructor for Tables
 func getTable(name string) *Table{
@@ -117,6 +134,10 @@ func (t *Table) SaveTableInfo() {
 }
 
 func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
+  if len(records) == 0 {
+    return
+  }
+
   var network bytes.Buffer // Stand-in for the network.
 
   // Create an encoder and send a value.
@@ -127,35 +148,93 @@ func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
     log.Fatal("encode:", err)
   }
 
-  fmt.Println("SERIALIZED INTO BYTES", network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
+  fmt.Println("SERIALIZED INTO BLOCK", filename, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
 
   w, _ := os.Create(filename)
   network.WriteTo(w);
 
 }
 
-func (t *Table) SaveRecords() bool {
+
+func (t *Table) FillPartialBlock() bool {
+  if len (t.newRecords) == 0 {
+    return false
+  }
+
+  fmt.Println("CHECKING FOR PARTIAL BLOCK", t.LastBlockId)
+
+  // Open up our last record block, see how full it is
+  filename := getBlockFilename(t.Name, t.LastBlockId)
+  partialRecords := t.LoadRecordsFromFile(filename)
+  fmt.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
+
+  incBlockId := false;
+  if len(partialRecords) < CHUNK_SIZE {
+    delta := CHUNK_SIZE - len(partialRecords)
+    if delta > len(t.newRecords) {
+      delta = len(t.newRecords)
+    } else {
+      incBlockId = true
+    }
+
+    fmt.Println("SAVING PARTIAL RECORDS", delta, "TO", filename)
+    partialRecords = append(partialRecords, t.newRecords[0:delta]...)
+    t.SaveRecordsToFile(partialRecords, filename)
+    if delta < len(t.newRecords) {
+      t.newRecords = t.newRecords[delta:]
+    } else {
+      t.newRecords = make([]*Record, 0)
+    }
+
+  } else {
+    incBlockId = true;
+  }
+
+
+  if incBlockId {
+    fmt.Println("INC LAST BLOCK")
+    t.LastBlockId++
+  }
+
+  return true;
+}
+
+func (t *Table) saveRecordList(records []*Record) bool {
   if (!t.dirty) { return false; }
 
-  save_table := Table{Name: t.Name, StringTable: t.StringTable}
+  fmt.Println("SAVING RECORD LIST", len(records))
+
+  save_table := Table{Name: t.Name, StringTable: t.StringTable, LastBlockId: t.LastBlockId}
   save_table.SaveTableInfo()
 
   fmt.Println("SAVING TABLE", t.Name);
+  fmt.Println("LAST BLOCK ID", t.LastBlockId)
 
-  chunk_size := 100000
-
-  chunks := len(t.RecordList) / chunk_size
-  os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
+  chunk_size := CHUNK_SIZE
+  chunks := len(records) / chunk_size
 
   if (chunks == 0) {
-    filename := fmt.Sprintf("db/%s/0.db", t.Name)
-    t.SaveRecordsToFile(t.RecordList, filename)
+    filename := getBlockFilename(t.Name, t.LastBlockId)
+    t.SaveRecordsToFile(records, filename)
   } else {
     for j := 0; j < chunks; j++ {
-      filename := fmt.Sprintf("db/%s/%s.db", t.Name, strconv.FormatInt(int64(j), 16))
-      t.SaveRecordsToFile(t.RecordList[j*chunk_size:(j+1)*chunk_size], filename)
+      t.LastBlockId++
+      filename := getBlockFilename(t.Name, t.LastBlockId)
+      t.SaveRecordsToFile(records[j*chunk_size:(j+1)*chunk_size], filename)
+    }
+
+    // SAVE THE REMAINDER
+    if len(records) > chunks * chunk_size {
+      t.LastBlockId++
+      filename := getBlockFilename(t.Name, t.LastBlockId)
+      t.SaveRecordsToFile(records[chunks * chunk_size:], filename)
     }
   }
+
+  fmt.Println("LAST BLOCK ID", t.LastBlockId)
+
+  save_table = Table{Name: t.Name, StringTable: t.StringTable, LastBlockId: t.LastBlockId}
+  save_table.SaveTableInfo()
 
 
 
@@ -163,8 +242,18 @@ func (t *Table) SaveRecords() bool {
   t.dirty = false;
 
   return true;
+}
 
+func (t *Table) SaveAllRecords() bool {
+  os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
+  t.LastBlockId = 0;
+  return t.saveRecordList(t.RecordList)
+}
 
+func (t *Table) SaveRecords() bool {
+  os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
+  t.FillPartialBlock()
+  return t.saveRecordList(t.newRecords)
 }
 
 func (t *Table) LoadTableInfo() {
@@ -277,6 +366,7 @@ func (t *Table) NewRecord() *Record {
   r.table = t;
 
   t.record_m.Lock();
+  t.newRecords = append(t.newRecords, &r)
   t.RecordList = append(t.RecordList, &r)
   t.record_m.Unlock();
   return &r
@@ -328,6 +418,13 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
     }()
 
   }
+
+  last_records := t.RecordList[chunks * chunk_size:]
+  records := filterRecords(filters, last_records)
+
+  m.Lock()
+  ret = append(ret, records...)
+  m.Unlock()
 
   wg.Wait()
 
