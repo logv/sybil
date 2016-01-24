@@ -8,6 +8,7 @@ import "math"
 import "strings"
 import "sync"
 import "bytes"
+import "strconv"
 import "io/ioutil"
 import "encoding/gob"
 
@@ -94,12 +95,9 @@ func SaveTables() {
 
 }
 
-func (t *Table) SaveRecords() bool {
-  if (!t.dirty) { return false; }
-
-  fmt.Println("SAVING TABLE", t.Name);
-
+func (t *Table) SaveTableInfo() {
   var network bytes.Buffer // Stand-in for the network.
+  filename := fmt.Sprintf("db/%s/info.db", t.Name)
 
   // Create an encoder and send a value.
   enc := gob.NewEncoder(&network)
@@ -110,10 +108,57 @@ func (t *Table) SaveRecords() bool {
   }
 
   length := int(math.Max(float64(len(t.RecordList)), 1.0));
-  fmt.Println("SERIALIZED INTO BYTES", network.Len(), "BYTES", "( PER RECORD", network.Len() / length, ")");
+  fmt.Println("SERIALIZED TABLE INFO INTO BYTES", network.Len(), "BYTES", "( PER RECORD", network.Len() / length, ")");
 
-  w, _ := os.Create(fmt.Sprintf("db/%s.db", t.Name))
+  w, _ := os.Create(filename)
   network.WriteTo(w);
+
+
+}
+
+func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
+  var network bytes.Buffer // Stand-in for the network.
+
+  // Create an encoder and send a value.
+  enc := gob.NewEncoder(&network)
+  err := enc.Encode(records)
+
+  if err != nil {
+    log.Fatal("encode:", err)
+  }
+
+  fmt.Println("SERIALIZED INTO BYTES", network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
+
+  w, _ := os.Create(filename)
+  network.WriteTo(w);
+
+}
+
+func (t *Table) SaveRecords() bool {
+  if (!t.dirty) { return false; }
+
+  save_table := Table{Name: t.Name, StringTable: t.StringTable}
+  save_table.SaveTableInfo()
+
+  fmt.Println("SAVING TABLE", t.Name);
+
+  chunk_size := 100000
+
+  chunks := len(t.RecordList) / chunk_size
+  os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
+
+  if (chunks == 0) {
+    filename := fmt.Sprintf("db/%s/0.db", t.Name)
+    t.SaveRecordsToFile(t.RecordList, filename)
+  } else {
+    for j := 0; j < chunks; j++ {
+      filename := fmt.Sprintf("db/%s/%s.db", t.Name, strconv.FormatInt(int64(j), 16))
+      t.SaveRecordsToFile(t.RecordList[j*chunk_size:(j+1)*chunk_size], filename)
+    }
+  }
+
+
+
 
   t.dirty = false;
 
@@ -122,17 +167,67 @@ func (t *Table) SaveRecords() bool {
 
 }
 
-func (t *Table) LoadRecords() {
-  start := time.Now()
-  fmt.Println("LOADING", t.Name)
-  file, _ := os.Open(fmt.Sprintf("db/%s.db", t.Name))
+func (t *Table) LoadTableInfo() {
+  filename := fmt.Sprintf("db/%s/info.db", t.Name)
+  file, _ := os.Open(filename)
+  fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
   dec := gob.NewDecoder(file)
   err := dec.Decode(t);
   if err != nil {
-    fmt.Println("DECODE:", err);
+    fmt.Println("TABLE INFO DECODE:", err);
     return ;
   }
 
+  return 
+}
+
+func (t *Table) LoadRecordsFromFile(filename string) []*Record {
+  file, _ := os.Open(filename)
+  fmt.Println("OPENING RECORDS FROM FILENAME", filename)
+  var records []*Record
+  dec := gob.NewDecoder(file)
+  err := dec.Decode(&records);
+  if err != nil {
+    fmt.Println("DECODE:", err);
+    return records;
+  }
+
+  return records
+
+
+
+}
+
+func (t *Table) LoadRecords() {
+  start := time.Now()
+  fmt.Println("LOADING", t.Name)
+
+  files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
+  ret := []*Record{}
+  m := &sync.Mutex{}
+
+  t.LoadTableInfo()
+
+  var wg sync.WaitGroup
+  for _, v := range files {
+    if strings.HasSuffix(v.Name(), ".db") {
+      filename := fmt.Sprintf("db/%s/%s", t.Name, v.Name())
+      wg.Add(1)
+      go func() {
+        defer wg.Done()
+        records := t.LoadRecordsFromFile(filename);
+        m.Lock()
+        ret = append(ret, records...)
+        m.Unlock()
+      }()
+    }
+
+  }
+
+  wg.Wait()
+
+
+  t.RecordList = ret;
   t.populate_string_id_lookup();
   for _, r := range(t.RecordList) {
     r.table = t;
