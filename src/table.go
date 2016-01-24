@@ -138,11 +138,16 @@ func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
     return
   }
 
+  marshalled_records := make([]*SavedRecord, len(records))
+  for i, r := range records {
+    marshalled_records[i] = r.toSavedRecord()
+  }
+
   var network bytes.Buffer // Stand-in for the network.
 
   // Create an encoder and send a value.
   enc := gob.NewEncoder(&network)
-  err := enc.Encode(records)
+  err := enc.Encode(marshalled_records)
 
   if err != nil {
     log.Fatal("encode:", err)
@@ -273,12 +278,19 @@ func (t *Table) LoadTableInfo() {
 func (t *Table) LoadRecordsFromFile(filename string) []*Record {
   file, _ := os.Open(filename)
   fmt.Println("OPENING RECORDS FROM FILENAME", filename)
+  var marshalled_records []*SavedRecord
   var records []*Record
   dec := gob.NewDecoder(file)
-  err := dec.Decode(&records);
+  err := dec.Decode(&marshalled_records);
   if err != nil {
     fmt.Println("DECODE:", err);
     return records;
+  }
+
+
+  records = make([]*Record, len(marshalled_records))
+  for i, s := range marshalled_records {
+    records[i] = s.toRecord()
   }
 
   return records

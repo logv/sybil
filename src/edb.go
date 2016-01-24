@@ -66,19 +66,26 @@ func add_records() {
 func testTable(name string) {
   table := getTable(name)
 
-  start := time.Now()
   filters := []Filter{}
 
+  start := time.Now()
   ret := table.MatchRecords(filters)
   end := time.Now()
   fmt.Println("NO FILTER RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
 
-  age_filter := table.IntFilter("age", "lt", 50)
+  age_filter := table.IntFilter("age", "lt", 20)
   filters = append(filters, age_filter)
 
+  start = time.Now()
   filt_ret := table.MatchRecords(filters)
   end = time.Now()
   fmt.Println("INT FILTER RETURNED", len(filt_ret), "RECORDS, TOOK", end.Sub(start))
+
+  start = time.Now()
+  avg := AvgRecords(filt_ret, "f1")
+  end = time.Now()
+  fmt.Println("AGG RETURNED", avg, "RECORDS, TOOK", end.Sub(start))
+
 
   start = time.Now()
   session_maps := SessionizeRecords(ret, "session_id")
