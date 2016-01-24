@@ -90,8 +90,6 @@ func testTable(name string) {
   session_maps = SessionizeRecords(filt_ret, "session_id")
   end = time.Now()
   fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INT", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
-
-
 }
 
 func Start() {
@@ -103,14 +101,16 @@ func Start() {
   add_records()
 
   table := *f_TABLE
-  if table == "" {
-    table = "test0"
-  }
-  testTable(table)
+  if table == "" { table = "test0" }
 
   start := time.Now()
-  SaveTables()
+  testTable(table)
   end := time.Now()
+  fmt.Println("TESTING TABLE TOOK", end.Sub(start))
+
+  start = time.Now()
+  SaveTables()
+  end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
 }

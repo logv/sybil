@@ -2,6 +2,7 @@ package edb
 
 import "fmt"
 import "log"
+import "time"
 import "os"
 import "math"
 import "strings"
@@ -122,6 +123,8 @@ func (t *Table) SaveRecords() bool {
 }
 
 func (t *Table) LoadRecords() {
+  start := time.Now()
+  fmt.Println("LOADING", t.Name)
   file, _ := os.Open(fmt.Sprintf("db/%s.db", t.Name))
   dec := gob.NewDecoder(file)
   err := dec.Decode(t);
@@ -134,7 +137,10 @@ func (t *Table) LoadRecords() {
   for _, r := range(t.RecordList) {
     r.table = t;
   }
-  fmt.Println("LOADED", len(t.RecordList), "RECORDS INTO", t.Name);
+
+  end := time.Now()
+
+  fmt.Println("LOADED", len(t.RecordList), "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
 }
 
 func (t *Table) get_string_from_id(id int) string {
@@ -181,13 +187,11 @@ func (t *Table) NewRecord() *Record {
   return &r
 }
 
-
-func (t *Table) MatchRecords(filters []Filter) []*Record {
+func filterRecords(filters []Filter, records []*Record) []*Record{
   ret := make([]*Record, 0);
-
-  for i := 0; i < len(t.RecordList); i++ {
+  for i := 0; i < len(records); i++ {
     add := true;
-    r := t.RecordList[i];
+    r := records[i];
 
     for j := 0; j < len(filters); j++ { 
       if filters[j].Filter(r) {
@@ -202,6 +206,37 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
   }
 
   return ret;
+}
+
+
+func (t *Table) MatchRecords(filters []Filter) []*Record {
+  ret := make([]*Record, 0);
+
+  var wg sync.WaitGroup
+
+  chunks := 5;
+  chunk_size := len(t.RecordList) / chunks
+  m := &sync.Mutex{}
+
+  for c := 0; c < chunks; c++ {
+    h := c * chunk_size;
+    e := (c+1) * chunk_size
+
+    wg.Add(1)
+    go func() {
+      defer wg.Done()
+      records := filterRecords(filters, t.RecordList[h:e])
+
+      m.Lock()
+      ret = append(ret, records...)
+      m.Unlock()
+    }()
+
+  }
+
+  wg.Wait()
+
+  return ret
 }
 
 

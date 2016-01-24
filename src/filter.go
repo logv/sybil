@@ -19,8 +19,9 @@ type IntFilter struct {
 }
 
 func (filter IntFilter) Filter(r *Record) bool {
+  field := r.Ints[0]
   for i := 0; i < len(r.Ints); i++ {
-    field := r.Ints[i]
+    field = r.Ints[i]
     if field.Name == filter.FieldId {
       switch filter.Op {
         case "gt":
