@@ -16,6 +16,7 @@ var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 func NewRandomRecord(table_name string) *Record {
   t := getTable(table_name)
   r := t.NewRecord()
+  r.AddIntField("age", rand.Intn(50) + 10)
   r.AddIntField("f1", rand.Intn(50) + 30)
   r.AddIntField("f2", rand.Intn(50) + 2000000)
   r.AddIntField("f3", rand.Intn(50) * rand.Intn(1000) + 10)
@@ -72,7 +73,7 @@ func testTable(name string) {
   end := time.Now()
   fmt.Println("NO FILTER RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
 
-  age_filter := table.IntFilter("age", "lt", 20)
+  age_filter := table.IntFilter("age", "lt", 50)
   filters = append(filters, age_filter)
 
   filt_ret := table.MatchRecords(filters)
@@ -110,5 +111,8 @@ func Start() {
   SaveTables()
   end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
+
+//  t := getTable(table)
+//  t.PrintRecords(t.RecordList[:10])
 
 }

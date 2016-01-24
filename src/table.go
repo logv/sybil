@@ -436,12 +436,11 @@ func (t *Table) PrintRecords(records []*Record) {
   for i := 0; i < len(records); i++ {
     fmt.Println("\nRECORD");
     r := records[i]
-    fmt.Println(r)
-    for _, val := range r.Ints {
-      fmt.Println("  ", t.get_string_from_id(val.Name), val.Value);
+    for name, val := range r.Ints {
+      fmt.Println("  ", t.get_string_from_id(name), val);
     }
-    for _, val := range r.Strs {
-      fmt.Println("  ", t.get_string_from_id(val.Name), t.get_string_from_id(val.Value));
+    for name, val := range r.Strs {
+      fmt.Println("  ", t.get_string_from_id(name), t.get_string_from_id(int(val)));
     }
   }
 }

@@ -1,23 +1,9 @@
 package edb
 
-type IntArr []IntField;
-type StrArr []StrField;
-type SetArr []SetField;
+type IntArr map[int]IntField;
+type StrArr map[int]StrField;
+type SetArr map[int]SetField;
 
-type IntField struct {
-  Name int;
-  Value int;
-}
-
-// value is held in the look up table!
-type StrField struct {
-  Name int;
-  Value int;
-}
-
-// a set field holds sets of strings
-type SetField struct {
-  Name int;
-  Value []int;
-}
-
+type IntField int32
+type StrField int32
+type SetField []int
