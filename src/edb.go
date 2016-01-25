@@ -11,6 +11,7 @@ import "strconv"
 var f_RESET = flag.Bool("reset", false, "Reset the DB")
 var f_TABLE = flag.String("table", "", "Table to operate on")
 var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
+var f_PRINT = flag.Bool("print", false, "Print some records")
 
 
 func NewRandomRecord(table_name string) *Record {
@@ -119,7 +120,9 @@ func Start() {
   end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
-//  t := getTable(table)
-//  t.PrintRecords(t.RecordList[:10])
+  if *f_PRINT {
+    t := getTable(table)
+    t.PrintRecords(t.RecordList[:10])
+  }
 
 }
