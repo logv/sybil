@@ -1,6 +1,7 @@
 package edb
 
 import "time"
+import "math"
 import "math/rand"
 import "strconv"
 import "github.com/manveru/faker"
@@ -17,6 +18,7 @@ func NewRandomRecord(table_name string) *Record {
   r.AddIntField("f1", rand.Intn(50) + 30)
   r.AddIntField("f2", rand.Intn(50) + 2000000)
   r.AddIntField("f3", rand.Intn(50) * rand.Intn(1000) + 10)
+  r.AddIntField("f4", rand.Intn(int(math.Pow(2,30))-1))
   r.AddIntField("time", int(time.Now().Unix()))
   r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(500000)), 16))
   r.AddStrField("company", fake.CompanyName())

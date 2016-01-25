@@ -44,6 +44,7 @@ func (r *Record) AddStrField(name string, val string) {
 
 func (r *Record) AddIntField(name string, val int) {
   name_id := r.table.get_key_id(name)
+  r.table.update_int_info(name_id, val)
   r.Ints[name_id] = IntField(val)
 }
 

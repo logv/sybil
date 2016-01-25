@@ -26,8 +26,17 @@ type Table struct {
   dirty bool;
   key_string_id_lookup map[int16]string
   val_string_id_lookup map[int32]string
+
+  int_info_table map[int16]*IntInfo
   string_id_m *sync.Mutex;
   record_m *sync.Mutex;
+}
+
+type IntInfo struct {
+  Min int
+  Max int
+  Avg float64
+  Count int
 }
 
 var LOADED_TABLES = make(map[string]*Table);
@@ -60,6 +69,8 @@ func getTable(name string) *Table{
   LOADED_TABLES[name] = t
   t.key_string_id_lookup = make(map[int16]string)
   t.val_string_id_lookup = make(map[int32]string)
+  t.int_info_table = make(map[int16]*IntInfo)
+
   t.KeyTable = make(map[string]int16)
   t.StringTable = make(map[string]int32)
   t.RecordList = make([]*Record, 0)
@@ -299,7 +310,7 @@ func (t *Table) LoadRecordsFromFile(filename string) []*Record {
 
   records = make([]*Record, len(marshalled_records))
   for i, s := range marshalled_records {
-    records[i] = s.toRecord()
+    records[i] = s.toRecord(t)
   }
 
   return records
@@ -399,6 +410,30 @@ func (t *Table) get_val_id(name string) int32 {
   return t.StringTable[name];
 }
 
+func (t *Table) update_int_info(name int16, val int) {
+  info, ok := t.int_info_table[name]
+  if !ok {
+    info = &IntInfo{}
+    t.int_info_table[name] = info
+    info.Max = val
+    info.Min = val
+    info.Avg = float64(val)
+    info.Count = 1
+  }
+
+  if info.Max < val {
+    info.Max = val
+  }
+
+  if info.Min > val {
+    info.Min = val
+  }
+  
+  info.Avg = info.Avg + (float64(val) - info.Avg) / float64(info.Count)
+
+  info.Count++
+}
+
 
 
 func (t *Table) NewRecord() *Record {  
@@ -424,5 +459,12 @@ func (t *Table) PrintRecords(records []*Record) {
       fmt.Println("  ", t.get_string_for_key(name), t.get_string_for_val(int32(val)));
     }
   }
+}
+
+func (t *Table) PrintColInfo() {
+  for k, v := range t.int_info_table {
+    fmt.Println(k, v)
+  }
+
 }
 

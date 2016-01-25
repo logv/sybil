@@ -9,6 +9,7 @@ var f_RESET = flag.Bool("reset", false, "Reset the DB")
 var f_TABLE = flag.String("table", "", "Table to operate on")
 var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 var f_PRINT = flag.Bool("print", false, "Print some records")
+var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
 
 
 func make_records(name string) {
@@ -105,6 +106,12 @@ func Start() {
   if *f_PRINT {
     t := getTable(table)
     t.PrintRecords(t.RecordList[len(t.RecordList)-11:])
+
+  }
+
+  if *f_PRINT_INFO {
+    t := getTable(table)
+    t.PrintColInfo()
   }
 
 }

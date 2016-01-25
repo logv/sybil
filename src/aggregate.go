@@ -28,6 +28,7 @@ type Result struct {
   Ints map[string]float64
   Strs map[string]string
   Sets map[string][]string
+  Hists map[string]Hist
 }
 
 func punctuateSpec(querySpec *QuerySpec, records []*Record) {
@@ -81,6 +82,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     // BUILD GROUPING RECORD
     if !ok {
       added_record = &Result{ }
+      added_record.Hists = make(map[string]Hist)
       added_record.Ints = make(map[string]float64)
       added_record.Strs = make(map[string]string)
       added_record.Sets = make(map[string][]string)
