@@ -12,7 +12,6 @@ func NewRandomRecord(table_name string) *Record {
   t := getTable(table_name)
   r := t.NewRecord()
   fake, _ := faker.New("en")
-  fake.Rand = rand.New(rand.NewSource(42))
 
   r.AddIntField("age", rand.Intn(50) + 10)
   r.AddIntField("f1", rand.Intn(50) + 30)

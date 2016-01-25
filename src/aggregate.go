@@ -28,7 +28,7 @@ type Result struct {
   Ints map[string]float64
   Strs map[string]string
   Sets map[string][]string
-  Hists map[string]Hist
+  Hists map[string]*Hist
 }
 
 func punctuateSpec(querySpec *QuerySpec, records []*Record) {
@@ -82,7 +82,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     // BUILD GROUPING RECORD
     if !ok {
       added_record = &Result{ }
-      added_record.Hists = make(map[string]Hist)
+      added_record.Hists = make(map[string]*Hist)
       added_record.Ints = make(map[string]float64)
       added_record.Strs = make(map[string]string)
       added_record.Sets = make(map[string][]string)
@@ -112,12 +112,28 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
         querySpec.m.Lock()
         added_record.Ints[a.name] = partial
+        hist, ok := added_record.Hists[a.name]
+        if !ok { 
+          a_id := r.table.get_key_id(a.name)
+          hist = r.table.NewHist(r.table.int_info_table[a_id]) 
+          added_record.Hists[a.name] = hist
+        }
+        hist.addValue(val)
         querySpec.m.Unlock()
       }
 
     }
 
   }
+
+
+//  // Now we've iterated over all the records, print out the histograms for posterity sake
+//  for g, r := range querySpec.Results {
+//    for k, h := range r.Hists {
+//      fmt.Println(g, k, h)
+//    }
+//  }
+//
 
   return ret;
 }
@@ -166,7 +182,7 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
 }
 
 func (t *Table) AggRecords(records []*Record) {
-  groupings := []Grouping{ Grouping{"session_id"} }
+  groupings := []Grouping{ Grouping{"state"} }
   aggs := []Aggregation {Aggregation{ "avg", "age" }}
   filters := []Filter{}
 
@@ -176,7 +192,7 @@ func (t *Table) AggRecords(records []*Record) {
   start := time.Now()
   MatchAndAggregate(querySpec, records[:])
   end := time.Now()
-  fmt.Println("AGGREGATED INTO", len(querySpec.Results), "ROLLUPS, TOOK", end.Sub(start))
+  fmt.Println("AGGREGATED", len(records), " RECORDS INTO", len(querySpec.Results), "ROLLUPS, TOOK", end.Sub(start))
 }
 
 // Aggregations

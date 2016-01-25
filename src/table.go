@@ -281,27 +281,52 @@ func (t *Table) SaveRecords() bool {
   return t.saveRecordList(t.newRecords)
 }
 
-func (t *Table) LoadTableInfo() {
+func (t *Table) LoadTableStrings() {
+  start := time.Now()
   filename := fmt.Sprintf("db/%s/info.db", t.Name)
   file, _ := os.Open(filename)
   fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
   dec := gob.NewDecoder(file)
   err := dec.Decode(t);
+  end := time.Now()
   if err != nil {
     fmt.Println("TABLE INFO DECODE:", err);
     return ;
   }
 
+  fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+
+  return 
+}
+
+func (t *Table) LoadTableInfo() {
+  start := time.Now()
+  filename := fmt.Sprintf("db/%s/info.db", t.Name)
+  file, _ := os.Open(filename)
+  fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
+  dec := gob.NewDecoder(file)
+  err := dec.Decode(t);
+  end := time.Now()
+  if err != nil {
+    fmt.Println("TABLE INFO DECODE:", err);
+    return ;
+  }
+
+  fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+
   return 
 }
 
 func (t *Table) LoadRecordsFromFile(filename string) []*Record {
+  start := time.Now()
   file, _ := os.Open(filename)
   fmt.Println("OPENING RECORDS FROM FILENAME", filename)
   var marshalled_records []*SavedRecord
   var records []*Record
   dec := gob.NewDecoder(file)
   err := dec.Decode(&marshalled_records);
+  end := time.Now()
+  fmt.Println("DECODED RECORDS FROM FILENAME", filename, "TOOK", end.Sub(start))
   if err != nil {
     fmt.Println("DECODE:", err);
     return records;
@@ -313,10 +338,7 @@ func (t *Table) LoadRecordsFromFile(filename string) []*Record {
     records[i] = s.toRecord(t)
   }
 
-  return records
-
-
-
+  return records[:]
 }
 
 func (t *Table) LoadRecords() {
@@ -340,6 +362,7 @@ func (t *Table) LoadRecords() {
         m.Lock()
         ret = append(ret, records...)
         m.Unlock()
+
       }()
     }
 
@@ -419,6 +442,10 @@ func (t *Table) update_int_info(name int16, val int) {
     info.Min = val
     info.Avg = float64(val)
     info.Count = 1
+  }
+
+  if info.Count > 1024 {
+    return
   }
 
   if info.Max < val {

@@ -65,9 +65,8 @@ func testTable(name string) {
   end = time.Now()
   fmt.Println("INT FILTER RETURNED", len(filt_ret), "RECORDS, TOOK", end.Sub(start))
 
-  start = time.Now()
+  table.AggRecords(ret)
   table.AggRecords(filt_ret)
-  end = time.Now()
 
 
   start = time.Now()
