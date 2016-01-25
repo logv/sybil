@@ -52,71 +52,68 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     }
 
     if add {
-      ret = append(ret, r);
-
-      if len(querySpec.Groups) == 0 {
-        continue
-      }
-
-
-      // Need to look up the record for this grouping...
-      for _, g := range querySpec.Groups {
-        col_id := r.table.get_key_id(g.name)
-        val := r.table.get_string_for_val(int32(r.Strs[col_id]))
-        buffer.WriteString(string(val))
-        buffer.WriteString(":")
-      }
-      group_key := buffer.String()
-      buffer.Reset()
-
-      added_record, ok := querySpec.Results[group_key]
-
-      if !ok {
-        added_record = &Result{ }
-        added_record.Ints = make(map[string]float64)
-        added_record.Strs = make(map[string]string)
-        added_record.Sets = make(map[string][]string)
-
-        querySpec.m.Lock()
-        querySpec.Results[group_key] = added_record
-        querySpec.m.Unlock()
-      }
-
-      for _, g := range querySpec.Groups {
-        val, _ := r.getStrVal(g.name)
-        strval := r.table.get_string_for_val(int32(val))
-        added_record.Strs[g.name] = strval
-      }
-
-      // TODO: what else?
-      count,ok := added_record.Ints["count"]
-      if !ok { count = 0 }
-      count++
-      querySpec.m.Lock()
-      added_record.Ints["c"] =  count
-      querySpec.m.Unlock()
-
-      for _, a := range querySpec.Aggregations {
-        val, ok := r.getIntVal(a.name)
-        if ok {
-          partial, ok := added_record.Ints[a.name]
-          if !ok {
-            partial = 0
-          }
-
-          partial = partial + (float64(val) - partial) / count
-
-          querySpec.m.Lock()
-          added_record.Ints[a.name] = partial
-          querySpec.m.Unlock()
-        }
-
-      }
-
-
+      
       ret = append(ret, r);
 
     }
+
+
+
+    // BELOW HERE IS THE AGGREGATION MEAT
+    if len(querySpec.Groups) == 0 {
+      continue
+    }
+
+
+    // BUILD GROUPING KEY
+    for _, g := range querySpec.Groups {
+      col_id := r.table.get_key_id(g.name)
+      val := r.table.get_string_for_val(int32(r.Strs[col_id]))
+      buffer.WriteString(string(val))
+      buffer.WriteString(":")
+    }
+    group_key := buffer.String()
+    buffer.Reset()
+
+    added_record, ok := querySpec.Results[group_key]
+
+    // BUILD GROUPING RECORD
+    if !ok {
+      added_record = &Result{ }
+      added_record.Ints = make(map[string]float64)
+      added_record.Strs = make(map[string]string)
+      added_record.Sets = make(map[string][]string)
+
+      querySpec.m.Lock()
+      querySpec.Results[group_key] = added_record
+      querySpec.m.Unlock()
+    }
+
+    // GO THROUGH AGGREGATIONS AND REALIZE THEM
+    count,ok := added_record.Ints["c"]
+    if !ok { count = 0 }
+    count++
+    querySpec.m.Lock()
+    added_record.Ints["c"] =  count
+    querySpec.m.Unlock()
+
+    for _, a := range querySpec.Aggregations {
+      val, ok := r.getIntVal(a.name)
+      if ok {
+        partial, ok := added_record.Ints[a.name]
+        if !ok {
+          partial = 0
+        }
+
+        partial = partial + (float64(val) - partial) / count
+
+        querySpec.m.Lock()
+        added_record.Ints[a.name] = partial
+        querySpec.m.Unlock()
+      }
+
+    }
+
   }
 
   return ret;
