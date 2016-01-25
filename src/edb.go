@@ -22,7 +22,7 @@ func NewRandomRecord(table_name string) *Record {
   r.AddIntField("f2", rand.Intn(50) + 2000000)
   r.AddIntField("f3", rand.Intn(50) * rand.Intn(1000) + 10)
   r.AddIntField("time", int(time.Now().Unix()))
-  r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(5000)), 16))
+  r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(500000)), 16))
   r.AddStrField("random_number", strconv.FormatInt(int64(time.Now().Unix() % 20000), 10))
 
   return r;
@@ -91,12 +91,12 @@ func testTable(name string) {
   start = time.Now()
   session_maps := SessionizeRecords(ret, "session_id")
   end = time.Now()
-  fmt.Println("SESSIONIZED", len(ret), "RECORDS INT", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+  fmt.Println("SESSIONIZED", len(ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
   start = time.Now()
   session_maps = SessionizeRecords(filt_ret, "session_id")
   end = time.Now()
-  fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INT", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+  fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 }
 
 func Start() {

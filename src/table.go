@@ -4,7 +4,6 @@ import "fmt"
 import "log"
 import "time"
 import "os"
-import "math"
 import "strings"
 import "strconv"
 import "sync"
@@ -128,8 +127,7 @@ func (t *Table) SaveTableInfo() {
     log.Fatal("encode:", err)
   }
 
-  length := int(math.Max(float64(len(t.RecordList)), 1.0));
-  fmt.Println("SERIALIZED TABLE INFO INTO BYTES", network.Len(), "BYTES", "( PER RECORD", network.Len() / length, ")");
+  fmt.Println("SERIALIZED TABLE INFO INTO BYTES", network.Len(), "BYTES");
 
   w, _ := os.Create(filename)
   network.WriteTo(w);
@@ -208,12 +206,19 @@ func (t *Table) FillPartialBlock() bool {
   return true;
 }
 
+func getSaveTable(t *Table) *Table {
+  return &Table{Name: t.Name,
+    KeyTable: t.KeyTable, 
+    StringTable: t.StringTable, 
+    LastBlockId: t.LastBlockId}
+}
+
 func (t *Table) saveRecordList(records []*Record) bool {
   if (!t.dirty) { return false; }
 
   fmt.Println("SAVING RECORD LIST", len(records))
 
-  save_table := Table{Name: t.Name, KeyTable: t.KeyTable, LastBlockId: t.LastBlockId}
+  save_table := getSaveTable(t)
   save_table.SaveTableInfo()
 
   fmt.Println("SAVING TABLE", t.Name);
@@ -242,7 +247,7 @@ func (t *Table) saveRecordList(records []*Record) bool {
 
   fmt.Println("LAST BLOCK ID", t.LastBlockId)
 
-  save_table = Table{Name: t.Name, KeyTable: t.KeyTable, LastBlockId: t.LastBlockId}
+  save_table = getSaveTable(t)
   save_table.SaveTableInfo()
 
 
