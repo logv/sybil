@@ -39,7 +39,7 @@ func (filter IntFilter) Filter(r *Record) bool {
 
 
 func (t *Table) IntFilter(name string, op string, value int) IntFilter {
-  intFilter := IntFilter{Field: name, FieldId: t.get_string_id(name), Op: op, Value: value}
+  intFilter := IntFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
   intFilter.table = t;
 
   return intFilter

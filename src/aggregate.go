@@ -12,3 +12,11 @@ func AvgRecords(records []*Record, fieldname string) float64 {
 
   return float64(avg)
 }
+
+// Aggregations
+// Group By
+
+// Aggregations.add(Avg("age"))
+// Aggregations.add(Percentile("age", 75))
+//
+// GroupBy.add("session_id")

@@ -9,14 +9,14 @@ type Record struct {
 }
 
 func (r *Record) getStrVal(name string) (int, bool) {
-  id := r.table.get_string_id(name);
+  id := r.table.get_key_id(name);
 
   is, ok := r.Strs[id]
   return int(is), ok
 }
 
 func (r *Record) getIntVal(name string) (int, bool) {
-  id := r.table.get_string_id(name);
+  id := r.table.get_key_id(name);
 
   is, ok := r.Ints[id]
   return int(is), ok
@@ -37,21 +37,21 @@ func (r *Record) getVal(name string) (int, bool) {
 }
 
 func (r *Record) AddStrField(name string, val string) {
-  name_id := r.table.get_string_id(name)
-  value_id := r.table.get_string_id(val)
+  name_id := r.table.get_key_id(name)
+  value_id := r.table.get_val_id(val)
   r.Strs[name_id] = StrField(value_id)
 }
 
 func (r *Record) AddIntField(name string, val int) {
-  name_id := r.table.get_string_id(name)
+  name_id := r.table.get_key_id(name)
   r.Ints[name_id] = IntField(val)
 }
 
 func (r *Record) AddSetField(name string, val []string) {
-  name_id := r.table.get_string_id(name)
+  name_id := r.table.get_key_id(name)
   vals := make([]int, len(val))
   for i, v := range(val) {
-    vals[i] = r.table.get_string_id(v);
+    vals[i] = r.table.get_val_id(v);
   }
 
   r.Sets[name_id] = SetField(vals)
