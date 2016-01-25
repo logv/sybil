@@ -15,8 +15,8 @@ import "encoding/gob"
 type Table struct {
   Name string;
   RecordList []*Record
-  KeyTable map[string]int // String Key Names
-  StringTable map[string]int // String Value lookup
+  KeyTable map[string]int16 // String Key Names
+  StringTable map[string]int32 // String Value lookup
 
   // Need to keep track of the last block we've used, right?
   LastBlockId int
@@ -25,8 +25,8 @@ type Table struct {
   newRecords []*Record
 
   dirty bool;
-  key_string_id_lookup map[int]string
-  val_string_id_lookup map[int]string
+  key_string_id_lookup map[int16]string
+  val_string_id_lookup map[int32]string
   string_id_m *sync.Mutex;
   record_m *sync.Mutex;
 }
@@ -59,10 +59,10 @@ func getTable(name string) *Table{
 
   t = &Table{Name: name, dirty: false}
   LOADED_TABLES[name] = t
-  t.key_string_id_lookup = make(map[int]string)
-  t.val_string_id_lookup = make(map[int]string)
-  t.KeyTable = make(map[string]int)
-  t.StringTable = make(map[string]int)
+  t.key_string_id_lookup = make(map[int16]string)
+  t.val_string_id_lookup = make(map[int32]string)
+  t.KeyTable = make(map[string]int16)
+  t.StringTable = make(map[string]int32)
   t.RecordList = make([]*Record, 0)
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
@@ -343,12 +343,12 @@ func (t *Table) LoadRecords() {
   fmt.Println("LOADED", len(t.RecordList), "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
 }
 
-func (t *Table) get_string_for_key(id int) string {
+func (t *Table) get_string_for_key(id int16) string {
   val, _ := t.key_string_id_lookup[id];
   return val
 }
 
-func (t *Table) get_string_for_val(id int) string {
+func (t *Table) get_string_for_val(id int32) string {
   val, _ := t.val_string_id_lookup[id];
   return val
 }
@@ -357,38 +357,38 @@ func (t *Table) populate_string_id_lookup() {
   t.string_id_m.Lock()
   defer t.string_id_m.Unlock()
 
-  t.key_string_id_lookup = make(map[int]string)
-  t.val_string_id_lookup = make(map[int]string)
+  t.key_string_id_lookup = make(map[int16]string)
+  t.val_string_id_lookup = make(map[int32]string)
 
   for k, v := range t.KeyTable { t.key_string_id_lookup[v] = k; }
   for k, v := range t.StringTable { t.val_string_id_lookup[v] = k; }
 }
 
-func (t *Table) get_key_id(name string) int {
+func (t *Table) get_key_id(name string) int16 {
   id, ok := t.KeyTable[name]
 
   if ok {
-    return id;
+    return int16(id);
   }
 
 
   t.string_id_m.Lock();
-  t.KeyTable[name] = len(t.KeyTable);
+  t.KeyTable[name] = int16(len(t.KeyTable));
   t.key_string_id_lookup[t.KeyTable[name]] = name;
   t.string_id_m.Unlock();
-  return t.KeyTable[name];
+  return int16(t.KeyTable[name]);
 }
 
-func (t *Table) get_val_id(name string) int {
+func (t *Table) get_val_id(name string) int32 {
   id, ok := t.StringTable[name]
 
   if ok {
-    return id;
+    return int32(id);
   }
 
 
   t.string_id_m.Lock();
-  t.StringTable[name] = len(t.StringTable);
+  t.StringTable[name] = int32(len(t.StringTable));
   t.val_string_id_lookup[t.StringTable[name]] = name;
   t.string_id_m.Unlock();
   return t.StringTable[name];
@@ -476,7 +476,7 @@ func (t *Table) PrintRecords(records []*Record) {
       fmt.Println("  ", t.get_string_for_key(name), val);
     }
     for name, val := range r.Strs {
-      fmt.Println("  ", t.get_string_for_key(name), t.get_string_for_val(int(val)));
+      fmt.Println("  ", t.get_string_for_key(name), t.get_string_for_val(int32(val)));
     }
   }
 }

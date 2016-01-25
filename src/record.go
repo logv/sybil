@@ -1,9 +1,9 @@
 package edb
 
 type Record struct {
-  Ints map[int]IntField
-  Strs map[int]StrField
-  Sets map[int]SetField
+  Ints map[int16]IntField
+  Strs map[int16]StrField
+  Sets map[int16]SetField
 
   table *Table;
 }
@@ -49,7 +49,7 @@ func (r *Record) AddIntField(name string, val int) {
 
 func (r *Record) AddSetField(name string, val []string) {
   name_id := r.table.get_key_id(name)
-  vals := make([]int, len(val))
+  vals := make([]int32, len(val))
   for i, v := range(val) {
     vals[i] = r.table.get_val_id(v);
   }

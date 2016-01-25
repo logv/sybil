@@ -11,7 +11,7 @@ func (f NoFilter) Filter(r *Record) bool {
 
 type IntFilter struct {
   Field string
-  FieldId int
+  FieldId int16
   Op string
   Value int
 

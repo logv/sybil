@@ -1,19 +1,19 @@
 package edb
 
 type SavedInt struct {
-  Name int;
+  Name int16;
   Value int;
 }
 
 type SavedStr struct {
-  Name int;
+  Name int16;
   Value int;
 
 }
 
 type SavedSet struct {
-  Name int;
-  Value []int;
+  Name int16;
+  Value []int32;
 }
 
 type SavedRecord struct {
@@ -25,9 +25,9 @@ type SavedRecord struct {
 
 func (s SavedRecord) toRecord() *Record {
   r := Record{}
-  r.Ints = make(map[int]IntField)
-  r.Strs = make(map[int]StrField)
-  r.Sets = make(map[int]SetField)
+  r.Ints = make(map[int16]IntField)
+  r.Strs = make(map[int16]StrField)
+  r.Sets = make(map[int16]SetField)
 
   for _, v := range s.Ints {
     r.Ints[v.Name] = IntField(v.Value);
