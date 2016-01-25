@@ -3,31 +3,13 @@ package edb
 import "fmt"
 import "sync"
 import "flag"
-import "math/rand"
 import "time"
-import "strconv"
-
 
 var f_RESET = flag.Bool("reset", false, "Reset the DB")
 var f_TABLE = flag.String("table", "", "Table to operate on")
 var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 var f_PRINT = flag.Bool("print", false, "Print some records")
 
-
-func NewRandomRecord(table_name string) *Record {
-  t := getTable(table_name)
-  r := t.NewRecord()
-  r.AddIntField("age", rand.Intn(50) + 10)
-  r.AddIntField("f1", rand.Intn(50) + 30)
-  r.AddIntField("f2", rand.Intn(50) + 2000000)
-  r.AddIntField("f3", rand.Intn(50) * rand.Intn(1000) + 10)
-  r.AddIntField("time", int(time.Now().Unix()))
-  r.AddStrField("session_id", strconv.FormatInt(int64(rand.Intn(500000)), 16))
-  r.AddStrField("random_number", strconv.FormatInt(int64(time.Now().Unix() % 20000), 10))
-
-  return r;
-
-}
 
 func make_records(name string) {
   fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
@@ -104,6 +86,7 @@ func Start() {
   fmt.Println("Starting DB")
   fmt.Println("TABLE", *f_TABLE);
 
+
   add_records()
 
   table := *f_TABLE
@@ -121,7 +104,7 @@ func Start() {
 
   if *f_PRINT {
     t := getTable(table)
-    t.PrintRecords(t.RecordList[:10])
+    t.PrintRecords(t.RecordList[len(t.RecordList)-11:])
   }
 
 }

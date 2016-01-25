@@ -60,6 +60,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
 
     // BELOW HERE IS THE AGGREGATION MEAT
+    // WE ABORT AGGREGATE IF THERE IS NO GROUP BY SPEC
     if len(querySpec.Groups) == 0 {
       continue
     }
@@ -145,9 +146,9 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
     wg.Add(1)
     go func() {
       defer wg.Done()
+      defer m.Unlock()
       records := filterAndAggRecords(querySpec, records[h:e])
       m.Lock()
-      defer m.Unlock()
       ret = append(ret, records...)
     }()
 
