@@ -1,5 +1,7 @@
 package edb
 
+import "sort"
+
 // how do we use hists, anyways?
 type Hist struct {
   Max int
@@ -29,7 +31,11 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
   size := info.Max - info.Min
   h.bucket_size = size / buckets
   if h.bucket_size == 0 {
-    h.bucket_size = 2
+    if (size < 100) {
+      h.bucket_size = 1
+    } else {
+      h.bucket_size = size / 100
+    }
   }
   // we should use X buckets to start...
   return h
@@ -65,6 +71,35 @@ func (h *Hist) addValue(value int) {
 
 }
 
-func (h *Hist) getPercentiles() {
+type ByVal []int
+func (a ByVal) Len() int           { return len(a) }
+func (a ByVal) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByVal) Less(i, j int) bool { return a[i] < a[j] }
 
+
+func (h *Hist) getPercentiles() []int {
+  percentiles := make([]int, 101)
+  keys := make([]int, 0)
+  for k,_ := range h.values {
+    keys = append(keys, k)
+  }
+  sort.Sort(ByVal(keys))
+
+  percentiles[0] = h.Min
+  count := 0
+  prev_p := 0
+  for _, k := range keys {
+    key_count := h.values[k]
+    count = count + key_count
+    p := 100 * count / h.Count
+    for ip := prev_p; ip < p; ip++ {
+      percentiles[ip] = k
+    }
+    percentiles[p] = k
+    prev_p = p
+  }
+
+
+
+  return percentiles
 }

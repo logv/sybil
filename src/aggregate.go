@@ -127,14 +127,6 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
   }
 
 
-//  // Now we've iterated over all the records, print out the histograms for posterity sake
-//  for g, r := range querySpec.Results {
-//    for k, h := range r.Hists {
-//      fmt.Println(g, k, h)
-//    }
-//  }
-//
-
   return ret;
 }
 
