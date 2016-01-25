@@ -413,66 +413,6 @@ func (t *Table) NewRecord() *Record {
   return &r
 }
 
-func filterRecords(filters []Filter, records []*Record) []*Record{
-  ret := make([]*Record, 0);
-  for i := 0; i < len(records); i++ {
-    add := true;
-    r := records[i];
-
-    for j := 0; j < len(filters); j++ { 
-      if filters[j].Filter(r) {
-        add = false;
-        break;
-      }
-    }
-
-    if add {
-      ret = append(ret, r);
-    }
-  }
-
-  return ret;
-}
-
-
-func (t *Table) MatchRecords(filters []Filter) []*Record {
-  ret := make([]*Record, 0);
-
-  var wg sync.WaitGroup
-
-  chunks := 5;
-  chunk_size := len(t.RecordList) / chunks
-  m := &sync.Mutex{}
-
-  for c := 0; c < chunks; c++ {
-    h := c * chunk_size;
-    e := (c+1) * chunk_size
-
-    wg.Add(1)
-    go func() {
-      defer wg.Done()
-      records := filterRecords(filters, t.RecordList[h:e])
-
-      m.Lock()
-      ret = append(ret, records...)
-      m.Unlock()
-    }()
-
-  }
-
-  last_records := t.RecordList[chunks * chunk_size:]
-  records := filterRecords(filters, last_records)
-
-  m.Lock()
-  ret = append(ret, records...)
-  m.Unlock()
-
-  wg.Wait()
-
-  return ret
-}
-
-
 func (t *Table) PrintRecords(records []*Record) {
   for i := 0; i < len(records); i++ {
     fmt.Println("\nRECORD");

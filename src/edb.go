@@ -83,9 +83,8 @@ func testTable(name string) {
   fmt.Println("INT FILTER RETURNED", len(filt_ret), "RECORDS, TOOK", end.Sub(start))
 
   start = time.Now()
-  avg := AvgRecords(filt_ret, "f1")
+  table.AggRecords(filt_ret)
   end = time.Now()
-  fmt.Println("AGG RETURNED", avg, "RECORDS, TOOK", end.Sub(start))
 
 
   start = time.Now()
