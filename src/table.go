@@ -11,14 +11,18 @@ import "bytes"
 import "io/ioutil"
 import "encoding/gob"
 
+type TableBlock struct {
+  RecordList []*Record
+}
 type Table struct {
   Name string;
-  RecordList []*Record
+  BlockList map[string]TableBlock
   KeyTable map[string]int16 // String Key Names
   StringTable map[string]int32 // String Value lookup
 
   // Need to keep track of the last block we've used, right?
   LastBlockId int
+  LastBlock TableBlock
 
   // List of new records that haven't been saved to file yet
   newRecords []*Record
@@ -73,7 +77,8 @@ func getTable(name string) *Table{
 
   t.KeyTable = make(map[string]int16)
   t.StringTable = make(map[string]int32)
-  t.RecordList = make([]*Record, 0)
+  t.BlockList = make(map[string]TableBlock, 0)
+  t.LastBlock = TableBlock{t.newRecords}
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
   t.LoadRecords();
@@ -269,12 +274,6 @@ func (t *Table) saveRecordList(records []*Record) bool {
   return true;
 }
 
-func (t *Table) SaveAllRecords() bool {
-  os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
-  t.LastBlockId = 0;
-  return t.saveRecordList(t.RecordList)
-}
-
 func (t *Table) SaveRecords() bool {
   os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
   t.FillPartialBlock()
@@ -346,7 +345,6 @@ func (t *Table) LoadRecords() {
   fmt.Println("LOADING", t.Name)
 
   files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
-  ret := []*Record{}
   m := &sync.Mutex{}
 
   t.LoadTableInfo()
@@ -359,8 +357,9 @@ func (t *Table) LoadRecords() {
       go func() {
         defer wg.Done()
         records := t.LoadRecordsFromFile(filename);
+        block := TableBlock{records}
         m.Lock()
-        ret = append(ret, records...)
+        t.BlockList[filename] = block
         m.Unlock()
 
       }()
@@ -371,15 +370,18 @@ func (t *Table) LoadRecords() {
   wg.Wait()
 
 
-  t.RecordList = ret;
+  count := 0
   t.populate_string_id_lookup();
-  for _, r := range(t.RecordList) {
-    r.table = t;
+  for _, b := range(t.BlockList) {
+    for _, r := range(b.RecordList) {
+      r.table = t;
+      count++
+    }
   }
 
   end := time.Now()
 
-  fmt.Println("LOADED", len(t.RecordList), "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
+  fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
 }
 
 func (t *Table) get_string_for_key(id int16) string {
@@ -470,7 +472,6 @@ func (t *Table) NewRecord() *Record {
 
   t.record_m.Lock();
   t.newRecords = append(t.newRecords, &r)
-  t.RecordList = append(t.RecordList, &r)
   t.record_m.Unlock();
   return &r
 }

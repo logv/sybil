@@ -19,7 +19,7 @@ type QuerySpec struct {
   Filters []Filter
   Aggregations []Aggregation
   Results map[string]*Result
-  Records *[]*Record
+  BlockList map[string]TableBlock
 
   m *sync.Mutex
 }
@@ -31,10 +31,9 @@ type Result struct {
   Hists map[string]*Hist
 }
 
-func punctuateSpec(querySpec *QuerySpec, records []*Record) {
+func punctuateSpec(querySpec *QuerySpec) {
   querySpec.Results = make(map[string]*Result)
   querySpec.m = &sync.Mutex{}
-  querySpec.Records = &records
 }
 
 func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
@@ -53,9 +52,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     }
 
     if add {
-      
       ret = append(ret, r);
-
     }
 
 
@@ -136,8 +133,35 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
   aggs := []Aggregation {}
 
   querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
-  punctuateSpec(&querySpec, t.RecordList)
-  return MatchAndAggregate(querySpec, t.RecordList[:])
+  punctuateSpec(&querySpec)
+
+  var wg sync.WaitGroup
+  m := &sync.Mutex{}
+  rets := make([]*Record, 0)
+  count := len(t.newRecords)
+  for k, block := range t.BlockList {
+    fmt.Println("MATCHING RECORDS IN BLOCK", k)
+    wg.Add(1)
+    this_block := block
+    go func() {
+      defer wg.Done()
+      ret := filterAndAggRecords(querySpec, this_block.RecordList[:])
+      count += len(ret)
+
+      m.Lock()
+      rets = append(rets, ret...)
+      m.Unlock()
+    }()
+  }
+
+  wg.Wait()
+
+  ret := filterAndAggRecords(querySpec, t.newRecords[:])
+  rets = append(rets, ret...)
+
+  fmt.Println("FOUND RECORDS", len(rets))
+
+  return rets
 }
 
 
@@ -156,10 +180,10 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
     wg.Add(1)
     go func() {
       defer wg.Done()
-      defer m.Unlock()
       records := filterAndAggRecords(querySpec, records[h:e])
       m.Lock()
       ret = append(ret, records...)
+      m.Unlock()
     }()
 
   }
@@ -170,22 +194,6 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
   records = filterAndAggRecords(querySpec, last_records)
   ret = append(ret, records...)
 
-  // Now we've iterated over all the records, print out the histograms for posterity sake
-  start := time.Now()
-  count := 0
-  for g, r := range querySpec.Results {
-    count++
-    if count > 10 { break }
-
-    for k, h := range r.Hists {
-      p := h.getPercentiles()
-      fmt.Println(k, p[5], p[25], p[50], p[75], p[95], g)
-    }
-  }
-  end := time.Now()
-  fmt.Println("SUMMARIZING HISTOGRAMS TOOK", end.Sub(start))
-
-
   return ret
 }
 
@@ -195,7 +203,7 @@ func (t *Table) AggRecords(records []*Record) {
   filters := []Filter{}
 
   querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
-  punctuateSpec(&querySpec, records)
+  punctuateSpec(&querySpec)
 
   start := time.Now()
   MatchAndAggregate(querySpec, records[:])

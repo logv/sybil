@@ -102,11 +102,11 @@ func Start() {
   end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
-  if *f_PRINT {
-    t := getTable(table)
-    t.PrintRecords(t.RecordList[len(t.RecordList)-11:])
-
-  }
+//  if *f_PRINT {
+//    t := getTable(table)
+//    t.PrintRecords(t.RecordList[len(t.RecordList)-11:])
+//
+//  }
 
   if *f_PRINT_INFO {
     t := getTable(table)
