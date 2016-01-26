@@ -100,23 +100,32 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     for _, a := range querySpec.Aggregations {
       val, ok := r.getIntVal(a.name)
       if ok {
-        partial, ok := added_record.Ints[a.name]
-        if !ok {
-          partial = 0
+
+        if a.op == "avg" {
+          // Calculating averages
+          partial, ok := added_record.Ints[a.name]
+          if !ok {
+            partial = 0
+          }
+
+          partial = partial + (float64(val) - partial) / count
+
+          querySpec.m.Lock()
+          added_record.Ints[a.name] = partial
+          querySpec.m.Unlock()
         }
 
-        partial = partial + (float64(val) - partial) / count
-
-        querySpec.m.Lock()
-        added_record.Ints[a.name] = partial
-        hist, ok := added_record.Hists[a.name]
-        if !ok { 
-          a_id := r.table.get_key_id(a.name)
-          hist = r.table.NewHist(r.table.int_info_table[a_id]) 
-          added_record.Hists[a.name] = hist
+        if a.op == "hist" {
+          hist, ok := added_record.Hists[a.name]
+          if !ok { 
+            a_id := r.table.get_key_id(a.name)
+            hist = r.table.NewHist(r.table.int_info_table[a_id]) 
+            querySpec.m.Lock()
+            added_record.Hists[a.name] = hist
+            querySpec.m.Unlock()
+          }
+          hist.addValue(val)
         }
-        hist.addValue(val)
-        querySpec.m.Unlock()
       }
 
     }
@@ -199,7 +208,7 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
 
 func (t *Table) AggRecords(records []*Record) {
   groupings := []Grouping{ Grouping{"state"} }
-  aggs := []Aggregation {Aggregation{ "avg", "f3" }, Aggregation { "avg", "f4" }}
+  aggs := []Aggregation {Aggregation{ "avg", "f3" }, Aggregation { "hist", "f4" }}
   filters := []Filter{}
 
   querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }

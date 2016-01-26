@@ -1,6 +1,7 @@
 package edb
 
 import "sort"
+import "sync"
 
 // how do we use hists, anyways?
 type Hist struct {
@@ -12,6 +13,8 @@ type Hist struct {
   bucket_size int
   values map[int]int
   avgs map[int]float64
+
+  m *sync.Mutex
 }
 
 func (t *Table) NewHist(info *IntInfo) *Hist {
@@ -26,6 +29,8 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
   h.Min = int(info.Max)
   h.Avg = 0
   h.Count = 0
+  
+  h.m = &sync.Mutex{}
 
 
   size := info.Max - info.Min
@@ -42,6 +47,9 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 }
 
 func (h *Hist) addValue(value int) {
+  h.m.Lock()
+  defer h.m.Unlock()
+
   bucket_value := value / h.bucket_size
   partial, ok := h.avgs[bucket_value]
   if !ok {
@@ -67,8 +75,6 @@ func (h *Hist) addValue(value int) {
 
   // update bucket averages
   h.avgs[bucket_value] = partial + (float64(value) - partial) / float64(h.values[bucket_value])
-
-
 }
 
 type ByVal []int
