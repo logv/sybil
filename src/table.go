@@ -131,9 +131,9 @@ func SaveTables() {
 
 }
 
-func (t *Table) SaveTableInfo() {
+func (t *Table) SaveTableInfo(fname string) {
   var network bytes.Buffer // Stand-in for the network.
-  filename := fmt.Sprintf("db/%s/info.db", t.Name)
+  filename := fmt.Sprintf("db/%s/%s.db", t.Name, fname)
 
   // Create an encoder and send a value.
   enc := gob.NewEncoder(&network)
@@ -143,7 +143,7 @@ func (t *Table) SaveTableInfo() {
     log.Fatal("encode:", err)
   }
 
-  fmt.Println("SERIALIZED TABLE INFO INTO BYTES", network.Len(), "BYTES");
+  fmt.Println("SERIALIZED TABLE INFO", fname, "INTO BYTES", network.Len(), "BYTES");
 
   w, _ := os.Create(filename)
   network.WriteTo(w);
@@ -225,7 +225,6 @@ func (t *Table) FillPartialBlock() bool {
 func getSaveTable(t *Table) *Table {
   return &Table{Name: t.Name,
     KeyTable: t.KeyTable, 
-    StringTable: t.StringTable, 
     LastBlockId: t.LastBlockId}
 }
 
@@ -235,7 +234,7 @@ func (t *Table) saveRecordList(records []*Record) bool {
   fmt.Println("SAVING RECORD LIST", len(records))
 
   save_table := getSaveTable(t)
-  save_table.SaveTableInfo()
+  save_table.SaveTableInfo("info")
 
   fmt.Println("SAVING TABLE", t.Name);
   fmt.Println("LAST BLOCK ID", t.LastBlockId)
@@ -264,10 +263,11 @@ func (t *Table) saveRecordList(records []*Record) bool {
   fmt.Println("LAST BLOCK ID", t.LastBlockId)
 
   save_table = getSaveTable(t)
-  save_table.SaveTableInfo()
+  save_table.SaveTableInfo("info")
 
-
-
+  // TODO: should check if strings are dirty?
+  string_table := Table{Name: t.Name, StringTable: t.StringTable}
+  string_table.SaveTableInfo("strings")
 
   t.dirty = false;
 
@@ -280,46 +280,28 @@ func (t *Table) SaveRecords() bool {
   return t.saveRecordList(t.newRecords)
 }
 
-func (t *Table) LoadTableStrings() {
+func LoadTableInfo(tablename, fname string) *Table {
+  t := Table{}
   start := time.Now()
-  filename := fmt.Sprintf("db/%s/info.db", t.Name)
+  filename := fmt.Sprintf("db/%s/%s.db", tablename, fname)
   file, _ := os.Open(filename)
   fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
   dec := gob.NewDecoder(file)
-  err := dec.Decode(t);
+  err := dec.Decode(&t);
   end := time.Now()
   if err != nil {
     fmt.Println("TABLE INFO DECODE:", err);
-    return ;
+    return &t;
   }
 
-  fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+  fmt.Println("TABLE INFO", fname, "OPEN TOOK", end.Sub(start))
 
-  return 
-}
-
-func (t *Table) LoadTableInfo() {
-  start := time.Now()
-  filename := fmt.Sprintf("db/%s/info.db", t.Name)
-  file, _ := os.Open(filename)
-  fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
-  dec := gob.NewDecoder(file)
-  err := dec.Decode(t);
-  end := time.Now()
-  if err != nil {
-    fmt.Println("TABLE INFO DECODE:", err);
-    return ;
-  }
-
-  fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
-
-  return 
+  return &t
 }
 
 func (t *Table) LoadRecordsFromFile(filename string) []*Record {
   start := time.Now()
   file, _ := os.Open(filename)
-  fmt.Println("OPENING RECORDS FROM FILENAME", filename)
   var marshalled_records []*SavedRecord
   var records []*Record
   dec := gob.NewDecoder(file)
@@ -349,16 +331,38 @@ func (t *Table) LoadRecords() {
   var wg sync.WaitGroup
   
   wg.Add(1)
-
   // why is table info so slow to open!!!
   go func() { 
-    t.LoadTableInfo()
     defer wg.Done()
+    saved_table := LoadTableInfo(t.Name, "info")
+    if saved_table.KeyTable != nil && len(saved_table.KeyTable) > 0 {
+      t.KeyTable = saved_table.KeyTable
+    }
+    t.LastBlockId = saved_table.LastBlockId
+  }()
+
+  wg.Add(1)
+  go func() {
+    defer wg.Done()
+    saved_table := LoadTableInfo(t.Name, "strings")
+    if saved_table.StringTable != nil && len(saved_table.StringTable) > 0 {
+      t.StringTable = saved_table.StringTable
+//      fmt.Println("OPENED STRING TABLE", t.StringTable)
+    }
   }()
 
   m := &sync.Mutex{}
 
+  count := 0
   for _, v := range files {
+    if strings.HasSuffix(v.Name(), "info.db") {
+      continue
+    }
+
+    if strings.HasSuffix(v.Name(), "strings.db") {
+      continue
+    }
+
     if strings.HasSuffix(v.Name(), ".db") {
       filename := fmt.Sprintf("db/%s/%s", t.Name, v.Name())
       wg.Add(1)
@@ -368,6 +372,7 @@ func (t *Table) LoadRecords() {
         if len(records) > 0 {
           block := TableBlock{records}
           m.Lock()
+          count += len(records)
           t.BlockList[filename] = block
           m.Unlock()
         }
@@ -379,14 +384,9 @@ func (t *Table) LoadRecords() {
   wg.Wait()
 
 
-  count := 0
+  // RE-POPULATE LOOKUP TABLE INFO
   t.populate_string_id_lookup();
-  for _, b := range(t.BlockList) {
-    for _, r := range(b.RecordList) {
-      r.table = t;
-      count++
-    }
-  }
+
 
   end := time.Now()
 
@@ -485,16 +485,20 @@ func (t *Table) NewRecord() *Record {
   return &r
 }
 
+func (t *Table) PrintRecord(r *Record) {
+  fmt.Println("RECORD", r);
+  fmt.Println("STRING ID LOOKUP", t.KeyTable)
+  for name, val := range r.Ints {
+    fmt.Println("  ", t.get_string_for_key(name), val);
+  }
+  for name, val := range r.Strs {
+    fmt.Println("  ", t.get_string_for_key(name), t.get_string_for_val(int32(val)));
+  }
+}
+
 func (t *Table) PrintRecords(records []*Record) {
   for i := 0; i < len(records); i++ {
-    fmt.Println("\nRECORD");
-    r := records[i]
-    for name, val := range r.Ints {
-      fmt.Println("  ", t.get_string_for_key(name), val);
-    }
-    for name, val := range r.Strs {
-      fmt.Println("  ", t.get_string_for_key(name), t.get_string_for_val(int32(val)));
-    }
+    t.PrintRecord(records[i])
   }
 }
 

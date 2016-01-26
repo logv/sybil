@@ -42,9 +42,10 @@ func (s SavedRecord) toRecord(t *Table) *Record {
     r.Sets[v.Name] = v.Value
   }
 
+  r.table = t;
+
 
   return &r
-
 }
 
 func (r Record) toSavedRecord() *SavedRecord {

@@ -102,11 +102,26 @@ func Start() {
   end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
-//  if *f_PRINT {
-//    t := getTable(table)
-//    t.PrintRecords(t.RecordList[len(t.RecordList)-11:])
-//
-//  }
+  if *f_PRINT {
+    t := getTable(table)
+    count := 0
+    for _, b := range t.BlockList {
+      for _, r := range b.RecordList {
+        count++
+        r.table = t
+        t.PrintRecord(r)
+        if count > 10 {
+          break
+        }
+      }
+
+      if count > 10 {
+        break
+      }
+
+    }
+
+  }
 
   if *f_PRINT_INFO {
     t := getTable(table)
