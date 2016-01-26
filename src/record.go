@@ -38,7 +38,13 @@ func (r *Record) getVal(name string) (int, bool) {
 
 func (r *Record) AddStrField(name string, val string) {
   name_id := r.block.get_key_id(name)
-  value_id := r.block.get_val_id(val)
+
+  col, ok := r.block.columns[name_id]
+  if !ok {
+    col = newTableColumn()
+    r.block.columns[name_id] = col
+  }
+  value_id := col.get_val_id(val)
   r.Strs[name_id] = StrField(value_id)
 }
 
@@ -52,7 +58,7 @@ func (r *Record) AddSetField(name string, val []string) {
   name_id := r.block.get_key_id(name)
   vals := make([]int32, len(val))
   for i, v := range(val) {
-    vals[i] = r.block.get_val_id(v);
+    vals[i] = r.block.columns[name_id].get_val_id(v);
   }
 
   r.Sets[name_id] = SetField(vals)

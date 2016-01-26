@@ -67,7 +67,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     // BUILD GROUPING KEY
     for _, g := range querySpec.Groups {
       col_id := r.block.get_key_id(g.name)
-      val := r.block.get_string_for_val(int32(r.Strs[col_id]))
+      val := r.block.columns[col_id].get_string_for_val(int32(r.Strs[col_id]))
       buffer.WriteString(string(val))
       buffer.WriteString(":")
     }

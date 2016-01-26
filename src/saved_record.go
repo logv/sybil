@@ -55,8 +55,8 @@ func (r Record) toSavedRecord(tb *TableBlock) *SavedRecord {
   }
 
   for k, v := range r.Strs {
-    v_name := r.block.get_string_for_val(int32(v))
-    v_id := tb.get_val_id(v_name)
+    v_name := r.block.columns[k].get_string_for_val(int32(v))
+    v_id := tb.columns[k].get_val_id(v_name)
 
     s.Strs = append(s.Strs, SavedStr{k, int(v_id)})
   }

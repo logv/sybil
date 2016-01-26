@@ -156,33 +156,12 @@ func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
     return
   }
 
-
-  string_table := make(map[string]int32)
-  marshalled_records := make([]*SavedRecord, len(records))
   temp_block := newTableBlock()
-  saved_block := SavedBlock{Records: marshalled_records, StringTable: string_table}
+  temp_block.RecordList = records
+  temp_block.table = t
 
-  for i, r := range records {
-    marshalled_records[i] = r.toSavedRecord(&temp_block)
-  }
-
-  saved_block.StringTable = temp_block.StringTable
-
-  var network bytes.Buffer // Stand-in for the network.
-
-  // Create an encoder and send a value.
-  enc := gob.NewEncoder(&network)
-  err := enc.Encode(saved_block)
-
-  if err != nil {
-    log.Fatal("encode:", err)
-  }
-
-  fmt.Println("SERIALIZED INTO BLOCK", filename, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
-
-  w, _ := os.Create(filename)
-  network.WriteTo(w);
-
+  temp_block.SaveToFile(filename)
+  temp_block.SaveToColumns(filename)
 }
 
 
@@ -487,7 +466,7 @@ func (t *Table) PrintRecord(r *Record) {
     fmt.Println("  ", t.get_string_for_key(name), val);
   }
   for name, val := range r.Strs {
-    fmt.Println("  ", t.get_string_for_key(name), r.block.get_string_for_val(int32(val)));
+    fmt.Println("  ", t.get_string_for_key(name), r.block.columns[name].get_string_for_val(int32(val)));
   }
 }
 
