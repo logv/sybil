@@ -325,11 +325,11 @@ func (t *Table) LoadRecordsFromFile(filename string) []*Record {
   dec := gob.NewDecoder(file)
   err := dec.Decode(&marshalled_records);
   end := time.Now()
-  fmt.Println("DECODED RECORDS FROM FILENAME", filename, "TOOK", end.Sub(start))
   if err != nil {
-    fmt.Println("DECODE:", err);
+    fmt.Println("DECODE ERR:", err);
     return records;
   }
+  fmt.Println("DECODED RECORDS FROM FILENAME", filename, "TOOK", end.Sub(start))
 
 
   records = make([]*Record, len(marshalled_records))
@@ -345,11 +345,19 @@ func (t *Table) LoadRecords() {
   fmt.Println("LOADING", t.Name)
 
   files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
-  m := &sync.Mutex{}
-
-  t.LoadTableInfo()
 
   var wg sync.WaitGroup
+  
+  wg.Add(1)
+
+  // why is table info so slow to open!!!
+  go func() { 
+    t.LoadTableInfo()
+    defer wg.Done()
+  }()
+
+  m := &sync.Mutex{}
+
   for _, v := range files {
     if strings.HasSuffix(v.Name(), ".db") {
       filename := fmt.Sprintf("db/%s/%s", t.Name, v.Name())
@@ -357,11 +365,12 @@ func (t *Table) LoadRecords() {
       go func() {
         defer wg.Done()
         records := t.LoadRecordsFromFile(filename);
-        block := TableBlock{records}
-        m.Lock()
-        t.BlockList[filename] = block
-        m.Unlock()
-
+        if len(records) > 0 {
+          block := TableBlock{records}
+          m.Lock()
+          t.BlockList[filename] = block
+          m.Unlock()
+        }
       }()
     }
 
