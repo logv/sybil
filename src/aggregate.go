@@ -170,12 +170,28 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
   records = filterAndAggRecords(querySpec, last_records)
   ret = append(ret, records...)
 
+  // Now we've iterated over all the records, print out the histograms for posterity sake
+  start := time.Now()
+  count := 0
+  for g, r := range querySpec.Results {
+    count++
+    if count > 10 { break }
+
+    for k, h := range r.Hists {
+      p := h.getPercentiles()
+      fmt.Println(k, p[5], p[25], p[50], p[75], p[95], g)
+    }
+  }
+  end := time.Now()
+  fmt.Println("SUMMARIZING HISTOGRAMS TOOK", end.Sub(start))
+
+
   return ret
 }
 
 func (t *Table) AggRecords(records []*Record) {
   groupings := []Grouping{ Grouping{"state"} }
-  aggs := []Aggregation {Aggregation{ "avg", "age" }}
+  aggs := []Aggregation {Aggregation{ "avg", "f3" }, Aggregation { "avg", "f4" }}
   filters := []Filter{}
 
   querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
