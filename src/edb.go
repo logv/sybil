@@ -108,7 +108,6 @@ func Start() {
     for _, b := range t.BlockList {
       for _, r := range b.RecordList {
         count++
-        r.table = t
         t.PrintRecord(r)
         if count > 10 {
           break

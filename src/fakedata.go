@@ -10,7 +10,11 @@ var Faker *faker.Faker
 
 func NewRandomRecord(table_name string) *Record {
   t := getTable(table_name)
+  b := t.LastBlock
   r := t.NewRecord()
+
+  r.block = &b
+  b.table = t
   fake, _ := faker.New("en")
 
   r.AddIntField("age", rand.Intn(50) + 10)

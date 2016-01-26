@@ -11,14 +11,10 @@ import "bytes"
 import "io/ioutil"
 import "encoding/gob"
 
-type TableBlock struct {
-  RecordList []*Record
-}
 type Table struct {
   Name string;
   BlockList map[string]TableBlock
   KeyTable map[string]int16 // String Key Names
-  StringTable map[string]int32 // String Value lookup
 
   // Need to keep track of the last block we've used, right?
   LastBlockId int
@@ -76,9 +72,13 @@ func getTable(name string) *Table{
   t.int_info_table = make(map[int16]*IntInfo)
 
   t.KeyTable = make(map[string]int16)
-  t.StringTable = make(map[string]int32)
   t.BlockList = make(map[string]TableBlock, 0)
-  t.LastBlock = TableBlock{t.newRecords}
+
+  string_table := make(map[string]int32)
+  t.LastBlock = newTableBlock()
+  t.LastBlock.RecordList = t.newRecords
+  t.LastBlock.StringTable = string_table
+
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
   t.LoadRecords();
@@ -156,16 +156,23 @@ func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
     return
   }
 
+
+  string_table := make(map[string]int32)
   marshalled_records := make([]*SavedRecord, len(records))
+  temp_block := newTableBlock()
+  saved_block := SavedBlock{Records: marshalled_records, StringTable: string_table}
+
   for i, r := range records {
-    marshalled_records[i] = r.toSavedRecord()
+    marshalled_records[i] = r.toSavedRecord(&temp_block)
   }
+
+  saved_block.StringTable = temp_block.StringTable
 
   var network bytes.Buffer // Stand-in for the network.
 
   // Create an encoder and send a value.
   enc := gob.NewEncoder(&network)
-  err := enc.Encode(marshalled_records)
+  err := enc.Encode(saved_block)
 
   if err != nil {
     log.Fatal("encode:", err)
@@ -265,10 +272,6 @@ func (t *Table) saveRecordList(records []*Record) bool {
   save_table = getSaveTable(t)
   save_table.SaveTableInfo("info")
 
-  // TODO: should check if strings are dirty?
-  string_table := Table{Name: t.Name, StringTable: t.StringTable}
-  string_table.SaveTableInfo("strings")
-
   t.dirty = false;
 
   return true;
@@ -299,27 +302,48 @@ func LoadTableInfo(tablename, fname string) *Table {
   return &t
 }
 
-func (t *Table) LoadRecordsFromFile(filename string) []*Record {
+func (t *Table) LoadBlockFromFile(filename string) *TableBlock {
   start := time.Now()
   file, _ := os.Open(filename)
-  var marshalled_records []*SavedRecord
+  var saved_block = SavedBlock{}
   var records []*Record
   dec := gob.NewDecoder(file)
-  err := dec.Decode(&marshalled_records);
+  err := dec.Decode(&saved_block);
   end := time.Now()
   if err != nil {
     fmt.Println("DECODE ERR:", err);
-    return records;
+    return nil;
   }
   fmt.Println("DECODED RECORDS FROM FILENAME", filename, "TOOK", end.Sub(start))
 
 
-  records = make([]*Record, len(marshalled_records))
-  for i, s := range marshalled_records {
-    records[i] = s.toRecord(t)
+  records = make([]*Record, len(saved_block.Records))
+  tb := newTableBlock()
+  tb.RecordList = records
+  tb.table = t
+  tb.StringTable = saved_block.StringTable
+
+  for i, s := range saved_block.Records {
+    records[i] = s.toRecord(&tb)
   }
 
-  return records[:]
+  t.record_m.Lock()
+  t.BlockList[filename] = tb
+  t.record_m.Unlock()
+
+  return &tb
+
+}
+
+func (t *Table) LoadRecordsFromFile(filename string) []*Record {
+  tb := t.LoadBlockFromFile(filename)
+  if tb == nil {
+    var records []*Record
+    return records
+
+  }
+
+  return tb.RecordList
 }
 
 func (t *Table) LoadRecords() {
@@ -341,16 +365,6 @@ func (t *Table) LoadRecords() {
     t.LastBlockId = saved_table.LastBlockId
   }()
 
-  wg.Add(1)
-  go func() {
-    defer wg.Done()
-    saved_table := LoadTableInfo(t.Name, "strings")
-    if saved_table.StringTable != nil && len(saved_table.StringTable) > 0 {
-      t.StringTable = saved_table.StringTable
-//      fmt.Println("OPENED STRING TABLE", t.StringTable)
-    }
-  }()
-
   m := &sync.Mutex{}
 
   count := 0
@@ -370,10 +384,8 @@ func (t *Table) LoadRecords() {
         defer wg.Done()
         records := t.LoadRecordsFromFile(filename);
         if len(records) > 0 {
-          block := TableBlock{records}
           m.Lock()
           count += len(records)
-          t.BlockList[filename] = block
           m.Unlock()
         }
       }()
@@ -398,11 +410,6 @@ func (t *Table) get_string_for_key(id int16) string {
   return val
 }
 
-func (t *Table) get_string_for_val(id int32) string {
-  val, _ := t.val_string_id_lookup[id];
-  return val
-}
-
 func (t *Table) populate_string_id_lookup() {
   t.string_id_m.Lock()
   defer t.string_id_m.Unlock()
@@ -411,7 +418,11 @@ func (t *Table) populate_string_id_lookup() {
   t.val_string_id_lookup = make(map[int32]string)
 
   for k, v := range t.KeyTable { t.key_string_id_lookup[v] = k; }
-  for k, v := range t.StringTable { t.val_string_id_lookup[v] = k; }
+
+  for _, b := range t.BlockList {
+    for k, v := range b.StringTable { b.val_string_id_lookup[v] = k; }
+
+  }
 }
 
 func (t *Table) get_key_id(name string) int16 {
@@ -427,21 +438,6 @@ func (t *Table) get_key_id(name string) int16 {
   t.key_string_id_lookup[t.KeyTable[name]] = name;
   t.string_id_m.Unlock();
   return int16(t.KeyTable[name]);
-}
-
-func (t *Table) get_val_id(name string) int32 {
-  id, ok := t.StringTable[name]
-
-  if ok {
-    return int32(id);
-  }
-
-
-  t.string_id_m.Lock();
-  t.StringTable[name] = int32(len(t.StringTable));
-  t.val_string_id_lookup[t.StringTable[name]] = name;
-  t.string_id_m.Unlock();
-  return t.StringTable[name];
 }
 
 func (t *Table) update_int_info(name int16, val int) {
@@ -477,7 +473,6 @@ func (t *Table) update_int_info(name int16, val int) {
 func (t *Table) NewRecord() *Record {  
   r := Record{ Sets: SetArr{}, Ints: IntArr{}, Strs: StrArr{} }
   t.dirty = true;
-  r.table = t;
 
   t.record_m.Lock();
   t.newRecords = append(t.newRecords, &r)
@@ -492,7 +487,7 @@ func (t *Table) PrintRecord(r *Record) {
     fmt.Println("  ", t.get_string_for_key(name), val);
   }
   for name, val := range r.Strs {
-    fmt.Println("  ", t.get_string_for_key(name), t.get_string_for_val(int32(val)));
+    fmt.Println("  ", t.get_string_for_key(name), r.block.get_string_for_val(int32(val)));
   }
 }
 

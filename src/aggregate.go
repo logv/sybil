@@ -66,8 +66,8 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
     // BUILD GROUPING KEY
     for _, g := range querySpec.Groups {
-      col_id := r.table.get_key_id(g.name)
-      val := r.table.get_string_for_val(int32(r.Strs[col_id]))
+      col_id := r.block.get_key_id(g.name)
+      val := r.block.get_string_for_val(int32(r.Strs[col_id]))
       buffer.WriteString(string(val))
       buffer.WriteString(":")
     }
@@ -118,8 +118,8 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
         if a.op == "hist" {
           hist, ok := added_record.Hists[a.name]
           if !ok { 
-            a_id := r.table.get_key_id(a.name)
-            hist = r.table.NewHist(r.table.int_info_table[a_id]) 
+            a_id := r.block.get_key_id(a.name)
+            hist = r.block.table.NewHist(r.block.table.int_info_table[a_id]) 
             querySpec.m.Lock()
             added_record.Hists[a.name] = hist
             querySpec.m.Unlock()
