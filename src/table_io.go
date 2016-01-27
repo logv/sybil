@@ -256,11 +256,15 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   start = time.Now()
   var r *Record
   fmt.Println("KEY STRING ID LOOKUP", len(t.KeyTable))
+
+  bigIntArr := make(IntArr, len(t.KeyTable) * int(info.NumRecords))
+  bigStrArr := make(StrArr, len(t.KeyTable) * int(info.NumRecords))
+  bigPopArr := make([]bool, len(t.KeyTable) * int(info.NumRecords))
   for i, _ := range records {
     r = &alloced[i]
-    r.Ints = make(IntArr, len(t.KeyTable))
-    r.Strs = make(StrArr, len(t.KeyTable))
-    r.Populated = make([]bool, len(t.KeyTable))
+    r.Ints = bigIntArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
+    r.Strs = bigStrArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
+    r.Populated = bigPopArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
 
     r.block = &tb
     records[i] = r

@@ -40,23 +40,25 @@ func (r *Record) getVal(name string) (int, bool) {
 }
 
 func (r *Record) ResizeFields(length int16) {
+  // dont get fooled by zeroes
+  if length < 1 {
+    length = 5
+  }
+
   if int(length) >= len(r.Strs) {
-    delta := int(length) - len(r.Strs) + 1
-    delta_records := make([]StrField, delta*2)
+    delta_records := make([]StrField, int(float64(length)*1.5))
 
     r.Strs = append(r.Strs, delta_records...)
   }
 
   if int(length) >= len(r.Populated) {
-    delta := int(length) - len(r.Populated) + 1
-    delta_records := make([]bool, delta*2)
+    delta_records := make([]bool, int(float64(length)*1.5))
 
     r.Populated = append(r.Populated, delta_records...)
   }
 
   if int(length) >= len(r.Ints) {
-    delta := int(length) - len(r.Ints) + 1
-    delta_records := make([]IntField, delta*2)
+    delta_records := make([]IntField, int(float64(length)*1.5))
 
     r.Ints = append(r.Ints, delta_records...)
   }
