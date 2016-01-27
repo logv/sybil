@@ -80,8 +80,8 @@ func getTable(name string) *Table{
 }
 
 
-func (t *Table) get_string_for_key(id int16) string {
-  val, _ := t.key_string_id_lookup[id];
+func (t *Table) get_string_for_key(id int) string {
+  val, _ := t.key_string_id_lookup[int16(id)];
   return val
 }
 
@@ -164,7 +164,7 @@ func (t *Table) PrintRecord(r *Record) {
     fmt.Println("  ", name, t.get_string_for_key(name), val);
   }
   for name, val := range r.Strs {
-    col := r.block.getColumnInfo(name)
+    col := r.block.getColumnInfo(int16(name))
     fmt.Println("  ", name, val, t.get_string_for_key(name), col.get_string_for_val(int32(val)));
   }
 }

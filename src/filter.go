@@ -19,19 +19,20 @@ type IntFilter struct {
 }
 
 func (filter IntFilter) Filter(r *Record) bool {
+  if r.Populated[filter.FieldId] == false {
+    return true
+  }
 
-  field, ok := r.Ints[filter.FieldId]
-  if ok {
-    switch filter.Op {
-      case "gt":
-        return int(field) < int(filter.Value)
+  field := r.Ints[filter.FieldId]
+  switch filter.Op {
+    case "gt":
+      return int(field) < int(filter.Value)
 
-      case "lt":
-        return int(field) > int(filter.Value)
+    case "lt":
+      return int(field) > int(filter.Value)
 
-      default:
+    default:
 
-    }
   }
 
   return true

@@ -224,38 +224,6 @@ func LoadTableInfo(tablename, fname string) *Table {
   return &t
 }
 
-func (t *Table) LoadBlockFromFile(filename string) *TableBlock {
-  start := time.Now()
-  file, _ := os.Open(filename)
-  var saved_block = SavedBlock{}
-  var records []*Record
-  dec := gob.NewDecoder(file)
-  err := dec.Decode(&saved_block);
-  end := time.Now()
-  if err != nil {
-    fmt.Println("DECODE ERR:", err);
-    return nil;
-  }
-  fmt.Println("DECODED RECORDS FROM FILENAME", filename, "TOOK", end.Sub(start))
-
-
-  records = make([]*Record, len(saved_block.Records))
-  tb := newTableBlock()
-  tb.RecordList = records
-  tb.table = t
-
-  for i, s := range saved_block.Records {
-    records[i] = s.toRecord(&tb)
-  }
-
-  t.record_m.Lock()
-  t.BlockList[filename] = &tb
-  t.record_m.Unlock()
-
-  return &tb
-
-}
-
 func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record {
   fmt.Println("LAODING RECORDS FROM DIR", dirname)
 
@@ -287,11 +255,12 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
   start = time.Now()
   var r *Record
+  fmt.Println("KEY STRING ID LOOKUP", len(t.KeyTable))
   for i, _ := range records {
     r = &alloced[i]
-    r.Sets = SetArr{}
-    r.Ints = IntArr{}
-    r.Strs = StrArr{}
+    r.Ints = make(IntArr, len(t.KeyTable))
+    r.Strs = make(StrArr, len(t.KeyTable))
+    r.Populated = make([]bool, len(t.KeyTable))
 
     r.block = &tb
     records[i] = r
@@ -343,10 +312,11 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
           for _, r := range bucket.Records {
             val :=  string_lookup[bucket.Value]
-
             value_id := col.get_val_id(val)
-	    if records[r].Strs == nil { records[r].Strs = StrArr{} }
+
+	    records[r].ResizeFields(into.Name)
             records[r].Strs[into.Name] = StrField(value_id)
+	    records[r].Populated[into.Name] = true
           }
 
 
@@ -358,8 +328,9 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
         for _, bucket := range into.Bins {
           for _, r := range bucket.Records {
-	    if records[r].Ints == nil { records[r].Ints = IntArr{} }
+	    records[r].ResizeFields(into.Name)
             records[r].Ints[into.Name] = IntField(bucket.Value)
+	    records[r].Populated[into.Name] = true
             tb.table.update_int_info(into.Name, int(bucket.Value))
           }
 
@@ -391,6 +362,10 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
     }
     t.LastBlockId = saved_table.LastBlockId
   }()
+
+  wg.Wait()
+
+  fmt.Println("REAL STRING TABLE", t.KeyTable)
 
   m := &sync.Mutex{}
 
@@ -434,16 +409,5 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
   end := time.Now()
 
   fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(waystart));
-}
-
-func (t *Table) LoadRecordsFromFile(filename string) []*Record {
-  tb := t.LoadBlockFromFile(filename)
-  if tb == nil {
-    var records []*Record
-    return records
-
-  }
-
-  return tb.RecordList
 }
 

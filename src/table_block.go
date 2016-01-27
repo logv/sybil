@@ -31,16 +31,12 @@ func newTableBlock() TableBlock {
 
 }
 
-type SavedBlock struct {
-  Records []*SavedRecord
-}
-
 func (tb *TableBlock) get_key_id(name string) int16 {
   return tb.table.get_key_id(name)
 }
 
 func (tb *TableBlock) get_string_for_key(id int16) string {
-  return tb.table.get_string_for_key(id)
+  return tb.table.get_string_for_key(int(id))
 
 }
 
@@ -187,24 +183,24 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
   // table block, as well as separate record values by column type
   for i, r := range records {
     for k, v := range r.Ints {
-      record_value(same_ints, int32(i), k, int32(v))
+      record_value(same_ints, int32(i), int16(k), int32(v))
     }
     for k, v := range r.Strs {
       // transition key from the 
-      col := r.block.getColumnInfo(k)
-      new_col := tb.getColumnInfo(k)
+      col := r.block.getColumnInfo(int16(k))
+      new_col := tb.getColumnInfo(int16(k))
 
       v_name := col.get_string_for_val(int32(v))
       v_id := new_col.get_val_id(v_name)
 
       // record the transitioned key
-      record_value(same_strs, int32(i), k, int32(v_id))
+      record_value(same_strs, int32(i), int16(k), int32(v_id))
     }
     for k, v := range r.Sets {
-      s, ok := same_sets[k]
+      s, ok := same_sets[int16(k)]
       if !ok {
         s = SetMap{}
-        same_sets[k] = s
+        same_sets[int16(k)] = s
       }
       s[int32(i)] = v
     }
@@ -226,35 +222,4 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 
 
 
-
-// DEPRECATED
-// THIS SAVED A BLOCK INTO A SINGLE FILE
-// ITS ONLY AROUND FOR TESTING PURPOSES AT THE MOMENT
-func (tb *TableBlock) SaveToFile(filename string) {
-  records := tb.RecordList
-
-  marshalled_records := make([]*SavedRecord, len(records))
-  saved_block := SavedBlock{Records: marshalled_records}
-  for i, r := range records {
-    marshalled_records[i] = r.toSavedRecord(tb)
-  }
-
-
-  var network bytes.Buffer // Stand-in for the network.
-
-  // Create an encoder and send a value.
-  enc := gob.NewEncoder(&network)
-  err := enc.Encode(saved_block)
-
-  if err != nil {
-    log.Fatal("encode:", err)
-  }
-
-  fmt.Println("SERIALIZED INTO BLOCK", filename, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
-
-  w, _ := os.Create(filename)
-  network.WriteTo(w);
-
-
-}
 
