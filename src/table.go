@@ -158,14 +158,18 @@ func (t *Table) NewRecord() *Record {
 }
 
 func (t *Table) PrintRecord(r *Record) {
-  fmt.Println("RECORD", r);
+  fmt.Println("RECORD");
 
   for name, val := range r.Ints {
-    fmt.Println("  ", name, t.get_string_for_key(name), val);
+    if r.Populated[name] == INT_VAL {
+      fmt.Println("  ", name, t.get_string_for_key(name), val);
+    }
   }
   for name, val := range r.Strs {
-    col := r.block.getColumnInfo(int16(name))
-    fmt.Println("  ", name, val, t.get_string_for_key(name), col.get_string_for_val(int32(val)));
+    if r.Populated[name] == STR_VAL {
+      col := r.block.getColumnInfo(int16(name))
+      fmt.Println("  ", name, val, t.get_string_for_key(name), col.get_string_for_val(int32(val)));
+    }
   }
 }
 

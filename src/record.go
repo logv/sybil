@@ -4,16 +4,19 @@ type Record struct {
   Ints []IntField;
   Strs []StrField;
   Sets []SetField;
-  Populated []bool;
+  Populated []int;
 
   block *TableBlock;
 }
+
+var INT_VAL = 1;
+var STR_VAL = 2;
 
 func (r *Record) getStrVal(name string) (int, bool) {
   id := r.block.get_key_id(name);
 
   is := r.Strs[id]
-  ok := r.Populated[id]
+  ok := r.Populated[id] == STR_VAL
   return int(is), ok
 }
 
@@ -21,7 +24,7 @@ func (r *Record) getIntVal(name string) (int, bool) {
   id := r.block.get_key_id(name);
 
   is := r.Ints[id]
-  ok := r.Populated[id]
+  ok := r.Populated[id] == INT_VAL
   return int(is), ok
 }
 
@@ -52,7 +55,7 @@ func (r *Record) ResizeFields(length int16) {
   }
 
   if int(length) >= len(r.Populated) {
-    delta_records := make([]bool, int(float64(length)*1.5))
+    delta_records := make([]int, int(float64(length)*1.5))
 
     r.Populated = append(r.Populated, delta_records...)
   }
@@ -62,8 +65,6 @@ func (r *Record) ResizeFields(length int16) {
 
     r.Ints = append(r.Ints, delta_records...)
   }
-
-
 }
 
 func (r *Record) AddStrField(name string, val string) {
@@ -74,7 +75,7 @@ func (r *Record) AddStrField(name string, val string) {
 
   r.ResizeFields(name_id)
   r.Strs[name_id] = StrField(value_id)
-  r.Populated[name_id] = true
+  r.Populated[name_id] = STR_VAL
 }
 
 func (r *Record) AddIntField(name string, val int) {
@@ -83,7 +84,7 @@ func (r *Record) AddIntField(name string, val int) {
 
   r.ResizeFields(name_id)
   r.Ints[name_id] = IntField(val)
-  r.Populated[name_id] = true
+  r.Populated[name_id] = INT_VAL
 }
 
 func (r *Record) AddSetField(name string, val []string) {
@@ -94,5 +95,6 @@ func (r *Record) AddSetField(name string, val []string) {
     vals[i] = col.get_val_id(v);
   }
 
+  r.ResizeFields(name_id)
   r.Sets[name_id] = SetField(vals)
 }

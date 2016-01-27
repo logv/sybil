@@ -19,7 +19,7 @@ type IntFilter struct {
 }
 
 func (filter IntFilter) Filter(r *Record) bool {
-  if r.Populated[filter.FieldId] == false {
+  if r.Populated[filter.FieldId] == 0 {
     return true
   }
 

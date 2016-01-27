@@ -185,7 +185,9 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
   // table block, as well as separate record values by column type
   for i, r := range records {
     for k, v := range r.Ints {
-      record_value(same_ints, int32(i), int16(k), int32(v))
+      if r.Populated[k] == INT_VAL {
+	record_value(same_ints, int32(i), int16(k), int32(v))
+      }
     }
     for k, v := range r.Strs {
       // transition key from the 
@@ -196,7 +198,9 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
       v_id := new_col.get_val_id(v_name)
 
       // record the transitioned key
-      record_value(same_strs, int32(i), int16(k), int32(v_id))
+      if r.Populated[k] == STR_VAL {
+	record_value(same_strs, int32(i), int16(k), int32(v_id))
+      }
     }
     for k, v := range r.Sets {
       s, ok := same_sets[int16(k)]

@@ -259,7 +259,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
   bigIntArr := make(IntArr, len(t.KeyTable) * int(info.NumRecords))
   bigStrArr := make(StrArr, len(t.KeyTable) * int(info.NumRecords))
-  bigPopArr := make([]bool, len(t.KeyTable) * int(info.NumRecords))
+  bigPopArr := make([]int, len(t.KeyTable) * int(info.NumRecords))
   for i, _ := range records {
     r = &alloced[i]
     r.Ints = bigIntArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
@@ -320,7 +320,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
 	    records[r].ResizeFields(into.Name)
             records[r].Strs[into.Name] = StrField(value_id)
-	    records[r].Populated[into.Name] = true
+	    records[r].Populated[into.Name] = STR_VAL
           }
 
 
@@ -334,7 +334,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
           for _, r := range bucket.Records {
 	    records[r].ResizeFields(into.Name)
             records[r].Ints[into.Name] = IntField(bucket.Value)
-	    records[r].Populated[into.Name] = true
+	    records[r].Populated[into.Name] = INT_VAL
             tb.table.update_int_info(into.Name, int(bucket.Value))
           }
 
