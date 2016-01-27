@@ -50,6 +50,9 @@ func getBlockName(id int) string {
   return strconv.FormatInt(int64(id), 10)
 }
 
+func getBlockDir(name string, id int) string {
+  return fmt.Sprintf("db/%s/%05s", name, getBlockName(id))
+}
 func getBlockFilename(name string, id int) string {
   return fmt.Sprintf("db/%s/%05s.db", name, getBlockName(id))
 }
@@ -170,8 +173,8 @@ func (t *Table) FillPartialBlock() bool {
   fmt.Println("CHECKING FOR PARTIAL BLOCK", t.LastBlockId)
 
   // Open up our last record block, see how full it is
-  filename := getBlockFilename(t.Name, t.LastBlockId)
-  partialRecords := t.LoadRecordsFromFile(filename)
+  filename := getBlockDir(t.Name, t.LastBlockId)
+  partialRecords := t.LoadRecordsFromDir(filename)
   fmt.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
   incBlockId := false;
@@ -230,14 +233,13 @@ func (t *Table) saveRecordList(records []*Record) bool {
     t.SaveRecordsToFile(records, filename)
   } else {
     for j := 0; j < chunks; j++ {
-      t.LastBlockId++
       filename := getBlockFilename(t.Name, t.LastBlockId)
       t.SaveRecordsToFile(records[j*chunk_size:(j+1)*chunk_size], filename)
+      t.LastBlockId++
     }
 
     // SAVE THE REMAINDER
     if len(records) > chunks * chunk_size {
-      t.LastBlockId++
       filename := getBlockFilename(t.Name, t.LastBlockId)
       t.SaveRecordsToFile(records[chunks * chunk_size:], filename)
     }
@@ -466,12 +468,6 @@ func (t *Table) LoadRecords() {
 
 
   end := time.Now()
-
-  if len(records) > 10 {
-    for _, r := range records[:10] {
-      t.PrintRecord(r)
-    }
-  }
 
   fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
 }
