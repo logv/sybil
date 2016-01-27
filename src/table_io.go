@@ -296,7 +296,7 @@ func (t *Table) LoadBlockFromDIr(dirname string) []*Record {
             val :=  string_lookup[bucket.Value]
 
             value_id := col.get_val_id(val)
-            records[r].Strs[bucket.Name] = StrField(value_id)
+            records[r].Strs[into.Name] = StrField(value_id)
           }
 
 
@@ -308,8 +308,8 @@ func (t *Table) LoadBlockFromDIr(dirname string) []*Record {
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
         for _, bucket := range into.Bins {
           for _, r := range bucket.Records {
-            records[r].Ints[bucket.Name] = IntField(bucket.Value)
-            tb.table.update_int_info(bucket.Name, int(bucket.Value))
+            records[r].Ints[into.Name] = IntField(bucket.Value)
+            tb.table.update_int_info(into.Name, int(bucket.Value))
           }
 
 
