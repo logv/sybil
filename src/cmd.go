@@ -10,20 +10,24 @@ var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 var f_PRINT = flag.Bool("print", false, "Print some records")
 var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
 
+var f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
 var f_INTS = flag.String("int", "", "Integer values to aggregate")
 var f_STRS = flag.String("str", "", "String values to load")
 var f_GROUPS = flag.String("group", "", "values group by")
 
-func testTable(name string, load_spec LoadSpec) {
+var GROUP_BY  []string
+
+func testTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
 
   lstart := time.Now()
-  table.LoadRecords(&load_spec)
+  table.LoadRecords(&loadSpec)
   lend := time.Now()
   fmt.Println("LOADING RECORDS INTO TABLE TOOK", lend.Sub(lstart))
 
   filters := []Filter{}
 
+  // TODO: ADD FILTER SPECIFICATIONS
   start := time.Now()
   ret := table.MatchRecords(filters)
   end := time.Now()
@@ -37,19 +41,21 @@ func testTable(name string, load_spec LoadSpec) {
   end = time.Now()
   fmt.Println("INT FILTER RETURNED", len(filt_ret), "RECORDS, TOOK", end.Sub(start))
 
-  table.AggRecords(ret)
-  table.AggRecords(filt_ret)
+  table.AggRecords(ret, querySpec)
+  table.AggRecords(filt_ret, querySpec)
 
 
-  start = time.Now()
-  session_maps := SessionizeRecords(ret, "session_id")
-  end = time.Now()
-  fmt.Println("SESSIONIZED", len(ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+  if (*f_SESSION_COL != "") {
+    start = time.Now()
+    session_maps := SessionizeRecords(ret, *f_SESSION_COL)
+    end = time.Now()
+    fmt.Println("SESSIONIZED", len(ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 
-  start = time.Now()
-  session_maps = SessionizeRecords(filt_ret, "session_id")
-  end = time.Now()
-  fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+    start = time.Now()
+    session_maps = SessionizeRecords(filt_ret, *f_SESSION_COL)
+    end = time.Now()
+    fmt.Println("SESSIONIZED", len(filt_ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+  }
 }
 
 func ParseCmdLine() {
@@ -70,6 +76,7 @@ func ParseCmdLine() {
 
   if *f_GROUPS != "" {
     groups = strings.Split(*f_GROUPS, ",")
+    GROUP_BY = groups
 
   }
 
@@ -85,24 +92,32 @@ func ParseCmdLine() {
 
 
 
-  load_spec := NewLoadSpec()
-  for _, v := range groups {
-    load_spec.Str(v)
+  groupings := []Grouping{}
+  for _, g := range groups {
+    groupings = append(groupings, Grouping{g})
   }
 
-  for _, v := range strs {
-    load_spec.Str(v)
+  aggs := []Aggregation {}
+  for _, agg := range ints {
+    aggs = append(aggs, Aggregation{op: "age", name: agg})
   }
+  filters := []Filter{}
 
-  for _, v := range ints {
-    load_spec.Int(v)
-  }
+  querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
+  punctuateSpec(&querySpec)
+
+  loadSpec := NewLoadSpec()
+  for _, v := range groups { loadSpec.Str(v) }
+  for _, v := range strs { loadSpec.Str(v) } 
+  for _, v := range ints { loadSpec.Int(v) }
 
 
-  fmt.Println("USING LOAD SPEC", load_spec)
+  fmt.Println("USING LOAD SPEC", loadSpec)
+
+  fmt.Println("USING QUERY SPEC", querySpec)
 
   start := time.Now()
-  testTable(table, load_spec)
+  testTable(table, loadSpec, querySpec)
   end := time.Now()
   fmt.Println("TESTING TABLE TOOK", end.Sub(start))
 

@@ -79,8 +79,12 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
     // BUILD GROUPING RECORD
     if !ok {
+      querySpec.m.Lock()
       // TODO: make the LIMIT be more intelligent
-      if len(querySpec.Results) >= 1000  {
+      length := len(querySpec.Results)
+      querySpec.m.Unlock()
+
+      if length >= 1000  {
         continue
       }
 
@@ -91,7 +95,10 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
       added_record.Sets = make(map[string][]string)
 
       querySpec.m.Lock()
-      querySpec.Results[group_key] = added_record
+      length = len(querySpec.Results)
+      if length < 1000 { 
+	querySpec.Results[group_key] = added_record
+      }
       querySpec.m.Unlock()
     }
 
@@ -212,14 +219,7 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
   return ret
 }
 
-func (t *Table) AggRecords(records []*Record) {
-  groupings := []Grouping{ Grouping{"state"} }
-  aggs := []Aggregation {Aggregation{ "avg", "f3" }, Aggregation { "hist", "f4" }}
-  filters := []Filter{}
-
-  querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
-  punctuateSpec(&querySpec)
-
+func (t *Table) AggRecords(records []*Record, querySpec QuerySpec) {
   start := time.Now()
   MatchAndAggregate(querySpec, records[:])
   end := time.Now()
