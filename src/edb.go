@@ -53,7 +53,10 @@ func testTable(name string) {
   load_spec.Int("age")
   load_spec.Str("state")
 
+  lstart := time.Now()
   table.LoadRecords(&load_spec)
+  lend := time.Now()
+  fmt.Println("LOADING RECORDS INTO TABLE TOOK", lend.Sub(lstart))
 
   filters := []Filter{}
 

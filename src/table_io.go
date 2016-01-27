@@ -23,13 +23,13 @@ func NewLoadSpec() LoadSpec {
 }
 
 func (l *LoadSpec) Str(name string) {
-  l.columns["strs_" + name + ".db"] = true
+  l.columns["str_" + name + ".db"] = true
 }
 func (l *LoadSpec) Int(name string) {
-  l.columns["ints_" + name + ".db"] = true
+  l.columns["int_" + name + ".db"] = true
 }
 func (l *LoadSpec) Set(name string) {
-  l.columns["sets_" + name + ".db"] = true
+  l.columns["set_" + name + ".db"] = true
 }
 
 func LoadTables() []Table {
@@ -278,13 +278,26 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   fmt.Println("LOADED BLOCK INFO", info)
 
 
+  start := time.Now()
   records := make([]*Record, info.NumRecords)
+  alloced := make([]Record, info.NumRecords)
 
+  end := time.Now()
+  fmt.Println("ALLOCATED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+
+  start = time.Now()
+  var r *Record
   for i, _ := range records {
-    r := Record{ Sets: SetArr{}, Ints: IntArr{}, Strs: StrArr{} }
+    r = &alloced[i]
+    r.Sets = SetArr{}
+    r.Ints = IntArr{}
+    r.Strs = StrArr{}
+
     r.block = &tb
-    records[i] = &r
+    records[i] = r
   }
+  end = time.Now()
+  fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
 
   file, _ = os.Open(dirname)
   files, _ := file.Readdir(-1)
@@ -332,6 +345,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
             val :=  string_lookup[bucket.Value]
 
             value_id := col.get_val_id(val)
+	    if records[r].Strs == nil { records[r].Strs = StrArr{} }
             records[r].Strs[into.Name] = StrField(value_id)
           }
 
@@ -344,6 +358,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
         for _, bucket := range into.Bins {
           for _, r := range bucket.Records {
+	    if records[r].Ints == nil { records[r].Ints = IntArr{} }
             records[r].Ints[into.Name] = IntField(bucket.Value)
             tb.table.update_int_info(into.Name, int(bucket.Value))
           }
@@ -354,12 +369,12 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   }
 
 
-  tb.RecordList = records
-  return records
+  tb.RecordList = records[:]
+  return records[:]
 }
 
 func (t *Table) LoadRecords(load_spec *LoadSpec) {
-  start := time.Now()
+  waystart := time.Now()
   fmt.Println("LOADING", t.Name)
 
   files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
@@ -395,7 +410,10 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
       wg.Add(1)
       go func() {
         defer wg.Done()
+	start := time.Now()
         records = t.LoadBlockFromDir(filename, load_spec);
+	end := time.Now()
+	fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
         if len(records) > 0 {
           m.Lock()
           count += len(records)
@@ -415,7 +433,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 
   end := time.Now()
 
-  fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
+  fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(waystart));
 }
 
 func (t *Table) LoadRecordsFromFile(filename string) []*Record {
