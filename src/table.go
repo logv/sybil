@@ -148,7 +148,7 @@ func (t *Table) update_int_info(name int16, val int) {
 
 
 func (t *Table) NewRecord() *Record {  
-  r := Record{ Sets: SetArr{}, Ints: IntArr{}, Strs: StrArr{} }
+  r := Record{ Ints: IntArr{}, Strs: StrArr{} }
   t.dirty = true;
 
   t.record_m.Lock();
