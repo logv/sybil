@@ -13,7 +13,7 @@ import "encoding/gob"
 
 type Table struct {
   Name string;
-  BlockList map[string]TableBlock
+  BlockList map[string]*TableBlock
   KeyTable map[string]int16 // String Key Names
 
   // Need to keep track of the last block we've used, right?
@@ -72,7 +72,7 @@ func getTable(name string) *Table{
   t.int_info_table = make(map[int16]*IntInfo)
 
   t.KeyTable = make(map[string]int16)
-  t.BlockList = make(map[string]TableBlock, 0)
+  t.BlockList = make(map[string]*TableBlock, 0)
 
   t.LastBlock = newTableBlock()
   t.LastBlock.RecordList = t.newRecords
@@ -303,7 +303,7 @@ func (t *Table) LoadBlockFromFile(filename string) *TableBlock {
   }
 
   t.record_m.Lock()
-  t.BlockList[filename] = tb
+  t.BlockList[filename] = &tb
   t.record_m.Unlock()
 
   return &tb
@@ -316,7 +316,8 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
   tb := newTableBlock()
 
   t.record_m.Lock()
-  t.BlockList[dirname] = tb
+  t.BlockList[dirname] = &tb
+  fmt.Println("ADDING TO BLOCK LIST", dirname, tb)
   t.record_m.Unlock()
 
   tb.table = t
@@ -332,7 +333,6 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
 
 
   records := make([]*Record, info.NumRecords)
-  tb.RecordList = records
 
   for i, _ := range records {
     r := Record{ Sets: SetArr{}, Ints: IntArr{}, Strs: StrArr{} }
@@ -388,6 +388,7 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
         for _, bucket := range into.Bins {
           for r := range bucket.Records {
             records[r].Ints[bucket.Name] = IntField(bucket.Value)
+            tb.table.update_int_info(bucket.Name, int(bucket.Value))
           }
 
 
@@ -396,6 +397,7 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
   }
 
 
+  tb.RecordList = records
   return records
 }
 

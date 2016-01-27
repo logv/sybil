@@ -150,7 +150,7 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
   rets := make([]*Record, 0)
   count := len(t.newRecords)
   for k, block := range t.BlockList {
-    fmt.Println("MATCHING RECORDS IN BLOCK", k)
+    fmt.Println("MATCHING RECORDS IN BLOCK", k, len(block.RecordList))
     wg.Add(1)
     this_block := block
     go func() {
