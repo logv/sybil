@@ -371,7 +371,7 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
 
         for _, bucket := range into.Bins {
 
-          for r := range bucket.Records {
+          for _, r := range bucket.Records {
             val :=  string_lookup[bucket.Value]
 
             value_id := col.get_val_id(val)
@@ -386,7 +386,7 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
         err := dec.Decode(into);
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
         for _, bucket := range into.Bins {
-          for r := range bucket.Records {
+          for _, r := range bucket.Records {
             records[r].Ints[bucket.Name] = IntField(bucket.Value)
             tb.table.update_int_info(bucket.Name, int(bucket.Value))
           }
