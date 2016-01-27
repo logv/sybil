@@ -75,8 +75,6 @@ func getTable(name string) *Table{
 
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
-  t.LoadRecords();
-
 
   return t;
 }

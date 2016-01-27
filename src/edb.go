@@ -11,7 +11,6 @@ var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 var f_PRINT = flag.Bool("print", false, "Print some records")
 var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
 
-
 func make_records(name string) {
   fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
   for i := 0; i < *f_ADD_RECORDS; i++ {
@@ -49,6 +48,12 @@ func add_records() {
 
 func testTable(name string) {
   table := getTable(name)
+
+  load_spec := NewLoadSpec()
+  load_spec.Int("age")
+  load_spec.Str("state")
+
+  table.LoadRecords(&load_spec)
 
   filters := []Filter{}
 

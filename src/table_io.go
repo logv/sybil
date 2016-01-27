@@ -10,6 +10,28 @@ import "io/ioutil"
 import "encoding/gob"
 import "sync"
 
+type LoadSpec struct {
+  columns map[string]bool 
+}
+
+func NewLoadSpec() LoadSpec {
+  l := LoadSpec{}
+  l.columns = make(map[string]bool)
+
+  l.Int("time")
+  return l;
+}
+
+func (l *LoadSpec) Str(name string) {
+  l.columns["strs_" + name + ".db"] = true
+}
+func (l *LoadSpec) Int(name string) {
+  l.columns["ints_" + name + ".db"] = true
+}
+func (l *LoadSpec) Set(name string) {
+  l.columns["sets_" + name + ".db"] = true
+}
+
 func LoadTables() []Table {
   files, _ := ioutil.ReadDir("db/")
 
@@ -21,7 +43,7 @@ func LoadTables() []Table {
       table := getTable(name)
       go func() {
         defer wg.Done()
-        table.LoadRecords();
+        table.LoadRecords(nil);
       }()
     }
 
@@ -95,7 +117,8 @@ func (t *Table) FillPartialBlock() bool {
 
   // Open up our last record block, see how full it is
   filename := getBlockDir(t.Name, t.LastBlockId)
-  partialRecords := t.LoadBlockFromDIr(filename)
+
+  partialRecords := t.LoadBlockFromDir(filename, nil)
   fmt.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
   incBlockId := false;
@@ -233,7 +256,7 @@ func (t *Table) LoadBlockFromFile(filename string) *TableBlock {
 
 }
 
-func (t *Table) LoadBlockFromDIr(dirname string) []*Record {
+func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record {
   fmt.Println("LAODING RECORDS FROM DIR", dirname)
 
   tb := newTableBlock()
@@ -268,6 +291,19 @@ func (t *Table) LoadBlockFromDIr(dirname string) []*Record {
 
   for _, f := range files {
     fname := f.Name()
+
+    if load_spec != nil {
+      if load_spec.columns[fname] != true {
+	fmt.Println("SKIPPING COLUMN", fname)
+	continue
+      }
+    }
+
+    fmt.Println("LOADING COLUMN", fname)
+
+
+
+
     filename := fmt.Sprintf("%s/%s", dirname, fname)
 
     file, _ := os.Open(filename)
@@ -322,7 +358,7 @@ func (t *Table) LoadBlockFromDIr(dirname string) []*Record {
   return records
 }
 
-func (t *Table) LoadRecords() {
+func (t *Table) LoadRecords(load_spec *LoadSpec) {
   start := time.Now()
   fmt.Println("LOADING", t.Name)
 
@@ -359,7 +395,7 @@ func (t *Table) LoadRecords() {
       wg.Add(1)
       go func() {
         defer wg.Done()
-        records = t.LoadBlockFromDIr(filename);
+        records = t.LoadBlockFromDir(filename, load_spec);
         if len(records) > 0 {
           m.Lock()
           count += len(records)
