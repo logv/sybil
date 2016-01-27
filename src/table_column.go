@@ -3,7 +3,7 @@ package edb
 import "sync"
 
 type TableColumn struct {
-
+  Type string
   StringTable map[string]int32
 
   string_id_m *sync.Mutex;

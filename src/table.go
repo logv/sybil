@@ -158,7 +158,6 @@ func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
   temp_block.RecordList = records
   temp_block.table = t
 
-  temp_block.SaveToFile(filename)
   temp_block.SaveToColumns(filename)
 }
 
@@ -311,6 +310,95 @@ func (t *Table) LoadBlockFromFile(filename string) *TableBlock {
 
 }
 
+func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
+  fmt.Println("LAODING RECORDS FROM DIR", dirname)
+
+  tb := newTableBlock()
+
+  t.record_m.Lock()
+  t.BlockList[dirname] = tb
+  t.record_m.Unlock()
+
+  tb.table = t
+
+  // find out how many records are kept in this dir...
+  info := SavedColumnInfo{}
+  filename := fmt.Sprintf("%s/info.db", dirname)
+  file, _ := os.Open(filename)
+  dec := gob.NewDecoder(file)
+  dec.Decode(&info)
+
+  fmt.Println("LOADED BLOCK INFO", info)
+
+
+  records := make([]*Record, info.NumRecords)
+  tb.RecordList = records
+
+  for i, _ := range records {
+    r := Record{ Sets: SetArr{}, Ints: IntArr{}, Strs: StrArr{} }
+    r.block = &tb
+    records[i] = &r
+  }
+
+  file, _ = os.Open(dirname)
+  files, _ := file.Readdir(-1)
+
+  for _, f := range files {
+    fname := f.Name()
+    filename := fmt.Sprintf("%s/%s", dirname, fname)
+
+    file, _ := os.Open(filename)
+    fmt.Println("OPENING COL INFO FROM FILENAME", filename)
+    dec := gob.NewDecoder(file)
+    switch {
+      case strings.HasPrefix(fname, "str"):
+        into := &SavedStrs{}
+        err := dec.Decode(into);
+        string_lookup := make(map[int32]string)
+
+        if err != nil { fmt.Println("DECODE COL ERR:", err) }
+
+        for k, v := range into.StringTable {
+          string_lookup[v] = k
+        }
+
+        col := tb.getColumnInfo(into.Name)
+
+        col.StringTable = into.StringTable
+        col.val_string_id_lookup = string_lookup
+
+        fmt.Println("STRING TABLE", col.StringTable)
+
+        for _, bucket := range into.Bins {
+
+          for r := range bucket.Records {
+            val :=  string_lookup[bucket.Value]
+
+            value_id := col.get_val_id(val)
+            records[r].Strs[bucket.Name] = StrField(value_id)
+          }
+
+
+        }
+
+      case strings.HasPrefix(fname, "int"):
+        into := &SavedInts{}
+        err := dec.Decode(into);
+        if err != nil { fmt.Println("DECODE COL ERR:", err) }
+        for _, bucket := range into.Bins {
+          for r := range bucket.Records {
+            records[r].Ints[bucket.Name] = IntField(bucket.Value)
+          }
+
+
+        }
+    }
+  }
+
+
+  return records
+}
+
 func (t *Table) LoadRecordsFromFile(filename string) []*Record {
   tb := t.LoadBlockFromFile(filename)
   if tb == nil {
@@ -344,6 +432,7 @@ func (t *Table) LoadRecords() {
   m := &sync.Mutex{}
 
   count := 0
+  var records []*Record
   for _, v := range files {
     if strings.HasSuffix(v.Name(), "info.db") {
       continue
@@ -353,12 +442,12 @@ func (t *Table) LoadRecords() {
       continue
     }
 
-    if strings.HasSuffix(v.Name(), ".db") {
+    if v.IsDir() {
       filename := fmt.Sprintf("db/%s/%s", t.Name, v.Name())
       wg.Add(1)
       go func() {
         defer wg.Done()
-        records := t.LoadRecordsFromFile(filename);
+        records = t.LoadRecordsFromDir(filename);
         if len(records) > 0 {
           m.Lock()
           count += len(records)
@@ -378,6 +467,11 @@ func (t *Table) LoadRecords() {
 
   end := time.Now()
 
+  for _, r := range records[:10] {
+    t.PrintRecord(r)
+  }
+
+  fmt.Println("BLOCKS", len(t.BlockList))
   fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
 }
 
@@ -460,13 +554,15 @@ func (t *Table) NewRecord() *Record {
 
 func (t *Table) PrintRecord(r *Record) {
   fmt.Println("RECORD", r);
-  fmt.Println("STRING ID LOOKUP", t.KeyTable)
+  fmt.Println("KEY TABLE", t.KeyTable)
+  fmt.Println("BLOCK COLUMNS", r.block.columns)
+
   for name, val := range r.Ints {
-    fmt.Println("  ", t.get_string_for_key(name), val);
+    fmt.Println("  ", name, t.get_string_for_key(name), val);
   }
   for name, val := range r.Strs {
     col := r.block.getColumnInfo(name)
-    fmt.Println("  ", t.get_string_for_key(name), col.get_string_for_val(int32(val)));
+    fmt.Println("  ", name, val, t.get_string_for_key(name), col.get_string_for_val(int32(val)));
   }
 }
 

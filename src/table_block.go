@@ -59,14 +59,14 @@ func record_value(same_map map[int16]ValueMap, index int32, name int16, value in
   s[vi] = append(s[vi], int32(index))
 }
 
-func (tb *TableBlock) getColumnInfo(name_id int16) TableColumn {
+func (tb *TableBlock) getColumnInfo(name_id int16) *TableColumn {
   col, ok := tb.columns[name_id]
   if !ok {
     col = newTableColumn()
     tb.columns[name_id] = col
   }
 
-  return *col
+  return col
 }
 
 func (tb *TableBlock) SaveToColumns(filename string) {
@@ -110,6 +110,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   os.MkdirAll(dirname, 0777)
   for k, v := range same_ints {
     intCol := SavedInts{}
+    intCol.Name = k
     for bucket, records := range v {
       si := SavedIntColumn{Name: k, Value: bucket, Records: records}
       intCol.Bins = append(intCol.Bins, si)
@@ -136,6 +137,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 
   for k, v := range same_strs {
     strCol := SavedStrs{}
+    strCol.Name = k
     temp_block := newTableBlock()
 
     temp_col := temp_block.getColumnInfo(k)
@@ -171,8 +173,24 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   }
 
 
+  // Now to save block info...
+  col_fname := fmt.Sprintf("%s/info.db", dirname)
 
+  var network bytes.Buffer // Stand-in for the network.
 
+  // Create an encoder and send a value.
+  enc := gob.NewEncoder(&network)
+  colInfo := SavedColumnInfo{NumRecords: int32(len(records))}
+  err := enc.Encode(colInfo)
+
+  if err != nil {
+    log.Fatal("encode:", err)
+  }
+
+  fmt.Println("SERIALIZED INTO COL INFO", network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
+
+  w, _ := os.Create(col_fname)
+  network.WriteTo(w);
 }
 
 
@@ -201,10 +219,6 @@ func (tb *TableBlock) SaveToFile(filename string) {
   w, _ := os.Create(filename)
   network.WriteTo(w);
 
-
-}
-
-func (tb *TableBlock) ReadFromFile(fname string) {
 
 }
 
