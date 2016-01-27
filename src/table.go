@@ -367,8 +367,6 @@ func (t *Table) LoadRecordsFromDir(dirname string) []*Record {
         col.StringTable = into.StringTable
         col.val_string_id_lookup = string_lookup
 
-        fmt.Println("STRING TABLE", col.StringTable)
-
         for _, bucket := range into.Bins {
 
           for _, r := range bucket.Records {
@@ -469,11 +467,12 @@ func (t *Table) LoadRecords() {
 
   end := time.Now()
 
-  for _, r := range records[:10] {
-    t.PrintRecord(r)
+  if len(records) > 10 {
+    for _, r := range records[:10] {
+      t.PrintRecord(r)
+    }
   }
 
-  fmt.Println("BLOCKS", len(t.BlockList))
   fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(start));
 }
 
@@ -556,8 +555,6 @@ func (t *Table) NewRecord() *Record {
 
 func (t *Table) PrintRecord(r *Record) {
   fmt.Println("RECORD", r);
-  fmt.Println("KEY TABLE", t.KeyTable)
-  fmt.Println("BLOCK COLUMNS", r.block.columns)
 
   for name, val := range r.Ints {
     fmt.Println("  ", name, t.get_string_for_key(name), val);
