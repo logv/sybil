@@ -74,10 +74,8 @@ func getTable(name string) *Table{
   t.KeyTable = make(map[string]int16)
   t.BlockList = make(map[string]TableBlock, 0)
 
-  string_table := make(map[string]int32)
   t.LastBlock = newTableBlock()
   t.LastBlock.RecordList = t.newRecords
-  t.LastBlock.StringTable = string_table
 
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
@@ -300,7 +298,6 @@ func (t *Table) LoadBlockFromFile(filename string) *TableBlock {
   tb := newTableBlock()
   tb.RecordList = records
   tb.table = t
-  tb.StringTable = saved_block.StringTable
 
   for i, s := range saved_block.Records {
     records[i] = s.toRecord(&tb)
@@ -399,7 +396,9 @@ func (t *Table) populate_string_id_lookup() {
   for k, v := range t.KeyTable { t.key_string_id_lookup[v] = k; }
 
   for _, b := range t.BlockList {
-    for k, v := range b.StringTable { b.val_string_id_lookup[v] = k; }
+    for _, c := range b.columns {
+      for k, v := range c.StringTable { c.val_string_id_lookup[v] = k; }
+    }
 
   }
 }
@@ -466,7 +465,8 @@ func (t *Table) PrintRecord(r *Record) {
     fmt.Println("  ", t.get_string_for_key(name), val);
   }
   for name, val := range r.Strs {
-    fmt.Println("  ", t.get_string_for_key(name), r.block.columns[name].get_string_for_val(int32(val)));
+    col := r.block.getColumnInfo(name)
+    fmt.Println("  ", t.get_string_for_key(name), col.get_string_for_val(int32(val)));
   }
 }
 

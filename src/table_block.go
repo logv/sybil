@@ -11,7 +11,6 @@ import "strings"
 // Table Block should have a bunch of metadata next to it, too
 type TableBlock struct {
   RecordList []*Record
-  StringTable map[string]int32 // String Value lookup
 
   string_id_m *sync.Mutex
   val_string_id_lookup map[int32]string
@@ -24,7 +23,6 @@ type TableBlock struct {
 func newTableBlock() TableBlock {
 
   tb := TableBlock{}
-  tb.StringTable = make(map[string]int32)
   tb.columns = make(map[int16]*TableColumn)
   tb.val_string_id_lookup = make(map[int32]string)
   tb.string_id_m = &sync.Mutex{}
@@ -34,7 +32,6 @@ func newTableBlock() TableBlock {
 }
 
 type SavedBlock struct {
-  StringTable map[string]int32 // String Value lookup
   Records []*SavedRecord
 }
 
@@ -62,6 +59,16 @@ func record_value(same_map map[int16]ValueMap, index int32, name int16, value in
   s[vi] = append(s[vi], int32(index))
 }
 
+func (tb *TableBlock) getColumnInfo(name_id int16) TableColumn {
+  col, ok := tb.columns[name_id]
+  if !ok {
+    col = newTableColumn()
+    tb.columns[name_id] = col
+  }
+
+  return *col
+}
+
 func (tb *TableBlock) SaveToColumns(filename string) {
   records := tb.RecordList
   // making a cross section of records that share values
@@ -75,9 +82,12 @@ func (tb *TableBlock) SaveToColumns(filename string) {
       record_value(same_ints, int32(i), k, int32(v))
     }
     for k, v := range r.Strs {
-      // TODO: transition str id to the per column ID?
-      v_name := r.block.columns[k].get_string_for_val(int32(v))
-      v_id := tb.columns[k].get_val_id(v_name)
+      // transition key from the 
+      col := r.block.getColumnInfo(k)
+      new_col := tb.getColumnInfo(k)
+
+      v_name := col.get_string_for_val(int32(v))
+      v_id := new_col.get_val_id(v_name)
 
       // record the transitioned key
       record_value(same_strs, int32(i), k, int32(v_id))
@@ -128,14 +138,18 @@ func (tb *TableBlock) SaveToColumns(filename string) {
     strCol := SavedStrs{}
     temp_block := newTableBlock()
 
+    temp_col := temp_block.getColumnInfo(k)
+    tb_col := tb.getColumnInfo(k)
     for bucket, records := range v {
-      str_id := temp_block.columns[k].get_val_id(tb.columns[k].get_string_for_val(bucket))
+
+      // migrating string definitions from column definitions
+      str_id := temp_col.get_val_id(tb_col.get_string_for_val(bucket))
 
       si := SavedStrColumn{Name: k, Value: str_id, Records: records}
       strCol.Bins = append(strCol.Bins, si)
     }
 
-    strCol.StringTable = temp_block.StringTable
+    strCol.StringTable = temp_col.StringTable
 
     col_fname := fmt.Sprintf("%s/str_%s.db", dirname, tb.get_string_for_key(k))
 
@@ -170,7 +184,6 @@ func (tb *TableBlock) SaveToFile(filename string) {
   for i, r := range records {
     marshalled_records[i] = r.toSavedRecord(tb)
   }
-  saved_block.StringTable = tb.StringTable
 
 
   var network bytes.Buffer // Stand-in for the network.
