@@ -79,6 +79,11 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
     // BUILD GROUPING RECORD
     if !ok {
+      // TODO: make the LIMIT be more intelligent
+      if len(querySpec.Results) >= 1000  {
+        continue
+      }
+
       added_record = &Result{ }
       added_record.Hists = make(map[string]*Hist)
       added_record.Ints = make(map[string]float64)
