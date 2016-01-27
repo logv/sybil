@@ -302,14 +302,13 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
         string_lookup := make(map[int32]string)
 
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
-
-        for k, v := range into.StringTable {
-          string_lookup[v] = k
-        }
-
+  
         col := tb.getColumnInfo(into.Name)
-
-        col.StringTable = into.StringTable
+	// unpack the string table
+	for k, v := range into.StringTable {
+	  col.StringTable[v] = int32(k) 
+	  string_lookup[int32(k)] = v
+	}
         col.val_string_id_lookup = string_lookup
 
         for _, bucket := range into.Bins {

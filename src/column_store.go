@@ -27,7 +27,7 @@ type SavedInts struct {
 type SavedStrs struct {
   Name int16
   Bins []SavedStrColumn
-  StringTable map[string]int32
+  StringTable []string
 }
 type SavedSets struct {
   Name int16

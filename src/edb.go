@@ -52,7 +52,6 @@ func testTable(name string) {
   load_spec := NewLoadSpec()
   load_spec.Int("age")
   load_spec.Str("state")
-  load_spec.Str("session_id")
 
   lstart := time.Now()
   table.LoadRecords(&load_spec)
