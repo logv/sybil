@@ -244,6 +244,8 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   dec := gob.NewDecoder(file)
   dec.Decode(&info)
 
+  fmt.Println("BLOCK INFO SUMMARY", info)
+
   start := time.Now()
   end := time.Now()
 

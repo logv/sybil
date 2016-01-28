@@ -82,9 +82,12 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
     for bucket, records := range v {
       si := SavedIntColumn{Value: bucket, Records: records}
       intCol.Bins = append(intCol.Bins, si)
+
+      // bookkeeping for info.db
+      tb.update_int_info(k, int(bucket))
     }
 
-    // Sort the int buckets before saving them, so we don't have to sort them after reading
+    // Sort the int buckets before saving them, so we don't have to sort them after reading.
     sort.Sort(SortIntsByVal(intCol.Bins))
 
 
@@ -132,6 +135,9 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
       si := SavedStrColumn{Value: str_id, Records: records}
       strCol.Bins = append(strCol.Bins, si)
+
+      // also bookkeeping to be used later inside the block info.db, IMO
+      tb.update_str_info(k, int(bucket))
     }
 
     // TODO: SAVE THE STRING TABLE AS AN ARRAY, NOT AN ACTUAL MAP, AMIRITE. AND
@@ -171,9 +177,10 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 
   // Create an encoder and send a value.
   enc := gob.NewEncoder(&network)
-  colInfo := SavedColumnInfo{NumRecords: int32(len(records))}
+  colInfo := SavedColumnInfo{NumRecords: int32(len(records)), IntInfo: INT_INFO_BLOCK[tb.Name], StrInfo: STR_INFO_BLOCK[tb.Name] }
   err := enc.Encode(colInfo)
 
+  fmt.Println("SAVING COL INFO", colInfo, dirname, tb.Name)
   if err != nil {
     log.Fatal("encode:", err)
   }
@@ -238,6 +245,11 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 func (tb *TableBlock) SaveToColumns(filename string) {
   dirname := strings.Replace(filename, ".db", "", 1)
+
+  // Important to set the BLOCK's dirName so we can keep track 
+  // of the various block infos
+  tb.Name = dirname
+
   separated_columns := tb.SeparateRecordsIntoColumns()
 
   tb.SaveIntsToColumns(dirname, separated_columns.ints)

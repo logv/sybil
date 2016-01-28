@@ -28,6 +28,8 @@ type SavedStrColumn struct {
 
 type SavedColumnInfo struct {
   NumRecords int32
+  StrInfo StrInfoTable
+  IntInfo IntInfoTable
 }
 
 type SavedInts struct {
