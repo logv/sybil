@@ -21,7 +21,7 @@ var f_GROUPS = flag.String("group", "", "values group by")
 
 var GROUP_BY  []string
 
-func testTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
+func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
 
   lstart := time.Now()
@@ -133,7 +133,7 @@ func ParseCmdLine() {
   t.LoadRecords(&loadSpec)
   add_records()
   start := time.Now()
-  testTable(table, loadSpec, querySpec)
+  queryTable(table, loadSpec, querySpec)
   end := time.Now()
   fmt.Println("TESTING TABLE TOOK", end.Sub(start))
 
