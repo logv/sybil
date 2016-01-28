@@ -60,7 +60,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     // BELOW HERE IS THE AGGREGATION MEAT
     // WE ABORT AGGREGATE IF THERE IS NO GROUP BY SPEC
     if len(querySpec.Groups) == 0 {
-      continue
+      buffer.WriteString("total")
     }
 
 
@@ -103,11 +103,9 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     }
 
     // GO THROUGH AGGREGATIONS AND REALIZE THEM
-    count,ok := added_record.Ints["c"]
-    if !ok { count = 0 }
-    count++
     querySpec.m.Lock()
-    added_record.Ints["c"] =  count
+    added_record.Ints["c"]++
+    count := added_record.Ints["c"]
     querySpec.m.Unlock()
 
     for _, a := range querySpec.Aggregations {
