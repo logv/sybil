@@ -160,6 +160,7 @@ func ParseCmdLine() {
     aggs = append(aggs, Aggregation{op: *f_OP, name: agg})
   }
 
+  loadSpec := NewLoadSpec()
   filters := []Filter{}
   for _, filt := range intfilters {
     tokens := strings.Split(filt, ":")
@@ -168,6 +169,7 @@ func ParseCmdLine() {
     val, _ := strconv.ParseInt(tokens[2], 10, 64)
 
     filters = append(filters, t.IntFilter(col, op, int(val)))
+    loadSpec.Int(col)
   }
 
   for _, filter := range strfilters {
@@ -175,6 +177,7 @@ func ParseCmdLine() {
     col := tokens[0]
     op := tokens[1]
     val := tokens[2]
+    loadSpec.Str(col)
 
     filters = append(filters, t.StrFilter(col, op, val))
 
@@ -183,7 +186,6 @@ func ParseCmdLine() {
   querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
   punctuateSpec(&querySpec)
 
-  loadSpec := NewLoadSpec()
   for _, v := range groups { loadSpec.Str(v) }
   for _, v := range strs { loadSpec.Str(v) } 
   for _, v := range ints { loadSpec.Int(v) }
