@@ -131,7 +131,11 @@ func ParseCmdLine() {
   fmt.Println("USING QUERY SPEC", querySpec)
 
   t.LoadRecords(&loadSpec)
+
+  // add records should happen after we load, so our KeyTables don't get messed
+  // up
   add_records()
+
   start := time.Now()
   queryTable(table, loadSpec, querySpec)
   end := time.Now()
