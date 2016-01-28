@@ -137,7 +137,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
       strCol.Bins = append(strCol.Bins, si)
 
       // also bookkeeping to be used later inside the block info.db, IMO
-      tb.update_str_info(k, int(bucket))
+      tb.update_str_info(k, int(bucket), len(records))
     }
 
     tb.get_str_info(k).prune()
@@ -180,7 +180,6 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
   colInfo := SavedColumnInfo{NumRecords: int32(len(records)), IntInfo: INT_INFO_BLOCK[tb.Name], StrInfo: STR_INFO_BLOCK[tb.Name] }
   err := enc.Encode(colInfo)
 
-  fmt.Println("SAVING COL INFO", colInfo, dirname, tb.Name)
   if err != nil {
     log.Fatal("encode:", err)
   }

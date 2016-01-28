@@ -5,6 +5,8 @@ import "strings"
 import "time"
 import "strconv"
 
+
+// TODO: add flag to shake the DB up and reload / resave data
 var f_RESET = flag.Bool("reset", false, "Reset the DB")
 var f_TABLE = flag.String("table", "", "Table to operate on")
 var f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")

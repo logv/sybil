@@ -239,15 +239,20 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
   // find out how many records are kept in this dir...
   info := SavedColumnInfo{}
+  istart := time.Now()
   filename := fmt.Sprintf("%s/info.db", dirname)
   file, _ := os.Open(filename)
   dec := gob.NewDecoder(file)
   dec.Decode(&info)
+  iend := time.Now()
 
-  fmt.Println("BLOCK INFO SUMMARY", info)
+  if DEBUG_TIMING {
+    fmt.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
+  }
 
   start := time.Now()
   end := time.Now()
+
 
   var r *Record
 
@@ -365,7 +370,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 
   wg.Wait()
 
-  fmt.Println("REAL STRING TABLE", t.KeyTable)
+  fmt.Println("KEY TABLE", t.KeyTable)
 
   m := &sync.Mutex{}
 

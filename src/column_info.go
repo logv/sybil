@@ -18,7 +18,7 @@ type IntInfo struct {
 type IntInfoTable map[int16]*IntInfo
 type StrInfoTable map[int16]*StrInfo
 
-var TOP_STRING_COUNT = 1000
+var TOP_STRING_COUNT = 20
 var INT_INFO_TABLE = make(map[string]IntInfoTable)
 var INT_INFO_BLOCK = make(map[string]IntInfoTable)
 
@@ -56,7 +56,7 @@ func (si *StrInfo) prune() {
   fmt.Println("PRUNED ARR TO", len(si.TopStringCount), "FROM", si.Cardinality)
 }
 
-func update_str_info(str_info_table map[int16]*StrInfo, name int16, val int) {
+func update_str_info(str_info_table map[int16]*StrInfo, name int16, val, increment int) {
   info, ok := str_info_table[name]
   if !ok {
     info = &StrInfo{}
@@ -64,7 +64,7 @@ func update_str_info(str_info_table map[int16]*StrInfo, name int16, val int) {
     str_info_table[name] = info
   }
 
-  info.TopStringCount[int32(val)] += 1
+  info.TopStringCount[int32(val)] += increment
 }
 
 func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int) {
@@ -102,14 +102,14 @@ func (t *Table) update_int_info(name int16, val int) {
   update_int_info(int_info_table, name, val)
 }
 
-func (tb *TableBlock) update_str_info(name int16, val int) {
+func (tb *TableBlock) update_str_info(name int16, val int, increment int) {
   str_info_table, ok := STR_INFO_BLOCK[tb.Name]
   if !ok {
     str_info_table = make(map[int16]*StrInfo)
     STR_INFO_BLOCK[tb.Name] = str_info_table
   }
 
-  update_str_info(str_info_table, name, val)
+  update_str_info(str_info_table, name, val, increment)
 }
 
 func (tb *TableBlock) update_int_info(name int16, val int) {
