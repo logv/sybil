@@ -352,7 +352,6 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 
             records[r].Ints[into.Name] = IntField(bucket.Value)
 	    records[r].Populated[into.Name] = INT_VAL
-            tb.table.update_int_info(into.Name, int(bucket.Value))
           }
 
 
