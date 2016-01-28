@@ -25,7 +25,6 @@ func testTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
 
   lstart := time.Now()
-  table.LoadRecords(&loadSpec)
   lend := time.Now()
   fmt.Println("LOADING RECORDS INTO TABLE TOOK", lend.Sub(lstart))
 
@@ -52,10 +51,10 @@ func ParseCmdLine() {
   fmt.Println("TABLE", *f_TABLE);
 
 
-  add_records()
 
   table := *f_TABLE
   if table == "" { table = "test0" }
+  t := getTable(table)
 
   ints := make([]string, 0)
   groups := make([]string, 0)
@@ -99,7 +98,6 @@ func ParseCmdLine() {
   }
 
   filters := []Filter{}
-  t := getTable(table)
   for _, filt := range intfilters {
     tokens := strings.Split(filt, ":")
     col := tokens[0]
@@ -132,6 +130,8 @@ func ParseCmdLine() {
 
   fmt.Println("USING QUERY SPEC", querySpec)
 
+  t.LoadRecords(&loadSpec)
+  add_records()
   start := time.Now()
   testTable(table, loadSpec, querySpec)
   end := time.Now()

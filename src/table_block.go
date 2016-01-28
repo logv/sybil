@@ -71,6 +71,10 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
   // SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
   os.MkdirAll(dirname, 0777)
   for k, v := range same_ints {
+    if tb.get_string_for_key(k) == "" {
+      fmt.Println("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
+      continue
+    }
     intCol := SavedInts{}
     intCol.Name = k
     for bucket, records := range v {
@@ -103,6 +107,12 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]ValueMap) {
   for k, v := range same_strs {
+    if tb.get_string_for_key(k) == "" {
+      // TODO: validate what this means. I think it means reading 'null' values off disk
+      // when pulling off incomplete records
+      fmt.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
+      continue
+    }
     strCol := SavedStrs{}
     strCol.Name = k
     temp_block := newTableBlock()
