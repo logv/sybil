@@ -9,6 +9,7 @@ import "bytes"
 import "io/ioutil"
 import "encoding/gob"
 import "sync"
+import "sort"
 
 var DEBUG_TIMING = false
 
@@ -202,6 +203,8 @@ func (t *Table) saveRecordList(records []*Record) bool {
 
 func (t *Table) SaveRecords() bool {
   os.MkdirAll(fmt.Sprintf("db/%s", t.Name), 0777)
+  sort.Sort(SortRecordsByTime(t.newRecords))
+
   t.FillPartialBlock()
   return t.saveRecordList(t.newRecords)
 }

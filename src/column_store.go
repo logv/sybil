@@ -9,6 +9,17 @@ func (a SortIntsByVal) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a SortIntsByVal) Less(i, j int) bool { return a[i].Value < a[j].Value }
 
 
+// Before we save the new record list in a table, we tend to sort by time
+type SortRecordsByTime []*Record
+func (a SortRecordsByTime) Len() int           { return len(a) }
+func (a SortRecordsByTime) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a SortRecordsByTime) Less(i, j int) bool { 
+  t1, _ := a[i].getIntVal("time") 
+  t2, _ := a[j].getIntVal("time") 
+
+  return t1 < t2
+}
+
 
 type SavedIntColumn struct {
   Value int32
