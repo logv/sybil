@@ -140,8 +140,8 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
       tb.update_str_info(k, int(bucket))
     }
 
-    // TODO: SAVE THE STRING TABLE AS AN ARRAY, NOT AN ACTUAL MAP, AMIRITE. AND
-    // LOAD IT BACK UP THE SAME WAY
+    tb.get_str_info(k).prune()
+
     strCol.StringTable = make([]string, len(temp_col.StringTable))
     for str, id := range temp_col.StringTable {
       strCol.StringTable[id] = str

@@ -1,9 +1,11 @@
 package edb
 
 import "fmt"
+import "sort"
 
 type StrInfo struct {
-  StringCount map[int16]int
+  TopStringCount map[int32]int
+  Cardinality int
 }
 
 type IntInfo struct {
@@ -15,21 +17,54 @@ type IntInfo struct {
 
 type IntInfoTable map[int16]*IntInfo
 type StrInfoTable map[int16]*StrInfo
+
+var TOP_STRING_COUNT = 1000
 var INT_INFO_TABLE = make(map[string]IntInfoTable)
 var INT_INFO_BLOCK = make(map[string]IntInfoTable)
 
 var STR_INFO_TABLE = make(map[string]StrInfoTable)
 var STR_INFO_BLOCK = make(map[string]StrInfoTable)
 
+
+type StrInfoCol struct {
+  Name int32
+  Value int
+}
+
+type SortStrsByCount []StrInfoCol
+func (a SortStrsByCount) Len() int           { return len(a) }
+func (a SortStrsByCount) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a SortStrsByCount) Less(i, j int) bool { return a[i].Value < a[j].Value }
+
+func (si *StrInfo) prune() {
+  si.Cardinality = len(si.TopStringCount)
+
+  if si.Cardinality > TOP_STRING_COUNT {
+    interim := make([]StrInfoCol, len(si.TopStringCount))
+
+    for s, c := range si.TopStringCount {
+      interim[s] = StrInfoCol{Name: s, Value: c}
+    }
+
+    sort.Sort(SortStrsByCount(interim))
+
+    for _, x := range interim[:len(si.TopStringCount) - TOP_STRING_COUNT - 1] {
+      delete(si.TopStringCount, x.Name)
+    }
+  }
+
+  fmt.Println("PRUNED ARR TO", len(si.TopStringCount), "FROM", si.Cardinality)
+}
+
 func update_str_info(str_info_table map[int16]*StrInfo, name int16, val int) {
   info, ok := str_info_table[name]
   if !ok {
     info = &StrInfo{}
-    info.StringCount = make(map[int16]int)
+    info.TopStringCount = make(map[int32]int)
     str_info_table[name] = info
   }
 
-  info.StringCount[int16(val)] += 1
+  info.TopStringCount[int32(val)] += 1
 }
 
 func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int) {
