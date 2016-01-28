@@ -226,6 +226,8 @@ func LoadTableInfo(tablename, fname string) *Table {
   return &t
 }
 
+// TODO: have this only pull the blocks into column format and not materialize
+// the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record {
   tb := newTableBlock()
 
