@@ -1,9 +1,11 @@
 package edb
+
 import "fmt"
 import "flag"
 import "strings"
 import "time"
 import "strconv"
+import "sync"
 
 
 // TODO: add flag to shake the DB up and reload / resave data
@@ -23,12 +25,58 @@ var f_GROUPS = flag.String("group", "", "values group by")
 
 var GROUP_BY  []string
 
+func make_records(name string) {
+  fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
+  CHUNK_SIZE := 50000
+  var wg sync.WaitGroup
+  for i := 0; i < *f_ADD_RECORDS  / CHUNK_SIZE; i++ {
+    wg.Add(1)
+    go func() {
+      defer wg.Done()
+      for j := 0; j < CHUNK_SIZE; j++ {
+	NewRandomRecord(name); 
+      }
+    }()
+  }
+
+  for j := 0; j < *f_ADD_RECORDS % CHUNK_SIZE; j++ {
+    NewRandomRecord(name); 
+  }
+
+  wg.Wait()
+
+
+}
+
+func add_records() {
+  if (*f_ADD_RECORDS == 0) {
+    return
+  }
+
+
+  fmt.Println("MAKING RECORDS FOR TABLE", *f_TABLE)
+  if *f_TABLE != "" {
+    make_records(*f_TABLE)
+    return
+  }
+
+  var wg sync.WaitGroup
+  for j := 0; j < 10; j++ {
+    wg.Add(1)
+    q := j
+    go func() {
+      defer wg.Done()
+      table_name := fmt.Sprintf("test%v", q)
+      make_records(table_name)
+    }()
+  }
+
+  wg.Wait()
+
+
+}
 func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
-
-  lstart := time.Now()
-  lend := time.Now()
-  fmt.Println("LOADING RECORDS INTO TABLE TOOK", lend.Sub(lstart))
 
   // TODO: ADD FILTER SPECIFICATIONS
   start := time.Now()
@@ -66,8 +114,6 @@ func ParseCmdLine() {
 
   fmt.Println("Starting DB")
   fmt.Println("TABLE", *f_TABLE);
-
-
 
   table := *f_TABLE
   if table == "" { table = "test0" }
@@ -151,11 +197,17 @@ func ParseCmdLine() {
 
   fmt.Println("USING QUERY SPEC", querySpec)
 
-  t.LoadRecords(&loadSpec)
 
-  // add records should happen after we load, so our KeyTables don't get messed
-  // up
-  add_records()
+  // add records should happen after we load records
+  if (*f_ADD_RECORDS != 0) {	
+    t.LoadRecords(nil)
+    add_records()
+    t.SaveRecords()
+    return
+  }
+
+
+  t.LoadRecords(&loadSpec)
 
   start := time.Now()
   queryTable(table, loadSpec, querySpec)
@@ -166,26 +218,6 @@ func ParseCmdLine() {
   SaveTables()
   end = time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
-
-  if *f_PRINT {
-    t := getTable(table)
-    count := 0
-    for _, b := range t.BlockList {
-      for _, r := range b.RecordList {
-	count++
-	t.PrintRecord(r)
-	if count > 10 {
-	  break
-	}
-      }
-
-      if count > 10 {
-	break
-      }
-
-    }
-
-  }
 
   if *f_PRINT_INFO {
     t := getTable(table)

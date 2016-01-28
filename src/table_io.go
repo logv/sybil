@@ -120,7 +120,7 @@ func (t *Table) FillPartialBlock() bool {
   // Open up our last record block, see how full it is
   filename := getBlockDir(t.Name, t.LastBlockId)
 
-  partialRecords := t.LoadBlockFromDir(filename, nil)
+  partialRecords := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
   fmt.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
   incBlockId := false;
@@ -206,28 +206,34 @@ func (t *Table) SaveRecords() bool {
   return t.saveRecordList(t.newRecords)
 }
 
-func LoadTableInfo(tablename, fname string) *Table {
-  t := Table{}
+func (t *Table) LoadTableInfo() {
+  saved_table := Table{}
   start := time.Now()
-  filename := fmt.Sprintf("db/%s/%s.db", tablename, fname)
+  tablename := t.Name
+  filename := fmt.Sprintf("db/%s/info.db", tablename)
   file, _ := os.Open(filename)
   fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
   dec := gob.NewDecoder(file)
-  err := dec.Decode(&t);
+  err := dec.Decode(&saved_table);
   end := time.Now()
   if err != nil {
     fmt.Println("TABLE INFO DECODE:", err);
-    return &t;
+    return
   }
 
-  fmt.Println("TABLE INFO", fname, "OPEN TOOK", end.Sub(start))
+  fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
 
-  return &t
+  if t.KeyTable != nil && len(saved_table.KeyTable) > 0 {
+    t.KeyTable = saved_table.KeyTable
+  }
+  t.LastBlockId = saved_table.LastBlockId
+
+  return
 }
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record {
+func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_records bool) []*Record {
   tb := newTableBlock()
   tb.Name = dirname
 
@@ -256,32 +262,40 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
   var r *Record
 
-  mstart := time.Now()
-  records := make([]*Record, info.NumRecords)
-  alloced := make([]Record, info.NumRecords)
-  bigIntArr := make(IntArr, len(t.KeyTable) * int(info.NumRecords))
-  bigStrArr := make(StrArr, len(t.KeyTable) * int(info.NumRecords))
-  bigPopArr := make([]int, len(t.KeyTable) * int(info.NumRecords))
-  mend := time.Now()
+  var records []*Record
+  var alloced []Record
+  var bigIntArr IntArr
+  var bigStrArr StrArr
+  var bigPopArr []int
 
-  if DEBUG_TIMING {
-    fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
-  }
+  if load_spec != nil || load_records {
+    mstart := time.Now()
+    records = make([]*Record, info.NumRecords)
+    alloced = make([]Record, info.NumRecords)
+    bigIntArr = make(IntArr, len(t.KeyTable) * int(info.NumRecords))
+    bigStrArr = make(StrArr, len(t.KeyTable) * int(info.NumRecords))
+    bigPopArr = make([]int, len(t.KeyTable) * int(info.NumRecords))
+    mend := time.Now()
 
-  start = time.Now()
-  for i, _ := range records {
-    r = &alloced[i]
-    r.Ints = bigIntArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
-    r.Strs = bigStrArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
-    r.Populated = bigPopArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
+    if DEBUG_TIMING {
+      fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+    }
 
-    r.block = &tb
-    records[i] = r
-  }
-  end = time.Now()
+    start = time.Now()
+    for i, _ := range records {
+      r = &alloced[i]
+      r.Ints = bigIntArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
+      r.Strs = bigStrArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
+      r.Populated = bigPopArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
 
-  if DEBUG_TIMING {
-    fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+      r.block = &tb
+      records[i] = r
+    }
+    end = time.Now()
+
+    if DEBUG_TIMING {
+      fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+    }
   }
 
   file, _ = os.Open(dirname)
@@ -294,6 +308,8 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
       if load_spec.columns[fname] != true {
 	continue
       }
+    } else if load_records == false {
+      continue
     }
 
     filename := fmt.Sprintf("%s/%s", dirname, fname)
@@ -349,6 +365,12 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   return records[:]
 }
 
+// Remove our pointer to the blocklist so a GC is triggered and
+// a bunch of new memory becomes available
+func (t *Table) ReleaseRecords() {
+  t.BlockList = make(map[string]*TableBlock, 0)
+}
+
 func (t *Table) LoadRecords(load_spec *LoadSpec) {
   waystart := time.Now()
   fmt.Println("LOADING", t.Name)
@@ -357,18 +379,8 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 
   var wg sync.WaitGroup
   
-  wg.Add(1)
   // why is table info so slow to open!!!
-  go func() { 
-    defer wg.Done()
-    saved_table := LoadTableInfo(t.Name, "info")
-    if saved_table.KeyTable != nil && len(saved_table.KeyTable) > 0 {
-      t.KeyTable = saved_table.KeyTable
-    }
-    t.LastBlockId = saved_table.LastBlockId
-  }()
-
-  wg.Wait()
+  t.LoadTableInfo() 
 
   fmt.Println("KEY TABLE", t.KeyTable)
 
@@ -387,7 +399,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
       go func() {
         defer wg.Done()
 	start := time.Now()
-        records = t.LoadBlockFromDir(filename, load_spec);
+        records = t.LoadBlockFromDir(filename, load_spec, false);
 	end := time.Now()
 	fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
         if len(records) > 0 {
