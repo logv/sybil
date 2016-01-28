@@ -20,24 +20,13 @@ type Table struct {
   key_string_id_lookup map[int16]string
   val_string_id_lookup map[int32]string
 
-  int_info_table map[int16]*IntInfo
   string_id_m *sync.Mutex;
   record_m *sync.Mutex;
   block_m *sync.Mutex;
 }
 
-type IntInfo struct {
-  Min int
-  Max int
-  Avg float64
-  Count int
-}
-
 var LOADED_TABLES = make(map[string]*Table);
-
 var CHUNK_SIZE = 1024 * 64;
-
-
 var table_m sync.Mutex
 
 func getBlockName(id int) string {
@@ -66,7 +55,6 @@ func getTable(name string) *Table{
   LOADED_TABLES[name] = t
   t.key_string_id_lookup = make(map[int16]string)
   t.val_string_id_lookup = make(map[int32]string)
-  t.int_info_table = make(map[int16]*IntInfo)
 
   t.KeyTable = make(map[string]int16)
   t.BlockList = make(map[string]*TableBlock, 0)
@@ -119,36 +107,6 @@ func (t *Table) get_key_id(name string) int16 {
   return int16(t.KeyTable[name]);
 }
 
-func (t *Table) update_int_info(name int16, val int) {
-  info, ok := t.int_info_table[name]
-  if !ok {
-    info = &IntInfo{}
-    t.int_info_table[name] = info
-    info.Max = val
-    info.Min = val
-    info.Avg = float64(val)
-    info.Count = 1
-  }
-
-  if info.Count > 1024 {
-    return
-  }
-
-  if info.Max < val {
-    info.Max = val
-  }
-
-  if info.Min > val {
-    info.Min = val
-  }
-  
-  info.Avg = info.Avg + (float64(val) - info.Avg) / float64(info.Count)
-
-  info.Count++
-}
-
-
-
 func (t *Table) NewRecord() *Record {  
   r := Record{ Ints: IntArr{}, Strs: StrArr{} }
   t.dirty = true;
@@ -179,12 +137,5 @@ func (t *Table) PrintRecords(records []*Record) {
   for i := 0; i < len(records); i++ {
     t.PrintRecord(records[i])
   }
-}
-
-func (t *Table) PrintColInfo() {
-  for k, v := range t.int_info_table {
-    fmt.Println(k, v)
-  }
-
 }
 

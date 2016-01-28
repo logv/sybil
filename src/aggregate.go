@@ -132,7 +132,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
           hist, ok := added_record.Hists[a.name]
           if !ok { 
             a_id := r.block.get_key_id(a.name)
-            hist = r.block.table.NewHist(r.block.table.int_info_table[a_id]) 
+            hist = r.block.table.NewHist(r.block.table.get_int_info(a_id)) 
             querySpec.m.Lock()
             added_record.Hists[a.name] = hist
             querySpec.m.Unlock()

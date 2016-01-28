@@ -1,17 +1,17 @@
 package edb
 
-import "time"
 import "sync"
-import "sort"
 import "fmt"
 import "bytes"
 import "log"
 import "os"
 import "encoding/gob"
 import "strings"
+import "sort"
 
 // Table Block should have a bunch of metadata next to it, too
 type TableBlock struct {
+  Name string
   RecordList []*Record
 
   string_id_m *sync.Mutex

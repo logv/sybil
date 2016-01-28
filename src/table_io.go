@@ -169,7 +169,6 @@ func (t *Table) saveRecordList(records []*Record) bool {
   save_table.SaveTableInfo("info")
 
   fmt.Println("SAVING TABLE", t.Name);
-  fmt.Println("LAST BLOCK ID", t.LastBlockId)
 
   chunk_size := CHUNK_SIZE
   chunks := len(records) / chunk_size
@@ -191,7 +190,7 @@ func (t *Table) saveRecordList(records []*Record) bool {
     }
   }
 
-  fmt.Println("LAST BLOCK ID", t.LastBlockId)
+  fmt.Println("LAST TABLE BLOCK IS", t.LastBlockId)
 
   save_table = getSaveTable(t)
   save_table.SaveTableInfo("info")
@@ -230,6 +229,7 @@ func LoadTableInfo(tablename, fname string) *Table {
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record {
   tb := newTableBlock()
+  tb.Name = dirname
 
   t.block_m.Lock()
   t.BlockList[dirname] = &tb
