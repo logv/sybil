@@ -1,5 +1,15 @@
 package edb
 
+// ByAge implements sort.Interface for []Person based on
+// the Age field.
+type SortIntsByVal []SavedIntColumn
+
+func (a SortIntsByVal) Len() int           { return len(a) }
+func (a SortIntsByVal) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a SortIntsByVal) Less(i, j int) bool { return a[i].Value < a[j].Value }
+
+
+
 type SavedIntColumn struct {
   Value int32
   Records []int32

@@ -1,6 +1,8 @@
 package edb
 
+import "time"
 import "sync"
+import "sort"
 import "fmt"
 import "bytes"
 import "log"
@@ -81,6 +83,10 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
       si := SavedIntColumn{Value: bucket, Records: records}
       intCol.Bins = append(intCol.Bins, si)
     }
+
+    // Sort the int buckets before saving them, so we don't have to sort them after reading
+    sort.Sort(SortIntsByVal(intCol.Bins))
+
 
     col_fname := fmt.Sprintf("%s/int_%s.db", dirname, tb.get_string_for_key(k))
 

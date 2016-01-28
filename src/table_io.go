@@ -374,10 +374,6 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
       continue
     }
 
-    if strings.HasSuffix(v.Name(), "strings.db") {
-      continue
-    }
-
     if v.IsDir() {
       filename := fmt.Sprintf("db/%s/%s", t.Name, v.Name())
       wg.Add(1)
