@@ -229,10 +229,9 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
   tb := newTableBlock()
 
-  t.record_m.Lock()
+  t.block_m.Lock()
   t.BlockList[dirname] = &tb
-  fmt.Println("ADDING TO BLOCK LIST", dirname)
-  t.record_m.Unlock()
+  t.block_m.Unlock()
 
   tb.table = t
 
@@ -243,23 +242,21 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   dec := gob.NewDecoder(file)
   dec.Decode(&info)
 
-  fmt.Println("LOADED BLOCK INFO", info)
-
-
   start := time.Now()
+  end := time.Now()
+
+  var r *Record
+
+  mstart := time.Now()
   records := make([]*Record, info.NumRecords)
   alloced := make([]Record, info.NumRecords)
-
-  end := time.Now()
-  fmt.Println("ALLOCATED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
-
-  start = time.Now()
-  var r *Record
-  fmt.Println("KEY STRING ID LOOKUP", len(t.KeyTable))
-
   bigIntArr := make(IntArr, len(t.KeyTable) * int(info.NumRecords))
   bigStrArr := make(StrArr, len(t.KeyTable) * int(info.NumRecords))
   bigPopArr := make([]int, len(t.KeyTable) * int(info.NumRecords))
+  mend := time.Now()
+  fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+
+  start = time.Now()
   for i, _ := range records {
     r = &alloced[i]
     r.Ints = bigIntArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
@@ -280,20 +277,13 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
 
     if load_spec != nil {
       if load_spec.columns[fname] != true {
-	fmt.Println("SKIPPING COLUMN", fname)
 	continue
       }
     }
 
-    fmt.Println("LOADING COLUMN", fname)
-
-
-
-
     filename := fmt.Sprintf("%s/%s", dirname, fname)
 
     file, _ := os.Open(filename)
-    fmt.Println("OPENING COL INFO FROM FILENAME", filename)
     dec := gob.NewDecoder(file)
     switch {
       case strings.HasPrefix(fname, "str"):
@@ -317,12 +307,9 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
             val :=  string_lookup[bucket.Value]
             value_id := col.get_val_id(val)
 
-	    records[r].ResizeFields(into.Name)
             records[r].Strs[into.Name] = StrField(value_id)
 	    records[r].Populated[into.Name] = STR_VAL
           }
-
-
         }
 
       case strings.HasPrefix(fname, "int"):
@@ -331,7 +318,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
         for _, bucket := range into.Bins {
           for _, r := range bucket.Records {
-	    records[r].ResizeFields(into.Name)
+
             records[r].Ints[into.Name] = IntField(bucket.Value)
 	    records[r].Populated[into.Name] = INT_VAL
             tb.table.update_int_info(into.Name, int(bucket.Value))

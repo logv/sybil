@@ -23,6 +23,7 @@ type Table struct {
   int_info_table map[int16]*IntInfo
   string_id_m *sync.Mutex;
   record_m *sync.Mutex;
+  block_m *sync.Mutex;
 }
 
 type IntInfo struct {
@@ -75,6 +76,7 @@ func getTable(name string) *Table{
 
   t.string_id_m = &sync.Mutex{}
   t.record_m = &sync.Mutex{}
+  t.block_m = &sync.Mutex{}
 
   return t;
 }
