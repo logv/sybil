@@ -22,6 +22,7 @@ type QuerySpec struct {
   BlockList map[string]TableBlock
 
   m *sync.Mutex
+  c *sync.Mutex
 }
 
 type Result struct {
@@ -34,6 +35,7 @@ type Result struct {
 func punctuateSpec(querySpec *QuerySpec) {
   querySpec.Results = make(map[string]*Result)
   querySpec.m = &sync.Mutex{}
+  querySpec.c = &sync.Mutex{}
 }
 
 func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
@@ -103,10 +105,10 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     }
 
     // GO THROUGH AGGREGATIONS AND REALIZE THEM
-    querySpec.m.Lock()
+    querySpec.c.Lock()
     added_record.Ints["c"]++
     count := added_record.Ints["c"]
-    querySpec.m.Unlock()
+    querySpec.c.Unlock()
 
     for _, a := range querySpec.Aggregations {
       val, ok := r.getIntVal(a.name)
