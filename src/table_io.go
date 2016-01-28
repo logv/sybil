@@ -10,6 +10,8 @@ import "io/ioutil"
 import "encoding/gob"
 import "sync"
 
+var DEBUG_TIMING = false
+
 type LoadSpec struct {
   columns map[string]bool 
 }
@@ -225,8 +227,6 @@ func LoadTableInfo(tablename, fname string) *Table {
 }
 
 func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record {
-  fmt.Println("LAODING RECORDS FROM DIR", dirname)
-
   tb := newTableBlock()
 
   t.block_m.Lock()
@@ -254,7 +254,10 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
   bigStrArr := make(StrArr, len(t.KeyTable) * int(info.NumRecords))
   bigPopArr := make([]int, len(t.KeyTable) * int(info.NumRecords))
   mend := time.Now()
-  fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+
+  if DEBUG_TIMING {
+    fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+  }
 
   start = time.Now()
   for i, _ := range records {
@@ -267,7 +270,10 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec) []*Record 
     records[i] = r
   }
   end = time.Now()
-  fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+
+  if DEBUG_TIMING {
+    fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+  }
 
   file, _ = os.Open(dirname)
   files, _ := file.Readdir(-1)

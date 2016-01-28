@@ -161,8 +161,7 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
   m := &sync.Mutex{}
   rets := make([]*Record, 0)
   count := len(t.newRecords)
-  for k, block := range t.BlockList {
-    fmt.Println("MATCHING RECORDS IN BLOCK", k, len(block.RecordList))
+  for _, block := range t.BlockList {
     wg.Add(1)
     this_block := block
     go func() {
