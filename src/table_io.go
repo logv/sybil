@@ -378,9 +378,16 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
   files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
 
   var wg sync.WaitGroup
-  
+ 
+  wg.Add(1)
   // why is table info so slow to open!!!
-  t.LoadTableInfo() 
+  go func() { 
+    defer wg.Done()
+    t.LoadTableInfo()
+  }()
+
+  wg.Wait()
+  
 
   fmt.Println("KEY TABLE", t.KeyTable)
 

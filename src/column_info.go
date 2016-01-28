@@ -99,6 +99,9 @@ func (t *Table) update_int_info(name int16, val int) {
   }
 
 
+  info, ok := int_info_table[name]
+  if ok && info.Count > 1024 { return }
+
   update_int_info(int_info_table, name, val)
 }
 
