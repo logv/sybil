@@ -38,7 +38,7 @@ func filterAndAggRecords(querySpec QuerySpec, recordsPtr *[]*Record) []*Record {
 
     // BUILD GROUPING KEY
     for _, g := range querySpec.Groups {
-      col_id := r.block.get_key_id(g.name)
+      col_id := g.name_id
       col := r.block.getColumnInfo(col_id)
       val := col.get_string_for_val(int32(r.Strs[col_id]))
       buffer.WriteString(string(val))
@@ -89,7 +89,7 @@ func filterAndAggRecords(querySpec QuerySpec, recordsPtr *[]*Record) []*Record {
     // GO THROUGH AGGREGATIONS AND REALIZE THEM
 
     for _, a := range querySpec.Aggregations {
-      a_id := r.block.get_key_id(a.name)
+      a_id := a.name_id
       if r.Populated[a_id] == INT_VAL {
 	val := int(r.Ints[a_id])
 

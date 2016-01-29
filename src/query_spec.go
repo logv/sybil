@@ -22,11 +22,13 @@ type Filter interface {
 
 type Grouping struct {
   name string
+  name_id int16
 }
 
 type Aggregation struct {
   op string
   name string
+  name_id int16
 }
 
 type Result struct {

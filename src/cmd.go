@@ -145,19 +145,22 @@ func ParseCmdLine() {
     defer profile.Start().Stop()
   }
 
+  // LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
+  // THE RIGHT COLUMN ID
+  t.LoadRecords(nil)
+
   groupings := []Grouping{}
   for _, g := range groups {
-    groupings = append(groupings, Grouping{g})
+    col_id := t.get_key_id(g)
+    groupings = append(groupings, Grouping{g, col_id})
   }
 
   aggs := []Aggregation {}
   for _, agg := range ints {
-    aggs = append(aggs, Aggregation{op: *f_OP, name: agg})
+    col_id := t.get_key_id(agg)
+    aggs = append(aggs, Aggregation{op: *f_OP, name: agg, name_id: col_id})
   }
 
-  // LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
-  // THE RIGHT COLUMN ID
-  t.LoadRecords(nil)
 
   // VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
   fmt.Println("KEY TABLE", t.KeyTable)
