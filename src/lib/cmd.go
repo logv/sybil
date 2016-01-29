@@ -5,14 +5,12 @@ import "flag"
 import "strings"
 import "time"
 import "strconv"
-import "sync"
 import "runtime/debug"
 
 // TODO: add flag to shake the DB up and reload / resave data
 var f_PROFILE = flag.Bool("profile", false, "Generate a profile?")
 var f_TABLE = flag.String("table", "", "Table to operate on")
 var f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
-var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 var f_PRINT = flag.Bool("print", false, "Print some records")
 var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
 var f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
@@ -27,56 +25,6 @@ var GROUP_BY  []string
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
-func make_records(name string) {
-  fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
-  CHUNK_SIZE := 50000
-  var wg sync.WaitGroup
-  for i := 0; i < *f_ADD_RECORDS  / CHUNK_SIZE; i++ {
-    wg.Add(1)
-    go func() {
-      defer wg.Done()
-      for j := 0; j < CHUNK_SIZE; j++ {
-	NewRandomRecord(name); 
-      }
-    }()
-  }
-
-  for j := 0; j < *f_ADD_RECORDS % CHUNK_SIZE; j++ {
-    NewRandomRecord(name); 
-  }
-
-  wg.Wait()
-
-
-}
-
-func add_records() {
-  if (*f_ADD_RECORDS == 0) {
-    return
-  }
-
-
-  fmt.Println("MAKING RECORDS FOR TABLE", *f_TABLE)
-  if *f_TABLE != "" {
-    make_records(*f_TABLE)
-    return
-  }
-
-  var wg sync.WaitGroup
-  for j := 0; j < 10; j++ {
-    wg.Add(1)
-    q := j
-    go func() {
-      defer wg.Done()
-      table_name := fmt.Sprintf("test%v", q)
-      make_records(table_name)
-    }()
-  }
-
-  wg.Wait()
-
-
-}
 func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
 
@@ -209,10 +157,7 @@ func ParseCmdLine() {
   }
 
 
-  // add records should happen after we load records
-  if (*f_ADD_RECORDS != 0) {	
-    add_records()
-  } else if !*f_PRINT_INFO {
+  if !*f_PRINT_INFO {
     // DISABLE GC FOR QUERY PATH
     // NEVER TURN IT BACK ON!
     fmt.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")

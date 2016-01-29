@@ -1,8 +1,7 @@
 package main
 
-import edb "./src"
+import edb "../lib"
 
 func main() {
   edb.Start();
-
 }
