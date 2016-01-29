@@ -237,6 +237,7 @@ func (t *Table) LoadTableInfo() {
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_records bool) []*Record {
+  fmt.Println("LOADING BLOCK FROM DIR", dirname)
   tb := newTableBlock()
   tb.Name = dirname
 
@@ -270,14 +271,20 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
   var bigIntArr IntArr
   var bigStrArr StrArr
   var bigPopArr []int
+  max_key_id := 0
+  for _, v := range t.KeyTable {
+    if max_key_id <= int(v) {
+      max_key_id = int(v) + 1
+    }
+  }
 
   if load_spec != nil || load_records {
     mstart := time.Now()
     records = make([]*Record, info.NumRecords)
     alloced = make([]Record, info.NumRecords)
-    bigIntArr = make(IntArr, len(t.KeyTable) * int(info.NumRecords))
-    bigStrArr = make(StrArr, len(t.KeyTable) * int(info.NumRecords))
-    bigPopArr = make([]int, len(t.KeyTable) * int(info.NumRecords))
+    bigIntArr = make(IntArr, max_key_id * int(info.NumRecords))
+    bigStrArr = make(StrArr, max_key_id * int(info.NumRecords))
+    bigPopArr = make([]int, max_key_id * int(info.NumRecords))
     mend := time.Now()
 
     if DEBUG_TIMING {
@@ -287,9 +294,9 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
     start = time.Now()
     for i, _ := range records {
       r = &alloced[i]
-      r.Ints = bigIntArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
-      r.Strs = bigStrArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
-      r.Populated = bigPopArr[i*len(t.KeyTable):(i+1)*len(t.KeyTable)]
+      r.Ints = bigIntArr[i*max_key_id:(i+1)*max_key_id]
+      r.Strs = bigStrArr[i*max_key_id:(i+1)*max_key_id]
+      r.Populated = bigPopArr[i*max_key_id:(i+1)*max_key_id]
 
       r.block = &tb
       records[i] = r
@@ -335,14 +342,17 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 	}
         col.val_string_id_lookup = string_lookup
 
+	var record *Record
         for _, bucket := range into.Bins {
 
           for _, r := range bucket.Records {
             val :=  string_lookup[bucket.Value]
             value_id := col.get_val_id(val)
 
-            records[r].Strs[into.Name] = StrField(value_id)
-	    records[r].Populated[into.Name] = STR_VAL
+	    record = records[r]
+
+            record.Strs[into.Name] = StrField(value_id)
+	    record.Populated[into.Name] = STR_VAL
           }
         }
 
@@ -351,6 +361,8 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
         err := dec.Decode(into);
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
         for _, bucket := range into.Bins {
+	  tb.table.update_int_info(into.Name, int(bucket.Value))
+
           for _, r := range bucket.Records {
 
             records[r].Ints[into.Name] = IntField(bucket.Value)

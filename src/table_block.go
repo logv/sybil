@@ -249,11 +249,16 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   // of the various block infos
   tb.Name = dirname
 
+  partialname := fmt.Sprintf("%s.partial", dirname )
+
   separated_columns := tb.SeparateRecordsIntoColumns()
 
-  tb.SaveIntsToColumns(dirname, separated_columns.ints)
-  tb.SaveStrsToColumns(dirname, separated_columns.strs)
-  tb.SaveInfoToColumns(dirname)
+  tb.SaveIntsToColumns(partialname, separated_columns.ints)
+  tb.SaveStrsToColumns(partialname, separated_columns.strs)
+  tb.SaveInfoToColumns(partialname)
+
+  fmt.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
+  os.Rename(partialname, dirname)
 }
 
 

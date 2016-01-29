@@ -204,21 +204,20 @@ func ParseCmdLine() {
   if (*f_ADD_RECORDS != 0) {	
     t.LoadRecords(nil)
     add_records()
-    t.SaveRecords()
-    return
+  } else {
+
+
+    t.LoadRecords(&loadSpec)
+
+    start := time.Now()
+    queryTable(table, loadSpec, querySpec)
+    end := time.Now()
+    fmt.Println("TESTING TABLE TOOK", end.Sub(start))
   }
 
-
-  t.LoadRecords(&loadSpec)
-
   start := time.Now()
-  queryTable(table, loadSpec, querySpec)
-  end := time.Now()
-  fmt.Println("TESTING TABLE TOOK", end.Sub(start))
-
-  start = time.Now()
   SaveTables()
-  end = time.Now()
+  end := time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 
   if *f_PRINT_INFO {
