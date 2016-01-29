@@ -137,13 +137,14 @@ func getSaveTable(t *Table) *Table {
 
 func (t *Table) saveRecordList(records []*Record) bool {
   if (!t.dirty) { return false; }
+  if len(records) == 0 {
+    return false
+  }
 
-  fmt.Println("SAVING RECORD LIST", len(records))
+  fmt.Println("SAVING RECORD LIST", len(records), t.Name)
 
   save_table := getSaveTable(t)
   save_table.SaveTableInfo("info")
-
-  fmt.Println("SAVING TABLE", t.Name);
 
   chunk_size := CHUNK_SIZE
   chunks := len(records) / chunk_size
@@ -382,8 +383,6 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 
   wg.Wait()
 
-
-  fmt.Println("KEY TABLE", t.KeyTable)
 
   m := &sync.Mutex{}
 

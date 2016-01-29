@@ -47,7 +47,7 @@ func (si *StrInfo) prune() {
   si.Cardinality = len(si.TopStringCount)
 
   if si.Cardinality > TOP_STRING_COUNT {
-    interim := make([]StrInfoCol, len(si.TopStringCount))
+    interim := make([]StrInfoCol, len(si.TopStringCount)+1)
 
     for s, c := range si.TopStringCount {
       interim[s] = StrInfoCol{Name: s, Value: c}

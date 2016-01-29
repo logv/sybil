@@ -153,6 +153,18 @@ func ParseCmdLine() {
   // THE RIGHT COLUMN ID
   t.LoadRecords(nil)
 
+  // VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
+  fmt.Println("KEY TABLE", t.KeyTable)
+  used := make(map[int16]int)
+  for _, v := range t.KeyTable {
+    used[v]++
+    if used[v] > 1 {
+      fmt.Println("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+      return
+    }
+  }
+
+
   loadSpec := NewLoadSpec()
   filters := []Filter{}
   for _, filt := range intfilters {
@@ -188,15 +200,15 @@ func ParseCmdLine() {
   }
 
 
-  fmt.Println("USING LOAD SPEC", loadSpec)
-
-  fmt.Println("USING QUERY SPEC", querySpec)
-
-
   // add records should happen after we load records
   if (*f_ADD_RECORDS != 0) {	
     add_records()
   } else {
+
+
+    fmt.Println("USING LOAD SPEC", loadSpec)
+
+    fmt.Println("USING QUERY SPEC", querySpec)
 
 
     t.LoadRecords(&loadSpec)
