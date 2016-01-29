@@ -212,7 +212,6 @@ func (t *Table) LoadTableInfo() {
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_records bool) []*Record {
-  fmt.Println("LOADING BLOCK FROM DIR", dirname)
   tb := newTableBlock()
   tb.Name = dirname
 
@@ -405,7 +404,12 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 	start := time.Now()
         records = t.LoadBlockFromDir(filename, load_spec, false);
 	end := time.Now()
-	fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
+	if load_spec != nil {
+	  fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
+	} else {
+	  fmt.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
+	}
+
         if len(records) > 0 {
           m.Lock()
           count += len(records)
@@ -425,6 +429,10 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 
   end := time.Now()
 
-  fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(waystart));
+  if load_spec != nil {
+    fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(waystart));
+  } else {
+    fmt.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
+  }
 }
 

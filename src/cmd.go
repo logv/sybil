@@ -203,7 +203,7 @@ func ParseCmdLine() {
   // add records should happen after we load records
   if (*f_ADD_RECORDS != 0) {	
     add_records()
-  } else {
+  } else if !*f_PRINT_INFO {
 
 
     fmt.Println("USING LOAD SPEC", loadSpec)
