@@ -165,6 +165,10 @@ func ParseCmdLine() {
     aggs = append(aggs, Aggregation{op: *f_OP, name: agg})
   }
 
+  // LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
+  // THE RIGHT COLUMN ID
+  t.LoadRecords(nil)
+
   loadSpec := NewLoadSpec()
   filters := []Filter{}
   for _, filt := range intfilters {
@@ -207,7 +211,6 @@ func ParseCmdLine() {
 
   // add records should happen after we load records
   if (*f_ADD_RECORDS != 0) {	
-    t.LoadRecords(nil)
     add_records()
   } else {
 

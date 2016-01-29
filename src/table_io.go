@@ -376,6 +376,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 
 
   tb.RecordList = records[:]
+
   return records[:]
 }
 
