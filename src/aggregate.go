@@ -113,11 +113,11 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
   }
 
 
-  return ret;
+  return ret[:]
 }
 
 
-func (t *Table) MatchAndAggregate(querySpec QuerySpec) []*Record {
+func (t *Table) MatchAndAggregate(querySpec QuerySpec) {
   start := time.Now()
   debug.SetGCPercent(-1)
   defer debug.SetGCPercent(100)
@@ -147,5 +147,5 @@ func (t *Table) MatchAndAggregate(querySpec QuerySpec) []*Record {
 
   fmt.Println("FILTRD", len(rets), "AND AGGREGATED", "RECORDS INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
-  return rets
+  querySpec.Matched = rets
 }

@@ -78,7 +78,7 @@ func add_records() {
 func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
 
-  ret := table.MatchAndAggregate(querySpec)
+  table.MatchAndAggregate(querySpec)
 
   if *f_PRINT {
     for k, v := range querySpec.Results {
@@ -103,9 +103,9 @@ func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
 
   if (*f_SESSION_COL != "") {
     start := time.Now()
-    session_maps := SessionizeRecords(ret, *f_SESSION_COL)
+    session_maps := SessionizeRecords(querySpec.Matched, *f_SESSION_COL)
     end := time.Now()
-    fmt.Println("SESSIONIZED", len(ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+    fmt.Println("SESSIONIZED", len(querySpec.Matched), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
   }
 }
 
@@ -211,12 +211,11 @@ func ParseCmdLine() {
     fmt.Println("USING QUERY SPEC", querySpec)
 
 
-    t.LoadRecords(&loadSpec)
-
     start := time.Now()
+    t.LoadRecords(&loadSpec)
     queryTable(table, loadSpec, querySpec)
     end := time.Now()
-    fmt.Println("QUERYING TABLE TOOK", end.Sub(start))
+    fmt.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
   }
 
   start := time.Now()

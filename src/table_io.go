@@ -199,7 +199,9 @@ func (t *Table) LoadTableInfo() {
     return
   }
 
-  fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+  if DEBUG_TIMING {
+    fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+  }
 
   if t.KeyTable != nil && len(saved_table.KeyTable) > 0 {
     t.KeyTable = saved_table.KeyTable

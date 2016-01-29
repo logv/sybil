@@ -5,7 +5,10 @@ type QuerySpec struct {
   Filters []Filter
   Groups []Grouping
   Aggregations []Aggregation
+
   Results map[string]*Result
+  Matched []*Record
+
   BlockList map[string]TableBlock
 
   m *sync.Mutex
