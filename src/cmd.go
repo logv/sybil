@@ -26,6 +26,7 @@ var f_GROUPS = flag.String("group", "", "values group by")
 var GROUP_BY  []string
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
+
 func make_records(name string) {
   fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
   CHUNK_SIZE := 50000
@@ -138,7 +139,11 @@ func ParseCmdLine() {
   if *f_INT_FILTERS != "" { intfilters = strings.Split(*f_INT_FILTERS, ",") }
   if *f_STR_FILTERS != "" { strfilters = strings.Split(*f_STR_FILTERS, ",") }
 
-
+  
+  if *f_PROFILE && PROFILER_ENABLED {
+    profile := RUN_PROFILER()
+    defer profile.Start().Stop()
+  }
 
   groupings := []Grouping{}
   for _, g := range groups {

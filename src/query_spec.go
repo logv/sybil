@@ -12,6 +12,7 @@ type QuerySpec struct {
   BlockList map[string]TableBlock
 
   m *sync.Mutex
+  r *sync.RWMutex
   c *sync.Mutex
 }
 
@@ -40,5 +41,6 @@ func punctuateSpec(querySpec *QuerySpec) {
   querySpec.Results = make(map[string]*Result)
   querySpec.m = &sync.Mutex{}
   querySpec.c = &sync.Mutex{}
+  querySpec.r = &sync.RWMutex{}
 }
 

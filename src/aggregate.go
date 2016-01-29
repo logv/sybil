@@ -44,9 +44,9 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     group_key := buffer.String()
     buffer.Reset()
 
-    querySpec.m.Lock()
+    querySpec.r.RLock()
     added_record, ok := querySpec.Results[group_key]
-    querySpec.m.Unlock()
+    querySpec.r.RUnlock()
 
     // BUILD GROUPING RECORD
     if !ok {
@@ -65,12 +65,17 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
       // WARNING: this is an annoying thread barrier that happens.
       // TODO: replace it with a RW mutex instead of just R mutex
-      querySpec.m.Lock()
+      querySpec.r.RLock()
       length = len(querySpec.Results)
       existing_record, ok := querySpec.Results[group_key]
+      querySpec.r.RUnlock()
 
-      if !ok { querySpec.Results[group_key] = added_record } 
-      querySpec.m.Unlock()
+      
+      if !ok { 
+	querySpec.r.Lock()
+	querySpec.Results[group_key] = added_record 
+	querySpec.r.Unlock()
+      } 
 
       if ok {
 	added_record = existing_record
@@ -103,9 +108,9 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
           if !ok { 
             a_id := r.block.get_key_id(a.name)
             hist = r.block.table.NewHist(r.block.table.get_int_info(a_id)) 
-            querySpec.m.Lock()
+            querySpec.r.Lock()
             added_record.Hists[a.name] = hist
-            querySpec.m.Unlock()
+            querySpec.r.Unlock()
           }
           hist.addValue(val)
         }
