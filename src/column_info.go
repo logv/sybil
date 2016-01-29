@@ -53,7 +53,6 @@ func (si *StrInfo) prune() {
     }
   }
 
-  fmt.Println("PRUNED ARR TO", len(si.TopStringCount), "FROM", si.Cardinality)
 }
 
 func update_str_info(str_info_table map[int16]*StrInfo, name int16, val, increment int) {

@@ -103,7 +103,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
       log.Fatal("encode:", err)
     }
 
-    fmt.Println(k, "SERIALIZED INTO COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(tb.RecordList), ")");
+    fmt.Println("SERIALIZED COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(tb.RecordList), ")");
 
     w, _ := os.Create(col_fname)
     network.WriteTo(w);
@@ -159,7 +159,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
       log.Fatal("encode:", err)
     }
 
-    fmt.Println(k, "SERIALIZED INTO COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(tb.RecordList), ")");
+    fmt.Println("SERIALIZED COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(tb.RecordList), ")");
 
     w, _ := os.Create(col_fname)
     network.WriteTo(w);
@@ -184,7 +184,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
     log.Fatal("encode:", err)
   }
 
-  fmt.Println("SERIALIZED INTO COL INFO", network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
+  fmt.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(records), ")");
 
   w, _ := os.Create(col_fname)
   network.WriteTo(w);
@@ -250,6 +250,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   tb.Name = dirname
 
   partialname := fmt.Sprintf("%s.partial", dirname )
+  oldblock := fmt.Sprintf("%s.old", dirname)
 
   separated_columns := tb.SeparateRecordsIntoColumns()
 
@@ -258,7 +259,11 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   tb.SaveInfoToColumns(partialname)
 
   fmt.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
-  os.Rename(partialname, dirname)
+  os.Rename(dirname, oldblock)
+  err := os.Rename(partialname, dirname)
+  if err != nil{
+    os.Remove(oldblock)
+  }
 }
 
 
