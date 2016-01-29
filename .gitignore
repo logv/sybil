@@ -1,1 +1,7 @@
 .*.sw?
+*.pprof
+Makefile
+db/
+tags
+edb
+output
