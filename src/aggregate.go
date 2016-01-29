@@ -4,6 +4,7 @@ import "sync"
 import "bytes"
 import "fmt"
 import "time"
+import "runtime/debug"
 
 type Aggregation struct {
   op string
@@ -151,6 +152,9 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
 
 func (t *Table) MatchRecords(filters []Filter) []*Record {
+  debug.SetGCPercent(-1)
+  defer debug.SetGCPercent(100)
+
   groupings := []Grouping{}
   aggs := []Aggregation {}
 
@@ -219,6 +223,9 @@ func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
 }
 
 func (t *Table) AggRecords(records []*Record, querySpec QuerySpec) {
+  debug.SetGCPercent(-1)
+  defer debug.SetGCPercent(100)
+
   start := time.Now()
   MatchAndAggregate(querySpec, records[:])
   end := time.Now()
