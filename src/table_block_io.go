@@ -32,7 +32,7 @@ func record_value(same_map map[int16]ValueMap, index int32, name int16, value in
 func (tb *TableBlock) getColumnInfo(name_id int16) *TableColumn {
   col, ok := tb.columns[name_id]
   if !ok {
-    col = newTableColumn()
+    col = tb.newTableColumn()
     tb.columns[name_id] = col
   }
 
