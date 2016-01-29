@@ -7,22 +7,6 @@ import "time"
 import "strconv"
 import "runtime/debug"
 
-// TODO: add flag to shake the DB up and reload / resave data
-var f_PROFILE = flag.Bool("profile", false, "Generate a profile?")
-var f_TABLE = flag.String("table", "", "Table to operate on")
-var f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
-var f_PRINT = flag.Bool("print", false, "Print some records")
-var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
-var f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
-var f_STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-
-var f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
-var f_INTS = flag.String("int", "", "Integer values to aggregate")
-var f_STRS = flag.String("str", "", "String values to load")
-var f_GROUPS = flag.String("group", "", "values group by")
-
-var GROUP_BY  []string
-
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
@@ -59,11 +43,23 @@ func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   }
 }
 
-func ParseCmdLine() {
-  flag.Parse()
+func addFlags() {
 
-  fmt.Println("Starting DB")
-  fmt.Println("TABLE", *f_TABLE);
+  f_PROFILE = flag.Bool("profile", false, "Generate a profile?")
+  f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
+  f_PRINT = flag.Bool("print", false, "Print some records")
+  f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+  f_STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
+
+  f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
+  f_INTS = flag.String("int", "", "Integer values to aggregate")
+  f_STRS = flag.String("str", "", "String values to load")
+  f_GROUPS = flag.String("group", "", "values group by")
+}
+
+func RunQueryCmdLine() {
+  addFlags()
+  flag.Parse()
 
   table := *f_TABLE
   if table == "" { table = "test0" }
