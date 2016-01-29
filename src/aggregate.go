@@ -6,49 +6,16 @@ import "fmt"
 import "time"
 import "runtime/debug"
 
-type Aggregation struct {
-  op string
-  name string
-}
-
-type Grouping struct {
-  name string
-}
-
-type QuerySpec struct {
-  Groups []Grouping
-  Filters []Filter
-  Aggregations []Aggregation
-  Results map[string]*Result
-  BlockList map[string]TableBlock
-
-  m *sync.Mutex
-  c *sync.Mutex
-}
-
-type Result struct {
-  Ints map[string]float64
-  Strs map[string]string
-  Sets map[string][]string
-  Hists map[string]*Hist
-}
-
-func punctuateSpec(querySpec *QuerySpec) {
-  querySpec.Results = make(map[string]*Result)
-  querySpec.m = &sync.Mutex{}
-  querySpec.c = &sync.Mutex{}
-}
-
 func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
   var buffer bytes.Buffer
   ret := make([]*Record, 0);
   for i := 0; i < len(records); i++ {
     add := true;
     r := records[i];
-    filters := querySpec.Filters
 
-    for j := 0; j < len(filters); j++ {
-      if filters[j].Filter(r) {
+    // FILTERING
+    for j := 0; j < len(querySpec.Filters); j++ {
+      if querySpec.Filters[j].Filter(r) {
         add = false;
         break;
       }
@@ -60,8 +27,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
 
 
-    // BELOW HERE IS THE AGGREGATION MEAT
-    // WE ABORT AGGREGATE IF THERE IS NO GROUP BY SPEC
+    // BELOW HERE IS THE AGGREGATION CORE
     if len(querySpec.Groups) == 0 {
       buffer.WriteString("total")
     }
@@ -151,20 +117,17 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 }
 
 
-func (t *Table) MatchRecords(filters []Filter) []*Record {
+func (t *Table) MatchAndAggregate(querySpec QuerySpec) []*Record {
+  start := time.Now()
   debug.SetGCPercent(-1)
   defer debug.SetGCPercent(100)
 
-  groupings := []Grouping{}
-  aggs := []Aggregation {}
-
-  querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs }
-  punctuateSpec(&querySpec)
-
   var wg sync.WaitGroup
+  rets := make([]*Record, 0);
+
   m := &sync.Mutex{}
-  rets := make([]*Record, 0)
-  count := len(t.newRecords)
+
+  count := 0
   for _, block := range t.BlockList {
     wg.Add(1)
     this_block := block
@@ -180,62 +143,9 @@ func (t *Table) MatchRecords(filters []Filter) []*Record {
   }
 
   wg.Wait()
+  end := time.Now()
 
-  ret := filterAndAggRecords(querySpec, t.newRecords[:])
-  rets = append(rets, ret...)
-
-  fmt.Println("FOUND RECORDS", len(rets))
+  fmt.Println("FILTRD", len(rets), "AND AGGREGATED", "RECORDS INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
   return rets
 }
-
-
-func MatchAndAggregate(querySpec QuerySpec, records []*Record) []*Record {
-  var wg sync.WaitGroup
-  ret := make([]*Record, 0);
-
-  chunks := 5;
-  chunk_size := len(records) / chunks
-  m := &sync.Mutex{}
-
-  for c := 0; c < chunks; c++ {
-    h := c * chunk_size;
-    e := (c+1) * chunk_size
-
-    wg.Add(1)
-    go func() {
-      defer wg.Done()
-      records := filterAndAggRecords(querySpec, records[h:e])
-      m.Lock()
-      ret = append(ret, records...)
-      m.Unlock()
-    }()
-
-  }
-
-  wg.Wait()
-
-  last_records := records[chunks * chunk_size:]
-  records = filterAndAggRecords(querySpec, last_records)
-  ret = append(ret, records...)
-
-  return ret
-}
-
-func (t *Table) AggRecords(records []*Record, querySpec QuerySpec) {
-  debug.SetGCPercent(-1)
-  defer debug.SetGCPercent(100)
-
-  start := time.Now()
-  MatchAndAggregate(querySpec, records[:])
-  end := time.Now()
-  fmt.Println("AGGREGATED", len(records), " RECORDS INTO", len(querySpec.Results), "ROLLUPS, TOOK", end.Sub(start))
-}
-
-// Aggregations
-// Group By
-
-// Aggregations.add(Avg("age"))
-// Aggregations.add(Percentile("age", 75))
-//
-// GroupBy.add("session_id")

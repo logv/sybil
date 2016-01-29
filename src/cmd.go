@@ -78,13 +78,8 @@ func add_records() {
 func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   table := getTable(name)
 
-  // TODO: ADD FILTER SPECIFICATIONS
-  start := time.Now()
-  ret := table.MatchRecords(querySpec.Filters)
-  end := time.Now()
-  fmt.Println("FILTER RETURNED", len(ret), "RECORDS, TOOK", end.Sub(start))
+  ret := table.MatchAndAggregate(querySpec)
 
-  table.AggRecords(ret, querySpec)
   if *f_PRINT {
     for k, v := range querySpec.Results {
 
@@ -220,7 +215,7 @@ func ParseCmdLine() {
     start := time.Now()
     queryTable(table, loadSpec, querySpec)
     end := time.Now()
-    fmt.Println("TESTING TABLE TOOK", end.Sub(start))
+    fmt.Println("QUERYING TABLE TOOK", end.Sub(start))
   }
 
   start := time.Now()
