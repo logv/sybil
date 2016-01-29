@@ -84,7 +84,7 @@ func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   if *f_PRINT {
     for k, v := range querySpec.Results {
 
-      fmt.Println(fmt.Sprintf("%-10s", k)[:10], fmt.Sprintf("%.0f", v.Ints["c"]))
+      fmt.Println(fmt.Sprintf("%-10s", k)[:10], fmt.Sprintf("%.0d", v.Count))
       for _, agg := range querySpec.Aggregations {
 	col_name := fmt.Sprintf("  %5s", agg.name)
 	if *f_OP == "hist" {

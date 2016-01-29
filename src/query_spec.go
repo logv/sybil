@@ -33,6 +33,7 @@ type Result struct {
   Strs map[string]string
   Sets map[string][]string
   Hists map[string]*Hist
+  Count int32
 }
 
 func punctuateSpec(querySpec *QuerySpec) {

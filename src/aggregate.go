@@ -1,9 +1,10 @@
 package edb
 
-import "sync"
 import "bytes"
 import "fmt"
 import "time"
+import "sync"
+import "sync/atomic"
 
 func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
   var buffer bytes.Buffer
@@ -43,16 +44,16 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     group_key := buffer.String()
     buffer.Reset()
 
+    querySpec.m.Lock()
     added_record, ok := querySpec.Results[group_key]
+    querySpec.m.Unlock()
 
     // BUILD GROUPING RECORD
     if !ok {
-      querySpec.m.Lock()
-      // TODO: make the LIMIT be more intelligent
       length := len(querySpec.Results)
-      querySpec.m.Unlock()
 
       if length >= 1000  {
+	fmt.Println("SKIPPING RECORD?")
         continue
       }
 
@@ -61,20 +62,24 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
       added_record.Ints = make(map[string]float64)
       added_record.Strs = make(map[string]string)
       added_record.Sets = make(map[string][]string)
+      added_record.Count = 0
 
+      // WARNING: this is an annoying thread barrier that happens.
+      // TODO: replace it with a RW mutex instead of just R mutex
       querySpec.m.Lock()
       length = len(querySpec.Results)
-      if length < 1000 { 
-	querySpec.Results[group_key] = added_record
-      }
+      existing_record, ok := querySpec.Results[group_key]
+
+      if !ok { querySpec.Results[group_key] = added_record } 
       querySpec.m.Unlock()
+
+      if ok {
+	added_record = existing_record
+      }
     }
 
+    count := atomic.AddInt32(&added_record.Count, 1)
     // GO THROUGH AGGREGATIONS AND REALIZE THEM
-    querySpec.c.Lock()
-    added_record.Ints["c"]++
-    count := added_record.Ints["c"]
-    querySpec.c.Unlock()
 
     for _, a := range querySpec.Aggregations {
       val, ok := r.getIntVal(a.name)
@@ -87,7 +92,7 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
             partial = 0
           }
 
-          partial = partial + (float64(val) - partial) / count
+          partial = partial + (float64(val) - partial) / float64(count)
 
           querySpec.m.Lock()
           added_record.Ints[a.name] = partial
