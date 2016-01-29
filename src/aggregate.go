@@ -53,7 +53,6 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
       length := len(querySpec.Results)
 
       if length >= 1000  {
-	fmt.Println("SKIPPING RECORD?")
         continue
       }
 
