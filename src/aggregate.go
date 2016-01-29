@@ -6,9 +6,12 @@ import "time"
 import "sync"
 import "sync/atomic"
 
-func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
+func filterAndAggRecords(querySpec QuerySpec, recordsPtr *[]*Record) []*Record {
   var buffer bytes.Buffer
+  records := *recordsPtr
+
   ret := make([]*Record, 0);
+
   for i := 0; i < len(records); i++ {
     add := true;
     r := records[i];
@@ -86,8 +89,9 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
     // GO THROUGH AGGREGATIONS AND REALIZE THEM
 
     for _, a := range querySpec.Aggregations {
-      val, ok := r.getIntVal(a.name)
-      if ok {
+      a_id := r.block.get_key_id(a.name)
+      if r.Populated[a_id] == INT_VAL {
+	val := int(r.Ints[a_id])
 
         if a.op == "avg" {
           // Calculating averages
@@ -98,19 +102,19 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
           partial = partial + (float64(val) - partial) / float64(count)
 
-          querySpec.m.Lock()
           added_record.Ints[a.name] = partial
-          querySpec.m.Unlock()
         }
 
         if a.op == "hist" {
+	  querySpec.m.RLock()
           hist, ok := added_record.Hists[a.name]
+	  querySpec.m.RUnlock()
+
           if !ok { 
-            a_id := r.block.get_key_id(a.name)
             hist = r.block.table.NewHist(r.block.table.get_int_info(a_id)) 
-            querySpec.r.Lock()
+            querySpec.m.Lock()
             added_record.Hists[a.name] = hist
-            querySpec.r.Unlock()
+            querySpec.m.Unlock()
           }
           hist.addValue(val)
         }
@@ -139,7 +143,7 @@ func (t *Table) MatchAndAggregate(querySpec QuerySpec) {
     this_block := block
     go func() {
       defer wg.Done()
-      ret := filterAndAggRecords(querySpec, this_block.RecordList[:])
+      ret := filterAndAggRecords(querySpec, &this_block.RecordList)
       count += len(ret)
 
       m.Lock()
