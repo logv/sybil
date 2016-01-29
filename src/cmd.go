@@ -208,7 +208,7 @@ func ParseCmdLine() {
   }
 
   start := time.Now()
-  SaveTables()
+  t.SaveRecords()
   end := time.Now()
   fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
 

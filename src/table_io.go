@@ -11,6 +11,7 @@ import "encoding/gob"
 import "sync"
 import "sort"
 import "runtime/debug"
+import "strconv"
 
 var DEBUG_TIMING = false
 
@@ -36,48 +37,20 @@ func (l *LoadSpec) Set(name string) {
   l.columns["set_" + name + ".db"] = true
 }
 
-func LoadTables() []Table {
-  files, _ := ioutil.ReadDir("db/")
-
-  var wg sync.WaitGroup
-  for _, v := range files {
-    if strings.HasSuffix(v.Name(), ".db") {
-      wg.Add(1)
-      name := strings.TrimSuffix(v.Name(), ".db")
-      table := getTable(name)
-      go func() {
-        defer wg.Done()
-        table.LoadRecords(nil);
-      }()
-    }
 
 
-  }
-
-  wg.Wait()
-
-  tables := make([]Table, len(LOADED_TABLES))
-  for _, v := range LOADED_TABLES {
-    tables = append(tables, *v);
-  }
-  return tables
-
+// Helpers for block directory structure
+func getBlockName(id int) string {
+  return strconv.FormatInt(int64(id), 10)
 }
 
-func SaveTables() {
-  var wg sync.WaitGroup
-  for _, t := range LOADED_TABLES {
-    wg.Add(1)
-    qt := t
-    go func() {
-      defer wg.Done()
-      qt.SaveRecords();
-    }()
-  }
-
-  wg.Wait()
-
+func getBlockDir(name string, id int) string {
+  return fmt.Sprintf("db/%s/%05s", name, getBlockName(id))
 }
+func getBlockFilename(name string, id int) string {
+  return fmt.Sprintf("db/%s/%05s.db", name, getBlockName(id))
+}
+
 
 func (t *Table) SaveTableInfo(fname string) {
   var network bytes.Buffer // Stand-in for the network.

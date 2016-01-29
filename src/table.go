@@ -1,7 +1,6 @@
 package edb
 
 import "fmt"
-import "strconv"
 import "sync"
 
 type Table struct {
@@ -28,18 +27,6 @@ type Table struct {
 var LOADED_TABLES = make(map[string]*Table);
 var CHUNK_SIZE = 1024 * 64;
 var table_m sync.Mutex
-
-func getBlockName(id int) string {
-  return strconv.FormatInt(int64(id), 10)
-}
-
-func getBlockDir(name string, id int) string {
-  return fmt.Sprintf("db/%s/%05s", name, getBlockName(id))
-}
-func getBlockFilename(name string, id int) string {
-  return fmt.Sprintf("db/%s/%05s.db", name, getBlockName(id))
-}
-
 
 // This is a singleton constructor for Tables
 func getTable(name string) *Table{
