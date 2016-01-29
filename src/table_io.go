@@ -10,11 +10,12 @@ import "io/ioutil"
 import "encoding/gob"
 import "sync"
 import "sort"
+import "runtime/debug"
 
 var DEBUG_TIMING = false
 
 type LoadSpec struct {
-  columns map[string]bool 
+  columns map[string]bool
 }
 
 func NewLoadSpec() LoadSpec {
@@ -60,7 +61,7 @@ func LoadTables() []Table {
     tables = append(tables, *v);
   }
   return tables
-  
+
 }
 
 func SaveTables() {
@@ -157,7 +158,7 @@ func (t *Table) FillPartialBlock() bool {
 
 func getSaveTable(t *Table) *Table {
   return &Table{Name: t.Name,
-    KeyTable: t.KeyTable, 
+    KeyTable: t.KeyTable,
     LastBlockId: t.LastBlockId}
 }
 
@@ -333,11 +334,11 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
         string_lookup := make(map[int32]string)
 
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
-  
+
         col := tb.getColumnInfo(into.Name)
 	// unpack the string table
 	for k, v := range into.StringTable {
-	  col.StringTable[v] = int32(k) 
+	  col.StringTable[v] = int32(k)
 	  string_lookup[int32(k)] = v
 	}
         col.val_string_id_lookup = string_lookup
@@ -390,19 +391,24 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
   waystart := time.Now()
   fmt.Println("LOADING", t.Name)
 
+  // turn off the gc (and turn it back on after this func) because
+  // MALLOC + GC is slow with millions of records
+  debug.SetGCPercent(-1)
+  defer debug.SetGCPercent(100)
+
   files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
 
   var wg sync.WaitGroup
- 
+
   wg.Add(1)
   // why is table info so slow to open!!!
-  go func() { 
+  go func() {
     defer wg.Done()
     t.LoadTableInfo()
   }()
 
   wg.Wait()
-  
+
 
   fmt.Println("KEY TABLE", t.KeyTable)
 
