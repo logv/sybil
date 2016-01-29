@@ -233,7 +233,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   fmt.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
   os.Rename(dirname, oldblock)
   err := os.Rename(partialname, dirname)
-  if err != nil{
+  if err == nil{
     os.Remove(oldblock)
   }
 }
