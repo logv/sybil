@@ -6,10 +6,10 @@ import "strings"
 import "time"
 import "strconv"
 import "sync"
-
+import "runtime/debug"
 
 // TODO: add flag to shake the DB up and reload / resave data
-var f_RESET = flag.Bool("reset", false, "Reset the DB")
+var f_PROFILE = flag.Bool("profile", false, "Generate a profile?")
 var f_TABLE = flag.String("table", "", "Table to operate on")
 var f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 var f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
@@ -25,6 +25,7 @@ var f_GROUPS = flag.String("group", "", "values group by")
 
 var GROUP_BY  []string
 
+var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 func make_records(name string) {
   fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
   CHUNK_SIZE := 50000
@@ -204,17 +205,35 @@ func ParseCmdLine() {
   if (*f_ADD_RECORDS != 0) {	
     add_records()
   } else if !*f_PRINT_INFO {
+    // DISABLE GC FOR QUERY PATH
+    // NEVER TURN IT BACK ON!
+    fmt.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
+    old_percent := debug.SetGCPercent(-1)
+    
 
 
     fmt.Println("USING LOAD SPEC", loadSpec)
 
     fmt.Println("USING QUERY SPEC", querySpec)
 
-
+  
+    
     start := time.Now()
-    t.LoadRecords(&loadSpec)
-    queryTable(table, loadSpec, querySpec)
+    count := t.LoadRecords(&loadSpec)
     end := time.Now()
+    
+
+    fmt.Println("LOAD RECORDS TOOK", end.Sub(start))
+    if count > MAX_RECORDS_NO_GC { 
+      fmt.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC / 1000 / 1000), "RECORDS LOADED ENABLING GC")
+      gc_start := time.Now()
+      debug.SetGCPercent(old_percent)
+      end = time.Now()
+      fmt.Println("GC TOOK", end.Sub(gc_start))
+    }
+
+    queryTable(table, loadSpec, querySpec)
+    end = time.Now()
     fmt.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
   }
 

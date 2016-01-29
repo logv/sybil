@@ -10,7 +10,6 @@ import "io/ioutil"
 import "encoding/gob"
 import "sync"
 import "sort"
-import "runtime/debug"
 import "strconv"
 
 var DEBUG_TIMING = false
@@ -362,14 +361,9 @@ func (t *Table) ReleaseRecords() {
   t.BlockList = make(map[string]*TableBlock, 0)
 }
 
-func (t *Table) LoadRecords(load_spec *LoadSpec) {
+func (t *Table) LoadRecords(load_spec *LoadSpec) int {
   waystart := time.Now()
   fmt.Println("LOADING", t.Name)
-
-  // turn off the gc (and turn it back on after this func) because
-  // MALLOC + GC is slow with millions of records
-  debug.SetGCPercent(-1)
-  defer debug.SetGCPercent(100)
 
   files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
 
@@ -438,5 +432,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
   } else {
     fmt.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
   }
+
+  return count
 }
 

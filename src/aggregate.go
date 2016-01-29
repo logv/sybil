@@ -4,7 +4,6 @@ import "sync"
 import "bytes"
 import "fmt"
 import "time"
-import "runtime/debug"
 
 func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
   var buffer bytes.Buffer
@@ -119,8 +118,6 @@ func filterAndAggRecords(querySpec QuerySpec, records []*Record) []*Record {
 
 func (t *Table) MatchAndAggregate(querySpec QuerySpec) {
   start := time.Now()
-  debug.SetGCPercent(-1)
-  defer debug.SetGCPercent(100)
 
   var wg sync.WaitGroup
   rets := make([]*Record, 0);
@@ -145,7 +142,8 @@ func (t *Table) MatchAndAggregate(querySpec QuerySpec) {
   wg.Wait()
   end := time.Now()
 
+  querySpec.Matched = rets
+
   fmt.Println("FILTRD", len(rets), "AND AGGREGATED", "RECORDS INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
-  querySpec.Matched = rets
 }
