@@ -404,10 +404,12 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) {
 	start := time.Now()
         records = t.LoadBlockFromDir(filename, load_spec, false);
 	end := time.Now()
-	if load_spec != nil {
-	  fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
-	} else {
-	  fmt.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
+	if DEBUG_TIMING {
+	  if load_spec != nil {
+	    fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
+	  } else {
+	    fmt.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
+	  }
 	}
 
         if len(records) > 0 {
