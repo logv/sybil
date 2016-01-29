@@ -102,9 +102,9 @@ func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
   }
 
   if (*f_SESSION_COL != "") {
-    start = time.Now()
+    start := time.Now()
     session_maps := SessionizeRecords(ret, *f_SESSION_COL)
-    end = time.Now()
+    end := time.Now()
     fmt.Println("SESSIONIZED", len(ret), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
   }
 }
@@ -131,22 +131,11 @@ func ParseCmdLine() {
 
   }
 
-  if *f_STRS != "" {
-    strs = strings.Split(*f_STRS, ",")
-
-  }
-
-  if *f_INTS != "" {
-    ints = strings.Split(*f_INTS, ",")
-  }
-
-  if *f_INT_FILTERS != "" {
-    intfilters = strings.Split(*f_INT_FILTERS, ",")
-  }
-
-  if *f_STR_FILTERS != "" {
-    strfilters = strings.Split(*f_STR_FILTERS, ",")
-  }
+  // PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
+  if *f_STRS != "" { strs = strings.Split(*f_STRS, ",") }
+  if *f_INTS != "" { ints = strings.Split(*f_INTS, ",") } 
+  if *f_INT_FILTERS != "" { intfilters = strings.Split(*f_INT_FILTERS, ",") }
+  if *f_STR_FILTERS != "" { strfilters = strings.Split(*f_STR_FILTERS, ",") }
 
 
 

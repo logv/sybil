@@ -3,6 +3,12 @@ package edb
 import "fmt"
 import "sort"
 
+// THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
+// it adds update_int_info and update_str_info to Table/TableBlock
+
+
+// StrInfo and IntInfo contains interesting tidbits about columns
+// they also get serialized to disk in the block's info.db
 type StrInfo struct {
   TopStringCount map[int32]int
   Cardinality int

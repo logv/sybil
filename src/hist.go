@@ -3,7 +3,6 @@ package edb
 import "sort"
 import "sync"
 
-// how do we use hists, anyways?
 type Hist struct {
   Max int
   Min int
