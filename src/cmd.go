@@ -92,7 +92,12 @@ func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
       for _, agg := range querySpec.Aggregations {
 	col_name := fmt.Sprintf("  %5s", agg.name)
 	if *f_OP == "hist" {
-	  p := v.Hists[agg.name].getPercentiles()
+	  h, ok := v.Hists[agg.name]
+	  if !ok {
+	    fmt.Println("NO HIST AROUND FOR KEY", agg.name, k)
+	    continue
+	  }
+	  p := h.getPercentiles()
 	  fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
 	} else if *f_OP == "avg" {
 	  fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
