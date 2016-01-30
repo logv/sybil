@@ -9,7 +9,7 @@ import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
-func queryTable(name string, loadSpec LoadSpec, querySpec QuerySpec) {
+func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
   table := getTable(name)
 
   table.MatchAndAggregate(querySpec)
@@ -181,7 +181,7 @@ func RunQueryCmdLine() {
       fmt.Println("GC TOOK", end.Sub(gc_start))
     }
 
-    queryTable(table, loadSpec, querySpec)
+    queryTable(table, &loadSpec, &querySpec)
     end = time.Now()
     fmt.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
   }

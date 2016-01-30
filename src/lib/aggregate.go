@@ -6,7 +6,9 @@ import "time"
 import "sync"
 import "sync/atomic"
 
-func filterAndAggRecords(querySpec QuerySpec, recordsPtr *[]*Record) []*Record {
+var RESULT_LIMIT = 10000
+
+func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record {
   var buffer bytes.Buffer
   records := *recordsPtr
 
@@ -55,7 +57,7 @@ func filterAndAggRecords(querySpec QuerySpec, recordsPtr *[]*Record) []*Record {
     if !ok {
       length := len(querySpec.Results)
 
-      if length >= 1000  {
+      if length >= RESULT_LIMIT  {
         continue
       }
 
@@ -129,7 +131,7 @@ func filterAndAggRecords(querySpec QuerySpec, recordsPtr *[]*Record) []*Record {
 }
 
 
-func (t *Table) MatchAndAggregate(querySpec QuerySpec) {
+func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
   start := time.Now()
 
   var wg sync.WaitGroup
