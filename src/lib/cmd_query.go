@@ -9,29 +9,47 @@ import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
+
+func printResult(querySpec *QuerySpec, v *Result) {
+  fmt.Println(fmt.Sprintf("%-10s", v.GroupByKey)[:10], fmt.Sprintf("%.0d", v.Count))
+  for _, agg := range querySpec.Aggregations {
+    col_name := fmt.Sprintf("  %5s", agg.name)
+    if *f_OP == "hist" {
+      h, ok := v.Hists[agg.name]
+      if !ok {
+	fmt.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
+	continue
+      }
+      p := h.getPercentiles()
+      fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
+    } else if *f_OP == "avg" {
+      fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
+    }
+  }
+}
+func printResults(querySpec *QuerySpec) {
+  for _, v := range querySpec.Results {
+    printResult(querySpec, v)
+  }
+}
+
+func printSortedResults(querySpec *QuerySpec) {
+  for _, v := range querySpec.Sorted {
+    printResult(querySpec, v)
+  }
+}
+
 func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
   table := getTable(name)
 
   table.MatchAndAggregate(querySpec)
 
   if *f_PRINT {
-    for k, v := range querySpec.Results {
-
-      fmt.Println(fmt.Sprintf("%-10s", k)[:10], fmt.Sprintf("%.0d", v.Count))
-      for _, agg := range querySpec.Aggregations {
-	col_name := fmt.Sprintf("  %5s", agg.name)
-	if *f_OP == "hist" {
-	  h, ok := v.Hists[agg.name]
-	  if !ok {
-	    fmt.Println("NO HIST AROUND FOR KEY", agg.name, k)
-	    continue
-	  }
-	  p := h.getPercentiles()
-	  fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
-	} else if *f_OP == "avg" {
-	  fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
-	}
-      }
+    fmt.Println("PRINTING RESULTS")
+    if querySpec.OrderBy != "" {
+      printSortedResults(querySpec)
+    } else {
+      printResults(querySpec)
     }
   }
 
@@ -147,6 +165,15 @@ func RunQueryCmdLine() {
   for _, v := range groups { loadSpec.Str(v) }
   for _, v := range strs { loadSpec.Str(v) } 
   for _, v := range ints { loadSpec.Int(v) }
+
+  if *f_SORT != "" {
+    loadSpec.Int(*f_SORT)
+    querySpec.OrderBy = *f_SORT
+  } else {
+    querySpec.OrderBy = ""
+  }
+
+  querySpec.Limit = int16(*f_LIMIT)
 
   if *f_SESSION_COL != "" {
     loadSpec.Str(*f_SESSION_COL)

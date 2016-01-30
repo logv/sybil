@@ -6,7 +6,11 @@ type QuerySpec struct {
   Groups []Grouping
   Aggregations []Aggregation
 
+  OrderBy string
+  Limit int16
+
   Results map[string]*Result
+  Sorted []*Result
   Matched []*Record
 
   BlockList map[string]TableBlock
@@ -36,6 +40,8 @@ type Result struct {
   Strs map[string]string
   Sets map[string][]string
   Hists map[string]*Hist
+
+  GroupByKey string
   Count int32
 }
 

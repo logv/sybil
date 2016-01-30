@@ -5,8 +5,27 @@ import "fmt"
 import "time"
 import "sync"
 import "sync/atomic"
+import "sort"
 
 var INTERNAL_RESULT_LIMIT = 100000
+
+type SortResultsByCol struct {
+  Results []*Result
+
+  Col string
+}
+
+func (a SortResultsByCol) Len() int           { return len(a.Results) }
+func (a SortResultsByCol) Swap(i, j int)      { a.Results[i], a.Results[j] = a.Results[j], a.Results[i] }
+
+
+// This sorts the records in descending order
+func (a SortResultsByCol) Less(i, j int) bool { 
+  t1 := a.Results[i].Ints[a.Col]
+  t2 := a.Results[j].Ints[a.Col]
+
+  return t1 > t2
+}
 
 func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record {
   var buffer bytes.Buffer
@@ -67,6 +86,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
       added_record.Strs = make(map[string]string)
       added_record.Sets = make(map[string][]string)
       added_record.Count = 0
+      added_record.GroupByKey = group_key
 
       // WARNING: this is an annoying thread barrier that happens.
       // TODO: replace it with a RW mutex instead of just R mutex
@@ -156,6 +176,30 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
   wg.Wait()
   end := time.Now()
+
+  if querySpec.OrderBy != "" {
+    start := time.Now()
+    sorter := SortResultsByCol{}
+    sorter.Results = make([]*Result, 0)
+    for _, v := range querySpec.Results {
+      sorter.Results = append(sorter.Results, v)
+    }
+    querySpec.Sorted = sorter.Results
+
+    sorter.Col = querySpec.OrderBy
+    sort.Sort(sorter)
+
+    end := time.Now()
+    if DEBUG_TIMING {
+      fmt.Println("SORTING TOOK", end.Sub(start))
+    }
+
+    if len(sorter.Results) > *f_LIMIT {
+      sorter.Results = sorter.Results[:*f_LIMIT]
+    }
+
+    querySpec.Sorted = sorter.Results
+  }
 
   querySpec.Matched = rets
 
