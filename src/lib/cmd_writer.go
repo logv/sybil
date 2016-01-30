@@ -64,6 +64,8 @@ func RunWriteCmdLine() {
 
   flag.Parse()
 
+  if *f_TABLE == "" { flag.PrintDefaults(); return }
+
   t := getTable(*f_TABLE)
 
   t.LoadRecords(nil)

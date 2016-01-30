@@ -17,5 +17,5 @@ var GROUP_BY  []string
 
 var f_ADD_RECORDS *int
 
-var f_TABLE = flag.String("table", "", "Table to operate on")
+var f_TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 var f_PRINT_INFO = flag.Bool("info", false, "Print table info")

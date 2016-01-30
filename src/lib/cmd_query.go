@@ -62,7 +62,7 @@ func RunQueryCmdLine() {
   flag.Parse()
 
   table := *f_TABLE
-  if table == "" { table = "test0" }
+  if table == "" { flag.PrintDefaults(); return }
   t := getTable(table)
 
   ints := make([]string, 0)
