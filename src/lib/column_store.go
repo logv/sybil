@@ -44,15 +44,18 @@ type SavedColumnInfo struct {
 }
 
 type SavedInts struct {
-  Name int16
+  Name string
+  NameId int16
   Bins []SavedIntColumn
 }
 type SavedStrs struct {
-  Name int16
+  Name string
+  NameId int16
   Bins []SavedStrColumn
   StringTable []string
 }
 type SavedSets struct {
-  Name int16
+  Name string
+  NameId int16
   Bins []SavedSetColumn
 }

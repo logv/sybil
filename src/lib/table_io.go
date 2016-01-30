@@ -305,11 +305,18 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
       case strings.HasPrefix(fname, "str"):
         into := &SavedStrs{}
         err := dec.Decode(into);
+
+	col_name := tb.table.get_string_for_key(int(into.NameId))
+	if col_name != into.Name {
+	  fmt.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name, "SKIPPING!")
+	  continue
+
+	}
         string_lookup := make(map[int32]string)
 
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
 
-        col := tb.getColumnInfo(into.Name)
+        col := tb.getColumnInfo(into.NameId)
 	// unpack the string table
 	for k, v := range into.StringTable {
 	  col.StringTable[v] = int32(k)
@@ -326,8 +333,12 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 
 	    record = records[r]
 
-            record.Strs[into.Name] = StrField(value_id)
-	    record.Populated[into.Name] = STR_VAL
+	    if int(into.NameId) >= len(record.Strs) {
+	      fmt.Println("FOUND A STRAY COLUMN...", into.Name) 
+	    } else {
+	      record.Strs[into.NameId] = StrField(value_id)
+	    }
+	    record.Populated[into.NameId] = STR_VAL
           }
         }
 
@@ -335,13 +346,18 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
         into := &SavedInts{}
         err := dec.Decode(into);
         if err != nil { fmt.Println("DECODE COL ERR:", err) }
+
+	col_name := tb.table.get_string_for_key(int(into.NameId))
+	if col_name != into.Name {
+	  fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name)
+	}
         for _, bucket := range into.Bins {
-	  tb.table.update_int_info(into.Name, int(bucket.Value))
+	  tb.table.update_int_info(into.NameId, int(bucket.Value))
 
           for _, r := range bucket.Records {
 
-            records[r].Ints[into.Name] = IntField(bucket.Value)
-	    records[r].Populated[into.Name] = INT_VAL
+            records[r].Ints[into.NameId] = IntField(bucket.Value)
+	    records[r].Populated[into.NameId] = INT_VAL
           }
 
 
