@@ -1,14 +1,18 @@
 all: query writer
 
 query: 
-	go build -o edb-query ./src/query/ 
+	mkdir bin 2>/dev/null || true
+	go build -o bin/edb-query ./src/query/ 
 
 writer:
-	go build -o edb-write ./src/write/
+	mkdir bin 2>/dev/null || true
+	go build -o bin/edb-write ./src/write/
 
 profile:
-	go build -tags profile -o edb-write ./src/write
-	go build -tags profile -o edb-query ./src/query
+	mkdir bin 2>/dev/null || true
+	echo "Compiling binaries with profiling enabled, use -profile flag to turn on profiling"
+	go build -tags profile -o bin/edb-write ./src/write
+	go build -tags profile -o bin/edb-query ./src/query
 
 tags: 
 	ctags --languages=+Go src/lib/*.go src/query/*.go src/write/*.go
