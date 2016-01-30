@@ -98,6 +98,10 @@ func (t *Table) NewRecord() *Record {
   r := Record{ Ints: IntArr{}, Strs: StrArr{} }
   t.dirty = true;
 
+  b := t.LastBlock
+  b.table = t 
+  r.block = &b
+
   t.record_m.Lock();
   t.newRecords = append(t.newRecords, &r)
   t.record_m.Unlock();
