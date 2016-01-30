@@ -21,7 +21,12 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	continue
       }
       p := h.getPercentiles()
-      fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
+
+      if len(p) > 0 {
+	fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
+      } else {
+	fmt.Println(col_name, "No Data")
+      }
     } else if *f_OP == "avg" {
       fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
     }

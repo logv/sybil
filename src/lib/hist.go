@@ -9,9 +9,12 @@ type Hist struct {
   Count int
   Avg float64
 
+  num_buckets int
   bucket_size int
-  values map[int]int
-  avgs map[int]float64
+  values []int
+  avgs []float64
+
+  outliers []int
 
   m *sync.Mutex
 }
@@ -21,13 +24,14 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
   buckets := 200 // resolution?
   h := &Hist{}
 
-  h.values = make(map[int]int, buckets)
-  h.avgs = make(map[int]float64, buckets)
+  h.num_buckets = buckets
 
-  h.Max = int(info.Min)
-  h.Min = int(info.Max)
+  h.Max = int(info.Max)
+  h.Min = int(info.Min)
   h.Avg = 0
   h.Count = 0
+
+  h.outliers = make([]int, 0)
   
   h.m = &sync.Mutex{}
 
@@ -37,23 +41,34 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
   if h.bucket_size == 0 {
     if (size < 100) {
       h.bucket_size = 1
+      h.num_buckets = size
     } else {
       h.bucket_size = size / 100
+      h.num_buckets = size / h.num_buckets
     }
   }
+
+  h.num_buckets += 1
+
+
+  h.values = make([]int, h.num_buckets + 1)
+  h.avgs = make([]float64, h.num_buckets + 1)
   // we should use X buckets to start...
   return h
 }
 
 func (h *Hist) addValue(value int) {
   h.m.Lock()
-  defer h.m.Unlock()
 
-  bucket_value := value / h.bucket_size
-  partial, ok := h.avgs[bucket_value]
-  if !ok {
-    partial = 0
+  bucket_value := (value - h.Min) / h.bucket_size
+
+  if bucket_value > h.num_buckets {
+    h.outliers = append(h.outliers, value)
+    h.m.Unlock()
+    return
   }
+
+  partial := h.avgs[bucket_value]
 
   if (value > h.Max) {
     h.Max = value
@@ -67,13 +82,13 @@ func (h *Hist) addValue(value int) {
   h.Avg = h.Avg + (float64(value) - h.Avg) / float64(h.Count)
 
   // update counts
-  count, ok := h.values[bucket_value]
-  if !ok { count = 0 }
+  count := h.values[bucket_value]
   count++
   h.values[bucket_value] = count
 
   // update bucket averages
   h.avgs[bucket_value] = partial + (float64(value) - partial) / float64(h.values[bucket_value])
+  h.m.Unlock()
 }
 
 type ByVal []int
@@ -82,9 +97,14 @@ func (a ByVal) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByVal) Less(i, j int) bool { return a[i] < a[j] }
 
 
-func (h *Hist) getPercentiles() []int {
+func (h *Hist) getPercentiles() []int {	
+  if h.Count == 0 {
+    return make([]int, 0)
+  }
   percentiles := make([]int, 101)
   keys := make([]int, 0)
+
+  // unpack the bucket values!
   for k,_ := range h.values {
     keys = append(keys, k)
   }
@@ -98,7 +118,7 @@ func (h *Hist) getPercentiles() []int {
     count = count + key_count
     p := 100 * count / h.Count
     for ip := prev_p; ip < p; ip++ {
-      percentiles[ip] = k
+      percentiles[ip] = (k * h.bucket_size) + h.Min
     }
     percentiles[p] = k
     prev_p = p
