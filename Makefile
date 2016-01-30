@@ -9,8 +9,11 @@ writer: bindir
 datagen: bindir
 	go build -o bin/edb-fakedata ./src/fakedata
 
-fakedata: datagen
+testdata:
 	./bin/edb-fakedata -add 100000 -table test0
+
+testquery:
+	./bin/edb-query -table test0 -int age,f1 -op hist -group state
 	
 
 bindir:

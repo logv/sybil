@@ -11,6 +11,8 @@ RUNNING
 
 
     make
-    make fakedata
+    make datagen
+    make testdata
+    make testquery
 
     ./edb-query -table test0
