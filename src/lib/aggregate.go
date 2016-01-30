@@ -6,7 +6,7 @@ import "time"
 import "sync"
 import "sync/atomic"
 
-var RESULT_LIMIT = 10000
+var INTERNAL_RESULT_LIMIT = 100000
 
 func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record {
   var buffer bytes.Buffer
@@ -57,7 +57,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
     if !ok {
       length := len(querySpec.Results)
 
-      if length >= RESULT_LIMIT  {
+      if length >= INTERNAL_RESULT_LIMIT  {
         continue
       }
 
