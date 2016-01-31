@@ -19,7 +19,7 @@ type Table struct {
   key_string_id_lookup map[int16]string
   val_string_id_lookup map[int32]string
 
-  string_id_m *sync.Mutex;
+  string_id_m *sync.RWMutex;
   record_m *sync.Mutex;
   block_m *sync.Mutex;
 }
@@ -49,7 +49,7 @@ func getTable(name string) *Table{
   t.LastBlock = newTableBlock()
   t.LastBlock.RecordList = t.newRecords
 
-  t.string_id_m = &sync.Mutex{}
+  t.string_id_m = &sync.RWMutex{}
   t.record_m = &sync.Mutex{}
   t.block_m = &sync.Mutex{}
 
@@ -80,7 +80,9 @@ func (t *Table) populate_string_id_lookup() {
 }
 
 func (t *Table) get_key_id(name string) int16 {
+  t.string_id_m.RLock();
   id, ok := t.KeyTable[name]
+  t.string_id_m.RUnlock();
 
   if ok {
     return int16(id);
