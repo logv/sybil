@@ -1,29 +1,35 @@
-all: query writer
+BUILD_CMD = /usr/bin/go install
+BINDIR = ./bin
+GOBINDIR = ./bin
+PROFILE = -tags profile
+
+all: query writer datagen
 
 query: bindir
-	go build -o bin/edb-query ./src/query/ 
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/query/ 
 
-writer: bindir
-	go build -o bin/edb-write ./src/write/
+writer: bindir ./src/write
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/write/
 
 datagen: bindir
-	go build -o bin/edb-fakedata ./src/fakedata
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/fakedata
 
 testdata:
-	./bin/edb-fakedata -add 100000 -table test0
+	${BINDIR}/fakedata -add 100000 -table test0
 
 testquery:
-	./bin/edb-query -table test0 -int age,f1 -op hist -group state
+	${BINDIR}/query -table test0 -int age,f1 -op hist -group state
 	
 
 bindir:
-	mkdir bin 2>/dev/null || true
-      
+	mkdir ${BINDIR} 2>/dev/null || true
+     
+
+profile: export BUILD_FLAGS += -tags profile
 profile: bindir
-	echo "Compiling binaries with profiling enabled, use -profile flag to turn on profiling"
-	go build -tags profile -o bin/edb-write ./src/write
-	go build -tags profile -o bin/edb-query ./src/query
-	go build -tags profile -o bin/edb-fakedata ./src/fakedata
+	make query
+	make writer
+	make datagen
 
 tags: 
 	ctags --languages=+Go src/lib/*.go src/query/*.go src/write/*.go
@@ -31,7 +37,7 @@ tags:
 default: all
 
 clean:
-	rm ./edb-query ./edb-write
+	rm ./bin/*
 
 .PHONY: tags 
 .PHONY: query 

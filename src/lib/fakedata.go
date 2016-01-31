@@ -38,7 +38,7 @@ func NewRandomRecord(table_name string) *Record {
 
   // NEED TO LOCK THE FAKER DOWN
   t.record_m.Lock()
-  r.AddStrField("state", FAKE.CompanyName())
+  r.AddStrField("state", FAKE.State())
   r.AddStrField("company", FAKE.CompanyName())
   r.AddStrField("country", FAKE.Country())
   r.AddStrField("city", FAKE.City())

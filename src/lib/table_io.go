@@ -406,6 +406,9 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
       continue
     }
 
+    if strings.HasSuffix(v.Name(), "old") {
+      continue
+    }
     if strings.HasSuffix(v.Name(), "partial") {
       continue
     }
