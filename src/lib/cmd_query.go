@@ -33,13 +33,18 @@ func printResult(querySpec *QuerySpec, v *Result) {
   }
 }
 func printResults(querySpec *QuerySpec) {
+  count := 0
   for _, v := range querySpec.Results {
     printResult(querySpec, v)
+    count ++
+    if (count > int(querySpec.Limit)) {
+      return
+    }
   }
 }
 
 func printSortedResults(querySpec *QuerySpec) {
-  for _, v := range querySpec.Sorted {
+  for _, v := range querySpec.Sorted[querySpec.Limit:] {
     printResult(querySpec, v)
   }
 }
@@ -51,6 +56,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 
   if *f_PRINT {
     fmt.Println("PRINTING RESULTS")
+
     if querySpec.OrderBy != "" {
       printSortedResults(querySpec)
     } else {

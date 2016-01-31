@@ -83,16 +83,22 @@ func (t *Table) get_key_id(name string) int16 {
   t.string_id_m.RLock();
   id, ok := t.KeyTable[name]
   t.string_id_m.RUnlock();
-
   if ok {
     return int16(id);
   }
 
 
+
   t.string_id_m.Lock();
+  defer t.string_id_m.Unlock()
+  existing, ok := t.KeyTable[name]
+  if ok {
+    return existing
+  }
+
   t.KeyTable[name] = int16(len(t.KeyTable));
   t.key_string_id_lookup[t.KeyTable[name]] = name;
-  t.string_id_m.Unlock();
+
   return int16(t.KeyTable[name]);
 }
 
