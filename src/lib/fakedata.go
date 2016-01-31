@@ -36,6 +36,10 @@ func NewRandomRecord(table_name string) *Record {
   r.AddIntField("int_id", int(session_id))
   r.AddStrField("session_id", strconv.FormatInt(session_id, 16))
 
+  canary := int(rand.Intn(10000))
+  r.AddIntField("int_canary", canary)
+  r.AddStrField("str_canary", strconv.FormatInt(int64(canary), 10))
+
   // NEED TO LOCK THE FAKER DOWN
   t.record_m.Lock()
   r.AddStrField("state", FAKE.State())
