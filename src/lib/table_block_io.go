@@ -227,6 +227,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   tb.Name = dirname
 
   partialname := fmt.Sprintf("%s.partial", dirname )
+  os.RemoveAll(partialname)
   oldblock := fmt.Sprintf("%s.old", dirname)
 
   separated_columns := tb.SeparateRecordsIntoColumns()
