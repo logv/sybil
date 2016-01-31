@@ -1,4 +1,4 @@
-// +build !denc
+// +build denc
 
 package edb
 

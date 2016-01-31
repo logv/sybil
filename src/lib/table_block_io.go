@@ -7,6 +7,7 @@ import "os"
 import "encoding/gob"
 import "strings"
 import "sort"
+import "time"
 
 type ValueMap map[int32][]uint32
 type SetMap map[int32][]int32
@@ -272,6 +273,135 @@ func (tb *TableBlock) SaveToColumns(filename string) {
   }
 }
 
+func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
+  records := tb.RecordList
+
+  into := &SavedStrs{}
+  err := dec.Decode(into);
+
+  col_name := tb.table.get_string_for_key(int(into.NameId))
+  if col_name != into.Name {
+    fmt.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name, "SKIPPING!")
+    return
+
+  }
+  string_lookup := make(map[int32]string)
+
+  if err != nil { fmt.Println("DECODE COL ERR:", err) }
+
+  col := tb.getColumnInfo(into.NameId)
+  // unpack the string table
+  for k, v := range into.StringTable {
+    col.StringTable[v] = int32(k)
+    string_lookup[int32(k)] = v
+  }
+  col.val_string_id_lookup = string_lookup
+
+  var record *Record
+  for _, bucket := range into.Bins {
+
+    prev := uint32(0) 
+    for _, r := range bucket.Records {
+      val :=  string_lookup[bucket.Value]
+      value_id := col.get_val_id(val)
+
+      if into.DeltaEncodedIDs {
+	r = prev + r
+      }
+
+      record = records[r]
+      prev = r
+
+      if int(into.NameId) >= len(record.Strs) {
+	fmt.Println("FOUND A STRAY COLUMN...", into.Name) 
+      } else {
+	record.Strs[into.NameId] = StrField(value_id)
+      }
+      record.Populated[into.NameId] = STR_VAL
+    }
+  }
+
+}
+
+func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
+ records := tb.RecordList
+
+ into := &SavedInts{}
+ err := dec.Decode(into);
+ if err != nil { fmt.Println("DECODE COL ERR:", err) }
+
+ col_name := tb.table.get_string_for_key(int(into.NameId))
+ if col_name != into.Name {
+   fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name)
+ }
+
+ for _, bucket := range into.Bins {
+   tb.table.update_int_info(into.NameId, int(bucket.Value))
+
+   // DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
+   prev := uint32(0)
+   for _, r := range bucket.Records {
+     if into.DeltaEncodedIDs {
+       r = r + prev
+     }
+
+     records[r].Ints[into.NameId] = IntField(bucket.Value)
+     records[r].Populated[into.NameId] = INT_VAL
+     prev = r
+   }
 
 
+ }
+}
 
+func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo, load_records bool) []*Record {
+  t := tb.table
+
+  var r *Record
+
+  var records []*Record
+  var alloced []Record
+  var bigIntArr IntArr
+  var bigStrArr StrArr
+  var bigPopArr []int
+  max_key_id := 0
+  for _, v := range t.KeyTable {
+    if max_key_id <= int(v) {
+      max_key_id = int(v) + 1
+    }
+  }
+
+  if load_spec != nil || load_records {
+    mstart := time.Now()
+    records = make([]*Record, info.NumRecords)
+    alloced = make([]Record, info.NumRecords)
+    bigIntArr = make(IntArr, max_key_id * int(info.NumRecords))
+    bigStrArr = make(StrArr, max_key_id * int(info.NumRecords))
+    bigPopArr = make([]int, max_key_id * int(info.NumRecords))
+    mend := time.Now()
+
+    if DEBUG_TIMING {
+      fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+    }
+
+    start := time.Now()
+    for i, _ := range records {
+      r = &alloced[i]
+      r.Ints = bigIntArr[i*max_key_id:(i+1)*max_key_id]
+      r.Strs = bigStrArr[i*max_key_id:(i+1)*max_key_id]
+      r.Populated = bigPopArr[i*max_key_id:(i+1)*max_key_id]
+
+      r.block = tb
+      records[i] = r
+    }
+    end := time.Now()
+
+    if DEBUG_TIMING {
+      fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+    }
+  }
+
+  tb.RecordList = records[:]
+  return records[:]
+
+}

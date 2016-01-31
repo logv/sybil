@@ -3,6 +3,7 @@ BINDIR = ./bin
 GOBINDIR = ./bin
 PROFILE = -tags profile
 
+
 all: query writer datagen
 
 query: bindir
@@ -25,11 +26,12 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
      
 
-deltaencoding: export BUILD_FLAGS += -tags denc
-deltaencoding: bindir
+nodeltaencoding: export BUILD_FLAGS += -tags denc
+nodeltaencoding: bindir
 	make query
 	make writer
 	make datagen
+
 profile: export BUILD_FLAGS += -tags profile
 profile: bindir
 	make query
