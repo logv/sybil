@@ -44,7 +44,11 @@ func printResults(querySpec *QuerySpec) {
 }
 
 func printSortedResults(querySpec *QuerySpec) {
-  for _, v := range querySpec.Sorted[querySpec.Limit:] {
+  sorted := querySpec.Sorted
+  if int(querySpec.Limit) < len(querySpec.Sorted) {
+    sorted = querySpec.Sorted[:querySpec.Limit]
+  }
+  for _, v := range sorted  {
     printResult(querySpec, v)
   }
 }
