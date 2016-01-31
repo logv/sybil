@@ -11,6 +11,21 @@ import "sort"
 type ValueMap map[int32][]uint32
 type SetMap map[int32][]int32
 
+func delta_encode(same_map map[int16]ValueMap) {
+  for _, col := range same_map {
+    for _, records := range col {
+      prev := uint32(0)
+      for i, v := range records {
+	records[int32(i)] = v - prev
+	prev = v
+	
+
+      }
+    }
+  }
+
+}
+
 // this is used to record the buckets when building the column
 // blobs
 func record_value(same_map map[int16]ValueMap, index int32, name int16, value int32) {
@@ -53,6 +68,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
     intCol := SavedInts{}
     intCol.NameId = k
     intCol.Name = col_name
+    intCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 
     for bucket, records := range v {
       si := SavedIntColumn{Value: bucket, Records: records}
@@ -101,6 +117,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
     strCol := SavedStrs{}
     strCol.Name = col_name
     strCol.NameId = k
+    strCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
     temp_block := newTableBlock()
 
     temp_col := temp_block.getColumnInfo(k)
@@ -212,6 +229,11 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
       }
       s[int32(i)] = v
     }
+  }
+
+  if DELTA_ENCODE_RECORD_IDS {
+    delta_encode(same_ints)
+    delta_encode(same_strs)
   }
 
   ret := SeparatedColumns{ ints: same_ints, strs: same_strs, sets: same_sets }

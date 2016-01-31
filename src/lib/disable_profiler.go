@@ -1,4 +1,4 @@
-//+build !profile
+// +build !profile
 
 package edb
 

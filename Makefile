@@ -25,6 +25,11 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
      
 
+deltaencoding: export BUILD_FLAGS += -tags denc
+deltaencoding: bindir
+	make query
+	make writer
+	make datagen
 profile: export BUILD_FLAGS += -tags profile
 profile: bindir
 	make query

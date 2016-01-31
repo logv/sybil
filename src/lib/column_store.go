@@ -52,11 +52,13 @@ type SavedColumnInfo struct {
 type SavedInts struct {
   Name string
   NameId int16
+  DeltaEncodedIDs bool
   Bins []SavedIntColumn
 }
 type SavedStrs struct {
   Name string
   NameId int16
+  DeltaEncodedIDs bool
   Bins []SavedStrColumn
   StringTable []string
 }

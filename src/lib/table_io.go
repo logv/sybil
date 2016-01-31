@@ -329,11 +329,17 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 	var record *Record
         for _, bucket := range into.Bins {
 
+	  prev := uint32(0) 
           for _, r := range bucket.Records {
             val :=  string_lookup[bucket.Value]
             value_id := col.get_val_id(val)
 
+	    if into.DeltaEncodedIDs {
+	      r = prev + r
+	    }
+
 	    record = records[r]
+	    prev = r
 
 	    if int(into.NameId) >= len(record.Strs) {
 	      fmt.Println("FOUND A STRAY COLUMN...", into.Name) 
@@ -353,13 +359,19 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 	if col_name != into.Name {
 	  fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name)
 	}
+
         for _, bucket := range into.Bins {
 	  tb.table.update_int_info(into.NameId, int(bucket.Value))
 
+	  // DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
+	  prev := uint32(0)
           for _, r := range bucket.Records {
-
+	    if into.DeltaEncodedIDs {
+	      r = r + prev
+	    }
             records[r].Ints[into.NameId] = IntField(bucket.Value)
 	    records[r].Populated[into.NameId] = INT_VAL
+	    prev = r
           }
 
 
