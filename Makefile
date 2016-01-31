@@ -23,6 +23,7 @@ profile: bindir
 	echo "Compiling binaries with profiling enabled, use -profile flag to turn on profiling"
 	go build -tags profile -o bin/edb-write ./src/write
 	go build -tags profile -o bin/edb-query ./src/query
+	go build -tags profile -o bin/edb-fakedata ./src/fakedata
 
 tags: 
 	ctags --languages=+Go src/lib/*.go src/query/*.go src/write/*.go

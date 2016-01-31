@@ -4,6 +4,7 @@ import "flag"
 import "fmt"
 import "sync"
 import "time"
+import "runtime/debug"
 
 // IS DEFINED IN QUERY_CMD WEIRDLY ENOUGH
 //var f_TABLE = flag.String("table", "", "Table to operate on")
@@ -63,6 +64,10 @@ func RunWriteCmdLine() {
   f_ADD_RECORDS = flag.Int("add", 0, "Add data?")
 
   flag.Parse()
+  if *f_PROFILE && PROFILER_ENABLED {
+    profile := RUN_PROFILER()
+    defer profile.Start().Stop()
+  }
 
   if *f_TABLE == "" { flag.PrintDefaults(); return }
 
@@ -71,6 +76,10 @@ func RunWriteCmdLine() {
   t.LoadRecords(nil)
 
   if (*f_ADD_RECORDS != 0) {	
+    if *f_ADD_RECORDS < 500000 {
+      fmt.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
+      debug.SetGCPercent(-1)
+    }
     add_records()
   }
 

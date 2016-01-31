@@ -8,7 +8,7 @@ import "encoding/gob"
 import "strings"
 import "sort"
 
-type ValueMap map[int32][]int32
+type ValueMap map[int32][]uint32
 type SetMap map[int32][]int32
 
 // this is used to record the buckets when building the column
@@ -22,7 +22,7 @@ func record_value(same_map map[int16]ValueMap, index int32, name int16, value in
 
   vi := int32(value)
 
-  s[vi] = append(s[vi], int32(index))
+  s[vi] = append(s[vi], uint32(index))
 }
 
 

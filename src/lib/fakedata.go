@@ -1,18 +1,22 @@
 package edb
 
+import "fmt"
 import "time"
 import "math"
 import "math/rand"
 import "strconv"
 import "github.com/manveru/faker"
-var Faker *faker.Faker
 
+var FAKE, _ = faker.New("en")
 
 func NewRandomRecord(table_name string) *Record {
   t := getTable(table_name)
   r := t.NewRecord()
 
-  fake, _ := faker.New("en")
+  if FAKE == nil {
+    fmt.Println("NEW FAKER")
+    FAKE, _ = faker.New("en")
+  }
 
   r.AddIntField("age", rand.Intn(50) + 10)
   r.AddIntField("f1", rand.Intn(50) + 30)
@@ -31,10 +35,14 @@ func NewRandomRecord(table_name string) *Record {
   session_id := int64(rand.Intn(100000))
   r.AddIntField("int_id", int(session_id))
   r.AddStrField("session_id", strconv.FormatInt(session_id, 16))
-  r.AddStrField("company", fake.CompanyName())
-  r.AddStrField("country", fake.Country())
-  r.AddStrField("state", fake.State())
-  r.AddStrField("city", fake.City())
+
+  // NEED TO LOCK THE FAKER DOWN
+  t.record_m.Lock()
+  r.AddStrField("state", FAKE.CompanyName())
+  r.AddStrField("company", FAKE.CompanyName())
+  r.AddStrField("country", FAKE.Country())
+  r.AddStrField("city", FAKE.City())
+  t.record_m.Unlock()
 
   return r;
 

@@ -68,7 +68,6 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 
 func addFlags() {
 
-  f_PROFILE = flag.Bool("profile", false, "Generate a profile?")
   f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
   f_PRINT = flag.Bool("print", false, "Print some records")
   f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
