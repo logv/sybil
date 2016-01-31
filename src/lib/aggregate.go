@@ -20,7 +20,7 @@ func (a SortResultsByCol) Swap(i, j int)      { a.Results[i], a.Results[j] = a.R
 
 
 // This sorts the records in descending order
-func (a SortResultsByCol) Less(i, j int) bool { 
+func (a SortResultsByCol) Less(i, j int) bool {
   t1 := a.Results[i].Ints[a.Col]
   t2 := a.Results[j].Ints[a.Col]
 
@@ -95,12 +95,12 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
       existing_record, ok := querySpec.Results[group_key]
       querySpec.r.RUnlock()
 
-      
-      if !ok { 
+
+      if !ok {
 	querySpec.r.Lock()
-	querySpec.Results[group_key] = added_record 
+	querySpec.Results[group_key] = added_record
 	querySpec.r.Unlock()
-      } 
+      }
 
       if ok {
 	added_record = existing_record
@@ -132,8 +132,8 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
           hist, ok := added_record.Hists[a.name]
 	  querySpec.m.RUnlock()
 
-          if !ok { 
-            hist = r.block.table.NewHist(r.block.table.get_int_info(a_id)) 
+          if !ok {
+            hist = r.block.table.NewHist(r.block.table.get_int_info(a_id))
             querySpec.m.Lock()
             added_record.Hists[a.name] = hist
             querySpec.m.Unlock()
