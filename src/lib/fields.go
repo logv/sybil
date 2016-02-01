@@ -1,8 +1,8 @@
 package edb
 
-type IntArr []IntField;
-type StrArr []StrField;
-type SetArr []SetField;
+type IntArr []IntField
+type StrArr []StrField
+type SetArr []SetField
 
 type IntField int32
 type StrField int32

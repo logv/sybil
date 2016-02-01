@@ -2,17 +2,17 @@ package edb
 
 import "flag"
 
-var f_OP  *string
-var f_PRINT  *bool
-var f_INT_FILTERS  *string
-var f_STR_FILTERS  *string
+var f_OP *string
+var f_PRINT *bool
+var f_INT_FILTERS *string
+var f_STR_FILTERS *string
 
-var f_SESSION_COL  *string
-var f_INTS  *string
-var f_STRS  *string
-var f_GROUPS  *string
+var f_SESSION_COL *string
+var f_INTS *string
+var f_STRS *string
+var f_GROUPS *string
 
-var GROUP_BY  []string
+var GROUP_BY []string
 
 var f_ADD_RECORDS *int
 

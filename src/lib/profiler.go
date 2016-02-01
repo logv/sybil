@@ -1,10 +1,9 @@
 package edb
 
 type ProfilerStart interface {
-  Stop() 
+	Stop()
 }
 
 type ProfilerStop interface {
-  Start() ProfilerStart
+	Start() ProfilerStart
 }
-
