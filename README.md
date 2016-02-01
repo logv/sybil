@@ -16,13 +16,17 @@ RUNNING
     # run our first query on the table
     ./bin/query -table test0
 
-    # make some new tables / data
+    # make some new tables / data and store them in column form
     ./bin/fakedata -add 100000 -table smalltable
 
+    # query that small little table we just made
     ./bin/query -table smalltable -int age -group state -op hist
 
-    # use the writer to load a single JSON record
-    ./bin/writer < example/single_record.json
+    # use the writer to load a single JSON record into the ingestion log
+    ./bin/ingest -table test1 < example/single_record.json
+
+    # use the digester to serialize columns into column store
+    ./bin/digest -table test1
 
 
 
