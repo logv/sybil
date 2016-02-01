@@ -71,7 +71,7 @@ func (t *Table) SaveTableInfo(fname string) {
 
 }
 
-func (t *Table) SaveRecordsToFile(records []*Record, filename string) {
+func (t *Table) SaveRecordsToBlock(records []*Record, filename string) {
   if len(records) == 0 {
     return
   }
@@ -108,7 +108,7 @@ func (t *Table) FillPartialBlock() bool {
 
     fmt.Println("SAVING PARTIAL RECORDS", delta, "TO", filename)
     partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-    t.SaveRecordsToFile(partialRecords, filename)
+    t.SaveRecordsToBlock(partialRecords, filename)
     if delta < len(t.newRecords) {
       t.newRecords = t.newRecords[delta:]
     } else {
@@ -150,18 +150,18 @@ func (t *Table) saveRecordList(records []*Record) bool {
 
   if (chunks == 0) {
     filename := getBlockFilename(t.Name, t.LastBlockId)
-    t.SaveRecordsToFile(records, filename)
+    t.SaveRecordsToBlock(records, filename)
   } else {
     for j := 0; j < chunks; j++ {
       filename := getBlockFilename(t.Name, t.LastBlockId)
-      t.SaveRecordsToFile(records[j*chunk_size:(j+1)*chunk_size], filename)
+      t.SaveRecordsToBlock(records[j*chunk_size:(j+1)*chunk_size], filename)
       t.LastBlockId++
     }
 
     // SAVE THE REMAINDER
     if len(records) > chunks * chunk_size {
       filename := getBlockFilename(t.Name, t.LastBlockId)
-      t.SaveRecordsToFile(records[chunks * chunk_size:], filename)
+      t.SaveRecordsToBlock(records[chunks * chunk_size:], filename)
     }
   }
 
@@ -265,8 +265,6 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 	tb.unpackIntCol(dec, info)
     }
   }
-
-
 
   return records[:]
 }

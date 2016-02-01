@@ -98,6 +98,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
     fmt.Println("SERIALIZED COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len() / len(tb.RecordList), ")");
 
     w, _ := os.Create(col_fname)
+
     network.WriteTo(w);
   }
 

@@ -4,13 +4,16 @@ GOBINDIR = ./bin
 PROFILE = -tags profile
 
 
-all: query writer datagen
+all: query ingest digest datagen
 
 query: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/query/ 
 
-writer: bindir ./src/write
-	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/write/
+digest: bindir 
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/digest/
+
+ingest: bindir 
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/ingest/
 
 datagen: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/fakedata
@@ -28,18 +31,14 @@ bindir:
 
 nodeltaencoding: export BUILD_FLAGS += -tags denc
 nodeltaencoding: bindir
-	make query
-	make writer
-	make datagen
+	make all
 
 profile: export BUILD_FLAGS += -tags profile
 profile: bindir
-	make query
-	make writer
-	make datagen
+	make all
 
 tags: 
-	ctags --languages=+Go src/lib/*.go src/query/*.go src/write/*.go
+	ctags --languages=+Go src/lib/*.go src/query/*.go src/ingest/*.go
 
 default: all
 
@@ -48,6 +47,6 @@ clean:
 
 .PHONY: tags 
 .PHONY: query 
-.PHONY: write
+.PHONY: ingest
 .PHONY: clean
 

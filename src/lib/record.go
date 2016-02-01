@@ -11,6 +11,7 @@ type Record struct {
 
 var INT_VAL = 1;
 var STR_VAL = 2;
+var SET_VAL = 3;
 
 func (r *Record) getStrVal(name string) (int, bool) {
   id := r.block.get_key_id(name);
@@ -44,7 +45,7 @@ func (r *Record) getVal(name string) (int, bool) {
 
 func (r *Record) ResizeFields(length int16) {
   // dont get fooled by zeroes
-  if length < 1 {
+  if length <= 1 {
     length = 5
   }
 

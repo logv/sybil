@@ -4,13 +4,12 @@ import (
     "encoding/json"
     "os"
     "flag"
-    "fmt"
     "io"
 )
 
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
-func RunJSONWriterCmdLine() {
+func RunIngestCmdLine() {
      
 
     flag.Parse()
@@ -25,7 +24,6 @@ func RunJSONWriterCmdLine() {
         var recordmap map[string]interface{}
 
         if err := dec.Decode(&recordmap); err != nil {
-	    fmt.Println(err)
 	    if err == io.EOF {
 	      break
 	    }
@@ -39,8 +37,8 @@ func RunJSONWriterCmdLine() {
 
 	for k, v := range intm {
 	  switch iv := v.(type) {
-	    case int: 
-	      r.AddIntField(k, iv)
+	    case float64: 
+	      r.AddIntField(k, int(iv))
 
 	  }
 	}
@@ -53,13 +51,9 @@ func RunJSONWriterCmdLine() {
 	   }
 	}
 
-	t.PrintRecord(r)
-
-
     }
 
-    fmt.Println("SAVING RECORDS", t.newRecords)
 
-    t.SaveRecords()
+    t.IngestRecords()
 }
 
