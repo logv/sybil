@@ -5,6 +5,10 @@ package edb
 import "github.com/pkg/profile"
 import "fmt"
 
+import "flag"
+
+var f_PROFILE = flag.Bool("profile", false, "turn profiling on?")
+
 var PROFILER_ENABLED=true
 var PROFILE ProfilerStart
 

@@ -10,6 +10,11 @@ func RunDigestCmdLine() {
 
     if *f_TABLE == "" { flag.PrintDefaults(); return }
 
+    if *f_PROFILE && PROFILER_ENABLED {
+      profile := RUN_PROFILER()
+      defer profile.Start().Stop()
+    }
+
     t := getTable(*f_TABLE)
     t.LoadRecords(nil)
 
