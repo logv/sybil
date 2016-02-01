@@ -3,6 +3,6 @@
 Makefile
 db/
 tags
-edb
 output
-edb-*
+tmp/
+bin/
