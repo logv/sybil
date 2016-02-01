@@ -70,6 +70,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			buffer.WriteString(string(val))
 			buffer.WriteString(":")
 		}
+
 		group_key := buffer.String()
 		buffer.Reset()
 
@@ -96,17 +97,22 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			// WARNING: this is an annoying thread barrier that happens.
 			// TODO: replace it with a RW mutex instead of just R mutex
 			querySpec.r.RLock()
-			length = len(querySpec.Results)
 			existing_record, ok := querySpec.Results[group_key]
 			querySpec.r.RUnlock()
 
 			if !ok {
+				// Even though we are about to lock, someone else might have inserted
+				// right before we grabbed the lock...
 				querySpec.r.Lock()
-				querySpec.Results[group_key] = added_record
-				querySpec.r.Unlock()
-			}
-
-			if ok {
+				existing_record, ok = querySpec.Results[group_key]
+				if ok {
+					querySpec.r.Unlock()
+					added_record = existing_record
+				} else { 
+					querySpec.Results[group_key] = added_record
+					querySpec.r.Unlock()
+				}
+			} else {
 				added_record = existing_record
 			}
 		}
