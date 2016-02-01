@@ -173,6 +173,8 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 
 	fmt.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(records), ")")
 
+	fmt.Println("KEY TABLE IS", tb.table.KeyTable)
+
 	w, _ := os.Create(col_fname)
 	network.WriteTo(w)
 }
@@ -272,7 +274,8 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	col_name := tb.table.get_string_for_key(int(into.NameId))
 	if col_name != into.Name {
-		fmt.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name, "SKIPPING!")
+		shouldbe := tb.table.get_key_id(into.Name)
+		fmt.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe, "SKIPPING!")
 		return
 
 	}
@@ -327,7 +330,8 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	col_name := tb.table.get_string_for_key(int(into.NameId))
 	if col_name != into.Name {
-		fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, col_name)
+		shouldbe := tb.table.get_key_id(into.Name)
+		fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
 	}
 
 	for _, bucket := range into.Bins {

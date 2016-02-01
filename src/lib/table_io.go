@@ -60,7 +60,7 @@ func (t *Table) SaveTableInfo(fname string) {
 		log.Fatal("encode:", err)
 	}
 
-	fmt.Println("SERIALIZED TABLE INFO", fname, "INTO BYTES", network.Len(), "BYTES")
+	fmt.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
 
 	w, _ := os.Create(filename)
 	network.WriteTo(w)
@@ -138,9 +138,6 @@ func (t *Table) saveRecordList(records []*Record) bool {
 
 	fmt.Println("SAVING RECORD LIST", len(records), t.Name)
 
-	save_table := getSaveTable(t)
-	save_table.SaveTableInfo("info")
-
 	chunk_size := CHUNK_SIZE
 	chunks := len(records) / chunk_size
 
@@ -163,9 +160,6 @@ func (t *Table) saveRecordList(records []*Record) bool {
 
 	fmt.Println("LAST TABLE BLOCK IS", t.LastBlockId)
 
-	save_table = getSaveTable(t)
-	save_table.SaveTableInfo("info")
-
 	t.dirty = false
 
 	return true
@@ -177,8 +171,16 @@ func (t *Table) SaveRecords() bool {
 
 	sort.Sort(SortRecordsByTime{t.newRecords, col_id})
 
+	save_table := getSaveTable(t)
+	save_table.SaveTableInfo("info")
+
 	t.FillPartialBlock()
-	return t.saveRecordList(t.newRecords)
+	ret := t.saveRecordList(t.newRecords)
+	save_table = getSaveTable(t)
+	save_table.SaveTableInfo("info")
+
+	return ret
+
 }
 
 func (t *Table) LoadTableInfo() {
