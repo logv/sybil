@@ -6,25 +6,25 @@ import "encoding/gob"
 import "fmt"
 import "os"
 
-type SavedInt struct {
+type RowSavedInt struct {
   Name int16;
   Value int;
 }
 
-type SavedStr struct {
+type RowSavedStr struct {
   Name int16;
   Value string;
 }
 
-type SavedSet struct {
+type RowSavedSet struct {
   Name int16;
   Value []int32;
 }
 
 type SavedRecord struct {
-  Ints []SavedInt
-  Strs []SavedStr
-  Sets []SavedSet
+  Ints []RowSavedInt
+  Strs []RowSavedStr
+  Sets []RowSavedSet
 }
 
 
@@ -62,7 +62,7 @@ func (r Record) toSavedRecord() *SavedRecord {
   s := SavedRecord{}
   for k, v := range r.Ints {
     if r.Populated[k] == INT_VAL {
-      s.Ints = append(s.Ints, SavedInt{int16(k), int(v)})
+      s.Ints = append(s.Ints, RowSavedInt{int16(k), int(v)})
     }
   }
 
@@ -70,13 +70,13 @@ func (r Record) toSavedRecord() *SavedRecord {
     if r.Populated[k] == STR_VAL {
       col := r.block.getColumnInfo(int16(k))
       str_val :=  col.get_string_for_val(int32(v))
-      s.Strs = append(s.Strs, SavedStr{int16(k), str_val})
+      s.Strs = append(s.Strs, RowSavedStr{int16(k), str_val})
     }
   }
 
   for k, v := range r.Sets {
     if r.Populated[k] == SET_VAL {
-      s.Sets = append(s.Sets, SavedSet{int16(k), v})
+      s.Sets = append(s.Sets, RowSavedSet{int16(k), v})
     }
   }
 
