@@ -38,7 +38,9 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 		// FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
-			if querySpec.Filters[j].Filter(r) {
+			// returns True if the record matches!
+			ret := querySpec.Filters[j].Filter(r) != true 
+			if ret {
 				add = false
 				break
 			}
@@ -46,6 +48,9 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 		if add {
 			ret = append(ret, r)
+		} else {
+			// if we aren't adding this record... then we shouldn't continue looking at it
+			continue
 		}
 
 		// BELOW HERE IS THE AGGREGATION CORE
