@@ -6,6 +6,7 @@ import "fmt"
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunDigestCmdLine() {
+	digest_file := flag.String("file", "ingest", "Name of block to digest")
 	flag.Parse()
 
 	if *f_TABLE == "" {
@@ -23,5 +24,5 @@ func RunDigestCmdLine() {
 
 	fmt.Println("KEY TABLE", t.KeyTable)
 
-	t.DigestRecords()
+	t.DigestRecords(*digest_file)
 }

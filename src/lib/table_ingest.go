@@ -3,20 +3,29 @@ package edb
 import "fmt"
 import "os"
 
+// Way ingesting and digesting work:
+// there exists two dirs:
+// ingest/
+// digest/
+
+// to ingest, make a new tmp file inside ingest/ (or append to an existing one)
+// to digest, move that file into digest/ and begin
+
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) IngestRecords() {
+func (t *Table) IngestRecords(blockname string) {
 	fmt.Println("KEY TABLE", t.KeyTable)
 
-	t.AppendRecordsToLog(t.newRecords[:])
+	t.AppendRecordsToLog(t.newRecords[:], blockname)
 
 	t.SaveTableInfo("info")
 }
 
 // Go through rowstore and save records out to column store
-func (t *Table) DigestRecords() {
+func (t *Table) DigestRecords(digest string) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
-	filename := fmt.Sprintf("db/%s/ingest.db", t.Name)
-	digestname := fmt.Sprintf("db/%s/digesting.db", t.Name)
+	filename := fmt.Sprintf("db/%s/ingest/%s.db", t.Name, digest)
+	digestname := fmt.Sprintf("db/%s/digest/%s.db", t.Name, digest)
+	os.MkdirAll(fmt.Sprintf("db/%s/digest", t.Name), 0777)
 
 	fmt.Println("Moving", filename, "TO", digestname, "FOR DIGESTION")
 	err := os.Rename(filename, digestname)

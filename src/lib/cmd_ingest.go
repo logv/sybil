@@ -11,7 +11,8 @@ import (
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
-
+	digest_file := flag.String("file", "ingest", "Name of block to ingest into")
+	
 	flag.Parse()
 
 	if *f_TABLE == "" {
@@ -62,5 +63,5 @@ func RunIngestCmdLine() {
 
 	}
 
-	t.IngestRecords()
+	t.IngestRecords(*digest_file)
 }

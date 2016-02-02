@@ -135,17 +135,17 @@ func (t *Table) LoadRecordsFromLog(filename string) []*Record {
 	return ret
 }
 
-func (t *Table) AppendRecordsToLog(records []*Record) {
+func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 	if len(records) == 0 {
 		return
 	}
 
-	filename := fmt.Sprintf("db/%s/ingest.db", t.Name)
+	filename := fmt.Sprintf("db/%s/ingest/%s.db", t.Name, blockname)
 
-	os.MkdirAll(fmt.Sprintf("db/%s/", t.Name), 0777)
+	os.MkdirAll(fmt.Sprintf("db/%s/ingest", t.Name), 0777)
 	partial_records := t.LoadSavedRecordsFromLog(filename)
 
-	fmt.Println("LOADED RECORDS", len(partial_records), "FROM INGESTION LOG")
+	fmt.Println("LOADED RECORDS", len(partial_records), "FROM INGESTION LOG", filename)
 
 	marshalled_records := make([]*SavedRecord, len(records))
 	for i, r := range records {
