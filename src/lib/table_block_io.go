@@ -66,12 +66,30 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol.Name = col_name
 		intCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 
+		count := 0
+		record_to_value := make(map[uint32]int32)
 		for bucket, records := range v {
 			si := SavedIntBucket{Value: bucket, Records: records}
 			intCol.Bins = append(intCol.Bins, si)
+			count += len(records)
+			for _, r := range records {
+				record_to_value[r] = bucket
+			}
 
 			// bookkeeping for info.db
 			tb.update_int_info(k, int(bucket))
+		}
+
+		intCol.BucketEncoded = true
+		// the column is high cardinality?
+		if len(intCol.Bins) > CHUNK_SIZE / 10 {
+			fmt.Println("SERIALIZING RECORDS DIRECTLY FOR COLUMN", tb.get_string_for_key(k))
+			intCol.BucketEncoded = false
+			intCol.Bins = nil
+			intCol.Values = make([]int32, count)
+			for k, v := range record_to_value {
+				intCol.Values[k] = v
+			}
 		}
 
 		// Sort the int buckets before saving them, so we don't have to sort them after reading.
@@ -334,21 +352,29 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 		fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
 	}
 
-	for _, bucket := range into.Bins {
-		tb.table.update_int_info(into.NameId, int(bucket.Value))
+	if into.BucketEncoded {
+		for _, bucket := range into.Bins {
+			tb.table.update_int_info(into.NameId, int(bucket.Value))
 
-		// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
-		prev := uint32(0)
-		for _, r := range bucket.Records {
-			if into.DeltaEncodedIDs {
-				r = r + prev
+			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
+			prev := uint32(0)
+			for _, r := range bucket.Records {
+				if into.DeltaEncodedIDs {
+					r = r + prev
+				}
+
+				records[r].Ints[into.NameId] = IntField(bucket.Value)
+				records[r].Populated[into.NameId] = INT_VAL
+				prev = r
 			}
 
-			records[r].Ints[into.NameId] = IntField(bucket.Value)
-			records[r].Populated[into.NameId] = INT_VAL
-			prev = r
 		}
-
+	} else {
+		fmt.Println("DECODING RAW RECORD VALUES FROM COLUMN", col_name)
+		for r, v := range into.Values {
+			records[r].Ints[into.NameId] = IntField(v)
+			records[r].Populated[into.NameId] = INT_VAL
+		}
 	}
 }
 
