@@ -58,7 +58,9 @@ type SavedStrColumn struct {
 	Name            string
 	NameId          int16
 	DeltaEncodedIDs bool
+	BucketEncoded	  bool
 	Bins            []SavedStrBucket
+	Values				  []int32
 	StringTable     []string
 }
 type SavedSetColumn struct {

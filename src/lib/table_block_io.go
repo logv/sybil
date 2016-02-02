@@ -133,6 +133,8 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 		temp_col := temp_block.getColumnInfo(k)
 		tb_col := tb.getColumnInfo(k)
+		record_to_value := make(map[uint32]int32)
+		count := 0
 		for bucket, records := range v {
 
 			// migrating string definitions from column definitions
@@ -140,10 +142,27 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 			si := SavedStrBucket{Value: str_id, Records: records}
 			strCol.Bins = append(strCol.Bins, si)
+			count += len(records)
+			for _, r := range records {
+				record_to_value[r] = bucket
+			}
 
 			// also bookkeeping to be used later inside the block info.db, IMO
 			tb.update_str_info(k, int(bucket), len(records))
 		}
+
+		strCol.BucketEncoded = true
+		// the column is high cardinality?
+		if len(strCol.Bins) > CHUNK_SIZE / 10 {
+			fmt.Println("SERIALIZING RECORDS DIRECTLY FOR COLUMN", tb.get_string_for_key(k))
+			strCol.BucketEncoded = false
+			strCol.Bins = nil
+			strCol.Values = make([]int32, count)
+			for k, v := range record_to_value {
+				strCol.Values[k] = v
+			}
+		}
+
 
 		tb.get_str_info(k).prune()
 
@@ -312,27 +331,39 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	col.val_string_id_lookup = string_lookup
 
 	var record *Record
-	for _, bucket := range into.Bins {
 
-		prev := uint32(0)
-		for _, r := range bucket.Records {
-			val := string_lookup[bucket.Value]
-			value_id := col.get_val_id(val)
+	if into.BucketEncoded {
+		for _, bucket := range into.Bins {
 
-			if into.DeltaEncodedIDs {
-				r = prev + r
+			prev := uint32(0)
+			for _, r := range bucket.Records {
+				val := string_lookup[bucket.Value]
+				value_id := col.get_val_id(val)
+
+				if into.DeltaEncodedIDs {
+					r = prev + r
+				}
+
+				record = records[r]
+				prev = r
+
+				if int(into.NameId) >= len(record.Strs) {
+					fmt.Println("FOUND A STRAY COLUMN...", into.Name)
+				} else {
+					record.Strs[into.NameId] = StrField(value_id)
+				}
+				record.Populated[into.NameId] = STR_VAL
 			}
-
-			record = records[r]
-			prev = r
-
-			if int(into.NameId) >= len(record.Strs) {
-				fmt.Println("FOUND A STRAY COLUMN...", into.Name)
-			} else {
-				record.Strs[into.NameId] = StrField(value_id)
-			}
-			record.Populated[into.NameId] = STR_VAL
 		}
+	} else {
+		fmt.Println("DECODING RAW STR VALUES", into.Name)
+
+		for r, v := range into.Values {
+			records[r].Strs[into.NameId] = StrField(v)
+			records[r].Populated[into.NameId] = STR_VAL
+		}
+
+
 	}
 
 }
