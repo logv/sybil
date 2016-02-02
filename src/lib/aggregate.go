@@ -211,6 +211,6 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	querySpec.Matched = rets
 
-	fmt.Println("FILTRD", len(rets), "AND AGGREGATED", "RECORDS INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
+	fmt.Println(len(rets), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }

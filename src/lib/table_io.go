@@ -114,7 +114,6 @@ func (t *Table) FillPartialBlock() bool {
 	}
 
 	if incBlockId {
-		fmt.Println("INC LAST BLOCK")
 		t.LastBlockId++
 	}
 
@@ -339,7 +338,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 	end := time.Now()
 
 	if load_spec != nil {
-		fmt.Println("LOADED", count, "RECORDS INTO", t.Name, "TOOK", end.Sub(waystart))
+		fmt.Println(count, "RECORDS LOADED INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
 		fmt.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
