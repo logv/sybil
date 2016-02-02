@@ -4,6 +4,7 @@ import "bytes"
 import "fmt"
 import "time"
 import "sync"
+import "strconv"
 import "sync/atomic"
 import "sort"
 
@@ -71,6 +72,19 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			buffer.WriteString(":")
 		}
 
+		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH IS CAN BE SO MUCH SLOWER!!!!!)
+		if querySpec.TimeBucket > 0 {
+			val, ok := r.getIntVal("time")
+			if ok {
+				val = int(val / querySpec.TimeBucket) * querySpec.TimeBucket
+				time_group_by := strconv.FormatInt(int64(val), 10)
+				buffer.WriteString(time_group_by)
+			} else {
+				buffer.WriteString(":")
+			}
+
+		}
+
 		group_key := buffer.String()
 		buffer.Reset()
 
@@ -82,6 +96,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 		if !ok {
 			length := len(querySpec.Results)
 
+			// TODO: take into account whether we are doint time series or not...
 			if length >= INTERNAL_RESULT_LIMIT {
 				continue
 			}

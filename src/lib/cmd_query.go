@@ -13,7 +13,7 @@ var SAMPLES = false
 var f_SAMPLES *bool = &SAMPLES
 
 func printResult(querySpec *QuerySpec, v *Result) {
-	fmt.Println(fmt.Sprintf("%-10s", v.GroupByKey)[:10], fmt.Sprintf("%.0d", v.Count))
+	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:10], fmt.Sprintf("%.0d", v.Count))
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
 		if *f_OP == "hist" {
@@ -80,6 +80,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 
 func addFlags() {
 
+	f_TIME = flag.Bool("time", false, "do a time rollup!")
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	f_PRINT = flag.Bool("print", false, "Print some records")
 	f_SAMPLES = flag.Bool("samples", false, "Grab samples")
@@ -226,6 +227,11 @@ func RunQueryCmdLine() {
 		querySpec.OrderBy = *f_SORT
 	} else {
 		querySpec.OrderBy = ""
+	}
+
+	if *f_TIME {
+		querySpec.TimeBucket = 60 * 60 * 24
+		loadSpec.Int("time")
 	}
 
 	querySpec.Limit = int16(*f_LIMIT)

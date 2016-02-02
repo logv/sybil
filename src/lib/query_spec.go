@@ -9,6 +9,7 @@ type QuerySpec struct {
 
 	OrderBy string
 	Limit   int16
+	TimeBucket int
 
 	Results map[string]*Result
 	Sorted  []*Result

@@ -1,6 +1,7 @@
 import json
 import random
 import sys
+import time
 
 HOSTS = [ "www.facebook.com", "www.yahoo.com", "www.google.com", "www.reddit.com", "github.com" ]
 STATII = [200, 403, 404, 500, 503]
@@ -19,6 +20,7 @@ def rand_record():
     record["strs"]["status"] = str(random.choice(STATII))
     record["strs"]["host"] = random.choice(HOSTS)
     record["ints"]["ping"] = abs(random.gauss(60, 20))
+    record["ints"]["time"] = int(time.time())
 
     return record
 
