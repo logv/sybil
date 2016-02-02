@@ -30,16 +30,17 @@ func (r *Record) getIntVal(name string) (int, bool) {
 }
 
 func (r *Record) getVal(name string) (int, bool) {
-	ret, ok := r.getStrVal(name)
-	if !ok {
-		ret, ok = r.getIntVal(name)
-		if !ok {
-			// TODO: throw error
-			return 0, false
-		}
-	}
+	name_id := r.block.get_key_id(name)
+	switch r.Populated[name_id] {
+		case STR_VAL:
+			return int(r.Strs[name_id]), true
 
-	return ret, true
+		case INT_VAL:
+			return int(r.Ints[name_id]), true
+
+		default:
+			return 0, false
+	}
 
 }
 
