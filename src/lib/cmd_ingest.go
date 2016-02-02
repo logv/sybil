@@ -3,6 +3,7 @@ package edb
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 )
@@ -33,6 +34,8 @@ func RunIngestCmdLine() {
 			if err == io.EOF {
 				break
 			}
+
+			fmt.Println("ERR:", err)
 
 			continue
 		}

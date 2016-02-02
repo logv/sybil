@@ -43,7 +43,7 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 			h.num_buckets = size
 		} else {
 			h.bucket_size = size / 100
-			h.num_buckets = size / h.num_buckets
+			h.num_buckets = size / h.bucket_size
 		}
 	}
 
@@ -51,7 +51,7 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 
 	h.values = make([]int, h.num_buckets+1)
 	h.avgs = make([]float64, h.num_buckets+1)
-	// we should use X buckets to start...
+
 	return h
 }
 

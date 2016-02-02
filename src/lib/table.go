@@ -15,7 +15,6 @@ type Table struct {
 	// List of new records that haven't been saved to file yet
 	newRecords []*Record
 
-	dirty                bool
 	key_string_id_lookup map[int16]string
 	val_string_id_lookup map[int32]string
 
@@ -38,7 +37,7 @@ func getTable(name string) *Table {
 		return t
 	}
 
-	t = &Table{Name: name, dirty: false}
+	t = &Table{Name: name}
 	LOADED_TABLES[name] = t
 	t.key_string_id_lookup = make(map[int16]string)
 	t.val_string_id_lookup = make(map[int32]string)
@@ -105,7 +104,6 @@ func (t *Table) get_key_id(name string) int16 {
 
 func (t *Table) NewRecord() *Record {
 	r := Record{Ints: IntArr{}, Strs: StrArr{}}
-	t.dirty = true
 
 	b := t.LastBlock
 	b.table = t

@@ -127,9 +127,6 @@ func getSaveTable(t *Table) *Table {
 }
 
 func (t *Table) saveRecordList(records []*Record) bool {
-	if !t.dirty {
-		return false
-	}
 	if len(records) == 0 {
 		return false
 	}
@@ -157,8 +154,6 @@ func (t *Table) saveRecordList(records []*Record) bool {
 	}
 
 	fmt.Println("LAST TABLE BLOCK IS", t.LastBlockId)
-
-	t.dirty = false
 
 	return true
 }
