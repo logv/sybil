@@ -4,7 +4,7 @@ GOBINDIR = ./bin
 PROFILE = -tags profile
 
 
-all: query ingest digest datagen
+all: query ingest digest
 
 query: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/query/ 
@@ -15,11 +15,11 @@ digest: bindir
 ingest: bindir 
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/ingest/
 
-datagen: bindir
-	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/fakedata
+fake-data: fake-uptime
 
-testdata:
-	${BINDIR}/fakedata -add 100000 -table test0
+fake-uptime:
+	python scripts/fakedata/host_generator.py 100000 | ./bin/ingest -table uptime
+	./bin/digest -table uptime
 
 testquery:
 	${BINDIR}/query -table test0 -int age,f1 -op hist -group state
