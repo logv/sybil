@@ -9,6 +9,8 @@ import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
+var f_SAMPLES *bool
+
 func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Println(fmt.Sprintf("%-10s", v.GroupByKey)[:10], fmt.Sprintf("%.0d", v.Count))
 	for _, agg := range querySpec.Aggregations {
@@ -79,6 +81,7 @@ func addFlags() {
 
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	f_PRINT = flag.Bool("print", false, "Print some records")
+	f_SAMPLES = flag.Bool("samples", false, "Grab samples")
 	f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 	f_STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
 
@@ -133,6 +136,30 @@ func RunQueryCmdLine() {
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
 	t.LoadRecords(nil)
+
+
+	if *f_SAMPLES {
+		loadSpec := NewLoadSpec()
+		loadSpec.LoadAllColumns = true
+		t.LoadRecords(&loadSpec)
+
+		count := 0
+		for _, b := range t.BlockList {
+			for _, r := range b.RecordList {
+				count++
+				t.PrintRecord(r)
+
+				if count >= *f_LIMIT {
+					break
+				}
+			}
+
+			if count >= *f_LIMIT {
+				break
+			}
+		}
+		return
+	}
 
 	groupings := []Grouping{}
 	for _, g := range groups {

@@ -16,6 +16,7 @@ var DEBUG_TIMING = false
 
 type LoadSpec struct {
 	columns map[string]bool
+	LoadAllColumns bool
 }
 
 func NewLoadSpec() LoadSpec {
@@ -237,7 +238,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 		fname := f.Name()
 
 		if load_spec != nil {
-			if load_spec.columns[fname] != true {
+			if load_spec.columns[fname] != true && load_records == false {
 				continue
 			}
 		} else if load_records == false {
@@ -303,10 +304,15 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 		if v.IsDir() {
 			filename := fmt.Sprintf("db/%s/%s", t.Name, v.Name())
 			wg.Add(1)
+			load_all := false
+			if load_spec != nil && load_spec.LoadAllColumns {
+				load_all = true
+			}
+
 			go func() {
 				defer wg.Done()
 				start := time.Now()
-				records = t.LoadBlockFromDir(filename, load_spec, false)
+				records = t.LoadBlockFromDir(filename, load_spec, load_all)
 				fmt.Print(".")
 				end := time.Now()
 				if DEBUG_TIMING {
