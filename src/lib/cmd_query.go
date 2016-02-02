@@ -36,7 +36,7 @@ func printResults(querySpec *QuerySpec) {
 	for _, v := range querySpec.Results {
 		printResult(querySpec, v)
 		count++
-		if count > int(querySpec.Limit) {
+		if count >= int(querySpec.Limit) {
 			return
 		}
 	}
