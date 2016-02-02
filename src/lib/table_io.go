@@ -329,6 +329,14 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 					m.Unlock()
 				}
 			}()
+
+			if *f_SAMPLES {
+				wg.Wait()
+
+				if count > *f_LIMIT {
+					break
+				}
+			}
 		}
 
 	}
