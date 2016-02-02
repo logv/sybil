@@ -3,13 +3,13 @@ package edb
 import "fmt"
 import "os"
 
-// Way ingesting and digesting work:
-// there exists two dirs:
+// there exists two dirs for ingesting and digesting:
 // ingest/
 // digest/
 
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
-// to digest, move that file into digest/ and begin
+// to digest, move that file into digest/ and begin digesting it
+// POTENTIAL RACE CONDITION ON INGEST MODIFYING AN EXISTING FILE!
 
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
@@ -30,7 +30,7 @@ func (t *Table) DigestRecords(digest string) {
 	fmt.Println("Moving", filename, "TO", digestname, "FOR DIGESTION")
 	err := os.Rename(filename, digestname)
 	if err != nil {
-		fmt.Println("NO INGEST LOG? ERR:", err)
+		fmt.Println("NO INGEST LOG, ERR:", err)
 		return
 	}
 
