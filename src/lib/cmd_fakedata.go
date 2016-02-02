@@ -27,6 +27,7 @@ func make_records(name string) {
 		}
 
 		t.SaveRecords()
+		t.ReleaseRecords()
 	}
 
 	for j := 0; j < *f_ADD_RECORDS%CHUNK_SIZE; j++ {
