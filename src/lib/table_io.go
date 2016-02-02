@@ -289,7 +289,8 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 
 	count := 0
 	var records []*Record
-	for _, v := range files {
+	for f := range files {
+		v := files[len(files) - f - 1]
 		if strings.HasSuffix(v.Name(), "info.db") {
 			continue
 		}
