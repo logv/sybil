@@ -83,7 +83,6 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol.BucketEncoded = true
 		// the column is high cardinality?
 		if len(intCol.Bins) > CHUNK_SIZE / 10 {
-			fmt.Println("SERIALIZING RECORDS DIRECTLY FOR COLUMN", tb.get_string_for_key(k))
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int32, count)
@@ -107,7 +106,12 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			log.Fatal("encode:", err)
 		}
 
-		fmt.Println("SERIALIZED COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		action := "SERIALIZED"
+		if intCol.BucketEncoded {
+			action = "BUCKETED  "
+		}
+
+		fmt.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 
@@ -154,7 +158,6 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		strCol.BucketEncoded = true
 		// the column is high cardinality?
 		if len(strCol.Bins) > CHUNK_SIZE / 10 {
-			fmt.Println("SERIALIZING RECORDS DIRECTLY FOR COLUMN", tb.get_string_for_key(k))
 			strCol.BucketEncoded = false
 			strCol.Bins = nil
 			strCol.Values = make([]int32, count)
@@ -183,7 +186,12 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			log.Fatal("encode:", err)
 		}
 
-		fmt.Println("SERIALIZED COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		action := "SERIALIZED"
+		if strCol.BucketEncoded {
+			action = "BUCKETED  "
+		}
+
+		fmt.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 		network.WriteTo(w)
@@ -356,8 +364,6 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 			}
 		}
 	} else {
-		fmt.Println("DECODING RAW STR VALUES", into.Name)
-
 		for r, v := range into.Values {
 			records[r].Strs[into.NameId] = StrField(v)
 			records[r].Populated[into.NameId] = STR_VAL
@@ -401,7 +407,6 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 		}
 	} else {
-		fmt.Println("DECODING RAW RECORD VALUES FROM COLUMN", col_name)
 		for r, v := range into.Values {
 			records[r].Ints[into.NameId] = IntField(v)
 			records[r].Populated[into.NameId] = INT_VAL
