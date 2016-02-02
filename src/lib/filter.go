@@ -33,10 +33,10 @@ func (filter IntFilter) Filter(r *Record) bool {
 	field := r.Ints[filter.FieldId]
 	switch filter.Op {
 	case "gt":
-		return int(field) < int(filter.Value)
+		return int(field) > int(filter.Value)
 
 	case "lt":
-		return int(field) > int(filter.Value)
+		return int(field) < int(filter.Value)
 
 	case "eq":
 		return int(field) == int(filter.Value)

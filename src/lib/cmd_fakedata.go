@@ -11,23 +11,29 @@ import "runtime/debug"
 
 func make_records(name string) {
 	fmt.Println("Adding", *f_ADD_RECORDS, "to", name)
-	CHUNK_SIZE := 50000
-	var wg sync.WaitGroup
-	for i := 0; i < *f_ADD_RECORDS/CHUNK_SIZE; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := 0; j < CHUNK_SIZE; j++ {
-				NewRandomRecord(name)
-			}
-		}()
+	t := getTable(name)
+
+	for j := 0; j < CHUNK_SIZE; j++ {
+		NewRandomRecord(name)
+	}
+
+	t.FillPartialBlock()
+	remainder := t.newRecords
+
+	t.newRecords = make([]*Record, 0)
+	for i := 1; i < *f_ADD_RECORDS/CHUNK_SIZE; i++ {
+		for j := 0; j < CHUNK_SIZE; j++ {
+			NewRandomRecord(name)
+		}
+
+		t.SaveRecords()
 	}
 
 	for j := 0; j < *f_ADD_RECORDS%CHUNK_SIZE; j++ {
 		NewRandomRecord(name)
 	}
 
-	wg.Wait()
+	t.newRecords = append(t.newRecords, remainder...)
 
 }
 

@@ -22,7 +22,6 @@ func NewLoadSpec() LoadSpec {
 	l := LoadSpec{}
 	l.columns = make(map[string]bool)
 
-	l.Int("time")
 	return l
 }
 
