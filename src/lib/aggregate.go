@@ -174,6 +174,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 		go func() {
 			defer wg.Done()
 			ret := filterAndAggRecords(querySpec, &this_block.RecordList)
+			fmt.Print(".")
 			count += len(ret)
 
 			m.Lock()
@@ -183,6 +184,8 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	}
 
 	wg.Wait()
+
+	fmt.Print("\n")
 	end := time.Now()
 
 	if querySpec.OrderBy != "" {

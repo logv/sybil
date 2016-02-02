@@ -283,6 +283,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 
 	wg.Wait()
 
+
 	m := &sync.Mutex{}
 
 	count := 0
@@ -306,6 +307,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 				defer wg.Done()
 				start := time.Now()
 				records = t.LoadBlockFromDir(filename, load_spec, false)
+				fmt.Print(".")
 				end := time.Now()
 				if DEBUG_TIMING {
 					if load_spec != nil {
@@ -327,6 +329,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 
 	wg.Wait()
 
+	fmt.Print("\n")
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
