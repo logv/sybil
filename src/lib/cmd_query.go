@@ -9,7 +9,8 @@ import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
-var f_SAMPLES *bool
+var SAMPLES = false
+var f_SAMPLES *bool = &SAMPLES
 
 func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Println(fmt.Sprintf("%-10s", v.GroupByKey)[:10], fmt.Sprintf("%.0d", v.Count))
