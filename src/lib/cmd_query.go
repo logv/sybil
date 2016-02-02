@@ -4,6 +4,7 @@ import "fmt"
 import "flag"
 import "strings"
 import "time"
+import "sort"
 import "strconv"
 import "runtime/debug"
 
@@ -13,7 +14,7 @@ var SAMPLES = false
 var f_SAMPLES *bool = &SAMPLES
 
 func printResult(querySpec *QuerySpec, v *Result) {
-	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:10], fmt.Sprintf("%.0d", v.Count))
+	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
 		if *f_OP == "hist" {
@@ -34,7 +35,14 @@ func printResult(querySpec *QuerySpec, v *Result) {
 		}
 	}
 }
+
 func printResults(querySpec *QuerySpec) {
+	if querySpec.TimeBucket > 0 {
+		printTimeResults(querySpec)
+
+		return
+	}
+
 	count := 0
 	for _, v := range querySpec.Results {
 		printResult(querySpec, v)
@@ -43,6 +51,22 @@ func printResults(querySpec *QuerySpec) {
 			return
 		}
 	}
+}
+
+func printTimeResults(querySpec *QuerySpec) {
+	keys := make([]int, 0)
+
+	for k, _ := range querySpec.TimeResults {
+		keys = append(keys, k)
+	}
+
+	sort.Sort(ByVal(keys))
+
+	for _, k := range keys {
+		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
+	}
+
+
 }
 
 func printSortedResults(querySpec *QuerySpec) {
@@ -230,6 +254,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *f_TIME {
+		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = 60 * 60 * 24
 		loadSpec.Int("time")
 	}

@@ -20,7 +20,8 @@ def rand_record():
     record["strs"]["status"] = str(random.choice(STATII))
     record["strs"]["host"] = random.choice(HOSTS)
     record["ints"]["ping"] = abs(random.gauss(60, 20))
-    record["ints"]["time"] = int(time.time())
+    time_allowance = 60 * 60 * 24 * 7 * 4 # 1 month?
+    record["ints"]["time"] = int(time.time()) + random.randint(-time_allowance, time_allowance)
 
     return record
 

@@ -4,7 +4,6 @@ import "bytes"
 import "fmt"
 import "time"
 import "sync"
-import "strconv"
 import "sync/atomic"
 import "sort"
 
@@ -32,6 +31,11 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 	records := *recordsPtr
 
 	ret := make([]*Record, 0)
+
+	var result_map ResultMap;
+	if querySpec.TimeBucket <= 0 {
+		result_map = querySpec.Results
+	}
 
 	for i := 0; i < len(records); i++ {
 		add := true
@@ -77,10 +81,23 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			val, ok := r.getIntVal("time")
 			if ok {
 				val = int(val / querySpec.TimeBucket) * querySpec.TimeBucket
-				time_group_by := strconv.FormatInt(int64(val), 10)
-				buffer.WriteString(time_group_by)
+				querySpec.r.RLock()
+				result_map, ok = querySpec.TimeResults[val]
+				querySpec.r.RUnlock()
+
+				if !ok {
+					result_map = make(ResultMap)
+					querySpec.r.Lock()
+					existing, ok := querySpec.TimeResults[val]
+					if !ok {
+						querySpec.TimeResults[val] = result_map
+					} else {
+						result_map = existing
+					}
+					querySpec.r.Unlock()
+				}
 			} else {
-				buffer.WriteString(":")
+				continue
 			}
 
 		}
@@ -89,12 +106,12 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 		buffer.Reset()
 
 		querySpec.r.RLock()
-		added_record, ok := querySpec.Results[group_key]
+		added_record, ok := result_map[group_key]
 		querySpec.r.RUnlock()
 
 		// BUILD GROUPING RECORD
 		if !ok {
-			length := len(querySpec.Results)
+			length := len(result_map)
 
 			// TODO: take into account whether we are doint time series or not...
 			if length >= INTERNAL_RESULT_LIMIT {
@@ -112,19 +129,19 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			// WARNING: this is an annoying thread barrier that happens.
 			// TODO: replace it with a RW mutex instead of just R mutex
 			querySpec.r.RLock()
-			existing_record, ok := querySpec.Results[group_key]
+			existing_record, ok := result_map[group_key]
 			querySpec.r.RUnlock()
 
 			if !ok {
 				// Even though we are about to lock, someone else might have inserted
 				// right before we grabbed the lock...
 				querySpec.r.Lock()
-				existing_record, ok = querySpec.Results[group_key]
+				existing_record, ok = result_map[group_key]
 				if ok {
 					querySpec.r.Unlock()
 					added_record = existing_record
 				} else { 
-					querySpec.Results[group_key] = added_record
+					result_map[group_key] = added_record
 					querySpec.r.Unlock()
 				}
 			} else {

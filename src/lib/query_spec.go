@@ -2,6 +2,8 @@ package edb
 
 import "sync"
 
+type ResultMap map[string]*Result
+
 type QuerySpec struct {
 	Filters      []Filter
 	Groups       []Grouping
@@ -11,7 +13,8 @@ type QuerySpec struct {
 	Limit   int16
 	TimeBucket int
 
-	Results map[string]*Result
+	Results ResultMap
+	TimeResults map[int] ResultMap
 	Sorted  []*Result
 	Matched []*Record
 
@@ -48,7 +51,9 @@ type Result struct {
 }
 
 func punctuateSpec(querySpec *QuerySpec) {
-	querySpec.Results = make(map[string]*Result)
+	querySpec.Results = make(ResultMap)
+
+	querySpec.TimeResults = make(map[int]ResultMap)
 	querySpec.c = &sync.Mutex{}
 	querySpec.m = &sync.RWMutex{}
 	querySpec.r = &sync.RWMutex{}
