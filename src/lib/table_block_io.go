@@ -12,18 +12,23 @@ import "time"
 type ValueMap map[int32][]uint32
 type SetMap map[int32][]int32
 
-func delta_encode(same_map map[int16]ValueMap) {
-	for _, col := range same_map {
-		for _, records := range col {
-			prev := uint32(0)
-			for i, v := range records {
-				records[int32(i)] = v - prev
-				prev = v
+func delta_encode_col(col ValueMap) {
+	for _, records := range col {
+		prev := uint32(0)
+		for i, v := range records {
+			records[int32(i)] = v - prev
+			prev = v
 
-			}
 		}
 	}
+}
 
+func delta_encode(same_map map[int16]ValueMap) {
+	for _, col := range same_map {
+		if len(col) <= CHUNK_SIZE / 10 {
+			delta_encode_col(col)
+		}
+	}
 }
 
 // this is used to record the buckets when building the column
@@ -86,8 +91,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int32, count)
-			for k, v := range record_to_value {
-				intCol.Values[k] = v
+			for r, v := range record_to_value {
+				intCol.Values[r] = v
 			}
 		}
 
