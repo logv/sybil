@@ -15,7 +15,11 @@ digest: bindir
 ingest: bindir 
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/ingest/
 
-fake-data: fake-uptime
+fake-data: fake-uptime fake-people
+
+fake-people:
+	python scripts/fakedata/people_generator.py 50000 | ./bin/ingest -table people
+	./bin/digest -table people
 
 fake-uptime:
 	python scripts/fakedata/host_generator.py 100000 | ./bin/ingest -table uptime

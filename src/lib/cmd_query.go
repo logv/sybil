@@ -6,12 +6,14 @@ import "strings"
 import "time"
 import "sort"
 import "strconv"
+import "io/ioutil"
 import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var SAMPLES = false
 var f_SAMPLES *bool = &SAMPLES
+var f_LIST_TABLES *bool;
 
 func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
@@ -110,6 +112,7 @@ func addFlags() {
 	f_SAMPLES = flag.Bool("samples", false, "Grab samples")
 	f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 	f_STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	f_LIST_TABLES = flag.Bool("tables", false, "List tables")
 
 	f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
 	f_INTS = flag.String("int", "", "Integer values to aggregate")
@@ -120,6 +123,22 @@ func addFlags() {
 func RunQueryCmdLine() {
 	addFlags()
 	flag.Parse()
+
+	if *f_LIST_TABLES {
+		files, err := ioutil.ReadDir("db/")
+		if err != nil {
+			fmt.Println("No tables found")
+			return
+		}
+		for _, db := range files {
+			t := getTable(db.Name())	
+			fmt.Print(t.Name, " ")
+		}
+
+		fmt.Println("")
+
+		return
+	}
 
 	table := *f_TABLE
 	if table == "" {
