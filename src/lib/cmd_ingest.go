@@ -11,9 +11,12 @@ import (
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
-	digest_file := flag.String("file", "ingest", "Name of block to ingest into")
+	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
 	
 	flag.Parse()
+
+	digestfile := fmt.Sprintf("%s", *ingestfile)
+
 
 	if *f_TABLE == "" {
 		flag.PrintDefaults()
@@ -28,6 +31,7 @@ func RunIngestCmdLine() {
 	t.LoadRecords(nil)
 
 	dec := json.NewDecoder(os.Stdin)
+	count := 0
 	for {
 		var recordmap map[string]interface{}
 
@@ -61,7 +65,17 @@ func RunIngestCmdLine() {
 			}
 		}
 
+		count++
+
+		if count >= CHUNK_SIZE {
+			count -= CHUNK_SIZE
+
+			t.IngestRecords(digestfile)
+		}
+
 	}
 
-	t.IngestRecords(*digest_file)
+	t.IngestRecords(digestfile)
 }
+
+

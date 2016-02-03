@@ -4,6 +4,7 @@ import "log"
 import "bytes"
 import "encoding/gob"
 import "fmt"
+import "io/ioutil"
 import "os"
 
 type RowSavedInt struct {
@@ -140,29 +141,17 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 		return
 	}
 
-	filename := fmt.Sprintf("db/%s/ingest/%s.db", t.Name, blockname)
-	digestname := fmt.Sprintf("db/%s/stomache/%s.db", t.Name, blockname)
+	ingestdir := fmt.Sprintf("db/%s/ingest/", t.Name)
 	
-
 	os.MkdirAll(fmt.Sprintf("db/%s/digest", t.Name), 0777)
-	os.MkdirAll(fmt.Sprintf("db/%s/ingest", t.Name), 0777)
+	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(fmt.Sprintf("db/%s/stomache", t.Name), 0777)
-	err := os.Rename(filename, digestname)
+
+	w, err := ioutil.TempFile(ingestdir, fmt.Sprintf("%s_", blockname))
 
 	marshalled_records := make([]*SavedRecord, len(records))
 	for i, r := range records {
 		marshalled_records[i] = r.toSavedRecord()
-	}
-
-	if err != nil {
-		fmt.Println("ERR RENAMING CURRENT INGESTION LOG", err)
-	} else {
-		partial_records := t.LoadSavedRecordsFromLog(digestname)
-
-		fmt.Println("LOADED RECORDS", len(partial_records), "FROM INGESTION LOG", filename)
-		if len(partial_records) > 0 {
-			marshalled_records = append(partial_records, marshalled_records...)
-		}
 	}
 
 	var network bytes.Buffer // Stand-in for the network.
@@ -177,11 +166,12 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 		log.Fatal("encode:", err)
 	}
 
+	filename := fmt.Sprintf("%s.db", w.Name())
+	fmt.Println("NAME", w.Name())
+
 	fmt.Println("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
 
-	w, _ := os.Create(filename)
 	network.WriteTo(w)
-
-	os.Remove(digestname)
+	os.Rename(w.Name(), filename)
 
 }
