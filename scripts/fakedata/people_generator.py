@@ -23,6 +23,8 @@ def rand_record():
 
     time_allowance = 60 * 60 * 24 * 7 * 4 # 1 month?
     record["ints"]["time"] = int(time.time()) + random.randint(-time_allowance, time_allowance)
+    record["ints"]["time2"] = record["ints"]["time"]
+    record["ints"]["time3"] = record["ints"]["time"]
 
     record["strs"]["name"] = fake.name()
     session_id = random.randint(0, 5000000)
@@ -33,9 +35,13 @@ def rand_record():
     record["strs"]["country"] = fake.country()
     canary = random.randint(0, 1000000)
     record["strs"]["str_canary"] = str(canary)
+    record["strs"]["str_canary2"] = str(canary)
+    record["strs"]["str_canary3"] = str(canary)
 
     record["ints"]["int_id"] = session_id
     record["ints"]["int_canary"] = canary
+    record["ints"]["int_canary_2"] = canary
+    record["ints"]["int_canary_3"] = canary
     record["ints"]["age"] =  abs(random.gauss(35, 15))
     record["ints"]["f1"] = random.randint(0, 50)
     record["ints"]["f2"] = random.randint(0, 500)

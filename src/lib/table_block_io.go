@@ -153,7 +153,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			strCol.Bins = append(strCol.Bins, si)
 			count += len(records)
 			for _, r := range records {
-				record_to_value[r] = bucket
+				record_to_value[r] = str_id
 			}
 
 			// also bookkeeping to be used later inside the block info.db, IMO
