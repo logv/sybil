@@ -1,5 +1,6 @@
 package edb
 
+import "fmt"
 import "log"
 import "sync"
 
@@ -121,13 +122,13 @@ func (t *Table) PrintRecord(r *Record) {
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.getColumnInfo(int16(name))
-			log.Println("  ", name, col.get_string_for_key(name), val)
+			fmt.Println("  ", name, col.get_string_for_key(name), val)
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.getColumnInfo(int16(name))
-			log.Println("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
+			fmt.Println("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
 		}
 	}
 }

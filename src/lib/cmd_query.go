@@ -17,7 +17,7 @@ var f_SAMPLES *bool = &SAMPLES
 var f_LIST_TABLES *bool
 
 func printResult(querySpec *QuerySpec, v *Result) {
-	log.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
+	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
 		if *f_OP == "hist" {
@@ -29,12 +29,12 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			p := h.getPercentiles()
 
 			if len(p) > 0 {
-				log.Println(col_name, p[0], p[25], p[50], p[75], p[99])
+				fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
 			} else {
-				log.Println(col_name, "No Data")
+				fmt.Println(col_name, "No Data")
 			}
 		} else if *f_OP == "avg" {
-			log.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
+			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
 		}
 	}
 }
@@ -66,7 +66,7 @@ func printTimeResults(querySpec *QuerySpec) {
 	sort.Sort(ByVal(keys))
 
 	for _, k := range keys {
-		log.Println("BUCKET", k, len(querySpec.TimeResults[k]))
+		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
 	}
 
 }
