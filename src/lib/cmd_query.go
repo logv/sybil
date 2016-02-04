@@ -82,7 +82,7 @@ func printSortedResults(querySpec *QuerySpec) {
 }
 
 func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
-	table := getTable(name)
+	table := GetTable(name)
 
 	table.MatchAndAggregate(querySpec)
 
@@ -131,7 +131,7 @@ func RunQueryCmdLine() {
 			return
 		}
 		for _, db := range files {
-			t := getTable(db.Name())
+			t := GetTable(db.Name())
 			fmt.Print(t.Name, " ")
 		}
 
@@ -145,7 +145,7 @@ func RunQueryCmdLine() {
 		flag.PrintDefaults()
 		return
 	}
-	t := getTable(table)
+	t := GetTable(table)
 
 	ints := make([]string, 0)
 	groups := make([]string, 0)
@@ -317,7 +317,7 @@ func RunQueryCmdLine() {
 	log.Println("SERIALIZED DB TOOK", end.Sub(start))
 
 	if *f_PRINT_INFO {
-		t := getTable(table)
+		t := GetTable(table)
 		t.PrintColInfo()
 	}
 }

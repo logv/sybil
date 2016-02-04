@@ -28,7 +28,7 @@ var CHUNK_SIZE = 1024 * 64
 var table_m sync.Mutex
 
 // This is a singleton constructor for Tables
-func getTable(name string) *Table {
+func GetTable(name string) *Table {
 	table_m.Lock()
 	defer table_m.Unlock()
 

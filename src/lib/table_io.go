@@ -201,6 +201,7 @@ func (t *Table) LoadTableInfo() {
 	}
 	t.LastBlockId = saved_table.LastBlockId
 
+	t.populate_string_id_lookup()
 	return
 }
 

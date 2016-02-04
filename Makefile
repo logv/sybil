@@ -31,6 +31,12 @@ testquery:
 
 bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
+
+test:
+	go test ./src/lib/test
+
+testv:
+	go test ./src/lib/test -v
      
 
 nodeltaencoding: export BUILD_FLAGS += -tags denc

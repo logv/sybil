@@ -19,7 +19,7 @@ func RunDigestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	t := getTable(*f_TABLE)
+	t := GetTable(*f_TABLE)
 	t.LoadRecords(nil)
 
 	log.Println("KEY TABLE", t.KeyTable)
