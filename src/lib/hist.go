@@ -15,6 +15,7 @@ type Hist struct {
 	avgs        []float64
 
 	outliers []int
+	underliers []int
 
 	m *sync.Mutex
 }
@@ -32,6 +33,7 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 	h.Count = 0
 
 	h.outliers = make([]int, 0)
+	h.underliers = make([]int, 0)
 
 	h.m = &sync.Mutex{}
 
@@ -60,8 +62,14 @@ func (h *Hist) addValue(value int) {
 
 	bucket_value := (value - h.Min) / h.bucket_size
 
-	if bucket_value > h.num_buckets {
+	if bucket_value >= len(h.avgs) {
 		h.outliers = append(h.outliers, value)
+		h.m.Unlock()
+		return
+	}
+
+	if bucket_value < 0 {
+		h.underliers = append(h.underliers, value)
 		h.m.Unlock()
 		return
 	}

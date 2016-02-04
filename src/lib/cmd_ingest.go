@@ -17,10 +17,8 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 		prefix_name := fmt.Sprintf("%s.", key_name)
 		switch iv := v.(type) {
 		case string:
-			fmt.Println("ADDING FIELD", key_name, iv)
 			r.AddStrField(key_name, iv)
 		case float64:
-			fmt.Println("ADDING FIELD", key_name, iv)
 			r.AddIntField(key_name, int(iv))
 		case map[string]interface{}:
 			d := Dictionary(iv)
@@ -70,7 +68,6 @@ func RunIngestCmdLine() {
 		r := t.NewRecord()
 
 		ingest_dictionary(r, &recordmap, "")
-		t.PrintRecord(r)
 
 		count++
 
