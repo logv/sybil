@@ -7,16 +7,6 @@ import "fmt"
 import "time"
 import "os"
 
-var TEST_TABLE_NAME = "__TEST0__"
-
-func unload_test_table() {
-	delete(edb.LOADED_TABLES, TEST_TABLE_NAME)
-}
-
-func delete_test_db() {
-	os.RemoveAll(fmt.Sprintf("db/%s", TEST_TABLE_NAME))
-}
-
 func TestTableCreate(test *testing.T) {
 	delete_test_db()
 
