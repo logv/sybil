@@ -252,7 +252,7 @@ func RunQueryCmdLine() {
 	}
 
 	querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
-	punctuateSpec(&querySpec)
+	querySpec.Punctuate()
 
 	for _, v := range groups {
 		loadSpec.Str(v)
