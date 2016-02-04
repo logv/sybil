@@ -10,24 +10,23 @@ RUNNING
 
     make
 
-    # add some data to test0 table
-    make testdata
+    # add some data to uptime and people tables
+    make fake-data
 
     # run our first query on the table
-    ./bin/query -table test0
+    ./bin/query -table uptime -samples -limit 5
 
-    # make some new tables / data and store them in column form
-    ./bin/fakedata -add 100000 -table smalltable
+    # run a more complicated query (get status, host and histogram of pings)
+    ./bin/query -table uptime -group status,host -int ping -print -op hist
 
-    # query that small little table we just made
-    ./bin/query -table smalltable -int age -group state -op hist
+    # run another query
+    ./bin/query -table people -int age -group state -print -limit 10 -sort age
 
     # use the writer to load a single JSON record into the ingestion log
     ./bin/ingest -table test1 < example/single_record.json
 
-    # use the digester to serialize columns into column store
+    # turn it into the column store format
     ./bin/digest -table test1
-
 
 
 PROFILING
@@ -39,7 +38,6 @@ PROFILING
     ./bin/query -profile -table test0 -group age -int age
     go tool pprof ./bin/query cpu.pprof
 
-
-    ./bin/fakedata -profile -table test0 -add 10000
+    python scripts/fakedata/host_generator.py 10000 | ./bin/ingest -profile -table test0
     go tool pprof ./bin/fakedata cpu.pprof
 
