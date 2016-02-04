@@ -9,14 +9,14 @@ type QuerySpec struct {
 	Groups       []Grouping
 	Aggregations []Aggregation
 
-	OrderBy string
-	Limit   int16
+	OrderBy    string
+	Limit      int16
 	TimeBucket int
 
-	Results ResultMap
-	TimeResults map[int] ResultMap
-	Sorted  []*Result
-	Matched []*Record
+	Results     ResultMap
+	TimeResults map[int]ResultMap
+	Sorted      []*Result
+	Matched     []*Record
 
 	BlockList map[string]TableBlock
 

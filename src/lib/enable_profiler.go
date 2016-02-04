@@ -3,7 +3,7 @@
 package edb
 
 import "github.com/pkg/profile"
-import "fmt"
+import "log"
 
 import "flag"
 
@@ -24,6 +24,6 @@ func (p PkgProfile) Stop() {
 }
 
 var RUN_PROFILER = func() ProfilerStop {
-	fmt.Println("RUNNING ENABLED PROFILER")
+	log.Println("RUNNING ENABLED PROFILER")
 	return PkgProfile{}
 }

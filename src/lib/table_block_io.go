@@ -25,7 +25,7 @@ func delta_encode_col(col ValueMap) {
 
 func delta_encode(same_map map[int16]ValueMap) {
 	for _, col := range same_map {
-		if len(col) <= CHUNK_SIZE / 10 {
+		if len(col) <= CHUNK_SIZE/10 {
 			delta_encode_col(col)
 		}
 	}
@@ -63,7 +63,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 	for k, v := range same_ints {
 		col_name := tb.get_string_for_key(k)
 		if col_name == "" {
-			fmt.Println("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
+			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
 			continue
 		}
 		intCol := SavedIntColumn{}
@@ -87,7 +87,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 		intCol.BucketEncoded = true
 		// the column is high cardinality?
-		if len(intCol.Bins) > CHUNK_SIZE / 10 {
+		if len(intCol.Bins) > CHUNK_SIZE/10 {
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int32, count)
@@ -116,7 +116,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		fmt.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		log.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 
@@ -131,7 +131,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		if col_name == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
-			fmt.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
+			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
 			continue
 		}
 		strCol := SavedStrColumn{}
@@ -162,7 +162,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 		strCol.BucketEncoded = true
 		// the column is high cardinality?
-		if len(strCol.Bins) > CHUNK_SIZE / 10 {
+		if len(strCol.Bins) > CHUNK_SIZE/10 {
 			strCol.BucketEncoded = false
 			strCol.Bins = nil
 			strCol.Values = make([]int32, count)
@@ -170,7 +170,6 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 				strCol.Values[k] = v
 			}
 		}
-
 
 		tb.get_str_info(k).prune()
 
@@ -196,7 +195,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		fmt.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		log.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 		network.WriteTo(w)
@@ -221,9 +220,9 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 		log.Fatal("encode:", err)
 	}
 
-	fmt.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(records), ")")
+	log.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(records), ")")
 
-	fmt.Println("KEY TABLE IS", tb.table.KeyTable)
+	log.Println("KEY TABLE IS", tb.table.KeyTable)
 
 	w, _ := os.Create(col_fname)
 	network.WriteTo(w)
@@ -302,7 +301,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	tb.SaveStrsToColumns(partialname, separated_columns.strs)
 	tb.SaveInfoToColumns(partialname)
 
-	fmt.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
+	log.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
 
 	// remove the old block
 	os.RemoveAll(oldblock)
@@ -312,7 +311,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	if err == nil {
 		os.RemoveAll(oldblock)
 	} else {
-		fmt.Println("ERROR SAVING BLOCK", err)
+		log.Println("ERROR SAVING BLOCK", err)
 	}
 }
 
@@ -325,14 +324,14 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	col_name := tb.table.get_string_for_key(int(into.NameId))
 	if col_name != into.Name {
 		shouldbe := tb.table.get_key_id(into.Name)
-		fmt.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe, "SKIPPING!")
+		log.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe, "SKIPPING!")
 		return
 
 	}
 	string_lookup := make(map[int32]string)
 
 	if err != nil {
-		fmt.Println("DECODE COL ERR:", err)
+		log.Println("DECODE COL ERR:", err)
 	}
 
 	col := tb.getColumnInfo(into.NameId)
@@ -361,7 +360,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 				prev = r
 
 				if int(into.NameId) >= len(record.Strs) {
-					fmt.Println("FOUND A STRAY COLUMN...", into.Name)
+					log.Println("FOUND A STRAY COLUMN...", into.Name)
 				} else {
 					record.Strs[into.NameId] = StrField(value_id)
 				}
@@ -374,7 +373,6 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 			records[r].Populated[into.NameId] = STR_VAL
 		}
 
-
 	}
 
 }
@@ -385,13 +383,13 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	into := &SavedIntColumn{}
 	err := dec.Decode(into)
 	if err != nil {
-		fmt.Println("DECODE COL ERR:", err)
+		log.Println("DECODE COL ERR:", err)
 	}
 
 	col_name := tb.table.get_string_for_key(int(into.NameId))
 	if col_name != into.Name {
 		shouldbe := tb.table.get_key_id(into.Name)
-		fmt.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
+		log.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
 	}
 
 	if into.BucketEncoded {
@@ -446,7 +444,7 @@ func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo,
 		mend := time.Now()
 
 		if DEBUG_TIMING {
-			fmt.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+			log.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
 		}
 
 		start := time.Now()
@@ -462,7 +460,7 @@ func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo,
 		end := time.Now()
 
 		if DEBUG_TIMING {
-			fmt.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+			log.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
 		}
 	}
 

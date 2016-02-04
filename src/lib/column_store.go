@@ -50,17 +50,17 @@ type SavedIntColumn struct {
 	Name            string
 	NameId          int16
 	DeltaEncodedIDs bool
-	BucketEncoded	  bool
+	BucketEncoded   bool
 	Bins            []SavedIntBucket
-	Values				  []int32
+	Values          []int32
 }
 type SavedStrColumn struct {
 	Name            string
 	NameId          int16
 	DeltaEncodedIDs bool
-	BucketEncoded	  bool
+	BucketEncoded   bool
 	Bins            []SavedStrBucket
-	Values				  []int32
+	Values          []int32
 	StringTable     []string
 }
 type SavedSetColumn struct {

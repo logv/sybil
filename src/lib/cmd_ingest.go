@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
 )
 
@@ -12,11 +13,10 @@ import (
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
 	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
-	
+
 	flag.Parse()
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
-
 
 	if *f_TABLE == "" {
 		flag.PrintDefaults()
@@ -40,7 +40,7 @@ func RunIngestCmdLine() {
 				break
 			}
 
-			fmt.Println("ERR:", err)
+			log.Println("ERR:", err)
 
 			continue
 		}
@@ -77,5 +77,3 @@ func RunIngestCmdLine() {
 
 	t.IngestRecords(digestfile)
 }
-
-

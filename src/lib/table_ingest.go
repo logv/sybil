@@ -1,5 +1,6 @@
 package edb
 
+import "log"
 import "fmt"
 import "os"
 import "strings"
@@ -14,7 +15,7 @@ import "strings"
 
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
-	fmt.Println("KEY TABLE", t.KeyTable)
+	log.Println("KEY TABLE", t.KeyTable)
 
 	t.AppendRecordsToLog(t.newRecords[:], blockname)
 	t.newRecords = make([]*Record, 0)
@@ -28,7 +29,7 @@ func (t *Table) DigestRecords(digest string) {
 
 	file, err := os.Open(dirname)
 	if err != nil {
-		fmt.Println("Can't open the ingestion dir", dirname)
+		log.Println("Can't open the ingestion dir", dirname)
 		return
 	}
 
@@ -44,28 +45,26 @@ func (t *Table) DigestRecords(digest string) {
 			continue
 		}
 
-		fmt.Println("Moving", filename, "TO", digestname, "FOR DIGESTION")
+		log.Println("Moving", filename, "TO", digestname, "FOR DIGESTION")
 		fullname := fmt.Sprintf("%s/%s", dirname, filename.Name())
 
 		err := os.Rename(fullname, digestname)
 		if err != nil {
-			fmt.Println("NO INGEST LOG, ERR:", err)
+			log.Println("NO INGEST LOG, ERR:", err)
 			return
 		}
 
 		records := t.LoadRecordsFromLog(digestname)
-		fmt.Println("LOADED", len(records), "FOR DIGESTION")
+		log.Println("LOADED", len(records), "FOR DIGESTION")
 
 		if len(records) > 0 {
 			t.newRecords = records
 			t.SaveRecords()
 		}
 
-		fmt.Println("Removing", digestname)
+		log.Println("Removing", digestname)
 		os.Remove(digestname)
 
-
 	}
-
 
 }

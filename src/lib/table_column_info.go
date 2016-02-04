@@ -1,6 +1,6 @@
 package edb
 
-import "fmt"
+import "log"
 import "sort"
 
 // THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
@@ -147,7 +147,7 @@ func (tb *TableBlock) get_str_info(name int16) *StrInfo {
 
 func (t *Table) PrintColInfo() {
 	for k, v := range INT_INFO_TABLE[t.Name] {
-		fmt.Println(k, v)
+		log.Println(k, v)
 	}
 
 }

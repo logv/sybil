@@ -32,14 +32,14 @@ func (r *Record) getIntVal(name string) (int, bool) {
 func (r *Record) getVal(name string) (int, bool) {
 	name_id := r.block.get_key_id(name)
 	switch r.Populated[name_id] {
-		case STR_VAL:
-			return int(r.Strs[name_id]), true
+	case STR_VAL:
+		return int(r.Strs[name_id]), true
 
-		case INT_VAL:
-			return int(r.Ints[name_id]), true
+	case INT_VAL:
+		return int(r.Ints[name_id]), true
 
-		default:
-			return 0, false
+	default:
+		return 0, false
 	}
 
 }

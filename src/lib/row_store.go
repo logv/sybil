@@ -1,9 +1,9 @@
 package edb
 
 import "log"
+import "fmt"
 import "bytes"
 import "encoding/gob"
-import "fmt"
 import "io/ioutil"
 import "os"
 
@@ -89,13 +89,13 @@ type SavedRecords struct {
 }
 
 func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
-	fmt.Println("LOADING RECORDS FROM LOG", filename)
+	log.Println("LOADING RECORDS FROM LOG", filename)
 	var marshalled_records []*SavedRecord
 
 	file, err := os.Open(filename)
 
 	if err != nil {
-		fmt.Println("ERROR OPENING FILE", filename, err)
+		log.Println("ERROR OPENING FILE", filename, err)
 	}
 
 	// Create an encoder and send a value.
@@ -103,20 +103,20 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	err = enc.Decode(&marshalled_records)
 
 	if err != nil {
-		fmt.Println("ERROR LOADING INGESTION LOG", err)
+		log.Println("ERROR LOADING INGESTION LOG", err)
 	}
 
 	return marshalled_records
 }
 
 func (t *Table) LoadRecordsFromLog(filename string) []*Record {
-	fmt.Println("LOADING RECORDS FROM LOG", filename)
+	log.Println("LOADING RECORDS FROM LOG", filename)
 	var marshalled_records []*SavedRecord
 
 	file, err := os.Open(filename)
 
 	if err != nil {
-		fmt.Println("ERROR OPENING FILE", filename, err)
+		log.Println("ERROR OPENING FILE", filename, err)
 	}
 
 	// Create an encoder and send a value.
@@ -124,7 +124,7 @@ func (t *Table) LoadRecordsFromLog(filename string) []*Record {
 	err = enc.Decode(&marshalled_records)
 
 	if err != nil {
-		fmt.Println("ERROR LOADING INGESTION LOG", err)
+		log.Println("ERROR LOADING INGESTION LOG", err)
 	}
 
 	ret := make([]*Record, len(marshalled_records))
@@ -142,7 +142,7 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 	}
 
 	ingestdir := fmt.Sprintf("db/%s/ingest/", t.Name)
-	
+
 	os.MkdirAll(fmt.Sprintf("db/%s/digest", t.Name), 0777)
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(fmt.Sprintf("db/%s/stomache", t.Name), 0777)
@@ -156,7 +156,7 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 
 	var network bytes.Buffer // Stand-in for the network.
 
-	fmt.Println("SAVING RECORDS", len(marshalled_records), "TO INGESTION LOG")
+	log.Println("SAVING RECORDS", len(marshalled_records), "TO INGESTION LOG")
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
@@ -167,9 +167,9 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 	}
 
 	filename := fmt.Sprintf("%s.db", w.Name())
-	fmt.Println("NAME", w.Name())
+	log.Println("NAME", w.Name())
 
-	fmt.Println("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
+	log.Println("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
 
 	network.WriteTo(w)
 	os.Rename(w.Name(), filename)

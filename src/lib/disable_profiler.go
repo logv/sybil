@@ -5,7 +5,6 @@ package edb
 var PROFILER_ENABLED bool
 var f_PROFILE *bool = &PROFILER_ENABLED
 
-
 type NoProfile struct{}
 
 func (p NoProfile) Start() ProfilerStart {

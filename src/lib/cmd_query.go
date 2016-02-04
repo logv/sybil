@@ -1,5 +1,6 @@
 package edb
 
+import "log"
 import "fmt"
 import "flag"
 import "strings"
@@ -13,27 +14,27 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var SAMPLES = false
 var f_SAMPLES *bool = &SAMPLES
-var f_LIST_TABLES *bool;
+var f_LIST_TABLES *bool
 
 func printResult(querySpec *QuerySpec, v *Result) {
-	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
+	log.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
 		if *f_OP == "hist" {
 			h, ok := v.Hists[agg.name]
 			if !ok {
-				fmt.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
+				log.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
 				continue
 			}
 			p := h.getPercentiles()
 
 			if len(p) > 0 {
-				fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
+				log.Println(col_name, p[0], p[25], p[50], p[75], p[99])
 			} else {
-				fmt.Println(col_name, "No Data")
+				log.Println(col_name, "No Data")
 			}
 		} else if *f_OP == "avg" {
-			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
+			log.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
 		}
 	}
 }
@@ -65,9 +66,8 @@ func printTimeResults(querySpec *QuerySpec) {
 	sort.Sort(ByVal(keys))
 
 	for _, k := range keys {
-		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
+		log.Println("BUCKET", k, len(querySpec.TimeResults[k]))
 	}
-
 
 }
 
@@ -87,7 +87,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 	table.MatchAndAggregate(querySpec)
 
 	if *f_PRINT {
-		fmt.Println("PRINTING RESULTS")
+		log.Println("PRINTING RESULTS")
 
 		if querySpec.OrderBy != "" {
 			printSortedResults(querySpec)
@@ -100,7 +100,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 		start := time.Now()
 		session_maps := SessionizeRecords(querySpec.Matched, *f_SESSION_COL)
 		end := time.Now()
-		fmt.Println("SESSIONIZED", len(querySpec.Matched), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
+		log.Println("SESSIONIZED", len(querySpec.Matched), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
 	}
 }
 
@@ -127,15 +127,15 @@ func RunQueryCmdLine() {
 	if *f_LIST_TABLES {
 		files, err := ioutil.ReadDir("db/")
 		if err != nil {
-			fmt.Println("No tables found")
+			log.Println("No tables found")
 			return
 		}
 		for _, db := range files {
-			t := getTable(db.Name())	
+			t := getTable(db.Name())
 			fmt.Print(t.Name, " ")
 		}
 
-		fmt.Println("")
+		log.Println("")
 
 		return
 	}
@@ -182,7 +182,6 @@ func RunQueryCmdLine() {
 	// THE RIGHT COLUMN ID
 	t.LoadRecords(nil)
 
-
 	if *f_SAMPLES {
 		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
@@ -219,12 +218,12 @@ func RunQueryCmdLine() {
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-	fmt.Println("KEY TABLE", t.KeyTable)
+	log.Println("KEY TABLE", t.KeyTable)
 	used := make(map[int16]int)
 	for _, v := range t.KeyTable {
 		used[v]++
 		if used[v] > 1 {
-			fmt.Println("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+			log.Println("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
 			return
 		}
 	}
@@ -287,35 +286,35 @@ func RunQueryCmdLine() {
 	if !*f_PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
 		// NEVER TURN IT BACK ON!
-		fmt.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
+		log.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		old_percent := debug.SetGCPercent(-1)
 
-		fmt.Println("USING LOAD SPEC", loadSpec)
+		log.Println("USING LOAD SPEC", loadSpec)
 
-		fmt.Println("USING QUERY SPEC", querySpec)
+		log.Println("USING QUERY SPEC", querySpec)
 
 		start := time.Now()
 		count := t.LoadRecords(&loadSpec)
 		end := time.Now()
 
-		fmt.Println("LOAD RECORDS TOOK", end.Sub(start))
+		log.Println("LOAD RECORDS TOOK", end.Sub(start))
 		if count > MAX_RECORDS_NO_GC {
-			fmt.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
+			log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
 			gc_start := time.Now()
 			debug.SetGCPercent(old_percent)
 			end = time.Now()
-			fmt.Println("GC TOOK", end.Sub(gc_start))
+			log.Println("GC TOOK", end.Sub(gc_start))
 		}
 
 		queryTable(table, &loadSpec, &querySpec)
 		end = time.Now()
-		fmt.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
+		log.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
 	}
 
 	start := time.Now()
 	t.SaveRecords()
 	end := time.Now()
-	fmt.Println("SERIALIZED DB TOOK", end.Sub(start))
+	log.Println("SERIALIZED DB TOOK", end.Sub(start))
 
 	if *f_PRINT_INFO {
 		t := getTable(table)

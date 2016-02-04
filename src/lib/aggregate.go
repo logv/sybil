@@ -1,6 +1,7 @@
 package edb
 
 import "bytes"
+import "log"
 import "fmt"
 import "time"
 import "sync"
@@ -32,7 +33,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 	ret := make([]*Record, 0)
 
-	var result_map ResultMap;
+	var result_map ResultMap
 	if querySpec.TimeBucket <= 0 {
 		result_map = querySpec.Results
 	}
@@ -44,7 +45,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 		// FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
 			// returns True if the record matches!
-			ret := querySpec.Filters[j].Filter(r) != true 
+			ret := querySpec.Filters[j].Filter(r) != true
 			if ret {
 				add = false
 				break
@@ -80,7 +81,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 		if querySpec.TimeBucket > 0 {
 			val, ok := r.getIntVal("time")
 			if ok {
-				val = int(val / querySpec.TimeBucket) * querySpec.TimeBucket
+				val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
 				querySpec.r.RLock()
 				result_map, ok = querySpec.TimeResults[val]
 				querySpec.r.RUnlock()
@@ -140,7 +141,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 				if ok {
 					querySpec.r.Unlock()
 					added_record = existing_record
-				} else { 
+				} else {
 					result_map[group_key] = added_record
 					querySpec.r.Unlock()
 				}
@@ -234,7 +235,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 		end := time.Now()
 		if DEBUG_TIMING {
-			fmt.Println("SORTING TOOK", end.Sub(start))
+			log.Println("SORTING TOOK", end.Sub(start))
 		}
 
 		if len(sorter.Results) > *f_LIMIT {
@@ -246,6 +247,6 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	querySpec.Matched = rets
 
-	fmt.Println(len(rets), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
+	log.Println(len(rets), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }

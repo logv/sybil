@@ -1,6 +1,6 @@
 package edb
 
-import "fmt"
+import "log"
 import "sync"
 
 type Table struct {
@@ -116,18 +116,18 @@ func (t *Table) NewRecord() *Record {
 }
 
 func (t *Table) PrintRecord(r *Record) {
-	fmt.Println("RECORD", r)
+	log.Println("RECORD", r)
 
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.getColumnInfo(int16(name))
-			fmt.Println("  ", name, col.get_string_for_key(name), val)
+			log.Println("  ", name, col.get_string_for_key(name), val)
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.getColumnInfo(int16(name))
-			fmt.Println("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
+			log.Println("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
 		}
 	}
 }

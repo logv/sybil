@@ -56,20 +56,19 @@ func (filter StrFilter) Filter(r *Record) bool {
 		return false
 	}
 
-
 	val := r.Strs[filter.FieldId]
 	col := r.block.getColumnInfo(filter.FieldId)
 	filterval := int(col.get_val_id(filter.Value))
 
 	ret := false
 	switch filter.Op {
-		case "eq":
-			ret = int(val) == filterval
+	case "eq":
+		ret = int(val) == filterval
 
-		case "neq":
-			ret = int(val) != filterval
+	case "neq":
+		ret = int(val) != filterval
 
-		default:
+	default:
 
 	}
 

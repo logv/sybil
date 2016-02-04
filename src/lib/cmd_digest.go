@@ -1,7 +1,7 @@
 package edb
 
 import "flag"
-import "fmt"
+import "log"
 
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
@@ -22,7 +22,7 @@ func RunDigestCmdLine() {
 	t := getTable(*f_TABLE)
 	t.LoadRecords(nil)
 
-	fmt.Println("KEY TABLE", t.KeyTable)
+	log.Println("KEY TABLE", t.KeyTable)
 
 	t.DigestRecords(*digest_file)
 }

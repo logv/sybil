@@ -1,7 +1,7 @@
 package edb
 
-import "fmt"
 import "log"
+import "fmt"
 import "time"
 import "os"
 import "strings"
@@ -15,7 +15,7 @@ import "strconv"
 var DEBUG_TIMING = false
 
 type LoadSpec struct {
-	columns map[string]bool
+	columns        map[string]bool
 	LoadAllColumns bool
 }
 
@@ -60,7 +60,7 @@ func (t *Table) SaveTableInfo(fname string) {
 		log.Fatal("encode:", err)
 	}
 
-	fmt.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
+	log.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
 
 	w, _ := os.Create(filename)
 	network.WriteTo(w)
@@ -84,13 +84,13 @@ func (t *Table) FillPartialBlock() bool {
 		return false
 	}
 
-	fmt.Println("CHECKING FOR PARTIAL BLOCK", t.LastBlockId)
+	log.Println("CHECKING FOR PARTIAL BLOCK", t.LastBlockId)
 
 	// Open up our last record block, see how full it is
 	filename := getBlockDir(t.Name, t.LastBlockId)
 
 	partialRecords := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
-	fmt.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
+	log.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
 	incBlockId := false
 	if len(partialRecords) < CHUNK_SIZE {
@@ -101,7 +101,7 @@ func (t *Table) FillPartialBlock() bool {
 			incBlockId = true
 		}
 
-		fmt.Println("SAVING PARTIAL RECORDS", delta, "TO", filename)
+		log.Println("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
 		t.SaveRecordsToBlock(partialRecords, filename)
 		if delta < len(t.newRecords) {
@@ -132,7 +132,7 @@ func (t *Table) saveRecordList(records []*Record) bool {
 		return false
 	}
 
-	fmt.Println("SAVING RECORD LIST", len(records), t.Name)
+	log.Println("SAVING RECORD LIST", len(records), t.Name)
 
 	chunk_size := CHUNK_SIZE
 	chunks := len(records) / chunk_size
@@ -154,7 +154,7 @@ func (t *Table) saveRecordList(records []*Record) bool {
 		}
 	}
 
-	fmt.Println("LAST TABLE BLOCK IS", t.LastBlockId)
+	log.Println("LAST TABLE BLOCK IS", t.LastBlockId)
 
 	return true
 }
@@ -183,17 +183,17 @@ func (t *Table) LoadTableInfo() {
 	tablename := t.Name
 	filename := fmt.Sprintf("db/%s/info.db", tablename)
 	file, _ := os.Open(filename)
-	fmt.Println("OPENING TABLE INFO FROM FILENAME", filename)
+	log.Println("OPENING TABLE INFO FROM FILENAME", filename)
 	dec := gob.NewDecoder(file)
 	err := dec.Decode(&saved_table)
 	end := time.Now()
 	if err != nil {
-		fmt.Println("TABLE INFO DECODE:", err)
+		log.Println("TABLE INFO DECODE:", err)
 		return
 	}
 
 	if DEBUG_TIMING {
-		fmt.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+		log.Println("TABLE INFO OPEN TOOK", end.Sub(start))
 	}
 
 	if t.KeyTable != nil && len(saved_table.KeyTable) > 0 {
@@ -226,7 +226,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 	iend := time.Now()
 
 	if DEBUG_TIMING {
-		fmt.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
+		log.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
 	records := tb.allocateRecords(load_spec, info, load_records)
@@ -269,7 +269,7 @@ func (t *Table) ReleaseRecords() {
 
 func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 	waystart := time.Now()
-	fmt.Println("LOADING", t.Name)
+	log.Println("LOADING", t.Name)
 
 	files, _ := ioutil.ReadDir(fmt.Sprintf("db/%s/", t.Name))
 
@@ -284,13 +284,12 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 
 	wg.Wait()
 
-
 	m := &sync.Mutex{}
 
 	count := 0
 	var records []*Record
 	for f := range files {
-		v := files[len(files) - f - 1]
+		v := files[len(files)-f-1]
 		if strings.HasSuffix(v.Name(), "info.db") {
 			continue
 		}
@@ -318,9 +317,9 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 				end := time.Now()
 				if DEBUG_TIMING {
 					if load_spec != nil {
-						fmt.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
+						log.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
 					} else {
-						fmt.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
+						log.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
 					}
 				}
 
@@ -351,9 +350,9 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 	end := time.Now()
 
 	if load_spec != nil {
-		fmt.Println(count, "RECORDS LOADED INTO", t.Name, "TOOK", end.Sub(waystart))
+		log.Println(count, "RECORDS LOADED INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
-		fmt.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
+		log.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
 	return count
