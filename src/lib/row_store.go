@@ -141,11 +141,11 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 		return
 	}
 
-	ingestdir := fmt.Sprintf("db/%s/ingest/", t.Name)
+	ingestdir := fmt.Sprintf("%s/%s/ingest/", *f_DIR, t.Name)
 
-	os.MkdirAll(fmt.Sprintf("db/%s/digest", t.Name), 0777)
+	os.MkdirAll(fmt.Sprintf("%s/%s/digest", *f_DIR, t.Name), 0777)
 	os.MkdirAll(ingestdir, 0777)
-	os.MkdirAll(fmt.Sprintf("db/%s/stomache", t.Name), 0777)
+	os.MkdirAll(fmt.Sprintf("%s/db/%s/stomache", *f_DIR, t.Name), 0777)
 
 	w, err := ioutil.TempFile(ingestdir, fmt.Sprintf("%s_", blockname))
 

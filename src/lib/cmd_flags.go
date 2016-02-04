@@ -19,6 +19,7 @@ var f_ADD_RECORDS *int
 var TIMESERIES = false
 var f_TIME *bool = &TIMESERIES
 
+var f_DIR = flag.String("dir", "./db/", "Directory to store DB files")
 var f_TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
 var f_SORT = flag.String("sort", "", "Int Column to sort by")

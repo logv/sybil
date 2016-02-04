@@ -25,7 +25,7 @@ func (t *Table) IngestRecords(blockname string) {
 // Go through rowstore and save records out to column store
 func (t *Table) DigestRecords(digest string) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
-	dirname := fmt.Sprintf("db/%s/ingest/", t.Name)
+	dirname := fmt.Sprintf("%s/%s/ingest/", *f_DIR, t.Name)
 
 	file, err := os.Open(dirname)
 	if err != nil {
@@ -34,8 +34,8 @@ func (t *Table) DigestRecords(digest string) {
 	}
 
 	files, err := file.Readdir(0)
-	digestname := fmt.Sprintf("db/%s/digest/%s.db", t.Name, digest)
-	os.MkdirAll(fmt.Sprintf("db/%s/digest", t.Name), 0777)
+	digestname := fmt.Sprintf("%s/%s/digest/%s.db", *f_DIR, t.Name, digest)
+	os.MkdirAll(fmt.Sprintf("%s/%s/digest", *f_DIR, t.Name), 0777)
 	for _, filename := range files {
 
 		if strings.HasPrefix(filename.Name(), digest) == false {

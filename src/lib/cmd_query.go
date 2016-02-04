@@ -125,7 +125,7 @@ func RunQueryCmdLine() {
 	flag.Parse()
 
 	if *f_LIST_TABLES {
-		files, err := ioutil.ReadDir("db/")
+		files, err := ioutil.ReadDir(*f_DIR)
 		if err != nil {
 			log.Println("No tables found")
 			return
@@ -135,7 +135,7 @@ func RunQueryCmdLine() {
 			fmt.Print(t.Name, " ")
 		}
 
-		log.Println("")
+		fmt.Println("")
 
 		return
 	}
