@@ -47,21 +47,13 @@ func RunIngestCmdLine() {
 
 		r := t.NewRecord()
 
-		intm := recordmap["ints"].(map[string]interface{})
-
-		for k, v := range intm {
-			switch iv := v.(type) {
-			case float64:
-				r.AddIntField(k, int(iv))
-
-			}
-		}
-
-		strm := recordmap["strs"].(map[string]interface{})
-		for k, v := range strm {
+		for k, v := range recordmap {
 			switch iv := v.(type) {
 			case string:
 				r.AddStrField(k, iv)
+			case float64:
+				r.AddIntField(k, int(iv))
+
 			}
 		}
 
