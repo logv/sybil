@@ -312,11 +312,6 @@ func RunQueryCmdLine() {
 		log.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
 	}
 
-	start := time.Now()
-	t.SaveRecords()
-	end := time.Now()
-	log.Println("SERIALIZED DB TOOK", end.Sub(start))
-
 	if *f_PRINT_INFO {
 		t := GetTable(table)
 		t.PrintColInfo()
