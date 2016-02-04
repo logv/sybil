@@ -219,6 +219,7 @@ func RunQueryCmdLine() {
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
 	log.Println("KEY TABLE", t.KeyTable)
+	log.Println("KEY TYPES", t.KeyTypes)
 	used := make(map[int16]int)
 	for _, v := range t.KeyTable {
 		used[v]++

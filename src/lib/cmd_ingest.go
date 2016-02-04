@@ -3,8 +3,10 @@ package edb
 import (
 	"encoding/json"
 	"flag"
+	"strconv"
 	"fmt"
 	"io"
+	"strings"
 	"log"
 	"os"
 )
@@ -17,9 +19,21 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 		prefix_name := fmt.Sprintf("%s.", key_name)
 		switch iv := v.(type) {
 		case string:
-			r.AddStrField(key_name, iv)
+			if INT_CAST[key_name] == true {
+				val, err := strconv.ParseInt(iv, 10, 64)
+				if err != nil {
+					r.AddIntField(key_name, int(val))
+				}
+			} else {
+				r.AddStrField(key_name, iv)
+
+			}
 		case float64:
-			r.AddIntField(key_name, int(iv))
+			if STR_CAST[key_name] == true {
+				r.AddStrField(key_name, fmt.Sprint(iv))
+			} else {
+				r.AddIntField(key_name, int(iv))
+			}
 		case map[string]interface{}:
 			d := Dictionary(iv)
 			ingest_dictionary(r, &d, prefix_name) 
@@ -29,10 +43,15 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	}
 }
 
+var INT_CAST = make(map[string]bool)
+var STR_CAST = make(map[string]bool)
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
 	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
+	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
+	f_STRS := flag.String("strs", "", "columns to treat as strings (comma delimited)")
+
 
 	flag.Parse()
 
@@ -46,6 +65,15 @@ func RunIngestCmdLine() {
 		profile := RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
+
+
+	for _, v := range strings.Split(*f_STRS, ",") {
+		STR_CAST[v] = true
+	}
+	for _, v := range strings.Split(*f_INTS, ",") {
+		INT_CAST[v] = true
+	}
+
 
 	t := GetTable(*f_TABLE)
 	t.LoadRecords(nil)

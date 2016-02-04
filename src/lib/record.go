@@ -78,6 +78,8 @@ func (r *Record) AddStrField(name string, val string) {
 	r.ResizeFields(name_id)
 	r.Strs[name_id] = StrField(value_id)
 	r.Populated[name_id] = STR_VAL
+	
+	r.block.table.set_key_type(name_id, STR_VAL)
 }
 
 func (r *Record) AddIntField(name string, val int) {
@@ -87,6 +89,7 @@ func (r *Record) AddIntField(name string, val int) {
 	r.ResizeFields(name_id)
 	r.Ints[name_id] = IntField(val)
 	r.Populated[name_id] = INT_VAL
+	r.block.table.set_key_type(name_id, INT_VAL)
 }
 
 func (r *Record) AddSetField(name string, val []string) {

@@ -49,7 +49,7 @@ func getBlockFilename(name string, id int) string {
 	return path.Join( *f_DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
 }
 
-func (t *Table) SaveTableInfo(fname string) {
+func (t *Table) saveTableInfo(fname string) {
 	var network bytes.Buffer // Stand-in for the network.
 	filename := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.db", fname))
 
@@ -65,6 +65,11 @@ func (t *Table) SaveTableInfo(fname string) {
 
 	w, _ := os.Create(filename)
 	network.WriteTo(w)
+}
+
+func (t *Table) SaveTableInfo(fname string) {
+	save_table := getSaveTable(t)
+	save_table.saveTableInfo(fname)
 
 }
 
@@ -125,6 +130,7 @@ func (t *Table) FillPartialBlock() bool {
 func getSaveTable(t *Table) *Table {
 	return &Table{Name: t.Name,
 		KeyTable:    t.KeyTable,
+		KeyTypes:    t.KeyTypes,
 		LastBlockId: t.LastBlockId}
 }
 
@@ -166,13 +172,9 @@ func (t *Table) SaveRecords() bool {
 
 	sort.Sort(SortRecordsByTime{t.newRecords, col_id})
 
-	save_table := getSaveTable(t)
-	save_table.SaveTableInfo("info")
-
 	t.FillPartialBlock()
 	ret := t.saveRecordList(t.newRecords)
-	save_table = getSaveTable(t)
-	save_table.SaveTableInfo("info")
+	t.SaveTableInfo("info")
 
 	return ret
 
@@ -200,6 +202,10 @@ func (t *Table) LoadTableInfo() {
 	if t.KeyTable != nil && len(saved_table.KeyTable) > 0 {
 		t.KeyTable = saved_table.KeyTable
 	}
+	if t.KeyTypes != nil && len(saved_table.KeyTypes) > 0 {
+		t.KeyTypes = saved_table.KeyTypes
+	}
+
 	t.LastBlockId = saved_table.LastBlockId
 
 	t.populate_string_id_lookup()
