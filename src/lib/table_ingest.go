@@ -68,6 +68,10 @@ func (t *Table) DigestRecords(digest string) {
 		log.Println("Removing", digestname)
 		os.Remove(digestname)
 
+		// Release the records that were in this block, too...
+		t.ReleaseRecords()
+
 	}
+
 
 }
