@@ -16,7 +16,7 @@ import (
 type Dictionary map[string]interface{}
 
 func (t *Table) getNewIngestBlockName() (string, error) {
-	name, err := ioutil.TempDir(path.Join(*f_DIR, t.Name), "ib")
+	name, err := ioutil.TempDir(path.Join(*f_DIR, t.Name), "ingest")
 	return name, err
 }
 
@@ -114,7 +114,9 @@ func RunIngestCmdLine() {
 			name, err := t.getNewIngestBlockName()
 			if err == nil {
 				t.SaveRecordsToBlock(t.newRecords, name)
+				t.SaveTableInfo("info")
 				t.newRecords = t.newRecords[:0]
+				t.ReleaseRecords()
 			} else {
 				log.Fatal("ERROR SAVING BLOCK", err)
 			}

@@ -39,11 +39,11 @@ func (l *LoadSpec) Set(name string) {
 
 // Helpers for block directory structure
 func getBlockName(id int) string {
-	return strconv.FormatInt(int64(id), 10)
+	return fmt.Sprintf("digest%05s", strconv.FormatInt(int64(id), 10))
 }
 
 func getBlockDir(name string, id int) string {
-	return path.Join( *f_DIR, name, fmt.Sprintf("%05s", getBlockName(id)))
+	return path.Join( *f_DIR, name, getBlockName(id))
 }
 func getBlockFilename(name string, id int) string {
 	return path.Join( *f_DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
