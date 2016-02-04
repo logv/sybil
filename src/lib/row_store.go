@@ -2,6 +2,7 @@ package edb
 
 import "log"
 import "fmt"
+import "path"
 import "bytes"
 import "encoding/gob"
 import "io/ioutil"
@@ -141,11 +142,13 @@ func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
 		return
 	}
 
-	ingestdir := fmt.Sprintf("%s/%s/ingest/", *f_DIR, t.Name)
+	ingestdir := path.Join(*f_DIR, t.Name, "ingest")
+	digestdir := path.Join(*f_DIR, t.Name, "digest")
+	stomachedir := path.Join(*f_DIR, t.Name, "stomache")
 
-	os.MkdirAll(fmt.Sprintf("%s/%s/digest", *f_DIR, t.Name), 0777)
+	os.MkdirAll(digestdir, 0777)
 	os.MkdirAll(ingestdir, 0777)
-	os.MkdirAll(fmt.Sprintf("%s/db/%s/stomache", *f_DIR, t.Name), 0777)
+	os.MkdirAll(stomachedir, 0777)
 
 	w, err := ioutil.TempFile(ingestdir, fmt.Sprintf("%s_", blockname))
 

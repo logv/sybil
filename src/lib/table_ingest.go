@@ -1,5 +1,6 @@
 package edb
 
+import "path"
 import "log"
 import "fmt"
 import "os"
@@ -25,7 +26,7 @@ func (t *Table) IngestRecords(blockname string) {
 // Go through rowstore and save records out to column store
 func (t *Table) DigestRecords(digest string) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
-	dirname := fmt.Sprintf("%s/%s/ingest/", *f_DIR, t.Name)
+	dirname := path.Join(*f_DIR, t.Name, "ingest")
 
 	file, err := os.Open(dirname)
 	if err != nil {
@@ -34,8 +35,10 @@ func (t *Table) DigestRecords(digest string) {
 	}
 
 	files, err := file.Readdir(0)
-	digestname := fmt.Sprintf("%s/%s/digest/%s.db", *f_DIR, t.Name, digest)
-	os.MkdirAll(fmt.Sprintf("%s/%s/digest", *f_DIR, t.Name), 0777)
+	digestdir := path.Join(*f_DIR, t.Name, "digest")
+	digestname := path.Join(digestdir, fmt.Sprintf("%s.db", digest))
+	os.MkdirAll(digestdir, 0777)
+
 	for _, filename := range files {
 
 		if strings.HasPrefix(filename.Name(), digest) == false {

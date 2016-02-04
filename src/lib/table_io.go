@@ -10,6 +10,7 @@ import "io/ioutil"
 import "encoding/gob"
 import "sync"
 import "sort"
+import "path"
 import "strconv"
 
 var DEBUG_TIMING = false
@@ -42,15 +43,15 @@ func getBlockName(id int) string {
 }
 
 func getBlockDir(name string, id int) string {
-	return fmt.Sprintf("%s/%s/%05s", *f_DIR, name, getBlockName(id))
+	return path.Join( *f_DIR, name, fmt.Sprintf("%05s", getBlockName(id)))
 }
 func getBlockFilename(name string, id int) string {
-	return fmt.Sprintf("%s/%s/%05s.db", *f_DIR, name, getBlockName(id))
+	return path.Join( *f_DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
 }
 
 func (t *Table) SaveTableInfo(fname string) {
 	var network bytes.Buffer // Stand-in for the network.
-	filename := fmt.Sprintf("%s/%s/%s.db", *f_DIR, t.Name, fname)
+	filename := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.db", fname))
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
@@ -160,7 +161,7 @@ func (t *Table) saveRecordList(records []*Record) bool {
 }
 
 func (t *Table) SaveRecords() bool {
-	os.MkdirAll(fmt.Sprintf("%s/%s", *f_DIR, t.Name), 0777)
+	os.MkdirAll(path.Join(*f_DIR, t.Name), 0777)
 	col_id := t.get_key_id("time")
 
 	sort.Sort(SortRecordsByTime{t.newRecords, col_id})
@@ -181,7 +182,7 @@ func (t *Table) LoadTableInfo() {
 	saved_table := Table{}
 	start := time.Now()
 	tablename := t.Name
-	filename := fmt.Sprintf("%s/%s/info.db", *f_DIR, tablename)
+	filename := path.Join(*f_DIR, tablename, "info.db")
 	file, _ := os.Open(filename)
 	log.Println("OPENING TABLE INFO FROM FILENAME", filename)
 	dec := gob.NewDecoder(file)
@@ -272,7 +273,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 	waystart := time.Now()
 	log.Println("LOADING", t.Name)
 
-	files, _ := ioutil.ReadDir(fmt.Sprintf("%s/%s/", *f_DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(*f_DIR, t.Name))
 
 	var wg sync.WaitGroup
 
@@ -303,7 +304,7 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 		}
 
 		if v.IsDir() {
-			filename := fmt.Sprintf("%s/%s/%s", *f_DIR, t.Name, v.Name())
+			filename := path.Join(*f_DIR, t.Name, v.Name())
 			wg.Add(1)
 			load_all := false
 			if load_spec != nil && load_spec.LoadAllColumns {
