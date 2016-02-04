@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"strconv"
+	"io/ioutil"
+	"path"
 	"fmt"
 	"io"
 	"strings"
@@ -12,6 +14,11 @@ import (
 )
 
 type Dictionary map[string]interface{}
+
+func (t *Table) getNewIngestBlockName() (string, error) {
+	name, err := ioutil.TempDir(path.Join(*f_DIR, t.Name), "ib")
+	return name, err
+}
 
 func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
@@ -42,6 +49,7 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 		}
 	}
 }
+
 
 var INT_CAST = make(map[string]bool)
 var STR_CAST = make(map[string]bool)
@@ -102,7 +110,14 @@ func RunIngestCmdLine() {
 		if count >= CHUNK_SIZE {
 			count -= CHUNK_SIZE
 
-			t.IngestRecords(digestfile)
+			os.MkdirAll(path.Join(*f_DIR, t.Name), 0777)
+			name, err := t.getNewIngestBlockName()
+			if err == nil {
+				t.SaveRecordsToBlock(t.newRecords, name)
+				t.newRecords = t.newRecords[:0]
+			} else {
+				log.Fatal("ERROR SAVING BLOCK", err)
+			}
 		}
 
 	}
