@@ -192,6 +192,18 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 	return ret[:]
 }
 
+func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
+	blockQuery := QuerySpec{}
+	blockQuery.Punctuate()
+	blockQuery.TimeBucket = querySpec.TimeBucket
+	blockQuery.Filters = querySpec.Filters
+	blockQuery.Aggregations = querySpec.Aggregations
+	blockQuery.Groups = querySpec.Groups
+
+	return &blockQuery
+}
+
+
 func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	start := time.Now()
 
@@ -215,14 +227,10 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 		go func() {
 			defer wg.Done()
 			
-			blockQuery := QuerySpec{}
-			blockQuery.Punctuate()
-			blockQuery.Filters = querySpec.Filters
-			blockQuery.Aggregations = querySpec.Aggregations
-			blockQuery.Groups = querySpec.Groups
+			blockQuery := CopyQuerySpec(querySpec)
 
-			ret := filterAndAggRecords(&blockQuery, &this_block.RecordList)
-			block_specs[this_block.Name] = &blockQuery
+			ret := filterAndAggRecords(blockQuery, &this_block.RecordList)
+			block_specs[this_block.Name] = blockQuery
 			fmt.Print(".")
 			count += len(ret)
 
@@ -238,24 +246,33 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	// COMBINE THE PER BLOCK RESULTS
 	astart := time.Now()
 	master_result := make(ResultMap)
+	master_time_result := make(map[int]ResultMap)
+
 	for _, spec := range block_specs {
-		results := spec.Results
-		for k, v := range results {
-			mval, ok := master_result[k]
+		master_result.Combine(&spec.Results)
+		for i, v := range spec.TimeResults {
+			mval, ok := master_time_result[i]
+
 			if !ok {
-				master_result[k] = v
+				master_time_result[i] = v
 			} else {
-				mval.Combine(v)
+				for k, r := range v {
+					mval[k].Combine(r)
+				}
 			}
 		}
 	}
+
 	aend := time.Now()
-	log.Println("AGGREGATING BLOCK RESULTS", len(block_specs),  "TOOK", aend.Sub(astart))
+	log.Println("AGGREGATING TOOK", aend.Sub(start))
+	log.Println("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
 
 	querySpec.Results = master_result
+	querySpec.TimeResults = master_time_result
 
 	end := time.Now()
 
+	// SORT THE RESULTS
 	if querySpec.OrderBy != "" {
 		start := time.Now()
 		sorter := SortResultsByCol{}

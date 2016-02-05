@@ -50,6 +50,17 @@ type Result struct {
 	Count      int32
 }
 
+func (master_result *ResultMap) Combine(results *ResultMap) {
+	for k, v := range *results {
+		mval, ok := (*master_result)[k]
+		if !ok {
+			(*master_result)[k] = v
+		} else {
+			mval.Combine(v)
+		}
+	}
+}
+
 // This does an in place combine of the next_result into this one... 
 func (rs *Result) Combine(next_result *Result) {
 	total_count := rs.Count + next_result.Count
