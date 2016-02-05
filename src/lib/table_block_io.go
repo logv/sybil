@@ -222,8 +222,6 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 
 	log.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(records), ")")
 
-	log.Println("KEY TABLE IS", tb.table.KeyTable)
-	log.Println("KEY TYPES ARE", tb.table.KeyTypes)
 
 	w, _ := os.Create(col_fname)
 	network.WriteTo(w)

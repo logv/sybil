@@ -239,6 +239,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	}
 
 	tb.allocateRecords(loadSpec, info, load_records)
+	tb.Info = &info
 
 	file, _ = os.Open(dirname)
 	files, _ := file.Readdir(-1)

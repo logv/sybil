@@ -150,6 +150,13 @@ func RunQueryCmdLine() {
 	// THE RIGHT COLUMN ID
 	t.LoadRecords(nil)
 
+	count := 0
+	for _, block := range t.BlockList {
+		count += int(block.Info.NumRecords)
+	}
+
+	log.Println("WILL INSPECT", count, "RECORDS")
+
 	if *f_SAMPLES {
 		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
@@ -275,15 +282,16 @@ func RunQueryCmdLine() {
 			log.Println("LOAD RECORDS TOOK", end.Sub(start))
 		}
 
-		if count > MAX_RECORDS_NO_GC && *f_LOAD_AND_QUERY == false{
-			log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
-			gc_start := time.Now()
-			debug.SetGCPercent(old_percent)
-			end := time.Now()
-			log.Println("GC TOOK", end.Sub(gc_start))
-		}
-
+		
 		if *f_LOAD_AND_QUERY == false {
+			if count > MAX_RECORDS_NO_GC {
+				log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
+				gc_start := time.Now()
+				debug.SetGCPercent(old_percent)
+				end := time.Now()
+				log.Println("GC TOOK", end.Sub(gc_start))
+			}
+
 			queryTable(table, &loadSpec, &querySpec)
 			end := time.Now()
 			log.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
