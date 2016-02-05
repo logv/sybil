@@ -50,10 +50,42 @@ type Result struct {
 	Count      int32
 }
 
+// This does an in place combine of the next_result into this one... 
+func (rs *Result) Combine(next_result *Result) {
+	total_count := rs.Count + next_result.Count
+	next_ratio := float64(next_result.Count) / float64(total_count)
+	this_ratio := float64(rs.Count) / float64(total_count)
+
+	// Combine averages first...
+	for k, v := range next_result.Ints {
+		mval, ok := rs.Ints[k]
+		if !ok {
+			rs.Ints[k] = v
+		} else {
+			rs.Ints[k] = (v * next_ratio) + (mval * this_ratio)
+		}
+
+	}
+
+	// combine histograms...
+	for k, v := range next_result.Hists {
+		_, ok := rs.Hists[k]
+		if !ok {
+			rs.Hists[k] = v
+		} else {
+			rs.Hists[k].Combine(v)
+		}
+	}
+
+
+
+	rs.Count = total_count
+}
+
 func (querySpec *QuerySpec) Punctuate() {
 	querySpec.Results = make(ResultMap)
-
 	querySpec.TimeResults = make(map[int]ResultMap)
+
 	querySpec.c = &sync.Mutex{}
 	querySpec.m = &sync.RWMutex{}
 	querySpec.r = &sync.RWMutex{}

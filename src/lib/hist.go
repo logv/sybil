@@ -132,3 +132,11 @@ func (h *Hist) getPercentiles() []int {
 
 	return percentiles
 }
+
+func (h *Hist) Combine(next_hist *Hist) {
+	for k, v := range next_hist.values {
+		h.values[k] += v
+	}
+
+	h.Count += next_hist.Count
+}

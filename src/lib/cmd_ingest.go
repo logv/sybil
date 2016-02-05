@@ -22,8 +22,8 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 
 func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
-		key_name := fmt.Sprintf("%s%s", prefix, k)
-		prefix_name := fmt.Sprintf("%s.", key_name)
+		key_name := fmt.Sprint(prefix, k)
+		prefix_name := fmt.Sprint(key_name, ".")
 		switch iv := v.(type) {
 		case string:
 			if INT_CAST[key_name] == true {

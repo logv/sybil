@@ -201,12 +201,28 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	m := &sync.Mutex{}
 
 	count := 0
+
+	// Each block gets its own querySpec (for locking and combining purposes)
+	// after all queries finish executing, the specs are combined
+	block_specs := make(map[string]*QuerySpec, len(t.BlockList))
+
+
+	// TODO: why iterate through blocklist after loading it instead of filtering
+	// and aggregating while loading them? (and then releasing the blocks)
 	for _, block := range t.BlockList {
 		wg.Add(1)
 		this_block := block
 		go func() {
 			defer wg.Done()
-			ret := filterAndAggRecords(querySpec, &this_block.RecordList)
+			
+			blockQuery := QuerySpec{}
+			blockQuery.Punctuate()
+			blockQuery.Filters = querySpec.Filters
+			blockQuery.Aggregations = querySpec.Aggregations
+			blockQuery.Groups = querySpec.Groups
+
+			ret := filterAndAggRecords(&blockQuery, &this_block.RecordList)
+			block_specs[this_block.Name] = &blockQuery
 			fmt.Print(".")
 			count += len(ret)
 
@@ -217,8 +233,27 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	}
 
 	wg.Wait()
-
 	fmt.Print("\n")
+
+	// COMBINE THE PER BLOCK RESULTS
+	astart := time.Now()
+	master_result := make(ResultMap)
+	for _, spec := range block_specs {
+		results := spec.Results
+		for k, v := range results {
+			mval, ok := master_result[k]
+			if !ok {
+				master_result[k] = v
+			} else {
+				mval.Combine(v)
+			}
+		}
+	}
+	aend := time.Now()
+	log.Println("AGGREGATING BLOCK RESULTS", len(block_specs),  "TOOK", aend.Sub(astart))
+
+	querySpec.Results = master_result
+
 	end := time.Now()
 
 	if querySpec.OrderBy != "" {
