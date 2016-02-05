@@ -2,6 +2,7 @@ package edb_test
 
 import edb "../"
 
+import "math"
 import "fmt"
 import "strconv"
 import "math/rand"
@@ -76,7 +77,7 @@ func TestTableLoadRecords(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, ":", "", 1)
 		val, err := strconv.ParseInt(k, 10, 32) 
-		if err != nil || val != int64(v.Ints["age"]) {
+		if err != nil || math.Abs(float64(val) - float64(v.Ints["age"])) > 0.1  {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", val, v.Ints["age"])
 		}
 	}
