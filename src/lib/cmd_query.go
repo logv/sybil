@@ -107,6 +107,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 func addFlags() {
 
 	f_TIME = flag.Bool("time", false, "do a time rollup!")
+	f_TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	f_PRINT = flag.Bool("print", false, "Print some records")
 	f_SAMPLES = flag.Bool("samples", false, "Grab samples")
@@ -275,7 +276,7 @@ func RunQueryCmdLine() {
 	if *f_TIME {
 		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = 60 * 60 * 24
-		loadSpec.Int("time")
+		loadSpec.Int(*f_TIME_COL)
 	}
 
 	querySpec.Limit = int16(*f_LIMIT)

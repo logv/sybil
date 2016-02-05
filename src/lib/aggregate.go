@@ -27,7 +27,7 @@ func (a SortResultsByCol) Less(i, j int) bool {
 	return t1 > t2
 }
 
-func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record {
+func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record {
 	var buffer bytes.Buffer
 	records := *recordsPtr
 
@@ -79,7 +79,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			val, ok := r.getIntVal("time")
+			val, ok := r.getIntVal(*f_TIME_COL)
 			if ok {
 				val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
 				querySpec.r.RLock()
@@ -286,7 +286,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 
 	// TODO: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
-	// That would mean pushing the call to 'filterAndAggRecords' to the loading area
+	// That would mean pushing the call to 'FilterAndAggRecords' to the loading area
 	for _, block := range block_list{
 		wg.Add(1)
 		this_block := block
@@ -295,7 +295,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 			
 			blockQuery := CopyQuerySpec(querySpec)
 
-			ret := filterAndAggRecords(blockQuery, &this_block.RecordList)
+			ret := FilterAndAggRecords(blockQuery, &this_block.RecordList)
 			blockQuery.Matched = ret
 			block_specs[this_block.Name] = blockQuery
 			fmt.Print(".")
