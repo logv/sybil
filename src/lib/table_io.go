@@ -18,6 +18,7 @@ var DEBUG_TIMING = false
 type LoadSpec struct {
 	columns        map[string]bool
 	LoadAllColumns bool
+	table	*Table
 }
 
 func NewLoadSpec() LoadSpec {
@@ -27,13 +28,49 @@ func NewLoadSpec() LoadSpec {
 	return l
 }
 
+func (t *Table) NewLoadSpec() LoadSpec {
+	l := LoadSpec{}
+	l.table = t
+	l.columns = make(map[string]bool)
+
+	return l
+}
+
+func (l *LoadSpec) assert_col_type(name string, col_type int) {
+	if l.table == nil {
+		return
+	}
+
+	name_id := l.table.get_key_id(name)
+	if l.table.KeyTypes[name_id] == 0 {
+		log.Fatal("Query Error! Column ", name, " does not exist")
+	}
+
+	if l.table.KeyTypes[name_id] != col_type {
+		var col_type_name string
+		switch col_type {
+			case INT_VAL:
+				col_type_name = "Int"
+			case STR_VAL:
+				col_type_name = "Str"
+			case SET_VAL:
+				col_type_name = "Set"
+		}
+
+		log.Fatal("Query Error! Key ", name, " exists, but is not of type ", col_type_name)
+	}
+}
+
 func (l *LoadSpec) Str(name string) {
+	l.assert_col_type(name, STR_VAL)
 	l.columns["str_"+name+".db"] = true
 }
 func (l *LoadSpec) Int(name string) {
+	l.assert_col_type(name, INT_VAL)
 	l.columns["int_"+name+".db"] = true
 }
 func (l *LoadSpec) Set(name string) {
+	l.assert_col_type(name, SET_VAL)
 	l.columns["set_"+name+".db"] = true
 }
 

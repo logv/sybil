@@ -158,7 +158,7 @@ func RunQueryCmdLine() {
 	log.Println("WILL INSPECT", count, "RECORDS")
 
 	if *f_SAMPLES {
-		loadSpec := NewLoadSpec()
+		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
 		t.LoadRecords(&loadSpec)
 
@@ -204,7 +204,7 @@ func RunQueryCmdLine() {
 		}
 	}
 
-	loadSpec := NewLoadSpec()
+	loadSpec := t.NewLoadSpec()
 	filters := []Filter{}
 	for _, filt := range intfilters {
 		tokens := strings.Split(filt, ":")
