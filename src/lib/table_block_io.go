@@ -412,6 +412,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 		}
 	} else {
 		for r, v := range into.Values {
+			tb.table.update_int_info(into.NameId, int(v))
 			records[r].Ints[into.NameId] = IntField(v)
 			records[r].Populated[into.NameId] = INT_VAL
 		}
