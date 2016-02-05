@@ -224,7 +224,7 @@ func RunQueryCmdLine() {
 	for _, v := range t.KeyTable {
 		used[v]++
 		if used[v] > 1 {
-			log.Println("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+			log.Fatal("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
 			return
 		}
 	}

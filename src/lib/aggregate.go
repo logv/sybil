@@ -77,7 +77,7 @@ func filterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			buffer.WriteString(":")
 		}
 
-		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH IS CAN BE SO MUCH SLOWER!!!!!)
+		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
 			val, ok := r.getIntVal("time")
 			if ok {
@@ -203,53 +203,29 @@ func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
 	return &blockQuery
 }
 
-
-func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
+func CombineMatches(block_specs map[string]*QuerySpec) []*Record {
 	start := time.Now()
-
-	var wg sync.WaitGroup
-	rets := make([]*Record, 0)
-
-	m := &sync.Mutex{}
-
-	count := 0
-
-	// Each block gets its own querySpec (for locking and combining purposes)
-	// after all queries finish executing, the specs are combined
-	block_specs := make(map[string]*QuerySpec, len(t.BlockList))
-
-
-	// TODO: why iterate through blocklist after loading it instead of filtering
-	// and aggregating while loading them? (and then releasing the blocks)
-	for _, block := range t.BlockList {
-		wg.Add(1)
-		this_block := block
-		go func() {
-			defer wg.Done()
-			
-			blockQuery := CopyQuerySpec(querySpec)
-
-			ret := filterAndAggRecords(blockQuery, &this_block.RecordList)
-			block_specs[this_block.Name] = blockQuery
-			fmt.Print(".")
-			count += len(ret)
-
-			m.Lock()
-			rets = append(rets, ret...)
-			m.Unlock()
-		}()
+	matched := make([]*Record, CHUNK_SIZE)
+	for _, spec := range block_specs {
+		matched = append(matched, spec.Matched...)
 	}
+	end := time.Now()
 
-	wg.Wait()
-	fmt.Print("\n")
+	log.Println("JOINING", len(matched), "MATCHED RECORDS TOOK", end.Sub(start))
+	return matched
 
-	// COMBINE THE PER BLOCK RESULTS
+}
+
+func CombineResults(block_specs map[string]*QuerySpec) *QuerySpec {
+
 	astart := time.Now()
+	resultSpec := QuerySpec{}
 	master_result := make(ResultMap)
 	master_time_result := make(map[int]ResultMap)
 
 	for _, spec := range block_specs {
 		master_result.Combine(&spec.Results)
+
 		for i, v := range spec.TimeResults {
 			mval, ok := master_time_result[i]
 
@@ -263,15 +239,16 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 		}
 	}
 
+	resultSpec.TimeResults = master_time_result
+	resultSpec.Results = master_result
+
 	aend := time.Now()
-	log.Println("AGGREGATING TOOK", aend.Sub(start))
 	log.Println("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
 
-	querySpec.Results = master_result
-	querySpec.TimeResults = master_time_result
+	return &resultSpec
+}
 
-	end := time.Now()
-
+func SortResults(querySpec *QuerySpec) {
 	// SORT THE RESULTS
 	if querySpec.OrderBy != "" {
 		start := time.Now()
@@ -297,8 +274,67 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 		querySpec.Sorted = sorter.Results
 	}
 
-	querySpec.Matched = rets
+}
 
-	log.Println(len(rets), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
+func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[string]*QuerySpec {
+
+	var wg sync.WaitGroup
+	// Each block gets its own querySpec (for locking and combining purposes)
+	// after all queries finish executing, the specs are combined
+	block_specs := make(map[string]*QuerySpec, len(block_list))
+
+
+	// TODO: why iterate through blocklist after loading it instead of filtering
+	// and aggregating while loading them? (and then releasing the blocks)
+	// That would mean pushing the call to 'filterAndAggRecords' to the loading area
+	for _, block := range block_list{
+		wg.Add(1)
+		this_block := block
+		go func() {
+			defer wg.Done()
+			
+			blockQuery := CopyQuerySpec(querySpec)
+
+			ret := filterAndAggRecords(blockQuery, &this_block.RecordList)
+			blockQuery.Matched = ret
+			block_specs[this_block.Name] = blockQuery
+			fmt.Print(".")
+
+		}()
+	}
+
+
+	wg.Wait()
+	fmt.Print("\n")
+
+	return block_specs
+}
+
+
+func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
+	start := time.Now()
+
+
+	block_specs := SearchBlocks(querySpec, t.BlockList)
+
+
+	// COMBINE THE PER BLOCK RESULTS
+	resultSpec := CombineResults(block_specs)
+
+	aend := time.Now()
+	log.Println("AGGREGATING TOOK", aend.Sub(start))
+
+	querySpec.Results = resultSpec.Results
+	querySpec.TimeResults = resultSpec.TimeResults
+
+	// Aggregating Matched Records
+	matched := CombineMatches(block_specs)
+	querySpec.Matched = matched
+
+	end := time.Now()
+
+	SortResults(querySpec)
+
+	log.Println(len(querySpec.Matched), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }
