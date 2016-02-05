@@ -1,6 +1,9 @@
 package edb
 
 import "sync"
+import "sort"
+import "log"
+import "fmt"
 
 type ResultMap map[string]*Result
 
@@ -110,4 +113,41 @@ func (t *Table) Grouping(name string) Grouping {
 func (t *Table) Aggregation(name string, op string) Aggregation {
 	col_id := t.get_key_id(name)
 	return Aggregation{name: name, name_id: col_id, op: op}
+}
+
+func printTimeResults(querySpec *QuerySpec) {
+	keys := make([]int, 0)
+
+	for k, _ := range querySpec.TimeResults {
+		keys = append(keys, k)
+	}
+
+	sort.Sort(ByVal(keys))
+
+	for _, k := range keys {
+		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
+	}
+
+}
+
+func printSortedResults(querySpec *QuerySpec) {
+	sorted := querySpec.Sorted
+	if int(querySpec.Limit) < len(querySpec.Sorted) {
+		sorted = querySpec.Sorted[:querySpec.Limit]
+	}
+	for _, v := range sorted {
+		printResult(querySpec, v)
+	}
+}
+
+func (qs *QuerySpec) printResults() {
+	if *f_PRINT {
+		log.Println("PRINTING RESULTS")
+
+		if qs.OrderBy != "" {
+			printSortedResults(qs)
+		} else {
+			printResults(qs)
+		}
+	}
 }

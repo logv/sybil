@@ -95,7 +95,8 @@ func (t *Table) FillPartialBlock() bool {
 	// Open up our last record block, see how full it is
 	filename := getBlockDir(t.Name, t.LastBlockId)
 
-	partialRecords := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
+	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
+	partialRecords := block.RecordList
 	log.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
 	incBlockId := false
@@ -214,7 +215,7 @@ func (t *Table) LoadTableInfo() {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_records bool) []*Record {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) TableBlock {
 	tb := newTableBlock()
 	tb.Name = dirname
 
@@ -237,7 +238,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 		log.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
-	records := tb.allocateRecords(load_spec, info, load_records)
+	tb.allocateRecords(loadSpec, info, load_records)
 
 	file, _ = os.Open(dirname)
 	files, _ := file.Readdir(-1)
@@ -245,8 +246,8 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 	for _, f := range files {
 		fname := f.Name()
 
-		if load_spec != nil {
-			if load_spec.columns[fname] != true && load_records == false {
+		if loadSpec != nil {
+			if loadSpec.columns[fname] != true && load_records == false {
 				continue
 			}
 		} else if load_records == false {
@@ -266,7 +267,7 @@ func (t *Table) LoadBlockFromDir(dirname string, load_spec *LoadSpec, load_recor
 		}
 	}
 
-	return records[:]
+	return tb
 }
 
 // Remove our pointer to the blocklist so a GC is triggered and
@@ -275,13 +276,14 @@ func (t *Table) ReleaseRecords() {
 	t.BlockList = make(map[string]*TableBlock, 0)
 }
 
-func (t *Table) LoadRecords(load_spec *LoadSpec) int {
+func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	log.Println("LOADING", t.Name)
 
 	files, _ := ioutil.ReadDir(path.Join(*f_DIR, t.Name))
 
 	var wg sync.WaitGroup
+	block_specs := make(map[string]*QuerySpec)
 
 	wg.Add(1)
 	// why is table info so slow to open!!!
@@ -295,7 +297,6 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 	m := &sync.Mutex{}
 
 	count := 0
-	var records []*Record
 	for f := range files {
 		v := files[len(files)-f-1]
 		if strings.HasSuffix(v.Name(), "info.db") {
@@ -313,28 +314,40 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 			filename := path.Join(*f_DIR, t.Name, v.Name())
 			wg.Add(1)
 			load_all := false
-			if load_spec != nil && load_spec.LoadAllColumns {
+			if loadSpec != nil && loadSpec.LoadAllColumns {
 				load_all = true
 			}
 
 			go func() {
 				defer wg.Done()
 				start := time.Now()
-				records = t.LoadBlockFromDir(filename, load_spec, load_all)
+				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
 				fmt.Print(".")
 				end := time.Now()
 				if DEBUG_TIMING {
-					if load_spec != nil {
+					if loadSpec != nil {
 						log.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
 					} else {
 						log.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
 					}
 				}
 
-				if len(records) > 0 {
+				if len(block.RecordList) > 0 {
 					m.Lock()
-					count += len(records)
+					count += len(block.RecordList)
 					m.Unlock()
+
+					if querySpec != nil {
+						blockQuery := CopyQuerySpec(querySpec)
+
+						ret := FilterAndAggRecords(blockQuery, &block.RecordList)
+						blockQuery.Matched = ret
+
+						m.Lock()
+						block_specs[block.Name] = blockQuery
+						delete(t.BlockList, block.Name)
+						m.Unlock()
+					}
 				}
 			}()
 
@@ -355,13 +368,31 @@ func (t *Table) LoadRecords(load_spec *LoadSpec) int {
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
+	if *f_LOAD_AND_QUERY == true && querySpec != nil {
+		// COMBINE THE PER BLOCK RESULTS
+		astart := time.Now()
+		resultSpec := CombineResults(block_specs)
+
+		aend := time.Now()
+		log.Println("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
+
+		querySpec.Results = resultSpec.Results
+		querySpec.TimeResults = resultSpec.TimeResults
+	}
+
 	end := time.Now()
 
-	if load_spec != nil {
+	if loadSpec != nil {
 		log.Println(count, "RECORDS LOADED INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
 		log.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
 	return count
+
+
+}
+
+func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
+	return t.LoadAndQueryRecords(loadSpec, nil)
 }

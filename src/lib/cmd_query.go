@@ -5,7 +5,6 @@ import "fmt"
 import "flag"
 import "strings"
 import "time"
-import "sort"
 import "strconv"
 import "io/ioutil"
 import "runtime/debug"
@@ -56,45 +55,12 @@ func printResults(querySpec *QuerySpec) {
 	}
 }
 
-func printTimeResults(querySpec *QuerySpec) {
-	keys := make([]int, 0)
-
-	for k, _ := range querySpec.TimeResults {
-		keys = append(keys, k)
-	}
-
-	sort.Sort(ByVal(keys))
-
-	for _, k := range keys {
-		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
-	}
-
-}
-
-func printSortedResults(querySpec *QuerySpec) {
-	sorted := querySpec.Sorted
-	if int(querySpec.Limit) < len(querySpec.Sorted) {
-		sorted = querySpec.Sorted[:querySpec.Limit]
-	}
-	for _, v := range sorted {
-		printResult(querySpec, v)
-	}
-}
-
 func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 	table := GetTable(name)
 
 	table.MatchAndAggregate(querySpec)
 
-	if *f_PRINT {
-		log.Println("PRINTING RESULTS")
-
-		if querySpec.OrderBy != "" {
-			printSortedResults(querySpec)
-		} else {
-			printResults(querySpec)
-		}
-	}
+	querySpec.printResults()
 
 	if *f_SESSION_COL != "" {
 		start := time.Now()
@@ -104,8 +70,9 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 	}
 }
 
+var f_LOAD_AND_QUERY = flag.Bool("laq", false, "Load and Query")
 func addFlags() {
-
+	
 	f_TIME = flag.Bool("time", false, "do a time rollup!")
 	f_TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
@@ -295,22 +262,32 @@ func RunQueryCmdLine() {
 
 		log.Println("USING QUERY SPEC", querySpec)
 
+		var count int
 		start := time.Now()
-		count := t.LoadRecords(&loadSpec)
-		end := time.Now()
+		if *f_LOAD_AND_QUERY {
+			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
+			end := time.Now()
+			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+			querySpec.printResults()
+		} else {
+			count = t.LoadRecords(&loadSpec)
+			end := time.Now()
+			log.Println("LOAD RECORDS TOOK", end.Sub(start))
+		}
 
-		log.Println("LOAD RECORDS TOOK", end.Sub(start))
-		if count > MAX_RECORDS_NO_GC {
+		if count > MAX_RECORDS_NO_GC && *f_LOAD_AND_QUERY == false{
 			log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
 			gc_start := time.Now()
 			debug.SetGCPercent(old_percent)
-			end = time.Now()
+			end := time.Now()
 			log.Println("GC TOOK", end.Sub(gc_start))
 		}
 
-		queryTable(table, &loadSpec, &querySpec)
-		end = time.Now()
-		log.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
+		if *f_LOAD_AND_QUERY == false {
+			queryTable(table, &loadSpec, &querySpec)
+			end := time.Now()
+			log.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
+		}
 	}
 
 	if *f_PRINT_INFO {
