@@ -205,7 +205,7 @@ func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
 
 func CombineMatches(block_specs map[string]*QuerySpec) []*Record {
 	start := time.Now()
-	matched := make([]*Record, CHUNK_SIZE)
+	matched := make([]*Record, 0)
 	for _, spec := range block_specs {
 		matched = append(matched, spec.Matched...)
 	}
