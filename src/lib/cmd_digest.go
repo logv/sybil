@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "flag"
 import "log"

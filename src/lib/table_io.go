@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "log"
 import "fmt"
@@ -18,7 +18,7 @@ var DEBUG_TIMING = false
 type LoadSpec struct {
 	columns        map[string]bool
 	LoadAllColumns bool
-	table	*Table
+	table          *Table
 }
 
 func NewLoadSpec() LoadSpec {
@@ -49,12 +49,12 @@ func (l *LoadSpec) assert_col_type(name string, col_type int) {
 	if l.table.KeyTypes[name_id] != col_type {
 		var col_type_name string
 		switch col_type {
-			case INT_VAL:
-				col_type_name = "Int"
-			case STR_VAL:
-				col_type_name = "Str"
-			case SET_VAL:
-				col_type_name = "Set"
+		case INT_VAL:
+			col_type_name = "Int"
+		case STR_VAL:
+			col_type_name = "Str"
+		case SET_VAL:
+			col_type_name = "Set"
 		}
 
 		log.Fatal("Query Error! Key ", name, " exists, but is not of type ", col_type_name)
@@ -80,10 +80,10 @@ func getBlockName(id int) string {
 }
 
 func getBlockDir(name string, id int) string {
-	return path.Join( *f_DIR, name, getBlockName(id))
+	return path.Join(*f_DIR, name, getBlockName(id))
 }
 func getBlockFilename(name string, id int) string {
-	return path.Join( *f_DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
+	return path.Join(*f_DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
 }
 
 func (t *Table) saveTableInfo(fname string) {
@@ -169,8 +169,8 @@ func getSaveTable(t *Table) *Table {
 	return &Table{Name: t.Name,
 		KeyTable:    t.KeyTable,
 		KeyTypes:    t.KeyTypes,
-		IntInfo: t.IntInfo,
-		StrInfo: t.StrInfo,
+		IntInfo:     t.IntInfo,
+		StrInfo:     t.StrInfo,
 		LastBlockId: t.LastBlockId}
 }
 
@@ -446,7 +446,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	return count
-
 
 }
 

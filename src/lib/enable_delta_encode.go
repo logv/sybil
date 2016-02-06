@@ -1,5 +1,5 @@
 // +build !denc
 
-package edb
+package pcs
 
 var DELTA_ENCODE_RECORD_IDS = true

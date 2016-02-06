@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 type IntArr []IntField
 type StrArr []StrField

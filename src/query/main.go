@@ -1,7 +1,7 @@
 package main
 
-import edb "../lib"
+import pcs "../lib"
 
 func main() {
-	edb.RunQueryCmdLine()
+	pcs.RunQueryCmdLine()
 }

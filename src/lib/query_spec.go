@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "sync"
 import "sort"
@@ -58,9 +58,8 @@ func NewResult() *Result {
 	added_record.Hists = make(map[string]*Hist)
 	added_record.Ints = make(map[string]float64)
 	added_record.Count = 0
-	return added_record;
+	return added_record
 }
-
 
 func (master_result *ResultMap) Combine(results *ResultMap) {
 	for k, v := range *results {
@@ -73,7 +72,7 @@ func (master_result *ResultMap) Combine(results *ResultMap) {
 	}
 }
 
-// This does an in place combine of the next_result into this one... 
+// This does an in place combine of the next_result into this one...
 func (rs *Result) Combine(next_result *Result) {
 	total_count := rs.Count + next_result.Count
 	next_ratio := float64(next_result.Count) / float64(total_count)
@@ -99,8 +98,6 @@ func (rs *Result) Combine(next_result *Result) {
 			rs.Hists[k].Combine(v)
 		}
 	}
-
-
 
 	rs.Count = total_count
 }

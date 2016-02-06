@@ -1,17 +1,17 @@
-package edb
+package pcs
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
-	"strconv"
-	"io/ioutil"
-	"bufio"
-	"path"
 	"fmt"
 	"io"
-	"strings"
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"strconv"
+	"strings"
 )
 
 type Dictionary map[string]interface{}
@@ -74,6 +74,7 @@ func chunk_and_save() {
 }
 
 var IMPORTED_COUNT = 0
+
 func import_csv_records() {
 	// For importing CSV records, we need to validate the headers, then we just
 	// read in and fill out record fields!
@@ -86,7 +87,7 @@ func import_csv_records() {
 	t := GetTable(*f_TABLE)
 
 	for scanner.Scan() {
-	  line := scanner.Text()
+		line := scanner.Text()
 		r := t.NewRecord()
 		fields := strings.Split(line, ",")
 		for i, v := range fields {
@@ -107,7 +108,6 @@ func import_csv_records() {
 
 		chunk_and_save()
 	}
-
 
 }
 
@@ -136,10 +136,11 @@ func import_json_records() {
 		chunk_and_save()
 	}
 
-
 }
+
 var INT_CAST = make(map[string]bool)
 var STR_CAST = make(map[string]bool)
+
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
@@ -147,7 +148,6 @@ func RunIngestCmdLine() {
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_STRS := flag.String("strs", "", "columns to treat as strings (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
-
 
 	flag.Parse()
 
@@ -163,14 +163,12 @@ func RunIngestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-
 	for _, v := range strings.Split(*f_STRS, ",") {
 		STR_CAST[v] = true
 	}
 	for _, v := range strings.Split(*f_INTS, ",") {
 		INT_CAST[v] = true
 	}
-
 
 	t := GetTable(*f_TABLE)
 

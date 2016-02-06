@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 // ByAge implements sort.Interface for []Person based on
 // the Age field.

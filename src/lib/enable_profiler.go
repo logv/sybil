@@ -1,6 +1,6 @@
 //+build profile
 
-package edb
+package pcs
 
 import "github.com/pkg/profile"
 import "log"

@@ -1,6 +1,6 @@
-package edb_test
+package pcs_test
 
-import edb "../"
+import pcs "../"
 
 import "testing"
 import "fmt"
@@ -10,7 +10,7 @@ import "os"
 func TestTableCreate(test *testing.T) {
 	delete_test_db()
 
-	t := edb.GetTable(TEST_TABLE_NAME)
+	t := pcs.GetTable(TEST_TABLE_NAME)
 
 	fmt.Println("TABLE", t)
 
@@ -28,7 +28,7 @@ func TestTableCreate(test *testing.T) {
 
 	unload_test_table()
 
-	nt := edb.GetTable(TEST_TABLE_NAME)
+	nt := pcs.GetTable(TEST_TABLE_NAME)
 	fmt.Println("KEY TABLE", nt.KeyTable)
 	nt.LoadTableInfo()
 
@@ -38,12 +38,12 @@ func TestTableCreate(test *testing.T) {
 		test.Error("Test table did not create info.db")
 	}
 
-	loadSpec := edb.NewLoadSpec()
+	loadSpec := pcs.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
 	nt.LoadRecords(&loadSpec)
 
-	var records = make([]*edb.Record, 0)
+	var records = make([]*pcs.Record, 0)
 	for _, b := range nt.BlockList {
 		records = append(records, b.RecordList...)
 	}

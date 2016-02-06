@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "sync"
 
@@ -6,7 +6,7 @@ import "sync"
 type TableBlock struct {
 	Name       string
 	RecordList []*Record
-	Info *SavedColumnInfo
+	Info       *SavedColumnInfo
 
 	string_id_m          *sync.Mutex
 	val_string_id_lookup map[int32]string

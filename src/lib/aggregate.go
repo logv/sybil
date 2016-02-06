@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "bytes"
 import "log"
@@ -21,7 +21,7 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
-	if (a.Col == SORT_COUNT) {
+	if a.Col == SORT_COUNT {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 
@@ -291,29 +291,27 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 	// after all queries finish executing, the specs are combined
 	block_specs := make(map[string]*QuerySpec, len(block_list))
 
-
 	// TODO: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
 	// That would mean pushing the call to 'FilterAndAggRecords' to the loading area
-	for _, block := range block_list{
+	for _, block := range block_list {
 		wg.Add(1)
 		this_block := block
 		go func() {
 			defer wg.Done()
-			
+
 			blockQuery := CopyQuerySpec(querySpec)
 
 			ret := FilterAndAggRecords(blockQuery, &this_block.RecordList)
 			blockQuery.Matched = ret
 			block_specs[this_block.Name] = blockQuery
 
-			if !*f_JSON { 
+			if !*f_JSON {
 				fmt.Print(".")
 			}
 
 		}()
 	}
-
 
 	wg.Wait()
 
@@ -324,13 +322,10 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 	return block_specs
 }
 
-
 func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	start := time.Now()
 
-
 	block_specs := SearchBlocks(querySpec, t.BlockList)
-
 
 	// COMBINE THE PER BLOCK RESULTS
 	resultSpec := CombineResults(block_specs)

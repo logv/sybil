@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "sort"
 import "sync"
@@ -14,7 +14,7 @@ type Hist struct {
 	values      []int
 	avgs        []float64
 
-	outliers []int
+	outliers   []int
 	underliers []int
 
 	m *sync.Mutex
@@ -62,7 +62,6 @@ func (h *Hist) addValue(value int) {
 
 	h.Count++
 	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)
-
 
 	if value > h.Max {
 		h.Max = value

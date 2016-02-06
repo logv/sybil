@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "path"
 import "log"
@@ -72,6 +72,5 @@ func (t *Table) DigestRecords(digest string) {
 		t.ReleaseRecords()
 
 	}
-
 
 }

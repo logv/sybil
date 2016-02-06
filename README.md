@@ -1,7 +1,7 @@
-ebc
+pcs
 --------
 
-a column store + session analysis backend
+a personal column store + session analysis backend
 
 
 

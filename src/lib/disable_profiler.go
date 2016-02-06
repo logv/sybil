@@ -1,6 +1,6 @@
 // +build !profile
 
-package edb
+package pcs
 
 var PROFILER_ENABLED bool
 var f_PROFILE *bool = &PROFILER_ENABLED

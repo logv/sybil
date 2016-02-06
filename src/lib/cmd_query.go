@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "log"
 import "fmt"
@@ -31,7 +31,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 }
 
 func addFlags() {
-	
+
 	f_TIME = flag.Bool("time", false, "do a time rollup!")
 	f_TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
@@ -258,7 +258,6 @@ func RunQueryCmdLine() {
 			log.Println("LOAD RECORDS TOOK", end.Sub(start))
 		}
 
-		
 		if *f_LOAD_AND_QUERY == false {
 			if count > MAX_RECORDS_NO_GC {
 				log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")

@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 type Record struct {
 	Ints      []IntField
@@ -78,7 +78,7 @@ func (r *Record) AddStrField(name string, val string) {
 	r.ResizeFields(name_id)
 	r.Strs[name_id] = StrField(value_id)
 	r.Populated[name_id] = STR_VAL
-	
+
 	r.block.table.set_key_type(name_id, STR_VAL)
 }
 

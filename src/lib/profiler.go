@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 type ProfilerStart interface {
 	Stop()

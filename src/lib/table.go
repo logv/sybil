@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "fmt"
 import "log"
@@ -14,8 +14,8 @@ type Table struct {
 	LastBlockId int
 	LastBlock   TableBlock
 
-	StrInfo    StrInfoTable
-	IntInfo    IntInfoTable
+	StrInfo StrInfoTable
+	IntInfo IntInfoTable
 
 	// List of new records that haven't been saved to file yet
 	newRecords []*Record

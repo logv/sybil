@@ -1,9 +1,9 @@
-package edb
+package pcs
 
 import "flag"
 
-var FALSE=false
-var TRUE=true
+var FALSE = false
+var TRUE = true
 
 var f_OP *string
 var f_PRINT *bool = &FALSE

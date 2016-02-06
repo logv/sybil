@@ -1,4 +1,4 @@
-package edb
+package pcs
 
 import "fmt"
 import "bytes"
@@ -221,7 +221,6 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	}
 
 	log.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(records), ")")
-
 
 	w, _ := os.Create(col_fname)
 	network.WriteTo(w)
