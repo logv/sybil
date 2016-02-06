@@ -70,7 +70,6 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 	}
 }
 
-var f_LOAD_AND_QUERY = flag.Bool("laq", false, "Load and Query")
 func addFlags() {
 	
 	f_TIME = flag.Bool("time", false, "do a time rollup!")
@@ -86,6 +85,9 @@ func addFlags() {
 	f_INTS = flag.String("int", "", "Integer values to aggregate")
 	f_STRS = flag.String("str", "", "String values to load")
 	f_GROUPS = flag.String("group", "", "values group by")
+
+	f_LOAD_AND_QUERY = flag.Bool("laq", false, "Load and Query")
+	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
 }
 
 func RunQueryCmdLine() {
@@ -193,8 +195,11 @@ func RunQueryCmdLine() {
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-	log.Println("KEY TABLE", t.KeyTable)
-	log.Println("KEY TYPES", t.KeyTypes)
+	if *f_PRINT_KEYS {
+		log.Println("KEY TABLE", t.KeyTable)
+		log.Println("KEY TYPES", t.KeyTypes)
+	}
+
 	used := make(map[int16]int)
 	for _, v := range t.KeyTable {
 		used[v]++

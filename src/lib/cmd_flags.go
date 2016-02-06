@@ -20,6 +20,9 @@ var TIMESERIES = false
 var f_TIME *bool = &TIMESERIES
 var f_TIME_COL *string
 
+var f_PRINT_KEYS *bool = &TIMESERIES
+var f_LOAD_AND_QUERY *bool
+
 var SORT_COUNT = "$COUNT"
 var f_DIR = flag.String("dir", "./db/", "Directory to store DB files")
 var f_TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
