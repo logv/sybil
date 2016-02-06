@@ -28,6 +28,13 @@ func (a SortResultsByCol) Less(i, j int) bool {
 		return t1 > t2
 	}
 
+	if *f_OP == "hist" {
+		t1 := a.Results[i].Hists[a.Col].Avg
+		t2 := a.Results[j].Hists[a.Col].Avg
+		return t1 > t2
+
+	}
+
 	t1 := a.Results[i].Ints[a.Col]
 	t2 := a.Results[j].Ints[a.Col]
 	return t1 > t2

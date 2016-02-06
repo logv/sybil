@@ -169,6 +169,8 @@ func getSaveTable(t *Table) *Table {
 	return &Table{Name: t.Name,
 		KeyTable:    t.KeyTable,
 		KeyTypes:    t.KeyTypes,
+		IntInfo: t.IntInfo,
+		StrInfo: t.StrInfo,
 		LastBlockId: t.LastBlockId}
 }
 
@@ -237,16 +239,26 @@ func (t *Table) LoadTableInfo() {
 		log.Println("TABLE INFO OPEN TOOK", end.Sub(start))
 	}
 
-	if t.KeyTable != nil && len(saved_table.KeyTable) > 0 {
+	if len(saved_table.KeyTable) > 0 {
 		t.KeyTable = saved_table.KeyTable
 	}
-	if t.KeyTypes != nil && len(saved_table.KeyTypes) > 0 {
+	if len(saved_table.KeyTypes) > 0 {
 		t.KeyTypes = saved_table.KeyTypes
+	}
+
+	if saved_table.IntInfo != nil {
+		log.Println("LOADED CACHED INT INFO")
+		t.IntInfo = saved_table.IntInfo
+	}
+	if saved_table.StrInfo != nil {
+		log.Println("LOADED CACHED STR INFO")
+		t.StrInfo = saved_table.StrInfo
 	}
 
 	t.LastBlockId = saved_table.LastBlockId
 
 	t.populate_string_id_lookup()
+
 	return
 }
 

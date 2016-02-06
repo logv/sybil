@@ -40,6 +40,7 @@ func addFlags() {
 	f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 	f_STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
 	f_LIST_TABLES = flag.Bool("tables", false, "List tables")
+	f_UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
 	f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
 	f_INTS = flag.String("int", "", "Integer values to aggregate")
@@ -239,7 +240,14 @@ func RunQueryCmdLine() {
 
 		var count int
 		start := time.Now()
-		if *f_LOAD_AND_QUERY {
+		cached_table_info := len(t.IntInfo) > 0
+
+		if !cached_table_info {
+			fmt.Println("COULDN'T FIND CACHED TABLE INFO, WILL LOAD THEN QUERY EXECUTION")
+			f_UPDATE_TABLE_INFO = &TRUE
+		}
+
+		if *f_LOAD_AND_QUERY && cached_table_info {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 			end := time.Now()
 			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
@@ -269,5 +277,9 @@ func RunQueryCmdLine() {
 	if *f_PRINT_INFO {
 		t := GetTable(table)
 		t.PrintColInfo()
+	}
+
+	if *f_UPDATE_TABLE_INFO {
+		t.SaveTableInfo("info")
 	}
 }

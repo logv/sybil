@@ -393,7 +393,10 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			tb.table.update_int_info(into.NameId, int(bucket.Value))
+
+			if *f_UPDATE_TABLE_INFO {
+				tb.table.update_int_info(into.NameId, int(bucket.Value))
+			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
 			prev := uint32(0)
@@ -410,7 +413,10 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 		}
 	} else {
 		for r, v := range into.Values {
-			tb.table.update_int_info(into.NameId, int(v))
+			if *f_UPDATE_TABLE_INFO {
+				tb.table.update_int_info(into.NameId, int(v))
+			}
+
 			records[r].Ints[into.NameId] = IntField(v)
 			records[r].Populated[into.NameId] = INT_VAL
 		}

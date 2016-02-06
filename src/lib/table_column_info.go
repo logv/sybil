@@ -26,10 +26,7 @@ type IntInfoTable map[int16]*IntInfo
 type StrInfoTable map[int16]*StrInfo
 
 var TOP_STRING_COUNT = 20
-var INT_INFO_TABLE = make(map[string]IntInfoTable)
 var INT_INFO_BLOCK = make(map[string]IntInfoTable)
-
-var STR_INFO_TABLE = make(map[string]StrInfoTable)
 var STR_INFO_BLOCK = make(map[string]StrInfoTable)
 
 type StrInfoCol struct {
@@ -98,18 +95,7 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int) {
 }
 
 func (t *Table) update_int_info(name int16, val int) {
-	int_info_table, ok := INT_INFO_TABLE[t.Name]
-	if !ok {
-		int_info_table = make(map[int16]*IntInfo)
-		INT_INFO_TABLE[t.Name] = int_info_table
-	}
-
-	info, ok := int_info_table[name]
-	if ok && info.Count > 1024 {
-		return
-	}
-
-	update_int_info(int_info_table, name, val)
+	update_int_info(t.IntInfo, name, val)
 }
 
 func (tb *TableBlock) update_str_info(name int16, val int, increment int) {
@@ -133,7 +119,7 @@ func (tb *TableBlock) update_int_info(name int16, val int) {
 }
 
 func (t *Table) get_int_info(name int16) *IntInfo {
-	return INT_INFO_TABLE[t.Name][name]
+	return t.IntInfo[name]
 
 }
 

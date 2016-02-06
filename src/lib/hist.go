@@ -108,6 +108,7 @@ func (h *Hist) getPercentiles() []int {
 	if h.Count == 0 {
 		return make([]int, 0)
 	}
+
 	percentiles := make([]int, 101)
 	keys := make([]int, 0)
 
