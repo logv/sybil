@@ -1,7 +1,5 @@
 package pcs
 
-import "sync"
-
 type ResultMap map[string]*Result
 
 type QuerySpec struct {
@@ -20,9 +18,6 @@ type QuerySpec struct {
 
 	BlockList map[string]TableBlock
 
-	m *sync.RWMutex
-	r *sync.RWMutex
-	c *sync.Mutex
 }
 
 type Filter interface {
@@ -100,10 +95,6 @@ func (rs *Result) Combine(next_result *Result) {
 func (querySpec *QuerySpec) Punctuate() {
 	querySpec.Results = make(ResultMap)
 	querySpec.TimeResults = make(map[int]ResultMap)
-
-	querySpec.c = &sync.Mutex{}
-	querySpec.m = &sync.RWMutex{}
-	querySpec.r = &sync.RWMutex{}
 }
 
 func (t *Table) Grouping(name string) Grouping {

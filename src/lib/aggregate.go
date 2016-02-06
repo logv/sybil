@@ -95,20 +95,16 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			val, ok := r.getIntVal(*f_TIME_COL)
 			if ok {
 				val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
-				querySpec.r.RLock()
 				result_map, ok = querySpec.TimeResults[val]
-				querySpec.r.RUnlock()
 
 				if !ok {
 					result_map = make(ResultMap)
-					querySpec.r.Lock()
 					existing, ok := querySpec.TimeResults[val]
 					if !ok {
 						querySpec.TimeResults[val] = result_map
 					} else {
 						result_map = existing
 					}
-					querySpec.r.Unlock()
 				}
 			} else {
 				continue
@@ -119,9 +115,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 		group_key := buffer.String()
 		buffer.Reset()
 
-		querySpec.r.RLock()
 		added_record, ok := result_map[group_key]
-		querySpec.r.RUnlock()
 
 		// BUILD GROUPING RECORD
 		if !ok {
@@ -137,21 +131,16 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 			// WARNING: this is an annoying thread barrier that happens.
 			// TODO: replace it with a RW mutex instead of just R mutex
-			querySpec.r.RLock()
 			existing_record, ok := result_map[group_key]
-			querySpec.r.RUnlock()
 
 			if !ok {
 				// Even though we are about to lock, someone else might have inserted
 				// right before we grabbed the lock...
-				querySpec.r.Lock()
 				existing_record, ok = result_map[group_key]
 				if ok {
-					querySpec.r.Unlock()
 					added_record = existing_record
 				} else {
 					result_map[group_key] = added_record
-					querySpec.r.Unlock()
 				}
 			} else {
 				added_record = existing_record
@@ -179,15 +168,11 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 				}
 
 				if a.op == "hist" {
-					querySpec.m.RLock()
 					hist, ok := added_record.Hists[a.name]
-					querySpec.m.RUnlock()
 
 					if !ok {
 						hist = r.block.table.NewHist(r.block.table.get_int_info(a_id))
-						querySpec.m.Lock()
 						added_record.Hists[a.name] = hist
-						querySpec.m.Unlock()
 					}
 					hist.addValue(val)
 				}

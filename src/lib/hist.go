@@ -58,8 +58,6 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 }
 
 func (h *Hist) addValue(value int) {
-	h.m.Lock()
-
 	h.Count++
 	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)
 
@@ -75,13 +73,11 @@ func (h *Hist) addValue(value int) {
 
 	if bucket_value >= len(h.avgs) {
 		h.outliers = append(h.outliers, value)
-		h.m.Unlock()
 		return
 	}
 
 	if bucket_value < 0 {
 		h.underliers = append(h.underliers, value)
-		h.m.Unlock()
 		return
 	}
 
@@ -94,7 +90,6 @@ func (h *Hist) addValue(value int) {
 
 	// update bucket averages
 	h.avgs[bucket_value] = partial + (float64(value)-partial)/float64(h.values[bucket_value])
-	h.m.Unlock()
 }
 
 type ByVal []int
