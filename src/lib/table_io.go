@@ -406,7 +406,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
-	if *f_LOAD_AND_QUERY == true && querySpec != nil {
+	if f_LOAD_AND_QUERY != nil && *f_LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
 		resultSpec := CombineResults(block_specs)
