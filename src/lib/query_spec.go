@@ -47,13 +47,20 @@ type Aggregation struct {
 
 type Result struct {
 	Ints  map[string]float64
-	Strs  map[string]string
-	Sets  map[string][]string
 	Hists map[string]*Hist
 
 	GroupByKey string
 	Count      int32
 }
+
+func NewResult() *Result {
+	added_record := &Result{}
+	added_record.Hists = make(map[string]*Hist)
+	added_record.Ints = make(map[string]float64)
+	added_record.Count = 0
+	return added_record;
+}
+
 
 func (master_result *ResultMap) Combine(results *ResultMap) {
 	for k, v := range *results {

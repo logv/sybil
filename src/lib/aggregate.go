@@ -125,12 +125,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 				continue
 			}
 
-			added_record = &Result{}
-			added_record.Hists = make(map[string]*Hist)
-			added_record.Ints = make(map[string]float64)
-			added_record.Strs = make(map[string]string)
-			added_record.Sets = make(map[string][]string)
-			added_record.Count = 0
+			added_record = NewResult()
 			added_record.GroupByKey = group_key
 
 			// WARNING: this is an annoying thread barrier that happens.
