@@ -2,8 +2,11 @@ package edb
 
 import "flag"
 
+var FALSE=false
+var TRUE=true
+
 var f_OP *string
-var f_PRINT *bool
+var f_PRINT *bool = &FALSE
 var f_INT_FILTERS *string
 var f_STR_FILTERS *string
 
@@ -21,9 +24,9 @@ var f_TIME *bool = &TIMESERIES
 var f_TIME_COL *string
 
 var f_PRINT_KEYS *bool = &TIMESERIES
-var f_LOAD_AND_QUERY *bool
+var f_LOAD_AND_QUERY *bool = &FALSE
 
-var f_JSON *bool
+var f_JSON *bool = &FALSE
 
 var SORT_COUNT = "$COUNT"
 var f_DIR = flag.String("dir", "./db/", "Directory to store DB files")
