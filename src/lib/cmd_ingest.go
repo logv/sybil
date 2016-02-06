@@ -5,6 +5,7 @@ import (
 	"flag"
 	"strconv"
 	"io/ioutil"
+	"bufio"
 	"path"
 	"fmt"
 	"io"
@@ -43,51 +44,78 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			}
 		case map[string]interface{}:
 			d := Dictionary(iv)
-			ingest_dictionary(r, &d, prefix_name) 
+			ingest_dictionary(r, &d, prefix_name)
 		case Dictionary:
 			ingest_dictionary(r, &iv, prefix_name)
 		}
 	}
 }
 
+func chunk_and_save() {
+	t := GetTable(*f_TABLE)
 
-var INT_CAST = make(map[string]bool)
-var STR_CAST = make(map[string]bool)
-// appends records to our record input queue
-// every now and then, we should pack the input queue into a column, though
-func RunIngestCmdLine() {
-	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
-	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
-	f_STRS := flag.String("strs", "", "columns to treat as strings (comma delimited)")
+	IMPORTED_COUNT++
 
+	if IMPORTED_COUNT >= CHUNK_SIZE {
+		IMPORTED_COUNT -= CHUNK_SIZE
 
-	flag.Parse()
-
-	digestfile := fmt.Sprintf("%s", *ingestfile)
-
-	if *f_TABLE == "" {
-		flag.PrintDefaults()
-		return
-	}
-	if *f_PROFILE && PROFILER_ENABLED {
-		profile := RUN_PROFILER()
-		defer profile.Start().Stop()
+		os.MkdirAll(path.Join(*f_DIR, t.Name), 0777)
+		name, err := t.getNewIngestBlockName()
+		if err == nil {
+			t.SaveRecordsToBlock(t.newRecords, name)
+			t.SaveTableInfo("info")
+			t.newRecords = t.newRecords[:0]
+			t.ReleaseRecords()
+		} else {
+			log.Fatal("ERROR SAVING BLOCK", err)
+		}
 	}
 
+}
 
-	for _, v := range strings.Split(*f_STRS, ",") {
-		STR_CAST[v] = true
-	}
-	for _, v := range strings.Split(*f_INTS, ",") {
-		INT_CAST[v] = true
-	}
-
+var IMPORTED_COUNT = 0
+func import_csv_records() {
+	// For importing CSV records, we need to validate the headers, then we just
+	// read in and fill out record fields!
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	header := scanner.Text()
+	header_fields := strings.Split(header, ",")
+	log.Println("HEADER FIELDS FOR CSV ARE", header_fields)
 
 	t := GetTable(*f_TABLE)
-	t.LoadRecords(nil)
+
+	for scanner.Scan() {
+	  line := scanner.Text()
+		r := t.NewRecord()
+		fields := strings.Split(line, ",")
+		for i, v := range fields {
+			field_name := header_fields[i]
+
+			if v == "" {
+				continue
+			}
+
+			val, err := strconv.ParseFloat(v, 32)
+			if err == nil {
+				r.AddIntField(field_name, int(val))
+			} else {
+				r.AddStrField(field_name, v)
+			}
+
+		}
+
+		chunk_and_save()
+	}
+
+
+}
+
+func import_json_records() {
+	t := GetTable(*f_TABLE)
 
 	dec := json.NewDecoder(os.Stdin)
-	count := 0
+
 	for {
 		var recordmap Dictionary
 
@@ -105,23 +133,53 @@ func RunIngestCmdLine() {
 
 		ingest_dictionary(r, &recordmap, "")
 
-		count++
+		chunk_and_save()
+	}
 
-		if count >= CHUNK_SIZE {
-			count -= CHUNK_SIZE
 
-			os.MkdirAll(path.Join(*f_DIR, t.Name), 0777)
-			name, err := t.getNewIngestBlockName()
-			if err == nil {
-				t.SaveRecordsToBlock(t.newRecords, name)
-				t.SaveTableInfo("info")
-				t.newRecords = t.newRecords[:0]
-				t.ReleaseRecords()
-			} else {
-				log.Fatal("ERROR SAVING BLOCK", err)
-			}
-		}
+}
+var INT_CAST = make(map[string]bool)
+var STR_CAST = make(map[string]bool)
+// appends records to our record input queue
+// every now and then, we should pack the input queue into a column, though
+func RunIngestCmdLine() {
+	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
+	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
+	f_STRS := flag.String("strs", "", "columns to treat as strings (comma delimited)")
+	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 
+
+	flag.Parse()
+
+	digestfile := fmt.Sprintf("%s", *ingestfile)
+
+	if *f_TABLE == "" {
+		flag.PrintDefaults()
+		return
+	}
+
+	if *f_PROFILE && PROFILER_ENABLED {
+		profile := RUN_PROFILER()
+		defer profile.Start().Stop()
+	}
+
+
+	for _, v := range strings.Split(*f_STRS, ",") {
+		STR_CAST[v] = true
+	}
+	for _, v := range strings.Split(*f_INTS, ",") {
+		INT_CAST[v] = true
+	}
+
+
+	t := GetTable(*f_TABLE)
+
+	t.LoadRecords(nil)
+
+	if *f_CSV == false {
+		import_json_records()
+	} else {
+		import_csv_records()
 	}
 
 	t.IngestRecords(digestfile)
