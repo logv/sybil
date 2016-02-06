@@ -126,21 +126,8 @@ func RunQueryCmdLine() {
 		loadSpec.LoadAllColumns = true
 		t.LoadRecords(&loadSpec)
 
-		count := 0
-		for _, b := range t.BlockList {
-			for _, r := range b.RecordList {
-				count++
-				t.PrintRecord(r)
+		t.printSamples()
 
-				if count >= *f_LIMIT {
-					break
-				}
-			}
-
-			if count >= *f_LIMIT {
-				break
-			}
-		}
 		return
 	}
 
