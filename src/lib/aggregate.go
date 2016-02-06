@@ -224,7 +224,7 @@ func CombineMatches(block_specs map[string]*QuerySpec) []*Record {
 
 }
 
-func CombineResults(block_specs map[string]*QuerySpec) *QuerySpec {
+func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
 
 	astart := time.Now()
 	resultSpec := QuerySpec{}
@@ -247,6 +247,7 @@ func CombineResults(block_specs map[string]*QuerySpec) *QuerySpec {
 		}
 	}
 
+	resultSpec.TimeBucket = querySpec.TimeBucket
 	resultSpec.TimeResults = master_time_result
 	resultSpec.Results = master_result
 
@@ -328,7 +329,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	block_specs := SearchBlocks(querySpec, t.BlockList)
 
 	// COMBINE THE PER BLOCK RESULTS
-	resultSpec := CombineResults(block_specs)
+	resultSpec := CombineResults(querySpec, block_specs)
 
 	aend := time.Now()
 	log.Println("AGGREGATING TOOK", aend.Sub(start))

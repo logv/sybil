@@ -2,6 +2,7 @@ package pcs
 
 import "sync"
 import "sort"
+import "strconv"
 import "log"
 import "fmt"
 import "encoding/json"
@@ -122,6 +123,8 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 }
 
 func printTimeResults(querySpec *QuerySpec) {
+	log.Println("PRINTING TIME RESULTS")
+
 	keys := make([]int, 0)
 
 	for k, _ := range querySpec.TimeResults {
@@ -129,6 +132,24 @@ func printTimeResults(querySpec *QuerySpec) {
 	}
 
 	sort.Sort(ByVal(keys))
+
+	log.Println("RESULT COUNT", len(querySpec.TimeResults))
+	if *f_JSON {
+
+		marshalled_results := make(map[string]*ResultMap)
+		for k, v := range querySpec.TimeResults {
+			marshalled_results[strconv.FormatInt(int64(k), 10)] = &v
+		}
+
+		b, err := json.Marshal(marshalled_results)
+		if err == nil {
+			os.Stdout.Write(b)
+		} else {
+			log.Fatal("JSON encoding error", err)
+		}
+
+		return
+	}
 
 	for _, k := range keys {
 		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
@@ -141,6 +162,18 @@ func printSortedResults(querySpec *QuerySpec) {
 	if int(querySpec.Limit) < len(querySpec.Sorted) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
+	
+	if *f_JSON {
+		b, err := json.Marshal(sorted)
+		if err == nil {
+			os.Stdout.Write(b)
+		} else {
+			log.Fatal("JSON encoding error", err)
+		}
+
+		return
+	}
+
 	for _, v := range sorted {
 		printResult(querySpec, v)
 	}
@@ -177,6 +210,18 @@ func printResults(querySpec *QuerySpec) {
 		return
 	}
 
+	if *f_JSON {
+		b, err := json.Marshal(querySpec.Results)
+		if err == nil {
+			os.Stdout.Write(b)
+		} else {
+			log.Fatal("JSON encoding error", err)
+		}
+
+		return
+	}
+
+
 	count := 0
 	for _, v := range querySpec.Results {
 		printResult(querySpec, v)
@@ -188,20 +233,12 @@ func printResults(querySpec *QuerySpec) {
 }
 
 func (qs *QuerySpec) printResults() {
-	if *f_JSON {
-		b, err := json.Marshal(qs.Results)
-		if err == nil {
-			os.Stdout.Write(b)
-		} else {
-			log.Fatal("JSON encoding error", err)
-		}
-
-		return
-	}
 	if *f_PRINT {
 		log.Println("PRINTING RESULTS")
 
-		if qs.OrderBy != "" {
+		if qs.TimeBucket > 0 {
+			printTimeResults(qs)
+		} else if qs.OrderBy != "" {
 			printSortedResults(qs)
 		} else {
 			printResults(qs)

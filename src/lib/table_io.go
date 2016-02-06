@@ -426,7 +426,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	if f_LOAD_AND_QUERY != nil && *f_LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
-		resultSpec := CombineResults(block_specs)
+		resultSpec := CombineResults(querySpec, block_specs)
 
 		aend := time.Now()
 		log.Println("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
