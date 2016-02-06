@@ -416,6 +416,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 		querySpec.Results = resultSpec.Results
 		querySpec.TimeResults = resultSpec.TimeResults
+
+		SortResults(querySpec)
 	}
 
 	end := time.Now()

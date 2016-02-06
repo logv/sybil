@@ -20,8 +20,9 @@ var TIMESERIES = false
 var f_TIME *bool = &TIMESERIES
 var f_TIME_COL *string
 
+var SORT_COUNT = "$COUNT"
 var f_DIR = flag.String("dir", "./db/", "Directory to store DB files")
 var f_TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
-var f_SORT = flag.String("sort", "", "Int Column to sort by")
+var f_SORT = flag.String("sort", SORT_COUNT, "Int Column to sort by")
 var f_LIMIT = flag.Int("limit", 100, "Number of results to return")

@@ -21,9 +21,15 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
+	if (a.Col == SORT_COUNT) {
+		t1 := a.Results[i].Count
+		t2 := a.Results[j].Count
+
+		return t1 > t2
+	}
+
 	t1 := a.Results[i].Ints[a.Col]
 	t2 := a.Results[j].Ints[a.Col]
-
 	return t1 > t2
 }
 

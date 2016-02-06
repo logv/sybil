@@ -241,7 +241,9 @@ func RunQueryCmdLine() {
 	}
 
 	if *f_SORT != "" {
-		loadSpec.Int(*f_SORT)
+		if *f_SORT != SORT_COUNT {
+			loadSpec.Int(*f_SORT)
+		}
 		querySpec.OrderBy = *f_SORT
 	} else {
 		querySpec.OrderBy = ""
