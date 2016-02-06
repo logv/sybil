@@ -304,14 +304,20 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 			ret := FilterAndAggRecords(blockQuery, &this_block.RecordList)
 			blockQuery.Matched = ret
 			block_specs[this_block.Name] = blockQuery
-			fmt.Print(".")
+
+			if !*f_JSON { 
+				fmt.Print(".")
+			}
 
 		}()
 	}
 
 
 	wg.Wait()
-	fmt.Print("\n")
+
+	if !*f_JSON {
+		fmt.Print("\n")
+	}
 
 	return block_specs
 }

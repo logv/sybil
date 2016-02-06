@@ -4,6 +4,8 @@ import "sync"
 import "sort"
 import "log"
 import "fmt"
+import "encoding/json"
+import "os"
 
 type ResultMap map[string]*Result
 
@@ -141,6 +143,16 @@ func printSortedResults(querySpec *QuerySpec) {
 }
 
 func (qs *QuerySpec) printResults() {
+	if *f_JSON {
+		b, err := json.Marshal(qs.Results)
+		if err == nil {
+			os.Stdout.Write(b)
+		} else {
+			log.Fatal("JSON encoding error", err)
+		}
+
+		return
+	}
 	if *f_PRINT {
 		log.Println("PRINTING RESULTS")
 

@@ -39,6 +39,8 @@ func printResult(querySpec *QuerySpec, v *Result) {
 }
 
 func printResults(querySpec *QuerySpec) {
+
+
 	if querySpec.TimeBucket > 0 {
 		printTimeResults(querySpec)
 
@@ -88,6 +90,7 @@ func addFlags() {
 
 	f_LOAD_AND_QUERY = flag.Bool("laq", false, "Load and Query")
 	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
+	f_JSON = flag.Bool("json", false, "Print results in JSON format")
 }
 
 func RunQueryCmdLine() {

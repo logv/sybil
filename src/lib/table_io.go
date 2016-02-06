@@ -360,7 +360,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				defer wg.Done()
 				start := time.Now()
 				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
-				fmt.Print(".")
+
+				if *f_JSON == false {
+					fmt.Print(".")
+				}
 				end := time.Now()
 				if DEBUG_TIMING {
 					if loadSpec != nil {
@@ -402,7 +405,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 
-	fmt.Print("\n")
+	if !*f_JSON {
+		fmt.Print("\n")
+	}
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
