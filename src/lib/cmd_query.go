@@ -151,9 +151,15 @@ func RunQueryCmdLine() {
 	}
 
 	aggs := []Aggregation{}
+	cached_table_info := true
 	for _, agg := range ints {
 		col_id := t.get_key_id(agg)
 		aggs = append(aggs, Aggregation{op: *f_OP, name: agg, name_id: col_id})
+		_, ok := t.IntInfo[col_id]
+		if !ok {
+			log.Println("MISSING CACHED INFO FOR", agg)
+			cached_table_info = false
+		}
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
@@ -240,14 +246,14 @@ func RunQueryCmdLine() {
 
 		var count int
 		start := time.Now()
-		cached_table_info := len(t.IntInfo) > 0
 
 		if !cached_table_info {
-			fmt.Println("COULDN'T FIND CACHED TABLE INFO, WILL LOAD THEN QUERY EXECUTION")
+			log.Println("COULDN'T FIND CACHED TABLE INFO, WILL LOAD RECORDS THEN QUERY")
 			f_UPDATE_TABLE_INFO = &TRUE
+			f_LOAD_AND_QUERY = &FALSE
 		}
 
-		if *f_LOAD_AND_QUERY && cached_table_info {
+		if *f_LOAD_AND_QUERY {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 			end := time.Now()
 			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
