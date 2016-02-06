@@ -6,6 +6,7 @@ import "encoding/json"
 import "strconv"
 import "os"
 import "fmt"
+import "io/ioutil"
 
 func printTimeResults(querySpec *QuerySpec) {
 	log.Println("PRINTING TIME RESULTS")
@@ -190,4 +191,36 @@ func (t *Table) printSamples() {
 		}
 	}
 	return
+}
+
+func printTables() {
+	files, err := ioutil.ReadDir(*f_DIR)
+	if err != nil {
+		log.Println("No tables found")
+		return
+	}
+
+	tables := make([]string, 0)
+	for _, db := range files {
+		t := GetTable(db.Name())
+		tables = append(tables, t.Name)
+	}
+
+	if *f_JSON {
+		b, err := json.Marshal(tables)
+		if err == nil {
+			os.Stdout.Write(b)
+		} else {
+			log.Fatal("JSON encoding error", err)
+		}
+
+		return
+	}
+
+	for _, name := range tables {
+		fmt.Print(name, " ")
+	}
+
+	fmt.Println("")
+
 }

@@ -6,7 +6,6 @@ import "flag"
 import "strings"
 import "time"
 import "strconv"
-import "io/ioutil"
 import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -57,18 +56,7 @@ func RunQueryCmdLine() {
 	flag.Parse()
 
 	if *f_LIST_TABLES {
-		files, err := ioutil.ReadDir(*f_DIR)
-		if err != nil {
-			log.Println("No tables found")
-			return
-		}
-		for _, db := range files {
-			t := GetTable(db.Name())
-			fmt.Print(t.Name, " ")
-		}
-
-		fmt.Println("")
-
+		printTables()
 		return
 	}
 
