@@ -1,6 +1,6 @@
 package edb
 
-import "log"
+import "fmt"
 import "sort"
 
 // THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
@@ -145,9 +145,29 @@ func (tb *TableBlock) get_str_info(name int16) *StrInfo {
 	return STR_INFO_BLOCK[tb.Name][name]
 }
 
-func (t *Table) PrintColInfo() {
-	for k, v := range INT_INFO_TABLE[t.Name] {
-		log.Println(k, v)
+func (t *Table) printColsOfType(wanted_type int) {
+	print_keys := make([]string, 0)
+	for name, name_id := range t.KeyTable {
+		col_type := t.KeyTypes[name_id]
+		if col_type != wanted_type {
+			continue
+		}
+
+		print_keys = append(print_keys, name)
+
 	}
+
+	sort.Strings(print_keys)
+	for _, v := range print_keys {
+		fmt.Println(" ", v)
+	}
+}
+
+func (t *Table) PrintColInfo() {
+	fmt.Println("\nString Columns\n")
+	t.printColsOfType(STR_VAL)
+	fmt.Println("\nInteger Columns\n")
+	t.printColsOfType(INT_VAL)
+	fmt.Println("")
 
 }
