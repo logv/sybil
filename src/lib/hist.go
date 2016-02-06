@@ -60,6 +60,18 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 func (h *Hist) addValue(value int) {
 	h.m.Lock()
 
+	h.Count++
+	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)
+
+
+	if value > h.Max {
+		h.Max = value
+	}
+
+	if value < h.Min {
+		h.Min = value
+	}
+
 	bucket_value := (value - h.Min) / h.bucket_size
 
 	if bucket_value >= len(h.avgs) {
@@ -75,17 +87,6 @@ func (h *Hist) addValue(value int) {
 	}
 
 	partial := h.avgs[bucket_value]
-
-	if value > h.Max {
-		h.Max = value
-	}
-
-	if value < h.Min {
-		h.Min = value
-	}
-
-	h.Count++
-	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)
 
 	// update counts
 	count := h.values[bucket_value]
@@ -138,5 +139,8 @@ func (h *Hist) Combine(next_hist *Hist) {
 		h.values[k] += v
 	}
 
-	h.Count += next_hist.Count
+	total := h.Count + next_hist.Count
+	h.Avg = (h.Avg * (float64(h.Count) / float64(total))) + (next_hist.Avg * (float64(next_hist.Count) / float64(total)))
+
+	h.Count = total
 }

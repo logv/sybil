@@ -15,48 +15,6 @@ var SAMPLES = false
 var f_SAMPLES *bool = &SAMPLES
 var f_LIST_TABLES *bool
 
-func printResult(querySpec *QuerySpec, v *Result) {
-	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
-	for _, agg := range querySpec.Aggregations {
-		col_name := fmt.Sprintf("  %5s", agg.name)
-		if *f_OP == "hist" {
-			h, ok := v.Hists[agg.name]
-			if !ok {
-				log.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
-				continue
-			}
-			p := h.getPercentiles()
-
-			if len(p) > 0 {
-				fmt.Println(col_name, p[0], p[25], p[50], p[75], p[99])
-			} else {
-				fmt.Println(col_name, "No Data")
-			}
-		} else if *f_OP == "avg" {
-			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
-		}
-	}
-}
-
-func printResults(querySpec *QuerySpec) {
-
-
-	if querySpec.TimeBucket > 0 {
-		printTimeResults(querySpec)
-
-		return
-	}
-
-	count := 0
-	for _, v := range querySpec.Results {
-		printResult(querySpec, v)
-		count++
-		if count >= int(querySpec.Limit) {
-			return
-		}
-	}
-}
-
 func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 	table := GetTable(name)
 
