@@ -64,6 +64,14 @@ func (master_result *ResultMap) Combine(results *ResultMap) {
 
 // This does an in place combine of the next_result into this one...
 func (rs *Result) Combine(next_result *Result) {
+	if next_result == nil {
+		return
+	}
+
+	if next_result.Count == 0 {
+		return
+	}
+
 	total_count := rs.Count + next_result.Count
 	next_ratio := float64(next_result.Count) / float64(total_count)
 	this_ratio := float64(rs.Count) / float64(total_count)

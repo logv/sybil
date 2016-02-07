@@ -226,7 +226,12 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 				master_time_result[i] = v
 			} else {
 				for k, r := range v {
-					mval[k].Combine(r)
+					mh, ok := mval[k]
+					if ok {
+						mh.Combine(r)
+					} else {
+						mval[k] = r
+					}
 				}
 			}
 		}
