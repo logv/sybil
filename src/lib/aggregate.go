@@ -7,6 +7,7 @@ import "time"
 import "sync"
 import "sync/atomic"
 import "sort"
+import "os"
 
 var INTERNAL_RESULT_LIMIT = 100000
 
@@ -298,7 +299,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 			block_specs[this_block.Name] = blockQuery
 
 			if !*f_JSON {
-				fmt.Print(".")
+				fmt.Fprint(os.Stderr, ".")
 			}
 
 		}()
@@ -307,7 +308,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 	wg.Wait()
 
 	if !*f_JSON {
-		fmt.Print("\n")
+		fmt.Fprint(os.Stderr, "\n")
 	}
 
 	return block_specs
