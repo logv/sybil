@@ -8,6 +8,15 @@ import "os"
 import "fmt"
 import "io/ioutil"
 
+func printJson(data interface{}) {
+	b, err := json.Marshal(data)
+	if err == nil {
+		os.Stdout.Write(b)
+	} else {
+		log.Fatal("JSON encoding error", err)
+	}
+}
+
 func printTimeResults(querySpec *QuerySpec) {
 	log.Println("PRINTING TIME RESULTS")
 
@@ -27,13 +36,7 @@ func printTimeResults(querySpec *QuerySpec) {
 			marshalled_results[strconv.FormatInt(int64(k), 10)] = &v
 		}
 
-		b, err := json.Marshal(marshalled_results)
-		if err == nil {
-			os.Stdout.Write(b)
-		} else {
-			log.Fatal("JSON encoding error", err)
-		}
-
+		printJson(marshalled_results)
 		return
 	}
 
@@ -50,13 +53,7 @@ func printSortedResults(querySpec *QuerySpec) {
 	}
 
 	if *f_JSON {
-		b, err := json.Marshal(sorted)
-		if err == nil {
-			os.Stdout.Write(b)
-		} else {
-			log.Fatal("JSON encoding error", err)
-		}
-
+		printJson(sorted)
 		return
 	}
 
@@ -97,13 +94,7 @@ func printResults(querySpec *QuerySpec) {
 	}
 
 	if *f_JSON {
-		b, err := json.Marshal(querySpec.Results)
-		if err == nil {
-			os.Stdout.Write(b)
-		} else {
-			log.Fatal("JSON encoding error", err)
-		}
-
+		printJson(querySpec.Results)
 		return
 	}
 
@@ -178,6 +169,7 @@ func (t *Table) printSamples() {
 			samples = append(samples, s)
 		}
 
+		printJson(samples)
 		b, err := json.Marshal(samples)
 		if err == nil {
 			os.Stdout.Write(b)
@@ -222,5 +214,46 @@ func printTables() {
 	}
 
 	fmt.Println("")
+
+}
+
+func (t *Table) getColsOfType(wanted_type int) []string {
+	print_keys := make([]string, 0)
+	for name, name_id := range t.KeyTable {
+		col_type := t.KeyTypes[name_id]
+		if col_type != wanted_type {
+			continue
+		}
+
+		print_keys = append(print_keys, name)
+
+	}
+	sort.Strings(print_keys)
+
+	return print_keys
+}
+func (t *Table) printColsOfType(wanted_type int) {
+	for _, v := range t.getColsOfType(wanted_type) {
+		fmt.Println(" ", v)
+	}
+}
+
+func (t *Table) PrintColInfo() {
+	if *f_JSON {
+		table_cols := make(map[string][]string)
+		table_info := make(map[string]interface{})
+
+		table_cols["ints"] = t.getColsOfType(INT_VAL)
+		table_cols["strs"] = t.getColsOfType(STR_VAL)
+		table_info["columns"] = table_cols
+
+		printJson(table_info)
+	} else {
+		fmt.Println("\nString Columns\n")
+		t.printColsOfType(STR_VAL)
+		fmt.Println("\nInteger Columns\n")
+		t.printColsOfType(INT_VAL)
+		fmt.Println("")
+	}
 
 }
