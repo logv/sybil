@@ -170,13 +170,6 @@ func (t *Table) printSamples() {
 		}
 
 		printJson(samples)
-		b, err := json.Marshal(samples)
-		if err == nil {
-			os.Stdout.Write(b)
-		} else {
-			log.Fatal("JSON encoding error", err)
-		}
-
 	} else {
 		for _, r := range records {
 			t.PrintRecord(r)
