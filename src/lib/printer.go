@@ -76,7 +76,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 			if len(p) > 0 {
 				avg_str := fmt.Sprintf("%.2f", h.Avg)
-				fmt.Println(col_name, avg_str, p[0], p[25], p[50], p[75], p[99])
+				fmt.Println(col_name, "|", h.Min, h.Max, "|", avg_str, "|", p[0], p[25], p[50], p[75], p[99])
 			} else {
 				fmt.Println(col_name, "No Data")
 			}

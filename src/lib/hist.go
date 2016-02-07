@@ -24,8 +24,11 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 
 	h.num_buckets = buckets
 
-	h.Max = int(info.Max)
-	h.Min = int(info.Min)
+	// set up initial variables for max and min to be extrema in other
+	// direction
+	h.Max = int(info.Min)
+	h.Min = int(info.Max)
+
 	h.Avg = 0
 	h.Count = 0
 
