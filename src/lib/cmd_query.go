@@ -129,7 +129,7 @@ func RunQueryCmdLine() {
 	cached_table_info := true
 	for _, agg := range ints {
 		col_id := t.get_key_id(agg)
-		aggs = append(aggs, Aggregation{op: *f_OP, name: agg, name_id: col_id})
+		aggs = append(aggs, t.Aggregation(agg, *f_OP))
 		_, ok := t.IntInfo[col_id]
 		if !ok {
 			log.Println("MISSING CACHED INFO FOR", agg)

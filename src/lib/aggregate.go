@@ -5,11 +5,13 @@ import "log"
 import "fmt"
 import "time"
 import "sync"
-import "sync/atomic"
 import "sort"
 import "os"
 
 var INTERNAL_RESULT_LIMIT = 100000
+
+var OP_AVG = 1
+var OP_HIST = 2
 
 type SortResultsByCol struct {
 	Results []*Result
@@ -91,64 +93,53 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			buffer.WriteRune(':')
 		}
 
+		group_key := buffer.String()
+		buffer.Reset()
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
 			val, ok := r.getIntVal(*f_TIME_COL)
-			if ok {
-				val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
-				result_map, ok = querySpec.TimeResults[val]
-
-				if !ok {
-					result_map = make(ResultMap)
-					existing, ok := querySpec.TimeResults[val]
-					if !ok {
-						querySpec.TimeResults[val] = result_map
-					} else {
-						result_map = existing
-					}
-				}
-			} else {
+			if !ok {
 				continue
+			}
+
+			big_record, b_ok := querySpec.Results[group_key]
+			if !b_ok {
+				big_record = NewResult()
+				big_record.GroupByKey = group_key
+			}
+
+			big_record.Count++
+
+			val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
+			result_map, ok = querySpec.TimeResults[val]
+
+			if !ok {
+				// TODO: this make call is kind of slow...
+				result_map = make(ResultMap)
+				querySpec.TimeResults[val] = result_map
 			}
 
 		}
 
-		group_key := buffer.String()
-		buffer.Reset()
 
 		added_record, ok := result_map[group_key]
 
 		// BUILD GROUPING RECORD
 		if !ok {
-			length := len(result_map)
-
 			// TODO: take into account whether we are doint time series or not...
-			if length >= INTERNAL_RESULT_LIMIT {
+			if len(result_map) >= INTERNAL_RESULT_LIMIT {
 				continue
 			}
 
 			added_record = NewResult()
 			added_record.GroupByKey = group_key
 
-			// WARNING: this is an annoying thread barrier that happens.
-			// TODO: replace it with a RW mutex instead of just R mutex
-			existing_record, ok := result_map[group_key]
-
-			if !ok {
-				// Even though we are about to lock, someone else might have inserted
-				// right before we grabbed the lock...
-				existing_record, ok = result_map[group_key]
-				if ok {
-					added_record = existing_record
-				} else {
-					result_map[group_key] = added_record
-				}
-			} else {
-				added_record = existing_record
-			}
+			result_map[group_key] = added_record
 		}
 
-		count := atomic.AddInt32(&added_record.Count, 1)
+	
+		added_record.Count++
+		count := float64(added_record.Count)
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 
 		for _, a := range querySpec.Aggregations {
@@ -156,7 +147,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			if r.Populated[a_id] == INT_VAL {
 				val := int(r.Ints[a_id])
 
-				if a.op == "avg" {
+				if a.op_id == OP_AVG {
 					// Calculating averages
 					partial, ok := added_record.Ints[a.name]
 					if !ok {
@@ -168,7 +159,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 					added_record.Ints[a.name] = partial
 				}
 
-				if a.op == "hist" {
+				if a.op_id == OP_HIST {
 					hist, ok := added_record.Hists[a.name]
 
 					if !ok {

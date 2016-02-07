@@ -1,5 +1,7 @@
 package pcs
 
+import "log"
+
 type ResultMap map[string]*Result
 
 type QuerySpec struct {
@@ -31,6 +33,7 @@ type Grouping struct {
 
 type Aggregation struct {
 	op      string
+	op_id   int
 	name    string
 	name_id int16
 }
@@ -112,6 +115,16 @@ func (t *Table) Grouping(name string) Grouping {
 
 func (t *Table) Aggregation(name string, op string) Aggregation {
 	col_id := t.get_key_id(name)
-	return Aggregation{name: name, name_id: col_id, op: op}
+	agg := Aggregation{name: name, name_id: col_id, op: op}
+	if op == "avg" {
+		agg.op_id = OP_AVG
+	}
+
+	if op == "hist" {
+		agg.op_id = OP_HIST
+	}
+
+	log.Println("AGG", op, agg.op_id)
+	return agg
 }
 
