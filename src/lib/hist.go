@@ -1,7 +1,6 @@
 package pcs
 
 import "sort"
-import "sync"
 
 type Hist struct {
 	Max   int
@@ -16,8 +15,6 @@ type Hist struct {
 
 	outliers   []int
 	underliers []int
-
-	m *sync.Mutex
 }
 
 func (t *Table) NewHist(info *IntInfo) *Hist {
@@ -34,8 +31,6 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 
 	h.outliers = make([]int, 0)
 	h.underliers = make([]int, 0)
-
-	h.m = &sync.Mutex{}
 
 	size := info.Max - info.Min
 	h.bucket_size = size / buckets
