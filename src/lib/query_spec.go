@@ -16,10 +16,9 @@ type QuerySpec struct {
 	Results     ResultMap
 	TimeResults map[int]ResultMap
 	Sorted      []*Result
-	Matched     []*Record
+	Matched     RecordList
 
 	BlockList map[string]TableBlock
-
 }
 
 type Filter interface {
@@ -127,4 +126,3 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	log.Println("AGG", op, agg.op_id)
 	return agg
 }
-

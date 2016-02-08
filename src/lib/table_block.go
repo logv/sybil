@@ -5,7 +5,7 @@ import "sync"
 // Table Block should have a bunch of metadata next to it, too
 type TableBlock struct {
 	Name       string
-	RecordList []*Record
+	RecordList RecordList
 	Info       *SavedColumnInfo
 
 	string_id_m          *sync.Mutex

@@ -18,7 +18,7 @@ type Table struct {
 	IntInfo IntInfoTable
 
 	// List of new records that haven't been saved to file yet
-	newRecords []*Record
+	newRecords RecordList
 
 	key_string_id_lookup map[int16]string
 	val_string_id_lookup map[int32]string
@@ -152,7 +152,7 @@ func (t *Table) PrintRecord(r *Record) {
 	}
 }
 
-func (t *Table) PrintRecords(records []*Record) {
+func (t *Table) PrintRecords(records RecordList) {
 	for i := 0; i < len(records); i++ {
 		t.PrintRecord(records[i])
 	}

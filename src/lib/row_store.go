@@ -110,7 +110,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	return marshalled_records
 }
 
-func (t *Table) LoadRecordsFromLog(filename string) []*Record {
+func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	log.Println("LOADING RECORDS FROM LOG", filename)
 	var marshalled_records []*SavedRecord
 
@@ -128,7 +128,7 @@ func (t *Table) LoadRecordsFromLog(filename string) []*Record {
 		log.Println("ERROR LOADING INGESTION LOG", err)
 	}
 
-	ret := make([]*Record, len(marshalled_records))
+	ret := make(RecordList, len(marshalled_records))
 
 	for i, r := range marshalled_records {
 		ret[i] = r.toRecord(t)
@@ -137,7 +137,7 @@ func (t *Table) LoadRecordsFromLog(filename string) []*Record {
 	return ret
 }
 
-func (t *Table) AppendRecordsToLog(records []*Record, blockname string) {
+func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	if len(records) == 0 {
 		return
 	}

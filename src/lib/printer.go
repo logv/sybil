@@ -43,7 +43,7 @@ func printTimeResults(querySpec *QuerySpec) {
 			key := strconv.FormatInt(int64(k), 10)
 			marshalled_results[key] = make([]ResultJSON, 0)
 
-			for _, r := range v {	
+			for _, r := range v {
 				_, ok := is_top_result[r.GroupByKey]
 				if ok {
 					marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
@@ -68,7 +68,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 	for _, agg := range querySpec.Aggregations {
 		if *f_OP == "hist" {
 			res[agg.name] = r.Hists[agg.name].getPercentiles()
-		} 
+		}
 
 		if *f_OP == "avg" {
 			res[agg.name] = r.Ints[agg.name]
@@ -82,7 +82,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	res["Count"] = r.Count
 
-	return res;
+	return res
 
 }
 
@@ -99,7 +99,6 @@ func printSortedResults(querySpec *QuerySpec) {
 			var res = r.toResultJSON(querySpec)
 			results = append(results, res)
 		}
-
 
 		printJson(results)
 		return
@@ -152,11 +151,9 @@ func printResults(querySpec *QuerySpec) {
 			results = append(results, res)
 		}
 
-
 		printJson(results)
 		return
 	}
-
 
 	count := 0
 	for _, v := range querySpec.Results {
@@ -205,7 +202,7 @@ func (r *Record) toSample() *Sample {
 
 func (t *Table) printSamples() {
 	count := 0
-	records := make([]*Record, *f_LIMIT)
+	records := make(RecordList, *f_LIMIT)
 	for _, b := range t.BlockList {
 		for _, r := range b.RecordList {
 			if count >= *f_LIMIT {

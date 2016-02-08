@@ -15,7 +15,6 @@ var OP_HIST = 2
 
 var GROUP_DELIMITER = ":|:"
 
-
 type SortResultsByCol struct {
 	Results []*Result
 
@@ -46,11 +45,11 @@ func (a SortResultsByCol) Less(i, j int) bool {
 	return t1 > t2
 }
 
-func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record {
+func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordList {
 	var buffer bytes.Buffer
 	records := *recordsPtr
 
-	ret := make([]*Record, 0)
+	ret := make(RecordList, 0)
 
 	var result_map ResultMap
 	if querySpec.TimeBucket <= 0 {
@@ -119,7 +118,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 				big_record.Count++
 			}
 
-
 			val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
 			result_map, ok = querySpec.TimeResults[val]
 
@@ -130,7 +128,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			}
 
 		}
-
 
 		added_record, ok := result_map[group_key]
 
@@ -146,7 +143,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 			result_map[group_key] = added_record
 		}
-
 
 		added_record.Count++
 		count := float64(added_record.Count)
@@ -198,9 +194,9 @@ func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
 	return &blockQuery
 }
 
-func CombineMatches(block_specs map[string]*QuerySpec) []*Record {
+func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 	start := time.Now()
-	matched := make([]*Record, 0)
+	matched := make(RecordList, 0)
 	for _, spec := range block_specs {
 		matched = append(matched, spec.Matched...)
 	}

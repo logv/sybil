@@ -19,7 +19,7 @@ func (t *Table) IngestRecords(blockname string) {
 	log.Println("KEY TABLE", t.KeyTable)
 
 	t.AppendRecordsToLog(t.newRecords[:], blockname)
-	t.newRecords = make([]*Record, 0)
+	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
 }
 

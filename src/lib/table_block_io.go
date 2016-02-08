@@ -422,12 +422,12 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo, load_records bool) []*Record {
+func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
 	t := tb.table
 
 	var r *Record
 
-	var records []*Record
+	var records RecordList
 	var alloced []Record
 	var bigIntArr IntArr
 	var bigStrArr StrArr
@@ -441,7 +441,7 @@ func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo,
 
 	if load_spec != nil || load_records {
 		mstart := time.Now()
-		records = make([]*Record, info.NumRecords)
+		records = make(RecordList, info.NumRecords)
 		alloced = make([]Record, info.NumRecords)
 		bigIntArr = make(IntArr, max_key_id*int(info.NumRecords))
 		bigStrArr = make(StrArr, max_key_id*int(info.NumRecords))

@@ -2,7 +2,7 @@ package pcs
 
 type SessionMap map[int][]Record
 
-func SessionizeRecords(records []*Record, session_field string) SessionMap {
+func SessionizeRecords(records RecordList, session_field string) SessionMap {
 	ret := make(SessionMap, 0)
 
 	for i := 0; i < len(records); i++ {

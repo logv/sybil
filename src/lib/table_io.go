@@ -110,7 +110,7 @@ func (t *Table) SaveTableInfo(fname string) {
 
 }
 
-func (t *Table) SaveRecordsToBlock(records []*Record, filename string) {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {
 	if len(records) == 0 {
 		return
 	}
@@ -151,7 +151,7 @@ func (t *Table) FillPartialBlock() bool {
 		if delta < len(t.newRecords) {
 			t.newRecords = t.newRecords[delta:]
 		} else {
-			t.newRecords = make([]*Record, 0)
+			t.newRecords = make(RecordList, 0)
 		}
 
 	} else {
@@ -174,7 +174,7 @@ func getSaveTable(t *Table) *Table {
 		LastBlockId: t.LastBlockId}
 }
 
-func (t *Table) saveRecordList(records []*Record) bool {
+func (t *Table) saveRecordList(records RecordList) bool {
 	if len(records) == 0 {
 		return false
 	}
@@ -262,7 +262,6 @@ func (t *Table) LoadTableInfo() {
 	return
 }
 
-
 // optimizing for integer pre-cached info
 func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) bool {
 	if querySpec == nil {
@@ -280,7 +279,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 
 	if len(info.IntInfo) == 0 {
-		return true;
+		return true
 	}
 
 	for field_id, _ := range info.StrInfo {
@@ -303,15 +302,15 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	for _, f := range querySpec.Filters {
 		// make the minima record and the maxima records...
 		switch f.(type) {
-			case IntFilter:
-				if f.Filter(&min_record) != true && f.Filter(&max_record) != true {
-					add = false
-					break
-				}
+		case IntFilter:
+			if f.Filter(&min_record) != true && f.Filter(&max_record) != true {
+				add = false
+				break
+			}
 		}
 	}
 
-	return add;
+	return add
 }
 
 // TODO: have this only pull the blocks into column format and not materialize
