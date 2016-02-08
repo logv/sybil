@@ -13,6 +13,9 @@ var INTERNAL_RESULT_LIMIT = 100000
 var OP_AVG = 1
 var OP_HIST = 2
 
+var GROUP_DELIMITER = ":|:"
+
+
 type SortResultsByCol struct {
 	Results []*Result
 
@@ -83,14 +86,14 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 		// BUILD GROUPING KEY
 		for _, g := range querySpec.Groups {
 			if r.Populated[g.name_id] == 0 {
-				buffer.WriteRune(':')
+				buffer.WriteString(GROUP_DELIMITER)
 				continue
 			}
 			col_id := g.name_id
 			col := r.block.getColumnInfo(col_id)
 			val := col.get_string_for_val(int32(r.Strs[col_id]))
 			buffer.WriteString(string(val))
-			buffer.WriteRune(':')
+			buffer.WriteString(GROUP_DELIMITER)
 		}
 
 		group_key := buffer.String()

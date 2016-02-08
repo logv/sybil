@@ -2,6 +2,7 @@ package pcs
 
 import "log"
 import "sort"
+import "strings"
 import "encoding/json"
 import "strconv"
 import "os"
@@ -31,9 +32,15 @@ func printTimeResults(querySpec *QuerySpec) {
 	log.Println("RESULT COUNT", len(querySpec.TimeResults))
 	if *f_JSON {
 
-		marshalled_results := make(map[string]*ResultMap)
+		marshalled_results := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
-			marshalled_results[strconv.FormatInt(int64(k), 10)] = &v
+			key := strconv.FormatInt(int64(k), 10)
+			marshalled_results[key] = make([]ResultJSON, 0)
+
+			for _, r := range v {
+				marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
+
+			}
 		}
 
 		printJson(marshalled_results)
@@ -46,6 +53,30 @@ func printTimeResults(querySpec *QuerySpec) {
 
 }
 
+func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
+
+	var res = make(ResultJSON)
+	for _, agg := range querySpec.Aggregations {
+		if *f_OP == "hist" {
+			res[agg.name] = r.Hists[agg.name].Avg
+		} 
+
+		if *f_OP == "avg" {
+			res[agg.name] = r.Ints[agg.name]
+		}
+	}
+
+	var group_key = strings.Split(r.GroupByKey, GROUP_DELIMITER)
+	for i, g := range querySpec.Groups {
+		res[g.name] = group_key[i]
+	}
+
+	res["Count"] = r.Count
+
+	return res;
+
+}
+
 func printSortedResults(querySpec *QuerySpec) {
 	sorted := querySpec.Sorted
 	if int(querySpec.Limit) < len(querySpec.Sorted) {
@@ -53,7 +84,15 @@ func printSortedResults(querySpec *QuerySpec) {
 	}
 
 	if *f_JSON {
-		printJson(sorted)
+		var results = make([]ResultJSON, 0)
+
+		for _, r := range sorted {
+			var res = r.toResultJSON(querySpec)
+			results = append(results, res)
+		}
+
+
+		printJson(results)
 		return
 	}
 
@@ -86,6 +125,8 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	}
 }
 
+type ResultJSON map[string]interface{}
+
 func printResults(querySpec *QuerySpec) {
 	if querySpec.TimeBucket > 0 {
 		printTimeResults(querySpec)
@@ -94,7 +135,16 @@ func printResults(querySpec *QuerySpec) {
 	}
 
 	if *f_JSON {
-		printJson(querySpec.Results)
+		// Need to marshall
+		var results = make([]ResultJSON, 0)
+
+		for _, r := range querySpec.Results {
+			var res = r.toResultJSON(querySpec)
+			results = append(results, res)
+		}
+
+
+		printJson(results)
 		return
 	}
 
