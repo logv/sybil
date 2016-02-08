@@ -262,6 +262,58 @@ func (t *Table) LoadTableInfo() {
 	return
 }
 
+
+// optimizing for integer pre-cached info
+func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) bool {
+	if querySpec == nil {
+		return true
+	}
+
+	// find out how many records are kept in this dir...
+	info := SavedColumnInfo{}
+	filename := fmt.Sprintf("%s/info.db", dirname)
+	file, _ := os.Open(filename)
+	dec := gob.NewDecoder(file)
+	dec.Decode(&info)
+
+	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
+	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
+
+	if len(info.IntInfo) == 0 {
+		return true;
+	}
+
+	for field_id, _ := range info.StrInfo {
+		min_record.ResizeFields(field_id)
+		max_record.ResizeFields(field_id)
+	}
+
+	for field_id, field_info := range info.IntInfo {
+		min_record.ResizeFields(field_id)
+		max_record.ResizeFields(field_id)
+
+		min_record.Ints[field_id] = IntField(field_info.Min)
+		max_record.Ints[field_id] = IntField(field_info.Max)
+
+		min_record.Populated[field_id] = INT_VAL
+		max_record.Populated[field_id] = INT_VAL
+	}
+
+	add := true
+	for _, f := range querySpec.Filters {
+		// make the minima record and the maxima records...
+		switch f.(type) {
+			case IntFilter:
+				if f.Filter(&min_record) != true && f.Filter(&max_record) != true {
+					add = false
+					break
+				}
+		}
+	}
+
+	return add;
+}
+
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) TableBlock {
@@ -347,6 +399,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	m := &sync.Mutex{}
 
 	count := 0
+	skipped := 0
 	for f := range files {
 		v := files[len(files)-f-1]
 		if strings.HasSuffix(v.Name(), "info.db") {
@@ -370,7 +423,17 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 			go func() {
 				defer wg.Done()
+
+				// If the block info doesn't fit our filters, we should just ignore this record...
 				start := time.Now()
+
+				should_load := t.ShouldLoadBlockFromDir(filename, querySpec)
+
+				if !should_load {
+					skipped++
+					return
+				}
+
 				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
 
 				fmt.Fprint(os.Stderr, ".")
@@ -420,6 +483,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
+	log.Println("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	if f_LOAD_AND_QUERY != nil && *f_LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
