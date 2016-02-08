@@ -20,6 +20,12 @@ func printJson(data interface{}) {
 
 func printTimeResults(querySpec *QuerySpec) {
 	log.Println("PRINTING TIME RESULTS")
+	log.Println("CHECKING SORT ORDER", len(querySpec.Sorted))
+
+	is_top_result := make(map[string]bool)
+	for _, result := range querySpec.Sorted {
+		is_top_result[result.GroupByKey] = true
+	}
 
 	keys := make([]int, 0)
 
@@ -37,10 +43,13 @@ func printTimeResults(querySpec *QuerySpec) {
 			key := strconv.FormatInt(int64(k), 10)
 			marshalled_results[key] = make([]ResultJSON, 0)
 
-			for _, r := range v {
-				marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
-
+			for _, r := range v {	
+				_, ok := is_top_result[r.GroupByKey]
+				if ok {
+					marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
+				}
 			}
+
 		}
 
 		printJson(marshalled_results)

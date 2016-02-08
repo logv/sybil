@@ -107,11 +107,18 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 
 			big_record, b_ok := querySpec.Results[group_key]
 			if !b_ok {
-				big_record = NewResult()
-				big_record.GroupByKey = group_key
+				if len(querySpec.Results) < INTERNAL_RESULT_LIMIT {
+					big_record = NewResult()
+					big_record.GroupByKey = group_key
+					querySpec.Results[group_key] = big_record
+					b_ok = true
+				}
 			}
 
-			big_record.Count++
+			if b_ok {
+				big_record.Count++
+			}
+
 
 			val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
 			result_map, ok = querySpec.TimeResults[val]
@@ -140,7 +147,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *[]*Record) []*Record 
 			result_map[group_key] = added_record
 		}
 
-	
+
 		added_record.Count++
 		count := float64(added_record.Count)
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
