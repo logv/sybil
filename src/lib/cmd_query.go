@@ -112,6 +112,8 @@ func RunQueryCmdLine() {
 	if *f_SAMPLES {
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
+
+		// TODO: filter these records, too!
 		t.LoadRecords(&loadSpec)
 
 		t.printSamples()
