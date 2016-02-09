@@ -24,6 +24,11 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
 		key_name := fmt.Sprint(prefix, k)
+		_, ok := EXCLUDES[key_name]
+		if ok {
+			continue
+		}
+
 		prefix_name := fmt.Sprint(key_name, "_")
 		switch iv := v.(type) {
 		case string:
@@ -140,6 +145,7 @@ func import_json_records() {
 
 var INT_CAST = make(map[string]bool)
 var STR_CAST = make(map[string]bool)
+var EXCLUDES = make(map[string]bool)
 
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
@@ -148,6 +154,7 @@ func RunIngestCmdLine() {
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_STRS := flag.String("strs", "", "columns to treat as strings (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
+	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 
 	flag.Parse()
 
@@ -168,6 +175,10 @@ func RunIngestCmdLine() {
 	}
 	for _, v := range strings.Split(*f_INTS, ",") {
 		INT_CAST[v] = true
+	}
+	for _, v := range strings.Split(*f_EXCLUDES, ",") {
+		log.Println("EXCLUDING COLUMN", v)
+		EXCLUDES[v] = true
 	}
 
 	t := GetTable(*f_TABLE)

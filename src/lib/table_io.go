@@ -479,7 +479,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if block_count % (runtime.NumCPU() * 4) == 0 {
+			if querySpec != nil && block_count%(runtime.NumCPU()*4) == 0 {
 				start := time.Now()
 				old_percent := debug.SetGCPercent(100)
 				debug.FreeOSMemory()
@@ -495,7 +495,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 	fmt.Fprint(os.Stderr, "\n")
-	log.Println("BLOCK GC TOOK", block_gc_time)
+	if block_gc_time > 0 {
+		log.Println("BLOCK GC TOOK", block_gc_time)
+	}
+
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
