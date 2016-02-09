@@ -266,11 +266,11 @@ func printTables() {
 
 }
 
-func (t *Table) getColsOfType(wanted_type int) []string {
+func (t *Table) getColsOfType(wanted_type int8) []string {
 	print_keys := make([]string, 0)
 	for name, name_id := range t.KeyTable {
 		col_type := t.KeyTypes[name_id]
-		if col_type != wanted_type {
+		if int8(col_type) != wanted_type {
 			continue
 		}
 
@@ -281,7 +281,7 @@ func (t *Table) getColsOfType(wanted_type int) []string {
 
 	return print_keys
 }
-func (t *Table) printColsOfType(wanted_type int) {
+func (t *Table) printColsOfType(wanted_type int8) {
 	for _, v := range t.getColsOfType(wanted_type) {
 		fmt.Println(" ", v)
 	}

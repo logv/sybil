@@ -12,6 +12,8 @@ import "sync"
 import "sort"
 import "path"
 import "strconv"
+import "runtime"
+import "runtime/debug"
 
 var DEBUG_TIMING = false
 
@@ -36,7 +38,7 @@ func (t *Table) NewLoadSpec() LoadSpec {
 	return l
 }
 
-func (l *LoadSpec) assert_col_type(name string, col_type int) {
+func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 	if l.table == nil {
 		return
 	}
@@ -375,6 +377,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 // a bunch of new memory becomes available
 func (t *Table) ReleaseRecords() {
 	t.BlockList = make(map[string]*TableBlock, 0)
+	debug.FreeOSMemory()
 }
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
@@ -399,6 +402,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	count := 0
 	skipped := 0
+	block_count := 0
+	block_gc_time := time.Now().Sub(time.Now())
 	for f := range files {
 		v := files[len(files)-f-1]
 		if strings.HasSuffix(v.Name(), "info.db") {
@@ -447,6 +452,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 
 				if len(block.RecordList) > 0 {
+					block_count++
 					m.Lock()
 					count += len(block.RecordList)
 					m.Unlock()
@@ -472,13 +478,24 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					break
 				}
 			}
+
+			if block_count % (runtime.NumCPU() * 4) == 0 {
+				start := time.Now()
+				old_percent := debug.SetGCPercent(100)
+				debug.FreeOSMemory()
+				end := time.Now()
+				wg.Wait()
+				end = time.Now()
+				block_gc_time += end.Sub(start)
+				debug.SetGCPercent(old_percent)
+			}
 		}
 
 	}
 
 	wg.Wait()
-
 	fmt.Fprint(os.Stderr, "\n")
+	log.Println("BLOCK GC TOOK", block_gc_time)
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 

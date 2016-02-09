@@ -422,7 +422,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
+func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
 	t := tb.table
 
 	var r *Record
@@ -431,7 +431,7 @@ func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo,
 	var alloced []Record
 	var bigIntArr IntArr
 	var bigStrArr StrArr
-	var bigPopArr []int
+	var bigPopArr []int8
 	max_key_id := 0
 	for _, v := range t.KeyTable {
 		if max_key_id <= int(v) {
@@ -439,13 +439,13 @@ func (tb *TableBlock) allocateRecords(load_spec *LoadSpec, info SavedColumnInfo,
 		}
 	}
 
-	if load_spec != nil || load_records {
+	if loadSpec != nil || load_records {
 		mstart := time.Now()
 		records = make(RecordList, info.NumRecords)
 		alloced = make([]Record, info.NumRecords)
 		bigIntArr = make(IntArr, max_key_id*int(info.NumRecords))
 		bigStrArr = make(StrArr, max_key_id*int(info.NumRecords))
-		bigPopArr = make([]int, max_key_id*int(info.NumRecords))
+		bigPopArr = make([]int8, max_key_id*int(info.NumRecords))
 		mend := time.Now()
 
 		if DEBUG_TIMING {

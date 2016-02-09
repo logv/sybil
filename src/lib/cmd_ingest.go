@@ -24,7 +24,7 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
 		key_name := fmt.Sprint(prefix, k)
-		prefix_name := fmt.Sprint(key_name, ".")
+		prefix_name := fmt.Sprint(key_name, "_")
 		switch iv := v.(type) {
 		case string:
 			if INT_CAST[key_name] == true {
@@ -64,7 +64,7 @@ func chunk_and_save() {
 		if err == nil {
 			t.SaveRecordsToBlock(t.newRecords, name)
 			t.SaveTableInfo("info")
-			t.newRecords = t.newRecords[:0]
+			t.newRecords = make(RecordList, 0)
 			t.ReleaseRecords()
 		} else {
 			log.Fatal("ERROR SAVING BLOCK", err)

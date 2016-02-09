@@ -8,6 +8,7 @@ import "log"
 import "flag"
 
 var f_PROFILE = flag.Bool("profile", false, "turn profiling on?")
+var f_PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 
 var PROFILER_ENABLED = true
 var PROFILE ProfilerStart
@@ -16,7 +17,11 @@ type PkgProfile struct {
 }
 
 func (p PkgProfile) Start() ProfilerStart {
-	PROFILE = profile.Start(profile.CPUProfile, profile.ProfilePath("."))
+	if *f_PROFILE_MEM {
+		PROFILE = profile.Start(profile.MemProfile, profile.ProfilePath("."))
+	} else {
+		PROFILE = profile.Start(profile.CPUProfile, profile.ProfilePath("."))
+	}
 	return PROFILE
 }
 func (p PkgProfile) Stop() {

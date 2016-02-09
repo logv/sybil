@@ -8,7 +8,8 @@ type Table struct {
 	Name      string
 	BlockList map[string]*TableBlock
 	KeyTable  map[string]int16 // String Key Names
-	KeyTypes  map[int16]int
+	KeyTypes  map[int16]int8
+
 
 	// Need to keep track of the last block we've used, right?
 	LastBlockId int
@@ -48,7 +49,8 @@ func GetTable(name string) *Table {
 	t.val_string_id_lookup = make(map[int32]string)
 
 	t.KeyTable = make(map[string]int16)
-	t.KeyTypes = make(map[int16]int)
+	t.KeyTypes = make(map[int16]int8)
+
 	t.BlockList = make(map[string]*TableBlock, 0)
 	t.StrInfo = make(StrInfoTable)
 	t.IntInfo = make(IntInfoTable)
@@ -110,7 +112,7 @@ func (t *Table) get_key_id(name string) int16 {
 	return int16(t.KeyTable[name])
 }
 
-func (t *Table) set_key_type(name_id int16, col_type int) {
+func (t *Table) set_key_type(name_id int16, col_type int8) {
 	cur_type, ok := t.KeyTypes[name_id]
 	if !ok {
 		t.KeyTypes[name_id] = col_type

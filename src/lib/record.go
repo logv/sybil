@@ -4,14 +4,14 @@ type Record struct {
 	Ints      []IntField
 	Strs      []StrField
 	Sets      []SetField
-	Populated []int
+	Populated []int8
 
 	block *TableBlock
 }
 
-var INT_VAL = 1
-var STR_VAL = 2
-var SET_VAL = 3
+var INT_VAL = int8(1)
+var STR_VAL = int8(2)
+var SET_VAL = int8(3)
 
 func (r *Record) getStrVal(name string) (int, bool) {
 	id := r.block.get_key_id(name)
@@ -50,20 +50,22 @@ func (r *Record) ResizeFields(length int16) {
 		length = 5
 	}
 
+	length++
+
 	if int(length) >= len(r.Strs) {
-		delta_records := make([]StrField, int(float64(length)*1.5))
+		delta_records := make([]StrField, int(float64(length)))
 
 		r.Strs = append(r.Strs, delta_records...)
 	}
 
 	if int(length) >= len(r.Populated) {
-		delta_records := make([]int, int(float64(length)*1.5))
+		delta_records := make([]int8, int(float64(length)))
 
 		r.Populated = append(r.Populated, delta_records...)
 	}
 
 	if int(length) >= len(r.Ints) {
-		delta_records := make([]IntField, int(float64(length)*1.5))
+		delta_records := make([]IntField, int(float64(length)))
 
 		r.Ints = append(r.Ints, delta_records...)
 	}
