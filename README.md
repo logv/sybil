@@ -25,10 +25,10 @@ aggregation operations of many records at a time.
 GOALS / DECISIONS
 -----------------
 
-Fast to read, Slow to write
-Everyone loves Percentiles
-Max out all the CPUs
-Full table scans aren't a bad thing
+* Fast to read, Slow to write
+* Everyone loves Percentiles
+* Max out all the CPUs
+* Full table scans aren't a bad thing
 
 
 SUPPORTED
