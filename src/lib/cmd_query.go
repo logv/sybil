@@ -164,6 +164,16 @@ func RunQueryCmdLine() {
 		op := tokens[1]
 		val, _ := strconv.ParseInt(tokens[2], 10, 64)
 
+		if col == *f_TIME_COL {
+			bucket := int64(*f_TIME_BUCKET)
+			new_val := int64(val/bucket) * bucket
+
+			if val != new_val {
+				log.Println("ALIGNING TIME FILTER TO BUCKET", val, new_val)
+				val = new_val
+			}
+		}
+
 		filters = append(filters, t.IntFilter(col, op, int(val)))
 		loadSpec.Int(col)
 	}
