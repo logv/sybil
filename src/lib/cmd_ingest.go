@@ -177,8 +177,11 @@ func RunIngestCmdLine() {
 		INT_CAST[v] = true
 	}
 	for _, v := range strings.Split(*f_EXCLUDES, ",") {
-		log.Println("EXCLUDING COLUMN", v)
 		EXCLUDES[v] = true
+	}
+
+	for _, v := range EXCLUDES {
+		log.Println("EXCLUDING COLUMN", v)
 	}
 
 	t := GetTable(*f_TABLE)

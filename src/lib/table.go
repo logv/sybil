@@ -10,7 +10,6 @@ type Table struct {
 	KeyTable  map[string]int16 // String Key Names
 	KeyTypes  map[int16]int8
 
-
 	// Need to keep track of the last block we've used, right?
 	LastBlockId int
 	LastBlock   TableBlock

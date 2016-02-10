@@ -182,6 +182,10 @@ func (qs *QuerySpec) printResults() {
 type Sample map[string]interface{}
 
 func (r *Record) toSample() *Sample {
+	if r == nil {
+		return nil
+	}
+
 	sample := Sample{}
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
@@ -205,6 +209,11 @@ func (t *Table) printSamples() {
 	records := make(RecordList, *f_LIMIT)
 	for _, b := range t.BlockList {
 		for _, r := range b.RecordList {
+			if r == nil {
+				records = records[:count]
+				break
+			}
+
 			if count >= *f_LIMIT {
 				break
 			}
@@ -221,6 +230,10 @@ func (t *Table) printSamples() {
 	if *f_JSON {
 		samples := make([]*Sample, 0)
 		for _, r := range records {
+			if r == nil {
+				break
+			}
+
 			s := r.toSample()
 			samples = append(samples, s)
 		}
@@ -228,6 +241,10 @@ func (t *Table) printSamples() {
 		printJson(samples)
 	} else {
 		for _, r := range records {
+			if r == nil {
+				break
+			}
+
 			t.PrintRecord(r)
 		}
 	}
