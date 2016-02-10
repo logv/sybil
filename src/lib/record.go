@@ -84,7 +84,7 @@ func (r *Record) AddStrField(name string, val string) {
 	r.block.table.set_key_type(name_id, STR_VAL)
 }
 
-func (r *Record) AddIntField(name string, val int) {
+func (r *Record) AddIntField(name string, val int64) {
 	name_id := r.block.get_key_id(name)
 	r.block.table.update_int_info(name_id, val)
 

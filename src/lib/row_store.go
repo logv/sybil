@@ -10,7 +10,7 @@ import "os"
 
 type RowSavedInt struct {
 	Name  int16
-	Value int
+	Value int64
 }
 
 type RowSavedStr struct {
@@ -63,7 +63,7 @@ func (r Record) toSavedRecord() *SavedRecord {
 	s := SavedRecord{}
 	for k, v := range r.Ints {
 		if r.Populated[k] == INT_VAL {
-			s.Ints = append(s.Ints, RowSavedInt{int16(k), int(v)})
+			s.Ints = append(s.Ints, RowSavedInt{int16(k), int64(v)})
 		}
 	}
 

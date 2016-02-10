@@ -9,7 +9,7 @@ import "strings"
 import "sort"
 import "time"
 
-type ValueMap map[int32][]uint32
+type ValueMap map[int64][]uint32
 type SetMap map[int32][]int32
 
 func delta_encode_col(col ValueMap) {
@@ -33,14 +33,14 @@ func delta_encode(same_map map[int16]ValueMap) {
 
 // this is used to record the buckets when building the column
 // blobs
-func record_value(same_map map[int16]ValueMap, index int32, name int16, value int32) {
+func record_value(same_map map[int16]ValueMap, index int32, name int16, value int64) {
 	s, ok := same_map[name]
 	if !ok {
 		same_map[name] = ValueMap{}
 		s = same_map[name]
 	}
 
-	vi := int32(value)
+	vi := value
 
 	s[vi] = append(s[vi], uint32(index))
 }
@@ -72,7 +72,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 
 		count := 0
-		record_to_value := make(map[uint32]int32)
+		record_to_value := make(map[uint32]int64)
 		for bucket, records := range v {
 			si := SavedIntBucket{Value: bucket, Records: records}
 			intCol.Bins = append(intCol.Bins, si)
@@ -82,7 +82,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			}
 
 			// bookkeeping for info.db
-			tb.update_int_info(k, int(bucket))
+			tb.update_int_info(k, bucket)
 		}
 
 		intCol.BucketEncoded = true
@@ -90,7 +90,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		if len(intCol.Bins) > CHUNK_SIZE/10 {
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
-			intCol.Values = make([]int32, count)
+			intCol.Values = make([]int64, count)
 			for r, v := range record_to_value {
 				intCol.Values[r] = v
 			}
@@ -147,7 +147,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		for bucket, records := range v {
 
 			// migrating string definitions from column definitions
-			str_id := temp_col.get_val_id(tb_col.get_string_for_val(bucket))
+			str_id := temp_col.get_val_id(tb_col.get_string_for_val(int32(bucket)))
 
 			si := SavedStrBucket{Value: str_id, Records: records}
 			strCol.Bins = append(strCol.Bins, si)
@@ -246,7 +246,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 	for i, r := range records {
 		for k, v := range r.Ints {
 			if r.Populated[k] == INT_VAL {
-				record_value(same_ints, int32(i), int16(k), int32(v))
+				record_value(same_ints, int32(i), int16(k), int64(v))
 			}
 		}
 		for k, v := range r.Strs {
@@ -259,7 +259,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 			// record the transitioned key
 			if r.Populated[k] == STR_VAL {
-				record_value(same_strs, int32(i), int16(k), int32(v_id))
+				record_value(same_strs, int32(i), int16(k), int64(v_id))
 			}
 		}
 		for k, v := range r.Sets {
@@ -392,9 +392,8 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-
 			if *f_UPDATE_TABLE_INFO {
-				tb.table.update_int_info(into.NameId, int(bucket.Value))
+				tb.table.update_int_info(into.NameId, bucket.Value)
 			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -413,7 +412,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	} else {
 		for r, v := range into.Values {
 			if *f_UPDATE_TABLE_INFO {
-				tb.table.update_int_info(into.NameId, int(v))
+				tb.table.update_int_info(into.NameId, v)
 			}
 
 			records[r].Ints[into.NameId] = IntField(v)

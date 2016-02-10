@@ -35,7 +35,7 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			if INT_CAST[key_name] == true {
 				val, err := strconv.ParseInt(iv, 10, 64)
 				if err != nil {
-					r.AddIntField(key_name, int(val))
+					r.AddIntField(key_name, int64(val))
 				}
 			} else {
 				r.AddStrField(key_name, iv)
@@ -45,7 +45,7 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			if STR_CAST[key_name] == true {
 				r.AddStrField(key_name, fmt.Sprint(iv))
 			} else {
-				r.AddIntField(key_name, int(iv))
+				r.AddIntField(key_name, int64(iv))
 			}
 		case map[string]interface{}:
 			d := Dictionary(iv)
@@ -102,9 +102,9 @@ func import_csv_records() {
 				continue
 			}
 
-			val, err := strconv.ParseFloat(v, 32)
+			val, err := strconv.ParseFloat(v, 64)
 			if err == nil {
-				r.AddIntField(field_name, int(val))
+				r.AddIntField(field_name, int64(val))
 			} else {
 				r.AddStrField(field_name, v)
 			}

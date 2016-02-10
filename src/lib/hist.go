@@ -36,14 +36,14 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 	h.underliers = make([]int, 0)
 
 	size := info.Max - info.Min
-	h.bucket_size = size / buckets
+	h.bucket_size = int(size / int64(buckets))
 	if h.bucket_size == 0 {
 		if size < 100 {
 			h.bucket_size = 1
-			h.num_buckets = size
+			h.num_buckets = int(size)
 		} else {
-			h.bucket_size = size / 100
-			h.num_buckets = size / h.bucket_size
+			h.bucket_size = int(size / int64(100))
+			h.num_buckets = int(size / int64(h.bucket_size))
 		}
 	}
 

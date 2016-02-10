@@ -20,7 +20,7 @@ func TestTableCreate(test *testing.T) {
 	r := t.NewRecord()
 
 	r.AddIntField("age", 10)
-	r.AddIntField("time", int(time.Now().Unix()))
+	r.AddIntField("time", int64(time.Now().Unix()))
 	r.AddStrField("name", "user1")
 
 	t.SaveTableInfo("info")

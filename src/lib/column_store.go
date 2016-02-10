@@ -26,7 +26,7 @@ func (a SortRecordsByTime) Less(i, j int) bool {
 }
 
 type SavedIntBucket struct {
-	Value   int32
+	Value   int64
 	Records []uint32
 }
 
@@ -52,7 +52,7 @@ type SavedIntColumn struct {
 	DeltaEncodedIDs bool
 	BucketEncoded   bool
 	Bins            []SavedIntBucket
-	Values          []int32
+	Values          []int64
 }
 type SavedStrColumn struct {
 	Name            string

@@ -15,8 +15,8 @@ type StrInfo struct {
 }
 
 type IntInfo struct {
-	Min   int
-	Max   int
+	Min   int64
+	Max   int64
 	Avg   float64
 	Count int
 }
@@ -69,7 +69,7 @@ func update_str_info(str_info_table map[int16]*StrInfo, name int16, val, increme
 	info.TopStringCount[int32(val)] += increment
 }
 
-func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int) {
+func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 	info, ok := int_info_table[name]
 	if !ok {
 		info = &IntInfo{}
@@ -93,7 +93,7 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int) {
 	info.Count++
 }
 
-func (t *Table) update_int_info(name int16, val int) {
+func (t *Table) update_int_info(name int16, val int64) {
 	update_int_info(t.IntInfo, name, val)
 }
 
@@ -107,7 +107,7 @@ func (tb *TableBlock) update_str_info(name int16, val int, increment int) {
 	update_str_info(str_info_table, name, val, increment)
 }
 
-func (tb *TableBlock) update_int_info(name int16, val int) {
+func (tb *TableBlock) update_int_info(name int16, val int64) {
 	int_info_table, ok := INT_INFO_BLOCK[tb.Name]
 	if !ok {
 		int_info_table = make(map[int16]*IntInfo)

@@ -24,8 +24,8 @@ func TestTableLoadRecords(test *testing.T) {
 
 	for i := 0; i < COUNT; i++ {
 		r := t.NewRecord()
-		r.AddIntField("id", i)
-		age := int(rand.Intn(20)) + 10
+		r.AddIntField("id", int64(i))
+		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}
@@ -73,10 +73,11 @@ func TestTableLoadRecords(test *testing.T) {
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, ":", "", 1)
-		val, err := strconv.ParseInt(k, 10, 32)
+		k = strings.Replace(k, pcs.GROUP_DELIMITER, "", 1)
+
+		val, err := strconv.ParseInt(k, 10, 64)
 		if err != nil || math.Abs(float64(val)-float64(v.Ints["age"])) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", val, v.Ints["age"])
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Ints["age"])
 		}
 	}
 
