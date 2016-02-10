@@ -305,6 +305,18 @@ func (t *Table) printColsOfType(wanted_type int8) {
 }
 
 func (t *Table) PrintColInfo() {
+	// count: 3253,
+	// size: 908848,
+	// avgObjSize: 279.3876421764525,
+	// storageSize: 1740800,
+
+	count := 0
+	size := int64(0)
+	for _, block := range t.BlockList {
+		count += int(block.Info.NumRecords)
+		size += block.Size
+	}
+
 	if *f_JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
@@ -313,6 +325,11 @@ func (t *Table) PrintColInfo() {
 		table_cols["strs"] = t.getColsOfType(STR_VAL)
 		table_info["columns"] = table_cols
 
+		table_info["count"] = count
+		table_info["size"] = size
+		table_info["avgObjSize"] = float64(size) / float64(count)
+		table_info["storageSize"] = size
+
 		printJson(table_info)
 	} else {
 		fmt.Println("\nString Columns\n")
@@ -320,6 +337,11 @@ func (t *Table) PrintColInfo() {
 		fmt.Println("\nInteger Columns\n")
 		t.printColsOfType(INT_VAL)
 		fmt.Println("")
+		fmt.Println("Stats")
+		fmt.Println("  count", count)
+		fmt.Println("  size", size)
+		fmt.Println("  storageSize", size)
+		fmt.Println("  avgObjSize", float64(size)/float64(count))
 	}
 
 }

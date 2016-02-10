@@ -346,8 +346,12 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	file, _ = os.Open(dirname)
 	files, _ := file.Readdir(-1)
 
+	size := int64(0)
+
 	for _, f := range files {
 		fname := f.Name()
+		fsize := f.Size()
+		size += fsize
 
 		if loadSpec != nil {
 			if loadSpec.columns[fname] != true && load_records == false {
@@ -369,6 +373,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 			tb.unpackIntCol(dec, info)
 		}
 	}
+
+	tb.Size = size
 
 	return tb
 }
