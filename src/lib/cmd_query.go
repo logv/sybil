@@ -181,7 +181,14 @@ func RunQueryCmdLine() {
 	querySpec.Punctuate()
 
 	for _, v := range groups {
-		loadSpec.Str(v)
+		col_id := t.get_key_id(v)
+		switch t.KeyTypes[col_id] {
+		case STR_VAL:
+			loadSpec.Str(v)
+		case INT_VAL:
+			loadSpec.Int(v)
+		}
+
 	}
 	for _, v := range strs {
 		loadSpec.Str(v)

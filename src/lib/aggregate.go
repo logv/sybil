@@ -7,6 +7,7 @@ import "time"
 import "sync"
 import "sort"
 import "os"
+import "strconv"
 
 var INTERNAL_RESULT_LIMIT = 100000
 
@@ -84,14 +85,17 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 
 		// BUILD GROUPING KEY
 		for _, g := range querySpec.Groups {
-			if r.Populated[g.name_id] == 0 {
-				buffer.WriteString(GROUP_DELIMITER)
-				continue
+			switch r.Populated[g.name_id] {
+			case INT_VAL:
+				val := strconv.FormatInt(int64(r.Ints[g.name_id]), 10)
+				buffer.WriteString(val)
+
+			case STR_VAL:
+				col_id := g.name_id
+				col := r.block.getColumnInfo(col_id)
+				val := col.get_string_for_val(int32(r.Strs[col_id]))
+				buffer.WriteString(string(val))
 			}
-			col_id := g.name_id
-			col := r.block.getColumnInfo(col_id)
-			val := col.get_string_for_val(int32(r.Strs[col_id]))
-			buffer.WriteString(string(val))
 			buffer.WriteString(GROUP_DELIMITER)
 		}
 
