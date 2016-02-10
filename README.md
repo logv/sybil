@@ -86,6 +86,8 @@ RUNNING
     ./bin/query -table people -int age -group state -print -limit 10 -sort age
 
     # use the writer to load a single JSON record into the ingestion log
+    # use -ints to cast strings (in JSON records) as int columns
+    # use -exclude to exclude columns from being ingested
     ./bin/ingest -table test1 < example/single_record.json
 
     # turn it into the column store format

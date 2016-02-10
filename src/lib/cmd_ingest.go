@@ -42,11 +42,7 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 
 			}
 		case float64:
-			if STR_CAST[key_name] == true {
-				r.AddStrField(key_name, fmt.Sprint(iv))
-			} else {
-				r.AddIntField(key_name, int64(iv))
-			}
+			r.AddIntField(key_name, int64(iv))
 		case map[string]interface{}:
 			d := Dictionary(iv)
 			ingest_dictionary(r, &d, prefix_name)
@@ -144,7 +140,6 @@ func import_json_records() {
 }
 
 var INT_CAST = make(map[string]bool)
-var STR_CAST = make(map[string]bool)
 var EXCLUDES = make(map[string]bool)
 
 // appends records to our record input queue
@@ -152,7 +147,6 @@ var EXCLUDES = make(map[string]bool)
 func RunIngestCmdLine() {
 	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
-	f_STRS := flag.String("strs", "", "columns to treat as strings (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 
@@ -170,9 +164,6 @@ func RunIngestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	for _, v := range strings.Split(*f_STRS, ",") {
-		STR_CAST[v] = true
-	}
 	for _, v := range strings.Split(*f_INTS, ",") {
 		INT_CAST[v] = true
 	}
