@@ -22,6 +22,7 @@ var f_ADD_RECORDS *int
 var TIMESERIES = false
 var f_TIME *bool = &TIMESERIES
 var f_TIME_COL *string
+var f_TIME_BUCKET *int
 
 var f_PRINT_KEYS *bool = &TIMESERIES
 var f_LOAD_AND_QUERY *bool = &FALSE

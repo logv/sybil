@@ -33,6 +33,8 @@ func addFlags() {
 
 	f_TIME = flag.Bool("time", false, "do a time rollup!")
 	f_TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	f_TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
+
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	f_PRINT = flag.Bool("print", false, "Print some records")
 	f_SAMPLES = flag.Bool("samples", false, "Grab samples")
@@ -208,7 +210,8 @@ func RunQueryCmdLine() {
 
 	if *f_TIME {
 		// TODO: infer the TimeBucket size
-		querySpec.TimeBucket = 60 * 60 * 24
+		querySpec.TimeBucket = *f_TIME_BUCKET
+		log.Println("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*f_TIME_COL)
 	}
 
