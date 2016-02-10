@@ -1,20 +1,7 @@
-
-
 PCS is a write once analytics backend designed for fast ad-hoc analysis of
-heterogenous data. (it is multi-threaded! but not multi-machine)
+heterogenous data.
 
-
-DESIGN
-------
-
-PCS consists of three main parts:
-
-* the ingestion binary (writes blocks in row form)
-* the digestion binary (writes blocks in column form from row form)
-* and the query binary (reads blocks in column form)
-
-
-WHAT PCS DOES
+what pcs does
 -------------
 
 PCS ingests records containing strings and integers and save large blocks of
@@ -22,53 +9,9 @@ these records (65Kish) into column based files - 1 file per column per block.
 This allows for partial loading and analysis of data off disk, as well as fast
 aggregation operations of many records at a time.
 
-GOALS / DECISIONS
------------------
+more info on column stores: http://db.csail.mit.edu/pubs/abadi-column-stores.pdf
 
-* Fast to read, Slow to write
-* Everyone loves Percentiles
-* Max out all the CPUs
-* Full table scans aren't a bad thing
-
-
-SUPPORTED
----------
-
-* GROUP BY
-* GROUP BY TIME
-* PERCENTILES
-* AVG / MIN / MAX
-* INSERT
-* INT FILTERS
-* STR FILTERS
-
-
-TO BE IMPLEMENTED
------------------
-
-* Array / Set fields
-* AdHoc Column definitions
-* Sessionization: (using a single join key) 
-  * aggregation
-  * filtering using event ordering
-
- 
-UNSUPPORTED
------------
-
-* UPDATE
-* JOIN
-* DELETE
-* SQL Queries
-* ACID
-
-
-WISHLIST / TBD
---------------
-
-*  MapReduce execution model
-
-RUNNING
+running
 -------
 
     make
@@ -94,7 +37,7 @@ RUNNING
     ./bin/digest -table test1
 
 
-PROFILING
+profiling
 ---------
 
     make profile
