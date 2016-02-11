@@ -12,4 +12,5 @@ func unload_test_table() {
 
 func delete_test_db() {
 	os.RemoveAll(fmt.Sprintf("db/%s", TEST_TABLE_NAME))
+	delete(pcs.LOADED_TABLES, TEST_TABLE_NAME)
 }
