@@ -323,6 +323,7 @@ func (t *Table) PrintColInfo() {
 
 		table_cols["ints"] = t.getColsOfType(INT_VAL)
 		table_cols["strs"] = t.getColsOfType(STR_VAL)
+		table_cols["sets"] = t.getColsOfType(SET_VAL)
 		table_info["columns"] = table_cols
 
 		table_info["count"] = count
@@ -339,6 +340,8 @@ func (t *Table) PrintColInfo() {
 		t.printColsOfType(STR_VAL)
 		fmt.Println("\nInteger Columns\n")
 		t.printColsOfType(INT_VAL)
+		fmt.Println("\nSet Columns\n")
+		t.printColsOfType(SET_VAL)
 		fmt.Println("")
 		fmt.Println("Stats")
 		fmt.Println("  count", count)

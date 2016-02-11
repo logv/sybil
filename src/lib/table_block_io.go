@@ -339,7 +339,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 				record_value(same_strs, int32(i), int16(k), int64(v_id))
 			}
 		}
-		for k, v := range r.Sets {
+		for k, v := range r.SetMap {
 			col := r.block.getColumnInfo(int16(k))
 			new_col := tb.getColumnInfo(int16(k))
 			if r.Populated[k] == SET_VAL {
@@ -491,13 +491,13 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				cur_set, ok := records[r].Sets[into.NameId]
+				cur_set, ok := records[r].SetMap[into.NameId]
 				if !ok {
 					cur_set = make(SetField, 0)
 				}
 
 				cur_set = append(cur_set, bucket.Value)
-				records[r].Sets[into.NameId] = cur_set
+				records[r].SetMap[into.NameId] = cur_set
 
 				records[r].Populated[into.NameId] = SET_VAL
 				prev = r
@@ -507,13 +507,13 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 	} else {
 		log.Println("Uh-Oh, Trying to unencode Set column that's not bucket encoded")
 		for r, v := range into.Values {
-			cur_set, ok := records[r].Sets[into.NameId]
+			cur_set, ok := records[r].SetMap[into.NameId]
 			if !ok {
 				cur_set = make(SetField, 0)
-				records[r].Sets[into.NameId] = cur_set
+				records[r].SetMap[into.NameId] = cur_set
 			}
 
-			records[r].Sets[into.NameId] = SetField(v)
+			records[r].SetMap[into.NameId] = SetField(v)
 			records[r].Populated[into.NameId] = SET_VAL
 		}
 	}
@@ -638,7 +638,7 @@ func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, 
 
 			// TODO: move this allocation next to the allocations above
 			if has_sets {
-				r.Sets = make(SetArr)
+				r.SetMap = make(SetMap)
 			}
 
 			r.Populated = bigPopArr[i*max_key_id : (i+1)*max_key_id]

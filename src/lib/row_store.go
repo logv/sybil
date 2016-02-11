@@ -33,7 +33,7 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
-	r.Sets = SetArr{}
+	r.SetMap = SetMap{}
 
 	b := t.LastBlock
 	b.table = t
@@ -77,7 +77,7 @@ func (r Record) toSavedRecord() *SavedRecord {
 		}
 	}
 
-	for k, v := range r.Sets {
+	for k, v := range r.SetMap {
 		if r.Populated[k] == SET_VAL {
 			col := r.block.getColumnInfo(int16(k))
 			set_vals := make([]string, len(v))
