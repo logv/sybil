@@ -19,12 +19,14 @@ var DEBUG_TIMING = false
 
 type LoadSpec struct {
 	columns        map[string]bool
+	files          map[string]bool
 	LoadAllColumns bool
 	table          *Table
 }
 
 func NewLoadSpec() LoadSpec {
 	l := LoadSpec{}
+	l.files = make(map[string]bool)
 	l.columns = make(map[string]bool)
 
 	return l
@@ -34,6 +36,7 @@ func (t *Table) NewLoadSpec() LoadSpec {
 	l := LoadSpec{}
 	l.table = t
 	l.columns = make(map[string]bool)
+	l.files = make(map[string]bool)
 
 	return l
 }
@@ -65,15 +68,18 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 
 func (l *LoadSpec) Str(name string) {
 	l.assert_col_type(name, STR_VAL)
-	l.columns["str_"+name+".db"] = true
+	l.columns[name] = true
+	l.files["str_"+name+".db"] = true
 }
 func (l *LoadSpec) Int(name string) {
 	l.assert_col_type(name, INT_VAL)
-	l.columns["int_"+name+".db"] = true
+	l.columns[name] = true
+	l.files["int_"+name+".db"] = true
 }
 func (l *LoadSpec) Set(name string) {
 	l.assert_col_type(name, SET_VAL)
-	l.columns["set_"+name+".db"] = true
+	l.columns[name] = true
+	l.files["set_"+name+".db"] = true
 }
 
 // Helpers for block directory structure
@@ -354,7 +360,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		size += fsize
 
 		if loadSpec != nil {
-			if loadSpec.columns[fname] != true && load_records == false {
+			if loadSpec.files[fname] != true && load_records == false {
 				continue
 			}
 		} else if load_records == false {
@@ -368,7 +374,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		switch {
 		case strings.HasPrefix(fname, "str"):
 			tb.unpackStrCol(dec, info)
-
+		case strings.HasPrefix(fname, "set"):
+			tb.unpackSetCol(dec, info)
 		case strings.HasPrefix(fname, "int"):
 			tb.unpackIntCol(dec, info)
 		}

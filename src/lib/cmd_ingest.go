@@ -43,11 +43,27 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			}
 		case float64:
 			r.AddIntField(key_name, int64(iv))
+		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
 			ingest_dictionary(r, &d, prefix_name)
-		case Dictionary:
-			ingest_dictionary(r, &iv, prefix_name)
+		// This is a set field
+		case []interface{}:
+			key_strs := make([]string, 0)
+			for _, v := range iv {
+				switch av := v.(type) {
+				case string:
+					key_strs = append(key_strs, av)
+				case float64:
+					key_strs = append(key_strs, fmt.Sprintf("%.0f", av))
+				case int64:
+					key_strs = append(key_strs, strconv.FormatInt(av, 64))
+				}
+			}
+
+			r.AddSetField(key_name, key_strs)
+		default:
+			log.Println("TYPE IS UNKNOWN FOR FIELD", key_name)
 		}
 	}
 }

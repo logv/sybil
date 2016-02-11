@@ -11,15 +11,35 @@ if len(sys.argv) > 1:
     NUM_RECORDS = int(sys.argv[1])
 
 
+IDX=0
 def rand_record():
     record = { }
+
+    global IDX
 
     record["status"] = str(random.choice(STATII))
     record["host"] = random.choice(HOSTS)
     record["ping"] = abs(random.gauss(60, 20))
     time_allowance = 60 * 60 * 24 * 7 * 4 # 1 month?
     record["time"] = int(time.time()) + random.randint(-time_allowance, time_allowance)
+    record["index"] = [ IDX ]
+    record["index_id"] = IDX
+    record["groups"] = []
 
+    if IDX % 2 == 0:
+        record["groups"].append("mod2")
+
+    if IDX % 3 == 0:
+        record["groups"].append("mod3")
+
+    if IDX % 5 == 0:
+        record["groups"].append("mod5")
+
+    if len(record["groups"]) == 0:
+        record["groups"].append("none")
+
+
+    IDX += 1
     return record
 
 def generate_records(n):

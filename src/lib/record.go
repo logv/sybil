@@ -1,9 +1,9 @@
 package pcs
 
 type Record struct {
-	Ints      []IntField
-	Strs      []StrField
-	Sets      []SetField
+	Strs      StrArr
+	Ints      IntArr
+	Sets      SetArr
 	Populated []int8
 
 	block *TableBlock
@@ -69,6 +69,7 @@ func (r *Record) ResizeFields(length int16) {
 
 		r.Ints = append(r.Ints, delta_records...)
 	}
+
 }
 
 func (r *Record) AddStrField(name string, val string) {
@@ -103,5 +104,11 @@ func (r *Record) AddSetField(name string, val []string) {
 	}
 
 	r.ResizeFields(name_id)
+	if r.Sets == nil {
+		r.Sets = make(SetArr)
+	}
+
 	r.Sets[name_id] = SetField(vals)
+	r.Populated[name_id] = SET_VAL
+	r.block.table.set_key_type(name_id, SET_VAL)
 }

@@ -31,7 +31,7 @@ type SavedIntBucket struct {
 }
 
 type SavedSetBucket struct {
-	Values  []int32
+	Value   int32
 	Records []uint32
 }
 
@@ -54,6 +54,7 @@ type SavedIntColumn struct {
 	Bins            []SavedIntBucket
 	Values          []int64
 }
+
 type SavedStrColumn struct {
 	Name            string
 	NameId          int16
@@ -63,8 +64,13 @@ type SavedStrColumn struct {
 	Values          []int32
 	StringTable     []string
 }
+
 type SavedSetColumn struct {
-	Name   string
-	NameId int16
-	Bins   []SavedSetBucket
+	Name            string
+	NameId          int16
+	Bins            []SavedSetBucket
+	Values          [][]int32
+	StringTable     []string
+	DeltaEncodedIDs bool
+	BucketEncoded   bool
 }

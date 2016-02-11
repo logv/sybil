@@ -20,7 +20,7 @@ type RowSavedStr struct {
 
 type RowSavedSet struct {
 	Name  int16
-	Value []int32
+	Value []string
 }
 
 type SavedRecord struct {
@@ -53,7 +53,9 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 
 	for _, v := range s.Sets {
 		r.ResizeFields(v.Name)
-		r.Sets[v.Name] = v.Value
+
+		r.AddSetField(t.get_string_for_key(int(v.Name)), v.Value)
+		r.Populated[v.Name] = SET_VAL
 	}
 
 	return &r
@@ -77,7 +79,12 @@ func (r Record) toSavedRecord() *SavedRecord {
 
 	for k, v := range r.Sets {
 		if r.Populated[k] == SET_VAL {
-			s.Sets = append(s.Sets, RowSavedSet{int16(k), v})
+			col := r.block.getColumnInfo(int16(k))
+			set_vals := make([]string, len(v))
+			for i, val := range v {
+				set_vals[i] = col.get_string_for_val(int32(val))
+			}
+			s.Sets = append(s.Sets, RowSavedSet{int16(k), set_vals})
 		}
 	}
 

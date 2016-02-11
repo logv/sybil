@@ -10,7 +10,6 @@ import "sort"
 import "time"
 
 type ValueMap map[int64][]uint32
-type SetMap map[int32][]int32
 
 func delta_encode_col(col ValueMap) {
 	for _, records := range col {
@@ -125,6 +124,84 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 }
 
+func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]ValueMap) {
+	for k, v := range same_sets {
+		col_name := tb.get_string_for_key(k)
+		if col_name == "" {
+			// TODO: validate what this means. I think it means reading 'null' values off disk
+			// when pulling off incomplete records
+			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
+			continue
+		}
+		setCol := SavedSetColumn{}
+		setCol.Name = col_name
+		setCol.NameId = k
+		setCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
+		temp_block := newTableBlock()
+
+		tb_col := tb.getColumnInfo(k)
+		temp_col := temp_block.getColumnInfo(k)
+		record_to_value := make(map[uint32][]int32)
+		count := 0
+		for bucket, records := range v {
+			// migrating string definitions from column definitions
+			str_val := tb_col.get_string_for_val(int32(bucket))
+			str_id := temp_col.get_val_id(str_val)
+			si := SavedSetBucket{Value: int32(str_id), Records: records}
+			setCol.Bins = append(setCol.Bins, si)
+			count += len(records)
+			for _, r := range records {
+				_, ok := record_to_value[r]
+				if !ok {
+					record_to_value[r] = make([]int32, 0)
+
+				}
+
+				record_to_value[r] = append(record_to_value[r], str_id)
+			}
+		}
+
+		setCol.StringTable = make([]string, len(temp_col.StringTable))
+		for str, id := range temp_col.StringTable {
+			setCol.StringTable[id] = str
+		}
+
+		// the column is high cardinality?
+		setCol.BucketEncoded = true
+		if len(setCol.Bins) > CHUNK_SIZE/10 {
+			setCol.BucketEncoded = false
+			setCol.Bins = nil
+			setCol.Values = make([][]int32, count)
+			for k, v := range record_to_value {
+				setCol.Values[k] = v
+			}
+		}
+
+		col_fname := fmt.Sprintf("%s/set_%s.db", dirname, tb.get_string_for_key(k))
+
+		var network bytes.Buffer // Stand-in for the network.
+
+		// Create an encoder and send a value.
+		enc := gob.NewEncoder(&network)
+		err := enc.Encode(setCol)
+
+		if err != nil {
+			log.Fatal("encode:", err)
+		}
+
+		action := "SERIALIZED"
+		if setCol.BucketEncoded {
+			action = "BUCKETED  "
+		}
+
+		log.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+
+		w, _ := os.Create(col_fname)
+		network.WriteTo(w)
+
+	}
+}
+
 func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]ValueMap) {
 	for k, v := range same_strs {
 		col_name := tb.get_string_for_key(k)
@@ -229,7 +306,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 type SeparatedColumns struct {
 	ints map[int16]ValueMap
 	strs map[int16]ValueMap
-	sets map[int16]SetMap
+	sets map[int16]ValueMap
 }
 
 func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
@@ -239,7 +316,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 	// goes from fieldname{} -> value{} -> record
 	same_ints := make(map[int16]ValueMap)
 	same_strs := make(map[int16]ValueMap)
-	same_sets := make(map[int16]SetMap)
+	same_sets := make(map[int16]ValueMap)
 
 	// parse record list and transfer book keeping data into the current
 	// table block, as well as separate record values by column type
@@ -263,18 +340,22 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 			}
 		}
 		for k, v := range r.Sets {
-			s, ok := same_sets[int16(k)]
-			if !ok {
-				s = SetMap{}
-				same_sets[int16(k)] = s
+			col := r.block.getColumnInfo(int16(k))
+			new_col := tb.getColumnInfo(int16(k))
+			if r.Populated[k] == SET_VAL {
+				for _, iv := range v {
+					v_name := col.get_string_for_val(int32(iv))
+					v_id := new_col.get_val_id(v_name)
+					record_value(same_sets, int32(i), int16(k), int64(v_id))
+				}
 			}
-			s[int32(i)] = v
 		}
 	}
 
 	if DELTA_ENCODE_RECORD_IDS {
 		delta_encode(same_ints)
 		delta_encode(same_strs)
+		delta_encode(same_sets)
 	}
 
 	ret := SeparatedColumns{ints: same_ints, strs: same_strs, sets: same_sets}
@@ -297,6 +378,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 
 	tb.SaveIntsToColumns(partialname, separated_columns.ints)
 	tb.SaveStrsToColumns(partialname, separated_columns.strs)
+	tb.SaveSetsToColumns(partialname, separated_columns.sets)
 	tb.SaveInfoToColumns(partialname)
 
 	log.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
@@ -358,7 +440,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 				prev = r
 
 				if int(into.NameId) >= len(record.Strs) {
-					log.Println("FOUND A STRAY COLUMN...", into.Name)
+					log.Println("FOUND A STRAY COLUMN...", into.Name, "RECORD LEN", len(record.Strs))
 				} else {
 					record.Strs[into.NameId] = StrField(value_id)
 				}
@@ -373,6 +455,68 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	}
 
+}
+
+func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
+	records := tb.RecordList
+
+	into := &SavedSetColumn{}
+	err := dec.Decode(into)
+	if err != nil {
+		log.Println("DECODE COL ERR:", err)
+	}
+
+	col_name := tb.table.get_string_for_key(int(into.NameId))
+	if col_name != into.Name {
+		shouldbe := tb.table.get_key_id(into.Name)
+		log.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
+	}
+
+	string_lookup := make(map[int32]string)
+
+	col := tb.getColumnInfo(into.NameId)
+	// unpack the string table
+	for k, v := range into.StringTable {
+		col.StringTable[v] = int32(k)
+		string_lookup[int32(k)] = v
+	}
+	col.val_string_id_lookup = string_lookup
+
+	if into.BucketEncoded {
+		for _, bucket := range into.Bins {
+			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
+			prev := uint32(0)
+			for _, r := range bucket.Records {
+				if into.DeltaEncodedIDs {
+					r = r + prev
+				}
+
+				cur_set, ok := records[r].Sets[into.NameId]
+				if !ok {
+					cur_set = make(SetField, 0)
+				}
+
+				cur_set = append(cur_set, bucket.Value)
+				records[r].Sets[into.NameId] = cur_set
+
+				records[r].Populated[into.NameId] = SET_VAL
+				prev = r
+			}
+
+		}
+	} else {
+		log.Println("Uh-Oh, Trying to unencode Set column that's not bucket encoded")
+		for r, v := range into.Values {
+			cur_set, ok := records[r].Sets[into.NameId]
+			if !ok {
+				cur_set = make(SetField, 0)
+				records[r].Sets[into.NameId] = cur_set
+			}
+
+			records[r].Sets[into.NameId] = SetField(v)
+			records[r].Populated[into.NameId] = SET_VAL
+		}
+	}
 }
 
 func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
@@ -432,18 +576,48 @@ func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, 
 	var bigStrArr StrArr
 	var bigPopArr []int8
 	max_key_id := 0
+	var has_sets = false
+	var has_strs = false
+	var has_ints = false
 	for _, v := range t.KeyTable {
 		if max_key_id <= int(v) {
 			max_key_id = int(v) + 1
 		}
 	}
 
+	// determine if we need to allocate the different field containers inside
+	// each record
+	if loadSpec != nil && load_records == false {
+		for field_name, _ := range loadSpec.columns {
+			v := t.get_key_id(field_name)
+
+			switch t.KeyTypes[v] {
+			case INT_VAL:
+				has_ints = true
+			case SET_VAL:
+				has_sets = true
+			case STR_VAL:
+				has_strs = true
+			default:
+				log.Fatal("MISSING KEY TYPE FOR COL", v)
+			}
+		}
+	} else {
+		has_sets = true
+		has_ints = true
+		has_strs = true
+	}
+
 	if loadSpec != nil || load_records {
 		mstart := time.Now()
 		records = make(RecordList, info.NumRecords)
 		alloced = make([]Record, info.NumRecords)
-		bigIntArr = make(IntArr, max_key_id*int(info.NumRecords))
-		bigStrArr = make(StrArr, max_key_id*int(info.NumRecords))
+		if has_ints {
+			bigIntArr = make(IntArr, max_key_id*int(info.NumRecords))
+		}
+		if has_strs {
+			bigStrArr = make(StrArr, max_key_id*int(info.NumRecords))
+		}
 		bigPopArr = make([]int8, max_key_id*int(info.NumRecords))
 		mend := time.Now()
 
@@ -454,8 +628,19 @@ func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, 
 		start := time.Now()
 		for i := range records {
 			r = &alloced[i]
-			r.Ints = bigIntArr[i*max_key_id : (i+1)*max_key_id]
-			r.Strs = bigStrArr[i*max_key_id : (i+1)*max_key_id]
+			if has_ints {
+				r.Ints = bigIntArr[i*max_key_id : (i+1)*max_key_id]
+			}
+
+			if has_strs {
+				r.Strs = bigStrArr[i*max_key_id : (i+1)*max_key_id]
+			}
+
+			// TODO: move this allocation next to the allocations above
+			if has_sets {
+				r.Sets = make(SetArr)
+			}
+
 			r.Populated = bigPopArr[i*max_key_id : (i+1)*max_key_id]
 
 			r.block = tb

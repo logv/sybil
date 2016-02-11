@@ -327,6 +327,9 @@ func (t *Table) PrintColInfo() {
 
 		table_info["count"] = count
 		table_info["size"] = size
+		if count == 0 {
+			count = 1
+		}
 		table_info["avgObjSize"] = float64(size) / float64(count)
 		table_info["storageSize"] = size
 
