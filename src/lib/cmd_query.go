@@ -48,7 +48,8 @@ func addFlags() {
 	f_STRS = flag.String("str", "", "String values to load")
 	f_GROUPS = flag.String("group", "", "values group by")
 
-	f_LOAD_AND_QUERY = flag.Bool("laq", false, "Load and Query")
+	f_LOAD_THEN_QUERY = flag.Bool("ltq", false, "Load, Then Query (Uses more RAM!)")
+	f_LOAD_AND_QUERY = flag.Bool("laq", true, "Load and Query (Uses less RAM)")
 	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
 	f_JSON = flag.Bool("json", false, "Print results in JSON format")
 }
@@ -93,6 +94,10 @@ func RunQueryCmdLine() {
 	}
 	if *f_STR_FILTERS != "" {
 		strfilters = strings.Split(*f_STR_FILTERS, ",")
+	}
+
+	if *f_LOAD_THEN_QUERY {
+		f_LOAD_AND_QUERY = &FALSE
 	}
 
 	if *f_PROFILE && PROFILER_ENABLED {

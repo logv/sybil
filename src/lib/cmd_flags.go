@@ -25,7 +25,8 @@ var f_TIME_COL *string
 var f_TIME_BUCKET *int
 
 var f_PRINT_KEYS *bool = &TIMESERIES
-var f_LOAD_AND_QUERY *bool = &FALSE
+var f_LOAD_AND_QUERY *bool = &TRUE
+var f_LOAD_THEN_QUERY *bool = &FALSE
 
 var f_JSON *bool = &FALSE
 
