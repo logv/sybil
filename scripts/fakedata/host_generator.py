@@ -22,8 +22,10 @@ def rand_record():
     record["ping"] = abs(random.gauss(60, 20))
     time_allowance = 60 * 60 * 24 * 7 * 4 # 1 month?
     record["time"] = int(time.time()) + random.randint(-time_allowance, time_allowance)
-    record["index"] = [ IDX ]
-    record["index_id"] = IDX
+    record["host_cat"] = random.choice(HOSTS) + str(IDX)
+    record["index_set"] = [ IDX ]
+    record["index_int"] = IDX
+    record["index_str"] = str(IDX)
     record["groups"] = []
 
     if IDX % 2 == 0:

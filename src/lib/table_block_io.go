@@ -70,14 +70,16 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol.Name = col_name
 		intCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 
-		count := 0
+		max_r := 0
 		record_to_value := make(map[uint32]int64)
 		for bucket, records := range v {
 			si := SavedIntBucket{Value: bucket, Records: records}
 			intCol.Bins = append(intCol.Bins, si)
-			count += len(records)
 			for _, r := range records {
 				record_to_value[r] = bucket
+				if int(r) >= max_r {
+					max_r = int(r) + 1
+				}
 			}
 
 			// bookkeeping for info.db
@@ -89,7 +91,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		if len(intCol.Bins) > CHUNK_SIZE/10 {
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
-			intCol.Values = make([]int64, count)
+			intCol.Values = make([]int64, max_r)
 			for r, v := range record_to_value {
 				intCol.Values[r] = v
 			}
@@ -142,16 +144,19 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		tb_col := tb.getColumnInfo(k)
 		temp_col := temp_block.getColumnInfo(k)
 		record_to_value := make(map[uint32][]int32)
-		count := 0
+		max_r := 0
 		for bucket, records := range v {
 			// migrating string definitions from column definitions
 			str_val := tb_col.get_string_for_val(int32(bucket))
 			str_id := temp_col.get_val_id(str_val)
 			si := SavedSetBucket{Value: int32(str_id), Records: records}
 			setCol.Bins = append(setCol.Bins, si)
-			count += len(records)
 			for _, r := range records {
 				_, ok := record_to_value[r]
+				if int(r) >= max_r {
+					max_r = int(r) + 1
+				}
+
 				if !ok {
 					record_to_value[r] = make([]int32, 0)
 
@@ -171,7 +176,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		if len(setCol.Bins) > CHUNK_SIZE/10 {
 			setCol.BucketEncoded = false
 			setCol.Bins = nil
-			setCol.Values = make([][]int32, count)
+			setCol.Values = make([][]int32, max_r)
 			for k, v := range record_to_value {
 				setCol.Values[k] = v
 			}
@@ -220,7 +225,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		temp_col := temp_block.getColumnInfo(k)
 		tb_col := tb.getColumnInfo(k)
 		record_to_value := make(map[uint32]int32)
-		count := 0
+		max_r := 0
 		for bucket, records := range v {
 
 			// migrating string definitions from column definitions
@@ -228,9 +233,11 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 			si := SavedStrBucket{Value: str_id, Records: records}
 			strCol.Bins = append(strCol.Bins, si)
-			count += len(records)
 			for _, r := range records {
 				record_to_value[r] = str_id
+				if r >= uint32(max_r) {
+					max_r = int(r) + 1
+				}
 			}
 
 			// also bookkeeping to be used later inside the block info.db, IMO
@@ -242,7 +249,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		if len(strCol.Bins) > CHUNK_SIZE/10 {
 			strCol.BucketEncoded = false
 			strCol.Bins = nil
-			strCol.Values = make([]int32, count)
+			strCol.Values = make([]int32, max_r)
 			for k, v := range record_to_value {
 				strCol.Values[k] = v
 			}
@@ -505,7 +512,6 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 		}
 	} else {
-		log.Println("Uh-Oh, Trying to unencode Set column that's not bucket encoded")
 		for r, v := range into.Values {
 			cur_set, ok := records[r].SetMap[into.NameId]
 			if !ok {

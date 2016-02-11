@@ -43,10 +43,10 @@ func (si *StrInfo) prune() {
 	si.Cardinality = len(si.TopStringCount)
 
 	if si.Cardinality > TOP_STRING_COUNT {
-		interim := make([]StrInfoCol, len(si.TopStringCount)+1)
+		interim := make([]StrInfoCol, 0)
 
 		for s, c := range si.TopStringCount {
-			interim[s] = StrInfoCol{Name: s, Value: c}
+			interim = append(interim, StrInfoCol{Name: s, Value: c})
 		}
 
 		sort.Sort(SortStrsByCount(interim))

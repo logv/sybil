@@ -9,6 +9,7 @@ import "os"
 
 func TestTableCreate(test *testing.T) {
 	delete_test_db()
+	unload_test_table()
 
 	t := pcs.GetTable(TEST_TABLE_NAME)
 
