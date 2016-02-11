@@ -63,7 +63,7 @@ func (filter StrFilter) Filter(r *Record) bool {
 	}
 
 	val := r.Strs[filter.FieldId]
-	col := r.block.getColumnInfo(filter.FieldId)
+	col := r.block.GetColumnInfo(filter.FieldId)
 	filterval := int(col.get_val_id(filter.Value))
 
 	ok := false

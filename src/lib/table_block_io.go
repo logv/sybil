@@ -44,7 +44,7 @@ func record_value(same_map map[int16]ValueMap, index int32, name int16, value in
 	s[vi] = append(s[vi], uint32(index))
 }
 
-func (tb *TableBlock) getColumnInfo(name_id int16) *TableColumn {
+func (tb *TableBlock) GetColumnInfo(name_id int16) *TableColumn {
 	col, ok := tb.columns[name_id]
 	if !ok {
 		col = tb.newTableColumn()
@@ -141,8 +141,8 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		setCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
-		tb_col := tb.getColumnInfo(k)
-		temp_col := temp_block.getColumnInfo(k)
+		tb_col := tb.GetColumnInfo(k)
+		temp_col := temp_block.GetColumnInfo(k)
 		record_to_value := make(map[uint32][]int32)
 		max_r := 0
 		for bucket, records := range v {
@@ -222,8 +222,8 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		strCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
-		temp_col := temp_block.getColumnInfo(k)
-		tb_col := tb.getColumnInfo(k)
+		temp_col := temp_block.GetColumnInfo(k)
+		tb_col := tb.GetColumnInfo(k)
 		record_to_value := make(map[uint32]int32)
 		max_r := 0
 		for bucket, records := range v {
@@ -335,8 +335,8 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		}
 		for k, v := range r.Strs {
 			// transition key from the
-			col := r.block.getColumnInfo(int16(k))
-			new_col := tb.getColumnInfo(int16(k))
+			col := r.block.GetColumnInfo(int16(k))
+			new_col := tb.GetColumnInfo(int16(k))
 
 			v_name := col.get_string_for_val(int32(v))
 			v_id := new_col.get_val_id(v_name)
@@ -347,8 +347,8 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 			}
 		}
 		for k, v := range r.SetMap {
-			col := r.block.getColumnInfo(int16(k))
-			new_col := tb.getColumnInfo(int16(k))
+			col := r.block.GetColumnInfo(int16(k))
+			new_col := tb.GetColumnInfo(int16(k))
 			if r.Populated[k] == SET_VAL {
 				for _, iv := range v {
 					v_name := col.get_string_for_val(int32(iv))
@@ -421,7 +421,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 		log.Println("DECODE COL ERR:", err)
 	}
 
-	col := tb.getColumnInfo(into.NameId)
+	col := tb.GetColumnInfo(into.NameId)
 	// unpack the string table
 	for k, v := range into.StringTable {
 		col.StringTable[v] = int32(k)
@@ -481,7 +481,7 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	string_lookup := make(map[int32]string)
 
-	col := tb.getColumnInfo(into.NameId)
+	col := tb.GetColumnInfo(into.NameId)
 	// unpack the string table
 	for k, v := range into.StringTable {
 		col.StringTable[v] = int32(k)

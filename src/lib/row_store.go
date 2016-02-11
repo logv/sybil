@@ -71,7 +71,7 @@ func (r Record) toSavedRecord() *SavedRecord {
 
 	for k, v := range r.Strs {
 		if r.Populated[k] == STR_VAL {
-			col := r.block.getColumnInfo(int16(k))
+			col := r.block.GetColumnInfo(int16(k))
 			str_val := col.get_string_for_val(int32(v))
 			s.Strs = append(s.Strs, RowSavedStr{int16(k), str_val})
 		}
@@ -79,7 +79,7 @@ func (r Record) toSavedRecord() *SavedRecord {
 
 	for k, v := range r.SetMap {
 		if r.Populated[k] == SET_VAL {
-			col := r.block.getColumnInfo(int16(k))
+			col := r.block.GetColumnInfo(int16(k))
 			set_vals := make([]string, len(v))
 			for i, val := range v {
 				set_vals[i] = col.get_string_for_val(int32(val))

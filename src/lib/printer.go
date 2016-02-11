@@ -189,14 +189,14 @@ func (r *Record) toSample() *Sample {
 	sample := Sample{}
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
-			col := r.block.getColumnInfo(int16(name))
+			col := r.block.GetColumnInfo(int16(name))
 			sample[col.get_string_for_key(name)] = val
 
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
-			col := r.block.getColumnInfo(int16(name))
+			col := r.block.GetColumnInfo(int16(name))
 			sample[col.get_string_for_key(name)] = col.get_string_for_val(int32(val))
 		}
 	}

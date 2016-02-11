@@ -26,12 +26,12 @@ supported
 * insert
 * int filters
 * str filters
+* set fields
 
 
 to be implemented
 -----------------
 
-* Array / Set fields
 * AdHoc Column definitions
 * Sessionization: (using a single join key) 
   * aggregation

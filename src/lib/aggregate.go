@@ -92,7 +92,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 
 			case STR_VAL:
 				col_id := g.name_id
-				col := r.block.getColumnInfo(col_id)
+				col := r.block.GetColumnInfo(col_id)
 				val := col.get_string_for_val(int32(r.Strs[col_id]))
 				buffer.WriteString(string(val))
 			}
@@ -103,7 +103,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 		buffer.Reset()
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			val, ok := r.getIntVal(*f_TIME_COL)
+			val, ok := r.GetIntVal(*f_TIME_COL)
 			if !ok {
 				continue
 			}
