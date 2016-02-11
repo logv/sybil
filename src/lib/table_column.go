@@ -5,6 +5,7 @@ import "sync"
 type TableColumn struct {
 	Type        string
 	StringTable map[string]int32
+	RCache      map[int]bool
 
 	block *TableBlock
 
@@ -18,6 +19,7 @@ func (tb *TableBlock) newTableColumn() *TableColumn {
 	tc.val_string_id_lookup = make(map[int32]string)
 	tc.string_id_m = &sync.Mutex{}
 	tc.block = tb
+	tc.RCache = make(map[int]bool)
 
 	return &tc
 }
