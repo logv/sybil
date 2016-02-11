@@ -7,6 +7,7 @@ import "os"
 import "encoding/gob"
 import "strings"
 import "sort"
+import "runtime/debug"
 import "time"
 
 type ValueMap map[int64][]uint32
@@ -383,15 +384,21 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	os.RemoveAll(partialname)
 	oldblock := fmt.Sprintf("%s.old", dirname)
 
+	start := time.Now()
+	old_percent := debug.SetGCPercent(-1)
 	separated_columns := tb.SeparateRecordsIntoColumns()
+	end := time.Now()
+	log.Println("COLLATING BLOCKS TOOK", end.Sub(start))
 
 	tb.SaveIntsToColumns(partialname, separated_columns.ints)
 	tb.SaveStrsToColumns(partialname, separated_columns.strs)
 	tb.SaveSetsToColumns(partialname, separated_columns.sets)
 	tb.SaveInfoToColumns(partialname)
 
-	log.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname)
+	end = time.Now()
+	log.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
 
+	debug.SetGCPercent(old_percent)
 	// remove the old block
 	os.RemoveAll(oldblock)
 	err := os.Rename(dirname, oldblock)

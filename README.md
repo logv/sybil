@@ -1,15 +1,20 @@
-PCS is a write once analytics backend designed for fast ad-hoc analysis of
-heterogenous data.
+PCS is a set of command line programs that encapsulate a write once analytics
+db. PCS is designed for fast ad-hoc analysis of heterogenous data.
 
 what pcs does
 -------------
 
-PCS ingests records containing strings and integers and save large blocks of
-these records (65Kish) into column based files - 1 file per column per block.
-This allows for partial loading and analysis of data off disk, as well as fast
-aggregation operations of many records at a time.
+PCS reads records containing strings, integers and sets off stdin; PCS then
+collates and writes the records into large blocks (aka Vectors) organized by
+column into files on disk.
+
+Organization by column allows for only loading columns necessary when running
+queries, as well as per column compression optimizations. If your data never
+needs to be updated (it's event data or log store, for example) - a column
+store can save space over traditional data stores
 
 more info on column stores: http://db.csail.mit.edu/pubs/abadi-column-stores.pdf
+
 
 running
 -------
