@@ -208,7 +208,8 @@ func (t *Table) printSamples() {
 	count := 0
 	records := make(RecordList, *f_LIMIT)
 	for _, b := range t.BlockList {
-		for _, r := range b.RecordList {
+		log.Println("BLOCK MATCHED", len(b.Matched))
+		for _, r := range b.Matched {
 			if r == nil {
 				records = records[:count]
 				break

@@ -31,7 +31,7 @@ func queryTable(name string, loadSpec *LoadSpec, querySpec *QuerySpec) {
 
 func addFlags() {
 
-	f_TIME = flag.Bool("time", false, "do a time rollup!")
+	f_TIME = flag.Bool("time", false, "make a time rollup")
 	f_TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	f_TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
 
@@ -40,6 +40,7 @@ func addFlags() {
 	f_SAMPLES = flag.Bool("samples", false, "Grab samples")
 	f_INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 	f_STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	f_SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
 	f_LIST_TABLES = flag.Bool("tables", false, "List tables")
 	f_UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
@@ -52,6 +53,14 @@ func addFlags() {
 	f_LOAD_AND_QUERY = flag.Bool("laq", true, "Load and Query (Uses less RAM)")
 	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
 	f_JSON = flag.Bool("json", false, "Print results in JSON format")
+}
+
+func SetLoadAndQuery(val bool) {
+	if val {
+		f_LOAD_AND_QUERY = &TRUE
+	} else {
+		f_LOAD_AND_QUERY = &FALSE
+	}
 }
 
 func RunQueryCmdLine() {
@@ -75,6 +84,7 @@ func RunQueryCmdLine() {
 	strs := make([]string, 0)
 	strfilters := make([]string, 0)
 	intfilters := make([]string, 0)
+	setfilters := make([]string, 0)
 
 	if *f_GROUPS != "" {
 		groups = strings.Split(*f_GROUPS, ",")
@@ -96,6 +106,10 @@ func RunQueryCmdLine() {
 		strfilters = strings.Split(*f_STR_FILTERS, ",")
 	}
 
+	if *f_SET_FILTERS != "" {
+		setfilters = strings.Split(*f_SET_FILTERS, ",")
+	}
+
 	if *f_LOAD_THEN_QUERY {
 		f_LOAD_AND_QUERY = &FALSE
 	}
@@ -115,18 +129,6 @@ func RunQueryCmdLine() {
 	}
 
 	log.Println("WILL INSPECT", count, "RECORDS")
-
-	if *f_SAMPLES {
-		loadSpec := t.NewLoadSpec()
-		loadSpec.LoadAllColumns = true
-
-		// TODO: filter these records, too!
-		t.LoadRecords(&loadSpec)
-
-		t.printSamples()
-
-		return
-	}
 
 	groupings := []Grouping{}
 	for _, g := range groups {
@@ -183,6 +185,17 @@ func RunQueryCmdLine() {
 		loadSpec.Int(col)
 	}
 
+	for _, filter := range setfilters {
+		tokens := strings.Split(filter, ":")
+		col := tokens[0]
+		op := tokens[1]
+		val := tokens[2]
+		loadSpec.Set(col)
+
+		filters = append(filters, t.SetFilter(col, op, val))
+
+	}
+
 	for _, filter := range strfilters {
 		tokens := strings.Split(filter, ":")
 		col := tokens[0]
@@ -234,6 +247,18 @@ func RunQueryCmdLine() {
 
 	if *f_SESSION_COL != "" {
 		loadSpec.Str(*f_SESSION_COL)
+	}
+
+	if *f_SAMPLES {
+		loadSpec := t.NewLoadSpec()
+		loadSpec.LoadAllColumns = true
+
+		// TODO: filter these records, too!
+		t.LoadAndQueryRecords(&loadSpec, &querySpec)
+
+		t.printSamples()
+
+		return
 	}
 
 	if !*f_PRINT_INFO {

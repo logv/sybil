@@ -43,6 +43,7 @@ func TestTableCreate(test *testing.T) {
 	loadSpec.LoadAllColumns = true
 
 	nt.LoadRecords(&loadSpec)
+	pcs.SetLoadAndQuery(false)
 
 	var records = make([]*pcs.Record, 0)
 	for _, b := range nt.BlockList {
@@ -50,7 +51,7 @@ func TestTableCreate(test *testing.T) {
 	}
 
 	if len(records) != 1 {
-		test.Error("More records were created than expected")
+		test.Error("More records were created than expected", len(records))
 	}
 
 	delete_test_db()

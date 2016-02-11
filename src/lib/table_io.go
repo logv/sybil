@@ -323,7 +323,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
 	tb := newTableBlock()
 	tb.Name = dirname
 
@@ -383,7 +383,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 	tb.Size = size
 
-	return tb
+	return &tb
 }
 
 // Remove our pointer to the blocklist so a GC is triggered and
@@ -467,7 +467,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				if len(block.RecordList) > 0 {
 					block_count++
 					m.Lock()
-					count += len(block.RecordList)
 					m.Unlock()
 
 					if querySpec != nil {
@@ -475,12 +474,22 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 						ret := FilterAndAggRecords(blockQuery, &block.RecordList)
 						blockQuery.Matched = ret
+						block.Matched = ret
+						count += len(blockQuery.Matched)
 
 						m.Lock()
 						block_specs[block.Name] = blockQuery
-						delete(t.BlockList, block.Name)
+
 						m.Unlock()
+					} else {
+						count += len(block.RecordList)
 					}
+
+				}
+
+				// Keep around some blocks for printing if we are in SAMPLE mode
+				if *f_SAMPLES != true && *f_LOAD_AND_QUERY == false {
+					delete(t.BlockList, block.Name)
 				}
 			}()
 

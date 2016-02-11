@@ -10,6 +10,15 @@ func (f NoFilter) Filter(r *Record) bool {
 	return false
 }
 
+type IntFilter struct {
+	Field   string
+	FieldId int16
+	Op      string
+	Value   int
+
+	table *Table
+}
+
 type StrFilter struct {
 	Field   string
 	FieldId int16
@@ -20,11 +29,11 @@ type StrFilter struct {
 	table *Table
 }
 
-type IntFilter struct {
+type SetFilter struct {
 	Field   string
 	FieldId int16
 	Op      string
-	Value   int
+	Value   string
 
 	table *Table
 }
@@ -110,6 +119,40 @@ func (filter StrFilter) Filter(r *Record) bool {
 	return ret
 }
 
+func (filter SetFilter) Filter(r *Record) bool {
+
+	col := r.block.GetColumnInfo(filter.FieldId)
+	ret := false
+
+	ok := r.Populated[filter.FieldId] == SET_VAL
+	if !ok {
+		return false
+	}
+
+	sets := r.SetMap[filter.FieldId]
+	val_id := col.get_val_id(filter.Value)
+
+	switch filter.Op {
+	// Check if tag exists
+	case "in":
+		// Check if tag does not exist
+		for _, tag := range sets {
+			if tag == val_id {
+				return true
+			}
+		}
+	case "nin":
+		ret = true
+		for _, tag := range sets {
+			if tag == val_id {
+				return false
+			}
+		}
+
+	}
+	return ret
+}
+
 func (t *Table) IntFilter(name string, op string, value int) IntFilter {
 	intFilter := IntFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
 	intFilter.table = t
@@ -131,5 +174,13 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 	}
 
 	return strFilter
+
+}
+
+func (t *Table) SetFilter(name string, op string, value string) SetFilter {
+	setFilter := SetFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
+	setFilter.table = t
+
+	return setFilter
 
 }

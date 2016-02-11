@@ -8,6 +8,7 @@ type TableBlock struct {
 	RecordList RecordList
 	Info       *SavedColumnInfo
 	Size       int64
+	Matched    RecordList
 
 	string_id_m          *sync.Mutex
 	val_string_id_lookup map[int32]string

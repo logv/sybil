@@ -9,6 +9,7 @@ var f_OP *string
 var f_PRINT *bool = &FALSE
 var f_INT_FILTERS *string
 var f_STR_FILTERS *string
+var f_SET_FILTERS *string
 
 var f_SESSION_COL *string
 var f_INTS *string
