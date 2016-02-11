@@ -16,6 +16,7 @@ import "runtime"
 import "runtime/debug"
 
 var DEBUG_TIMING = false
+var CHUNKS_PER_CPU_BEFORE_GC = 2
 
 type LoadSpec struct {
 	columns        map[string]bool
@@ -501,7 +502,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if querySpec != nil && block_count%(runtime.NumCPU()*4) == 0 {
+			if querySpec != nil && block_count%(runtime.NumCPU()*CHUNKS_PER_CPU_BEFORE_GC) == 0 {
 				start := time.Now()
 				old_percent := debug.SetGCPercent(100)
 				debug.FreeOSMemory()
