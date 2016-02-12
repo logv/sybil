@@ -56,8 +56,6 @@ func addFlags() {
 	f_LOAD_AND_QUERY = flag.Bool("laq", true, "Load and Query (Uses less RAM)")
 	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
 	f_JSON = flag.Bool("json", false, "Print results in JSON format")
-
-	f_GC = flag.Bool("gc", false, "Enable GC during record load. Adds time, but lowers mem usage")
 }
 
 func RunQueryCmdLine() {

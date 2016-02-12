@@ -537,9 +537,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 			}
 
 			if this_block%CHUNKS_BEFORE_GC == 0 && *f_GC {
-				start := time.Now()
 				wg.Wait()
 				m.Lock()
+				start := time.Now()
 				old_percent := debug.SetGCPercent(100)
 				debug.SetGCPercent(old_percent)
 				m.Unlock()
