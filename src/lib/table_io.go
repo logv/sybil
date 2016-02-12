@@ -12,11 +12,10 @@ import "sync"
 import "sort"
 import "path"
 import "strconv"
-import "runtime"
 import "runtime/debug"
 
 var DEBUG_TIMING = false
-var CHUNKS_PER_CPU_BEFORE_GC = 4
+var CHUNKS_BEFORE_GC = 32
 var INGEST_DIR = "ingest"
 var DELETE_BLOCKS_AFTER_QUERY = false
 
@@ -435,6 +434,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	count := 0
 	skipped := 0
 	block_count := 0
+	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
 	for f := range files {
 		v := files[len(files)-f-1]
@@ -456,6 +456,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 			if loadSpec != nil && loadSpec.LoadAllColumns {
 				load_all = true
 			}
+
+			this_block++
 
 			go func() {
 				defer wg.Done()
@@ -485,8 +487,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				if len(block.RecordList) > 0 {
 					block_count++
-					m.Lock()
-					m.Unlock()
 
 					if querySpec != nil {
 						blockQuery := CopyQuerySpec(querySpec)
@@ -494,14 +494,15 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						ret := FilterAndAggRecords(blockQuery, &block.RecordList)
 						blockQuery.Matched = ret
 						block.Matched = ret
-						count += len(blockQuery.Matched)
 
 						m.Lock()
+						count += len(blockQuery.Matched)
 						block_specs[block.Name] = blockQuery
-
 						m.Unlock()
 					} else {
+						m.Lock()
 						count += len(block.RecordList)
+						m.Unlock()
 					}
 
 				}
@@ -524,15 +525,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if querySpec != nil && block_count%(runtime.NumCPU()*CHUNKS_PER_CPU_BEFORE_GC) == 0 {
+			if this_block%CHUNKS_BEFORE_GC == 0 {
 				start := time.Now()
-				old_percent := debug.SetGCPercent(100)
 				debug.FreeOSMemory()
 				end := time.Now()
 				wg.Wait()
+				fmt.Fprint(os.Stderr, "G")
 				end = time.Now()
 				block_gc_time += end.Sub(start)
-				debug.SetGCPercent(old_percent)
 			}
 		}
 

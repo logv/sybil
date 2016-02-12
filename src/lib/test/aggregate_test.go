@@ -93,6 +93,8 @@ func TestAveraging(test *testing.T) {
 		return
 	}
 
+	pcs.TEST_MODE = true
+
 	BLOCK_COUNT := 3
 	COUNT := pcs.CHUNK_SIZE * BLOCK_COUNT
 	t := pcs.GetTable(TEST_TABLE_NAME)
@@ -120,7 +122,7 @@ func TestAveraging(test *testing.T) {
 	count := nt.LoadRecords(&loadSpec)
 
 	if count != COUNT {
-		test.Error("Wrote 100 records, but read back", count)
+		test.Error("Wrote", COUNT, "records, but read back", count)
 	}
 
 	if len(nt.BlockList) != BLOCK_COUNT {

@@ -10,8 +10,7 @@ import "strings"
 // digest/
 
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
-// to digest, move that file into digest/ and begin digesting it
-// POTENTIAL RACE CONDITION ON INGEST MODIFYING AN EXISTING FILE!
+// to digest, move that file into stomache/ and begin digesting it
 
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
