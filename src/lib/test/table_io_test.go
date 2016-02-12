@@ -39,11 +39,10 @@ func TestTableCreate(test *testing.T) {
 		test.Error("Test table did not create info.db")
 	}
 
-	loadSpec := pcs.NewLoadSpec()
+	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
 	nt.LoadRecords(&loadSpec)
-	pcs.SetLoadAndQuery(false)
 
 	var records = make([]*pcs.Record, 0)
 	for _, b := range nt.BlockList {

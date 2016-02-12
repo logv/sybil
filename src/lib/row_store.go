@@ -36,6 +36,8 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	r.SetMap = SetMap{}
 
 	b := t.LastBlock
+	t.LastBlock.RecordList = append(t.LastBlock.RecordList, &r)
+
 	b.table = t
 	r.block = &b
 
@@ -118,7 +120,6 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 }
 
 func (t *Table) LoadRecordsFromLog(filename string) RecordList {
-	log.Println("LOADING RECORDS FROM LOG", filename)
 	var marshalled_records []*SavedRecord
 
 	file, err := os.Open(filename)

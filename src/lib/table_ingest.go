@@ -2,7 +2,6 @@ package pcs
 
 import "path"
 import "log"
-import "fmt"
 import "os"
 import "strings"
 
@@ -23,8 +22,11 @@ func (t *Table) IngestRecords(blockname string) {
 	t.SaveTableInfo("info")
 }
 
-// Go through rowstore and save records out to column store
-func (t *Table) DigestRecords(digest string) {
+var NO_MORE_BLOCKS = GROUP_DELIMITER
+
+type AfterRowBlockLoad func(string, RecordList)
+
+func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
 	dirname := path.Join(*f_DIR, t.Name, "ingest")
 
@@ -34,52 +36,82 @@ func (t *Table) DigestRecords(digest string) {
 		return
 	}
 
+	if t.RowBlock == nil {
+		t.RowBlock = &TableBlock{}
+		(*t.RowBlock).RecordList = make(RecordList, 0)
+		t.RowBlock.Info = &SavedColumnInfo{}
+		t.BlockList[ROW_STORE_BLOCK] = t.RowBlock
+		t.RowBlock.Name = ROW_STORE_BLOCK
+	}
+
 	files, err := file.Readdir(0)
-	digestdir := path.Join(*f_DIR, t.Name, "digest")
-	digestname := path.Join(digestdir, fmt.Sprintf("%s.db", digest))
-	os.MkdirAll(digestdir, 0777)
 
-	for _, filename := range files {
+	for _, file := range files {
+		filename := file.Name()
 
-		if strings.HasPrefix(filename.Name(), digest) == false {
+		if strings.HasPrefix(filename, digest) == false {
 			continue
 		}
-		if strings.HasSuffix(filename.Name(), ".db") == false {
+		if strings.HasSuffix(filename, ".db") == false {
 			continue
 		}
 
-		log.Println("Moving", filename, "TO", digestname, "FOR DIGESTION")
-		fullname := fmt.Sprintf("%s/%s", dirname, filename.Name())
+		filename = path.Join(dirname, file.Name())
 
-		err := os.Rename(fullname, digestname)
-		if err != nil {
-			log.Println("NO INGEST LOG, ERR:", err)
-			return
-		}
-
-		records := t.LoadRecordsFromLog(digestname)
-		log.Println("LOADED", len(records), "FOR DIGESTION")
-
-		if len(records) > 0 {
-			t.newRecords = append(t.newRecords, records...)
-		}
-
-		log.Println("Removing", digestname)
-		os.Remove(digestname)
-
-		if len(t.newRecords) > 10000 {
-			t.SaveRecords()
-			// Release the records that were in this block, too...
-			t.ReleaseRecords()
-
-			t.newRecords = t.newRecords[:0]
+		records := t.LoadRecordsFromLog(filename)
+		if after_block_load_cb != nil {
+			after_block_load_cb(filename, records)
 		}
 	}
 
-	if len(t.newRecords) > 0 {
+	if after_block_load_cb != nil {
+		after_block_load_cb(NO_MORE_BLOCKS, nil)
+	}
+
+}
+
+func LoadRowBlockCB(digestname string, records RecordList) {
+	if digestname == NO_MORE_BLOCKS {
+		return
+	}
+
+	t := GetTable(*f_TABLE)
+	block := t.RowBlock
+
+	if len(records) > 0 {
+		block.RecordList = append(block.RecordList, records...)
+		block.Info.NumRecords = int32(len(block.RecordList))
+	}
+
+}
+
+func SaveBlockChunkCB(digestname string, records RecordList) {
+
+	t := GetTable(*f_TABLE)
+	if digestname == NO_MORE_BLOCKS {
+		if len(t.newRecords) > 0 {
+			t.SaveRecords()
+			t.ReleaseRecords()
+		}
+
+		return
+	}
+
+	log.Println("LOADED", len(records), "FOR DIGESTION FROM", digestname)
+	if len(records) > 0 {
+		t.newRecords = append(t.newRecords, records...)
+	}
+
+	if len(t.newRecords) > 1000 {
 		t.SaveRecords()
-		// Release the records that were in this block, too...
 		t.ReleaseRecords()
 	}
 
+	log.Println("Removing", digestname)
+	os.Remove(digestname)
+}
+
+// Go through rowstore and save records out to column store
+func (t *Table) DigestRecords(digest string) {
+	t.LoadRowStoreRecords(digest, SaveBlockChunkCB)
 }

@@ -4,6 +4,8 @@ import "fmt"
 import "log"
 import "sync"
 
+var ROW_STORE_BLOCK = "ROW_STORE"
+
 type Table struct {
 	Name      string
 	BlockList map[string]*TableBlock
@@ -13,6 +15,7 @@ type Table struct {
 	// Need to keep track of the last block we've used, right?
 	LastBlockId int
 	LastBlock   TableBlock
+	RowBlock    *TableBlock
 
 	StrInfo StrInfoTable
 	IntInfo IntInfoTable

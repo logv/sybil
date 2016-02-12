@@ -16,7 +16,9 @@ import "runtime"
 import "runtime/debug"
 
 var DEBUG_TIMING = false
-var CHUNKS_PER_CPU_BEFORE_GC = 2
+var CHUNKS_PER_CPU_BEFORE_GC = 4
+var INGEST_DIR = "ingest"
+var DELETE_BLOCKS_AFTER_QUERY = false
 
 type LoadSpec struct {
 	columns        map[string]bool
@@ -34,10 +36,8 @@ func NewLoadSpec() LoadSpec {
 }
 
 func (t *Table) NewLoadSpec() LoadSpec {
-	l := LoadSpec{}
+	l := NewLoadSpec()
 	l.table = t
-	l.columns = make(map[string]bool)
-	l.files = make(map[string]bool)
 
 	return l
 }
@@ -46,8 +46,9 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 	if l.table == nil {
 		return
 	}
-
 	name_id := l.table.get_key_id(name)
+	log.Println("ASSERING COL TYPE", name, name_id, col_type, len(l.table.KeyTypes))
+
 	if l.table.KeyTypes[name_id] == 0 {
 		log.Fatal("Query Error! Column ", name, " does not exist")
 	}
@@ -394,6 +395,23 @@ func (t *Table) ReleaseRecords() {
 	debug.FreeOSMemory()
 }
 
+type AfterLoadQueryCB struct {
+	querySpec *QuerySpec
+	wg        *sync.WaitGroup
+}
+
+func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
+	if digestname == NO_MORE_BLOCKS {
+		cb.wg.Done()
+		return
+	}
+
+	ret := FilterAndAggRecords(cb.querySpec, &records)
+
+	cb.querySpec.Matched = ret
+	fmt.Fprint(os.Stderr, "+")
+}
+
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	log.Println("LOADING", t.Name)
@@ -488,9 +506,13 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				}
 
-				// Keep around some blocks for printing if we are in SAMPLE mode
-				if *f_SAMPLES != true && *f_LOAD_AND_QUERY == false {
-					delete(t.BlockList, block.Name)
+				// don't delete when testing so we can verify block
+				// loading results
+				if DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
+					_, ok := t.BlockList[block.Name]
+					if ok {
+						delete(t.BlockList, block.Name)
+					}
 				}
 			}()
 
@@ -516,8 +538,32 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	}
 
+	rowStoreQuery := AfterLoadQueryCB{}
+	var logend time.Time
+	logstart := time.Now()
+	if *f_READ_INGESTION_LOG {
+		if querySpec != nil {
+			rowStoreQuery.querySpec = CopyQuerySpec(querySpec)
+			rowStoreQuery.wg = &wg
+			block_specs[INGEST_DIR] = rowStoreQuery.querySpec
+			wg.Add(1)
+			go func() {
+				t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
+				logend = time.Now()
+			}()
+		}
+	}
+
 	wg.Wait()
+
 	fmt.Fprint(os.Stderr, "\n")
+
+	if querySpec != nil && *f_READ_INGESTION_LOG {
+		log.Println("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
+		log.Println("RECORDS MATCHED", len(rowStoreQuery.querySpec.Matched))
+		count += len(rowStoreQuery.querySpec.Matched)
+	}
+
 	if block_gc_time > 0 {
 		log.Println("BLOCK GC TOOK", block_gc_time)
 	}

@@ -208,7 +208,6 @@ func (t *Table) printSamples() {
 	count := 0
 	records := make(RecordList, *f_LIMIT)
 	for _, b := range t.BlockList {
-		log.Println("BLOCK MATCHED", len(b.Matched))
 		for _, r := range b.Matched {
 			if r == nil {
 				records = records[:count]
@@ -346,7 +345,6 @@ func (t *Table) PrintColInfo() {
 		fmt.Println("")
 		fmt.Println("Stats")
 		fmt.Println("  count", count)
-		fmt.Println("  size", size)
 		fmt.Println("  storageSize", size)
 		fmt.Println("  avgObjSize", float64(size)/float64(count))
 	}

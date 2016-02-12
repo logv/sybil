@@ -44,6 +44,9 @@ func addFlags() {
 	f_LIST_TABLES = flag.Bool("tables", false, "List tables")
 	f_UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
+	// TODO: hook this up in the ready -> query
+	f_READ_INGESTION_LOG = flag.Bool("read-log", false, "Also read records from ingestion log (WARNING: slow!)")
+
 	f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
 	f_INTS = flag.String("int", "", "Integer values to aggregate")
 	f_STRS = flag.String("str", "", "String values to load")
@@ -53,14 +56,6 @@ func addFlags() {
 	f_LOAD_AND_QUERY = flag.Bool("laq", true, "Load and Query (Uses less RAM)")
 	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
 	f_JSON = flag.Bool("json", false, "Print results in JSON format")
-}
-
-func SetLoadAndQuery(val bool) {
-	if val {
-		f_LOAD_AND_QUERY = &TRUE
-	} else {
-		f_LOAD_AND_QUERY = &FALSE
-	}
 }
 
 func RunQueryCmdLine() {
@@ -110,13 +105,13 @@ func RunQueryCmdLine() {
 		setfilters = strings.Split(*f_SET_FILTERS, ",")
 	}
 
-	if *f_LOAD_THEN_QUERY {
-		f_LOAD_AND_QUERY = &FALSE
-	}
-
 	if *f_PROFILE && PROFILER_ENABLED {
 		profile := RUN_PROFILER()
 		defer profile.Start().Stop()
+	}
+
+	if *f_LOAD_THEN_QUERY {
+		f_LOAD_AND_QUERY = &FALSE
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -217,6 +212,8 @@ func RunQueryCmdLine() {
 			loadSpec.Str(v)
 		case INT_VAL:
 			loadSpec.Int(v)
+		default:
+			log.Fatal("Unknown column type for column: ", v)
 		}
 
 	}
@@ -253,7 +250,7 @@ func RunQueryCmdLine() {
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
 
-		// TODO: filter these records, too!
+		DELETE_BLOCKS_AFTER_QUERY = false
 		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 		t.printSamples()
@@ -280,18 +277,22 @@ func RunQueryCmdLine() {
 			f_LOAD_AND_QUERY = &FALSE
 		}
 
+		// We can load and query at the same time
 		if *f_LOAD_AND_QUERY {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 			end := time.Now()
 			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.printResults()
-		} else {
+		} else { // or we can load, and then query!
+			DELETE_BLOCKS_AFTER_QUERY = false
 			count = t.LoadRecords(&loadSpec)
+			if *f_READ_INGESTION_LOG {
+				t.LoadRowStoreRecords(INGEST_DIR, LoadRowBlockCB)
+				count += len(t.RowBlock.RecordList)
+			}
 			end := time.Now()
-			log.Println("LOAD RECORDS TOOK", end.Sub(start))
-		}
+			log.Println("LOAD RECORDS TOOK", end.Sub(start), "COUNT:", count)
 
-		if *f_LOAD_AND_QUERY == false {
 			if count > MAX_RECORDS_NO_GC {
 				log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
 				gc_start := time.Now()
@@ -301,13 +302,17 @@ func RunQueryCmdLine() {
 			}
 
 			queryTable(table, &loadSpec, &querySpec)
-			end := time.Now()
-			log.Println("LOADING & QUERYING TABLE TOOK", end.Sub(start))
+			end = time.Now()
+			log.Println("LOAD THEN QUERY RECORDS TOOK", end.Sub(start))
 		}
+
 	}
 
 	if *f_PRINT_INFO {
 		t := GetTable(table)
+		f_LOAD_AND_QUERY = &FALSE
+
+		t.LoadRecords(nil)
 		t.PrintColInfo()
 	}
 

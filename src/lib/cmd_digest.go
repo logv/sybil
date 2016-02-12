@@ -6,7 +6,7 @@ import "log"
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunDigestCmdLine() {
-	digest_file := flag.String("file", "ingest", "Name of block to digest")
+	digest_file := flag.String("file", INGEST_DIR, "Name of block to digest")
 	flag.Parse()
 
 	if *f_TABLE == "" {

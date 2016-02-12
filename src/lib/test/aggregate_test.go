@@ -18,6 +18,7 @@ func TestTableLoadRecords(test *testing.T) {
 		return
 	}
 
+	pcs.TEST_MODE = true
 	BLOCK_COUNT := 3
 	COUNT := pcs.CHUNK_SIZE * BLOCK_COUNT
 	t := pcs.GetTable(TEST_TABLE_NAME)
