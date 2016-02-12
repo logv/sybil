@@ -296,7 +296,11 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 			blockQuery := CopyQuerySpec(querySpec)
 
 			ret := FilterAndAggRecords(blockQuery, &this_block.RecordList)
-			blockQuery.Matched = ret
+
+			if HOLD_MATCHES {
+				blockQuery.Matched = ret
+			}
+
 			block_specs[this_block.Name] = blockQuery
 
 			if !*f_JSON {
@@ -331,12 +335,14 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	// Aggregating Matched Records
 	matched := CombineMatches(block_specs)
-	querySpec.Matched = matched
+	if HOLD_MATCHES {
+		querySpec.Matched = matched
+	}
 
 	end := time.Now()
 
 	SortResults(querySpec)
 
-	log.Println(len(querySpec.Matched), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
+	log.Println(len(matched), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }

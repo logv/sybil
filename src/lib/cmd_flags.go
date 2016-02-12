@@ -32,6 +32,7 @@ var f_LOAD_AND_QUERY *bool = &TRUE
 var f_LOAD_THEN_QUERY *bool = &FALSE
 
 var f_JSON *bool = &FALSE
+var f_GC *bool = &FALSE
 
 var SORT_COUNT = "$COUNT"
 var f_DIR = flag.String("dir", "./db/", "Directory to store DB files")

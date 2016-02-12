@@ -15,9 +15,10 @@ import "strconv"
 import "runtime/debug"
 
 var DEBUG_TIMING = false
-var CHUNKS_BEFORE_GC = 32
+var CHUNKS_BEFORE_GC = 16
 var INGEST_DIR = "ingest"
-var DELETE_BLOCKS_AFTER_QUERY = false
+var DELETE_BLOCKS_AFTER_QUERY = true
+var HOLD_MATCHES = false
 
 type LoadSpec struct {
 	columns        map[string]bool
@@ -407,7 +408,11 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 
 	ret := FilterAndAggRecords(cb.querySpec, &records)
 
-	cb.querySpec.Matched = ret
+	if HOLD_MATCHES {
+		log.Println("COPYING MATCHES")
+		cb.querySpec.Matched = ret
+	}
+
 	fmt.Fprint(os.Stderr, "+")
 }
 
@@ -492,11 +497,17 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						blockQuery := CopyQuerySpec(querySpec)
 
 						ret := FilterAndAggRecords(blockQuery, &block.RecordList)
-						blockQuery.Matched = ret
-						block.Matched = ret
 
+						if HOLD_MATCHES {
+							log.Println("COPYING MATCHES")
+							blockQuery.Matched = ret[:]
+						}
+
+						if *f_SAMPLES || *f_PRINT_INFO {
+							block.Matched = ret[:]
+						}
 						m.Lock()
-						count += len(blockQuery.Matched)
+						count += len(ret)
 						block_specs[block.Name] = blockQuery
 						m.Unlock()
 					} else {
@@ -509,7 +520,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				// don't delete when testing so we can verify block
 				// loading results
-				if DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
+				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
 					_, ok := t.BlockList[block.Name]
 					if ok {
 						delete(t.BlockList, block.Name)
@@ -525,11 +536,15 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if this_block%CHUNKS_BEFORE_GC == 0 {
+			if this_block%CHUNKS_BEFORE_GC == 0 && *f_GC {
 				start := time.Now()
-				debug.FreeOSMemory()
-				end := time.Now()
 				wg.Wait()
+				m.Lock()
+				old_percent := debug.SetGCPercent(100)
+				debug.SetGCPercent(old_percent)
+				m.Unlock()
+				end := time.Now()
+
 				fmt.Fprint(os.Stderr, "G")
 				end = time.Now()
 				block_gc_time += end.Sub(start)
