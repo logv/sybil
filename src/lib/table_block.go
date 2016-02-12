@@ -10,6 +10,9 @@ type TableBlock struct {
 	Size       int64
 	Matched    RecordList
 
+	IntInfo map[int16]*IntInfo
+	StrInfo map[int16]*StrInfo
+
 	string_id_m          *sync.Mutex
 	val_string_id_lookup map[int32]string
 	table                *Table

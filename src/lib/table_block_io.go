@@ -300,7 +300,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
-	colInfo := SavedColumnInfo{NumRecords: int32(len(records)), IntInfo: INT_INFO_BLOCK[tb.Name], StrInfo: STR_INFO_BLOCK[tb.Name]}
+	colInfo := SavedColumnInfo{NumRecords: int32(len(records)), IntInfo: tb.IntInfo, StrInfo: tb.StrInfo}
 	err := enc.Encode(colInfo)
 
 	if err != nil {
