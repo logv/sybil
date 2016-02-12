@@ -38,7 +38,6 @@ func (t *Table) DigestRecords(digest string) {
 	digestdir := path.Join(*f_DIR, t.Name, "digest")
 	digestname := path.Join(digestdir, fmt.Sprintf("%s.db", digest))
 	os.MkdirAll(digestdir, 0777)
-	handled := make([]string, 0)
 
 	for _, filename := range files {
 
@@ -65,19 +64,14 @@ func (t *Table) DigestRecords(digest string) {
 			t.newRecords = append(t.newRecords, records...)
 		}
 
-		handled = append(handled, digestname)
+		log.Println("Removing", digestname)
+		os.Remove(digestname)
 
-		if len(t.newRecords) > 1000 {
+		if len(t.newRecords) > 10000 {
 			t.SaveRecords()
 			// Release the records that were in this block, too...
 			t.ReleaseRecords()
 
-			for _, d := range handled {
-				os.Remove(d)
-				log.Println("Removing", d)
-			}
-
-			handled = handled[:0]
 			t.newRecords = t.newRecords[:0]
 		}
 	}
