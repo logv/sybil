@@ -1,4 +1,4 @@
-package pcs
+package sybil
 
 type ProfilerStart interface {
 	Stop()

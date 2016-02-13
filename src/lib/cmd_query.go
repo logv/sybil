@@ -1,4 +1,4 @@
-package pcs
+package sybil
 
 import "log"
 import "fmt"

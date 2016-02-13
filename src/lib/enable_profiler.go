@@ -1,6 +1,6 @@
 //+build profile
 
-package pcs
+package sybil
 
 import "github.com/pkg/profile"
 import "log"

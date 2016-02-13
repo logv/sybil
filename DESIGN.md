@@ -1,11 +1,11 @@
 design
 ------
 
-PCS consists of three main parts:
+Sybil consists of three parts:
 
-* the ingestion binary (writes blocks in row form)
-* the digestion binary (writes blocks in column form from row form)
-* and the query binary (reads blocks in column form)
+* the ingestion phase (writes data from stdin into the DB as records)
+* the digestion phase (collates records into blocks of columns)
+* and the query phase (reads blocks from row and column store)
 
 FEATURES
 ========
@@ -20,7 +20,7 @@ supported
 * insert
 * int filters
 * str filters
-* set fields
+* set fields & filters
 
 
 to be implemented
@@ -45,4 +45,5 @@ unsupported
 wishlist / tbd
 --------------
 
-*  MapReduce execution model
+*  MapReduce execution model of custom code (embedded engine?)
+

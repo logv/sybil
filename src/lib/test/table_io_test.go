@@ -1,6 +1,6 @@
-package pcs_test
+package sybil_test
 
-import pcs "../"
+import sybil "../"
 
 import "testing"
 import "fmt"
@@ -11,7 +11,7 @@ func TestTableCreate(test *testing.T) {
 	delete_test_db()
 	unload_test_table()
 
-	t := pcs.GetTable(TEST_TABLE_NAME)
+	t := sybil.GetTable(TEST_TABLE_NAME)
 
 	fmt.Println("TABLE", t)
 
@@ -29,7 +29,7 @@ func TestTableCreate(test *testing.T) {
 
 	unload_test_table()
 
-	nt := pcs.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TEST_TABLE_NAME)
 	fmt.Println("KEY TABLE", nt.KeyTable)
 	nt.LoadTableInfo()
 
@@ -44,7 +44,7 @@ func TestTableCreate(test *testing.T) {
 
 	nt.LoadRecords(&loadSpec)
 
-	var records = make([]*pcs.Record, 0)
+	var records = make([]*sybil.Record, 0)
 	for _, b := range nt.BlockList {
 		records = append(records, b.RecordList...)
 	}

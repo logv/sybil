@@ -1,4 +1,4 @@
-package pcs
+package sybil
 
 import "flag"
 

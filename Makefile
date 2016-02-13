@@ -4,29 +4,23 @@ GOBINDIR = ./bin
 PROFILE = -tags profile
 
 
-all: query ingest digest
+all: sybil
 
-query: bindir
-	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/query/ 
-
-digest: bindir 
-	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/digest/
-
-ingest: bindir 
-	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/ingest/
+sybil: bindir
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/sybil
 
 fake-data: fake-uptime fake-people
 
 fake-people:
-	python scripts/fakedata/people_generator.py 50000 | ./bin/ingest -table people
-	./bin/digest -table people
+	python scripts/fakedata/people_generator.py 50000 | ./bin/sybil ingest -table people
+	./bin/sybil digest -table people
 
 fake-uptime:
-	python scripts/fakedata/host_generator.py 100000 | ./bin/ingest -table uptime
-	./bin/digest -table uptime
+	python scripts/fakedata/host_generator.py 100000 | ./bin/sybil ingest -table uptime
+	./bin/sybil digest -table uptime
 
 testquery:
-	${BINDIR}/query -table test0 -int age,f1 -op hist -group state
+	${BINDIR}/sybil query -table people -int age,f1 -op hist -group state
 	
 
 bindir:
@@ -48,7 +42,7 @@ profile: bindir
 	make all
 
 tags: 
-	ctags --languages=+Go src/lib/*.go src/query/*.go src/ingest/*.go
+	ctags --languages=+Go src/lib/*.go
 
 default: all
 

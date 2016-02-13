@@ -1,4 +1,4 @@
-package pcs
+package sybil
 
 // ByAge implements sort.Interface for []Person based on
 // the Age field.

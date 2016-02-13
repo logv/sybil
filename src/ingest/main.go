@@ -1,7 +1,7 @@
 package main
 
-import pcs "../lib"
+import sybil "../lib"
 
 func main() {
-	pcs.RunIngestCmdLine()
+	sybil.RunIngestCmdLine()
 }

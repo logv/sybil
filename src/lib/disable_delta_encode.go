@@ -1,5 +1,5 @@
 // +build denc
 
-package pcs
+package sybil
 
 var DELTA_ENCODE_RECORD_IDS bool

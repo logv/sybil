@@ -1,6 +1,6 @@
-package pcs_test
+package sybil_test
 
-import pcs "../"
+import sybil "../"
 
 import "math"
 import "fmt"
@@ -11,17 +11,17 @@ import "strings"
 
 func TestTableLoadRecords(test *testing.T) {
 	delete_test_db()
-	pcs.CHUNK_SIZE = 100
+	sybil.CHUNK_SIZE = 100
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	pcs.TEST_MODE = true
+	sybil.TEST_MODE = true
 	BLOCK_COUNT := 3
-	COUNT := pcs.CHUNK_SIZE * BLOCK_COUNT
-	t := pcs.GetTable(TEST_TABLE_NAME)
+	COUNT := sybil.CHUNK_SIZE * BLOCK_COUNT
+	t := sybil.GetTable(TEST_TABLE_NAME)
 
 	for i := 0; i < COUNT; i++ {
 		r := t.NewRecord()
@@ -35,9 +35,9 @@ func TestTableLoadRecords(test *testing.T) {
 
 	unload_test_table()
 
-	nt := pcs.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TEST_TABLE_NAME)
 	nt.LoadTableInfo()
-	loadSpec := pcs.NewLoadSpec()
+	loadSpec := sybil.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	loadSpec.Str("age_str")
 	loadSpec.Int("id")
@@ -52,15 +52,15 @@ func TestTableLoadRecords(test *testing.T) {
 		test.Error("Wrote", BLOCK_COUNT, "blocks, but came back with", len(nt.BlockList))
 	}
 
-	filters := []pcs.Filter{}
-	aggs := []pcs.Aggregation{}
-	groupings := []pcs.Grouping{}
+	filters := []sybil.Filter{}
+	aggs := []sybil.Aggregation{}
+	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age_str"))
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
 	fmt.Println("GROUPINGS", groupings)
 
-	querySpec := pcs.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
 	querySpec.Punctuate()
 
 	nt.MatchAndAggregate(&querySpec)
@@ -74,7 +74,7 @@ func TestTableLoadRecords(test *testing.T) {
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, pcs.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		val, err := strconv.ParseInt(k, 10, 64)
 		if err != nil || math.Abs(float64(val)-float64(v.Ints["age"])) > 0.1 {
@@ -86,18 +86,18 @@ func TestTableLoadRecords(test *testing.T) {
 
 func TestAveraging(test *testing.T) {
 	delete_test_db()
-	pcs.CHUNK_SIZE = 100
+	sybil.CHUNK_SIZE = 100
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	pcs.TEST_MODE = true
+	sybil.TEST_MODE = true
 
 	BLOCK_COUNT := 3
-	COUNT := pcs.CHUNK_SIZE * BLOCK_COUNT
-	t := pcs.GetTable(TEST_TABLE_NAME)
+	COUNT := sybil.CHUNK_SIZE * BLOCK_COUNT
+	t := sybil.GetTable(TEST_TABLE_NAME)
 
 	total_age := int64(0)
 	for i := 0; i < COUNT; i++ {
@@ -113,8 +113,8 @@ func TestAveraging(test *testing.T) {
 
 	t.SaveRecords()
 
-	nt := pcs.GetTable(TEST_TABLE_NAME)
-	loadSpec := pcs.NewLoadSpec()
+	nt := sybil.GetTable(TEST_TABLE_NAME)
+	loadSpec := sybil.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	loadSpec.Str("age_str")
 	loadSpec.Int("id")
@@ -129,20 +129,20 @@ func TestAveraging(test *testing.T) {
 		test.Error("Wrote", BLOCK_COUNT, "blocks, but came back with", len(nt.BlockList))
 	}
 
-	filters := []pcs.Filter{}
-	aggs := []pcs.Aggregation{}
-	groupings := []pcs.Grouping{}
+	filters := []sybil.Filter{}
+	aggs := []sybil.Aggregation{}
+	groupings := []sybil.Grouping{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
 	fmt.Println("GROUPINGS", groupings)
 
-	querySpec := pcs.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
 	querySpec.Punctuate()
 
 	nt.MatchAndAggregate(&querySpec)
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, pcs.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		if math.Abs(float64(avg_age)-float64(v.Ints["age"])) > 0.1 {
 			fmt.Println("ACC", v.Ints["age"])
