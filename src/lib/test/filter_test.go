@@ -60,7 +60,7 @@ func TestFilters(test *testing.T) {
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
-		test.Error("Str Filter for age 20 returned no results")
+		test.Error("Int Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {

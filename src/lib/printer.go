@@ -33,7 +33,7 @@ func printTimeResults(querySpec *QuerySpec) {
 		keys = append(keys, k)
 	}
 
-	sort.Sort(ByVal(keys))
+	sort.Ints(keys)
 
 	log.Println("RESULT COUNT", len(querySpec.TimeResults))
 	if *f_JSON {

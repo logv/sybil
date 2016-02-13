@@ -426,7 +426,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	block_specs := make(map[string]*QuerySpec)
 
 	wg.Add(1)
-	// why is table info so slow to open!!!
 	go func() {
 		defer wg.Done()
 		t.LoadTableInfo()
@@ -436,38 +435,37 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	m := &sync.Mutex{}
 
+	load_all := false
+	if loadSpec != nil && loadSpec.LoadAllColumns {
+		load_all = true
+	}
+
 	count := 0
 	skipped := 0
 	block_count := 0
 	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
 	for f := range files {
+		// Load blocks in reverse order
 		v := files[len(files)-f-1]
-		if strings.HasSuffix(v.Name(), "info.db") {
-			continue
-		}
 
-		if strings.HasSuffix(v.Name(), "old") {
+		switch {
+		case strings.HasSuffix(v.Name(), "info.db"):
 			continue
-		}
-		if strings.HasSuffix(v.Name(), "partial") {
+		case strings.HasSuffix(v.Name(), "old"):
+			continue
+		case strings.HasSuffix(v.Name(), "partial"):
 			continue
 		}
 
 		if v.IsDir() {
 			filename := path.Join(*f_DIR, t.Name, v.Name())
-			wg.Add(1)
-			load_all := false
-			if loadSpec != nil && loadSpec.LoadAllColumns {
-				load_all = true
-			}
-
 			this_block++
 
+			wg.Add(1)
 			go func() {
 				defer wg.Done()
 
-				// If the block info doesn't fit our filters, we should just ignore this record...
 				start := time.Now()
 
 				should_load := t.ShouldLoadBlockFromDir(filename, querySpec)
@@ -495,11 +493,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 					if querySpec != nil {
 						blockQuery := CopyQuerySpec(querySpec)
-
 						ret := FilterAndAggRecords(blockQuery, &block.RecordList)
 
 						if HOLD_MATCHES {
-							log.Println("COPYING MATCHES")
 							blockQuery.Matched = ret[:]
 						}
 
@@ -536,7 +532,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if this_block%CHUNKS_BEFORE_GC == 0 && *f_GC {
+			if DELETE_BLOCKS_AFTER_QUERY && this_block%CHUNKS_BEFORE_GC == 0 && *f_GC {
 				wg.Wait()
 				m.Lock()
 				start := time.Now()
@@ -545,7 +541,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				m.Unlock()
 				end := time.Now()
 
-				fmt.Fprint(os.Stderr, "G")
+				fmt.Fprint(os.Stderr, ",")
 				end = time.Now()
 				block_gc_time += end.Sub(start)
 			}
@@ -559,6 +555,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	if *f_READ_INGESTION_LOG {
 		if querySpec != nil {
 			rowStoreQuery.querySpec = CopyQuerySpec(querySpec)
+
+			// Entrust AfterLoadQueryCB to call Done on wg
 			rowStoreQuery.wg = &wg
 			block_specs[INGEST_DIR] = rowStoreQuery.querySpec
 			wg.Add(1)

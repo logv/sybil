@@ -90,12 +90,6 @@ func (h *Hist) addValue(value int) {
 	h.avgs[bucket_value] = partial + (float64(value)-partial)/float64(h.values[bucket_value])
 }
 
-type ByVal []int
-
-func (a ByVal) Len() int           { return len(a) }
-func (a ByVal) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByVal) Less(i, j int) bool { return a[i] < a[j] }
-
 func (h *Hist) getPercentiles() []int {
 	if h.Count == 0 {
 		return make([]int, 0)
@@ -108,7 +102,7 @@ func (h *Hist) getPercentiles() []int {
 	for k := range h.values {
 		keys = append(keys, k)
 	}
-	sort.Sort(ByVal(keys))
+	sort.Ints(keys)
 
 	percentiles[0] = h.Min
 	count := 0

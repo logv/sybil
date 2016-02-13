@@ -213,6 +213,8 @@ func RunQueryCmdLine() {
 		case INT_VAL:
 			loadSpec.Int(v)
 		default:
+			t.PrintColInfo()
+			fmt.Println("")
 			log.Fatal("Unknown column type for column: ", v)
 		}
 
