@@ -27,7 +27,7 @@ type AfterRowBlockLoad func(string, RecordList)
 
 func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
-	dirname := path.Join(*f_DIR, t.Name, "ingest")
+	dirname := path.Join(*f_DIR, t.Name, INGEST_DIR)
 
 	file, err := os.Open(dirname)
 	if err != nil {

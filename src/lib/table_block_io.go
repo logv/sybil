@@ -35,27 +35,54 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {
 	temp_block.SaveToColumns(filename)
 }
 
+func (t *Table) FindPartialBlocks() []*TableBlock {
+	t.LoadRecords(nil)
+
+	ret := make([]*TableBlock, 0)
+
+	for _, v := range t.BlockList {
+		if v.Name == ROW_STORE_BLOCK {
+			continue
+		}
+
+		if v.Info.NumRecords < int32(CHUNK_SIZE) {
+			ret = append(ret, v)
+		}
+	}
+
+	return ret
+}
+
+// TODO: find any open blocks and then fill them...
 func (t *Table) FillPartialBlock() bool {
 	if len(t.newRecords) == 0 {
 		return false
 	}
 
-	log.Println("CHECKING FOR PARTIAL BLOCK", t.LastBlockId)
+	open_blocks := t.FindPartialBlocks()
+
+	log.Println("OPEN BLOCKS", open_blocks)
+	var filename string
+
+	if len(open_blocks) == 0 {
+		return true
+	}
+
+	for _, b := range open_blocks {
+		filename = b.Name
+	}
+
+	log.Println("OPENING PARTIAL BLOCK", filename)
 
 	// Open up our last record block, see how full it is
-	filename := getBlockDir(t.Name, t.LastBlockId)
-
 	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
 	partialRecords := block.RecordList
 	log.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
-	incBlockId := false
 	if len(partialRecords) < CHUNK_SIZE {
 		delta := CHUNK_SIZE - len(partialRecords)
 		if delta > len(t.newRecords) {
 			delta = len(t.newRecords)
-		} else {
-			incBlockId = true
 		}
 
 		log.Println("SAVING PARTIAL RECORDS", delta, "TO", filename)
@@ -66,13 +93,6 @@ func (t *Table) FillPartialBlock() bool {
 		} else {
 			t.newRecords = make(RecordList, 0)
 		}
-
-	} else {
-		incBlockId = true
-	}
-
-	if incBlockId {
-		t.LastBlockId++
 	}
 
 	return true
@@ -135,10 +155,6 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	tb := newTableBlock()
 	tb.Name = dirname
 
-	t.block_m.Lock()
-	t.BlockList[dirname] = &tb
-	t.block_m.Unlock()
-
 	tb.table = t
 
 	// find out how many records are kept in this dir...
@@ -150,9 +166,17 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	dec.Decode(&info)
 	iend := time.Now()
 
+	if info.NumRecords <= 0 {
+		return &tb
+	}
+
 	if DEBUG_TIMING {
 		log.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
+
+	t.block_m.Lock()
+	t.BlockList[dirname] = &tb
+	t.block_m.Unlock()
 
 	tb.allocateRecords(loadSpec, info, load_records)
 	tb.Info = &info
@@ -197,6 +221,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 type AfterLoadQueryCB struct {
 	querySpec *QuerySpec
 	wg        *sync.WaitGroup
+
+	count int
 }
 
 func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
@@ -206,6 +232,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 	}
 
 	ret := FilterAndAggRecords(cb.querySpec, &records)
+	cb.count += len(ret)
 
 	if HOLD_MATCHES {
 		log.Println("COPYING MATCHES")

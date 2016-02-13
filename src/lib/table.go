@@ -13,9 +13,8 @@ type Table struct {
 	KeyTypes  map[int16]int8
 
 	// Need to keep track of the last block we've used, right?
-	LastBlockId int
-	LastBlock   TableBlock
-	RowBlock    *TableBlock
+	LastBlock TableBlock
+	RowBlock  *TableBlock
 
 	StrInfo StrInfoTable
 	IntInfo IntInfoTable

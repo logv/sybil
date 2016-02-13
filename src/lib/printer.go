@@ -110,7 +110,10 @@ func printSortedResults(querySpec *QuerySpec) {
 }
 
 func printResult(querySpec *QuerySpec, v *Result) {
-	fmt.Println(fmt.Sprintf("%-20s", v.GroupByKey)[:20], fmt.Sprintf("%.0d", v.Count))
+	group_key := strings.Replace(v.GroupByKey, GROUP_DELIMITER, ",", -1)
+	group_key = strings.TrimRight(group_key, ",")
+
+	fmt.Println(fmt.Sprintf("%-20s", group_key)[:20], fmt.Sprintf("%.0d", v.Count))
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
 		if *f_OP == "hist" {

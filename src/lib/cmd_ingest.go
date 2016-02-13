@@ -17,7 +17,7 @@ import (
 type Dictionary map[string]interface{}
 
 func (t *Table) getNewIngestBlockName() (string, error) {
-	name, err := ioutil.TempDir(path.Join(*f_DIR, t.Name), "ingest")
+	name, err := ioutil.TempDir(path.Join(*f_DIR, t.Name), "block")
 	return name, err
 }
 
@@ -161,7 +161,7 @@ var EXCLUDES = make(map[string]bool)
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
-	ingestfile := flag.String("file", "ingest", "name of dir to ingest into")
+	ingestfile := flag.String("file", INGEST_DIR, "name of dir to ingest into")
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")

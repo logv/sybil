@@ -150,13 +150,9 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 		return
 	}
 
-	ingestdir := path.Join(*f_DIR, t.Name, "ingest")
-	digestdir := path.Join(*f_DIR, t.Name, "digest")
-	stomachedir := path.Join(*f_DIR, t.Name, "stomache")
+	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
 
-	os.MkdirAll(digestdir, 0777)
 	os.MkdirAll(ingestdir, 0777)
-	os.MkdirAll(stomachedir, 0777)
 
 	w, err := ioutil.TempFile(ingestdir, fmt.Sprintf("%s_", blockname))
 

@@ -14,7 +14,7 @@ var INTERNAL_RESULT_LIMIT = 100000
 var OP_AVG = 1
 var OP_HIST = 2
 
-var GROUP_DELIMITER = ":|:"
+var GROUP_DELIMITER = "\t"
 
 type SortResultsByCol struct {
 	Results []*Result

@@ -109,11 +109,10 @@ func (t *Table) SaveTableInfo(fname string) {
 
 func getSaveTable(t *Table) *Table {
 	return &Table{Name: t.Name,
-		KeyTable:    t.KeyTable,
-		KeyTypes:    t.KeyTypes,
-		IntInfo:     t.IntInfo,
-		StrInfo:     t.StrInfo,
-		LastBlockId: t.LastBlockId}
+		KeyTable: t.KeyTable,
+		KeyTypes: t.KeyTypes,
+		IntInfo:  t.IntInfo,
+		StrInfo:  t.StrInfo}
 }
 
 func (t *Table) saveRecordList(records RecordList) bool {
@@ -127,23 +126,30 @@ func (t *Table) saveRecordList(records RecordList) bool {
 	chunks := len(records) / chunk_size
 
 	if chunks == 0 {
-		filename := getBlockFilename(t.Name, t.LastBlockId)
+		filename, err := t.getNewIngestBlockName()
+		if err != nil {
+			log.Fatal("ERR SAVING BLOCK", filename, err)
+		}
 		t.SaveRecordsToBlock(records, filename)
 	} else {
 		for j := 0; j < chunks; j++ {
-			filename := getBlockFilename(t.Name, t.LastBlockId)
+			filename, err := t.getNewIngestBlockName()
+			if err != nil {
+				log.Fatal("ERR SAVING BLOCK", filename, err)
+			}
 			t.SaveRecordsToBlock(records[j*chunk_size:(j+1)*chunk_size], filename)
-			t.LastBlockId++
 		}
 
 		// SAVE THE REMAINDER
 		if len(records) > chunks*chunk_size {
-			filename := getBlockFilename(t.Name, t.LastBlockId)
+			filename, err := t.getNewIngestBlockName()
+			if err != nil {
+				log.Fatal("Error creating new ingestion block", err)
+			}
+
 			t.SaveRecordsToBlock(records[chunks*chunk_size:], filename)
 		}
 	}
-
-	log.Println("LAST TABLE BLOCK IS", t.LastBlockId)
 
 	return true
 }
@@ -156,6 +162,7 @@ func (t *Table) SaveRecords() bool {
 
 	t.FillPartialBlock()
 	ret := t.saveRecordList(t.newRecords)
+	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
 
 	return ret
@@ -196,8 +203,6 @@ func (t *Table) LoadTableInfo() {
 		log.Println("LOADED CACHED STR INFO")
 		t.StrInfo = saved_table.StrInfo
 	}
-
-	t.LastBlockId = saved_table.LastBlockId
 
 	t.populate_string_id_lookup()
 
@@ -368,8 +373,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	if querySpec != nil && *f_READ_INGESTION_LOG {
 		log.Println("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
-		log.Println("RECORDS MATCHED", len(rowStoreQuery.querySpec.Matched))
-		count += len(rowStoreQuery.querySpec.Matched)
+		log.Println("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
+		count += rowStoreQuery.count
 	}
 
 	if block_gc_time > 0 {
@@ -397,7 +402,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	end := time.Now()
 
 	if loadSpec != nil {
-		log.Println(count, "RECORDS LOADED INTO", t.Name, "TOOK", end.Sub(waystart))
+		log.Println(count, "RECORDS LOADED FROM BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
 		log.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}

@@ -19,6 +19,8 @@ func RunDigestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
+	DELETE_BLOCKS_AFTER_QUERY = false
+
 	t := GetTable(*f_TABLE)
 	t.LoadRecords(nil)
 
