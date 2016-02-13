@@ -7,12 +7,6 @@ PCS consists of three main parts:
 * the digestion binary (writes blocks in column form from row form)
 * and the query binary (reads blocks in column form)
 
-In general, records are inserted through the ingestion binary into the row
-store.  Every so often (30 seconds?), the digestion binary should be called to
-split the records into columns and optimizes their space usage on disk based on
-their cardinality.
-
-
 FEATURES
 ========
 

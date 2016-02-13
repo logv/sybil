@@ -10,9 +10,10 @@ Test Plan:
   x Load from column store
     x Verify ints, strs, sets
   * Filters:
-    * Int: gt, lt, eq, ne
-    * Str: eq, ne, re, nre
+    * Int: gt, lt, !eq, ne
+    * Str: !eq, ne, re, nre
     * Set: in nin
+    * Work with samples
   * Aggregation Line
     * Histograms
       * Outliers
