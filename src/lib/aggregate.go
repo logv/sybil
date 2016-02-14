@@ -11,8 +11,11 @@ import "strconv"
 
 var INTERNAL_RESULT_LIMIT = 100000
 
-var OP_AVG = 1
-var OP_HIST = 2
+const (
+	NO_OP   = iota
+	OP_AVG  = iota
+	OP_HIST = iota
+)
 
 var GROUP_DELIMITER = "\t"
 

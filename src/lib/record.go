@@ -9,9 +9,12 @@ type Record struct {
 	block *TableBlock
 }
 
-var INT_VAL = int8(1)
-var STR_VAL = int8(2)
-var SET_VAL = int8(3)
+const (
+	_NO_VAL = iota
+	INT_VAL = iota
+	STR_VAL = iota
+	SET_VAL = iota
+)
 
 func (r *Record) GetStrVal(name string) (string, bool) {
 	id := r.block.get_key_id(name)
