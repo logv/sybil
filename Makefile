@@ -7,7 +7,7 @@ PROFILE = -tags profile
 all: sybil
 
 sybil: bindir
-	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./src/sybil
+	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(BUILD_FLAGS) ./
 
 fake-data: fake-uptime fake-people
 
