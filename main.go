@@ -1,6 +1,6 @@
 package main
 
-import sybil "./src/lib"
+import sybil "github.com/logV/sybil/src/lib"
 import "os"
 import "log"
 
