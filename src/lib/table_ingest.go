@@ -19,6 +19,16 @@ func (t *Table) IngestRecords(blockname string) {
 	t.AppendRecordsToLog(t.newRecords[:], blockname)
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
+	t.ReleaseRecords()
+
+	f_READ_INGESTION_LOG = &TRUE
+	DELETE_BLOCKS_AFTER_QUERY = false
+	HOLD_MATCHES = true
+	t.LoadRecords(nil)
+	log.Println("LOADED RECORDS", len(t.RowBlock.RecordList))
+	if t.RowBlock != nil && len(t.RowBlock.RecordList) > CHUNK_THRESHOLD {
+		t.DigestRecords(INGEST_DIR)
+	}
 }
 
 var NO_MORE_BLOCKS = GROUP_DELIMITER
@@ -101,13 +111,14 @@ func SaveBlockChunkCB(digestname string, records RecordList) {
 		t.newRecords = append(t.newRecords, records...)
 	}
 
-	if len(t.newRecords) > 1000 {
+	if len(t.newRecords) > CHUNK_THRESHOLD {
 		t.SaveRecords()
 		t.ReleaseRecords()
 	}
 
 	log.Println("Removing", digestname)
 	os.Remove(digestname)
+
 }
 
 // Go through rowstore and save records out to column store

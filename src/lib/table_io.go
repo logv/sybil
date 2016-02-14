@@ -353,28 +353,35 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	var logend time.Time
 	logstart := time.Now()
 	if *f_READ_INGESTION_LOG {
-		if querySpec != nil {
+		if querySpec == nil {
+			rowStoreQuery.querySpec = &QuerySpec{}
+			rowStoreQuery.querySpec.Punctuate()
+		} else {
 			rowStoreQuery.querySpec = CopyQuerySpec(querySpec)
-
-			// Entrust AfterLoadQueryCB to call Done on wg
-			rowStoreQuery.wg = &wg
-			block_specs[INGEST_DIR] = rowStoreQuery.querySpec
-			wg.Add(1)
-			go func() {
-				t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
-				logend = time.Now()
-			}()
 		}
+
+		// Entrust AfterLoadQueryCB to call Done on wg
+		rowStoreQuery.wg = &wg
+		block_specs[INGEST_DIR] = rowStoreQuery.querySpec
+		wg.Add(1)
+		go func() {
+			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
+			logend = time.Now()
+		}()
 	}
 
 	wg.Wait()
 
 	fmt.Fprint(os.Stderr, "\n")
 
-	if querySpec != nil && *f_READ_INGESTION_LOG {
+	if *f_READ_INGESTION_LOG {
 		log.Println("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		log.Println("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
 		count += rowStoreQuery.count
+
+		if HOLD_MATCHES {
+			t.RowBlock.RecordList = rowStoreQuery.records
+		}
 	}
 
 	if block_gc_time > 0 {

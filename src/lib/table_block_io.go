@@ -221,6 +221,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 type AfterLoadQueryCB struct {
 	querySpec *QuerySpec
 	wg        *sync.WaitGroup
+	records   RecordList
 
 	count int
 }
@@ -231,13 +232,12 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		return
 	}
 
+	if HOLD_MATCHES {
+		cb.records = append(cb.records, records...)
+	}
+
 	ret := FilterAndAggRecords(cb.querySpec, &records)
 	cb.count += len(ret)
-
-	if HOLD_MATCHES {
-		log.Println("COPYING MATCHES")
-		cb.querySpec.Matched = ret
-	}
 
 	fmt.Fprint(os.Stderr, "+")
 }

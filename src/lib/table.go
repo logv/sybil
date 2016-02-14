@@ -31,7 +31,9 @@ type Table struct {
 }
 
 var LOADED_TABLES = make(map[string]*Table)
-var CHUNK_SIZE = 1024 * 64
+var CHUNK_SIZE = 1024 * 8 * 8
+var CHUNK_THRESHOLD = CHUNK_SIZE / 8
+
 var table_m sync.Mutex
 
 // This is a singleton constructor for Tables
