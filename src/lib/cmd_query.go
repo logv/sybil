@@ -44,17 +44,13 @@ func addFlags() {
 	f_LIST_TABLES = flag.Bool("tables", false, "List tables")
 	f_UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
-	// TODO: hook this up in the ready -> query
-	f_READ_INGESTION_LOG = flag.Bool("read-log", false, "Also read records from ingestion log (WARNING: slow!)")
-
 	f_SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
 	f_INTS = flag.String("int", "", "Integer values to aggregate")
 	f_STRS = flag.String("str", "", "String values to load")
 	f_GROUPS = flag.String("group", "", "values group by")
 
-	f_LOAD_THEN_QUERY = flag.Bool("ltq", false, "Load, Then Query (Uses more RAM!)")
-	f_LOAD_AND_QUERY = flag.Bool("laq", true, "Load and Query (Uses less RAM)")
-	f_PRINT_KEYS = flag.Bool("print-keys", false, "Print table key info")
+	f_SKIP_ROWSTORE = flag.Bool("no-read-log", false, "skip reading the ingestion log")
+
 	f_JSON = flag.Bool("json", false, "Print results in JSON format")
 }
 
@@ -112,6 +108,10 @@ func RunQueryCmdLine() {
 
 	if *f_LOAD_THEN_QUERY {
 		f_LOAD_AND_QUERY = &FALSE
+	}
+
+	if *f_SKIP_ROWSTORE {
+		f_READ_INGESTION_LOG = &FALSE
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
