@@ -51,12 +51,15 @@ func (a SortResultsByCol) Less(i, j int) bool {
 	return t1 > t2
 }
 
-func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordList {
+func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	var binarybuffer []byte = make([]byte, 8*len(querySpec.Groups))
 	bs := make([]byte, 8)
 	records := *recordsPtr
 
-	ret := make(RecordList, 0)
+	matched_records := 0
+	if HOLD_MATCHES {
+		querySpec.Matched = make(RecordList, 0)
+	}
 
 	var result_map ResultMap
 	columns := make(map[int16]*TableColumn)
@@ -80,11 +83,13 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 			}
 		}
 
-		if add {
-			ret = append(ret, r)
-		} else {
-			// if we aren't adding this record... then we shouldn't continue looking at it
+		if !add {
 			continue
+		}
+
+		matched_records++
+		if HOLD_MATCHES {
+			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
 		// BUILD GROUPING KEY
@@ -220,7 +225,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 		querySpec.Results = *translate_group_by(querySpec.Results, querySpec.Groups, columns)
 	}
 
-	return ret[:]
+	return matched_records
+
 }
 
 func translate_group_by(Results ResultMap, Groups []Grouping, columns map[int16]*TableColumn) *ResultMap {
@@ -368,11 +374,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 
 			blockQuery := CopyQuerySpec(querySpec)
 
-			ret := FilterAndAggRecords(blockQuery, &this_block.RecordList)
-
-			if HOLD_MATCHES {
-				blockQuery.Matched = ret
-			}
+			FilterAndAggRecords(blockQuery, &this_block.RecordList)
 
 			block_specs[this_block.Name] = blockQuery
 

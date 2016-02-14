@@ -236,8 +236,8 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, records...)
 	}
 
-	ret := FilterAndAggRecords(cb.querySpec, &records)
-	cb.count += len(ret)
+	count := FilterAndAggRecords(cb.querySpec, &records)
+	cb.count += count
 
 	fmt.Fprint(os.Stderr, "+")
 }

@@ -293,17 +293,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 					if querySpec != nil {
 						blockQuery := CopyQuerySpec(querySpec)
-						ret := FilterAndAggRecords(blockQuery, &block.RecordList)
+						blockCount := FilterAndAggRecords(blockQuery, &block.RecordList)
 
-						if HOLD_MATCHES {
-							blockQuery.Matched = ret[:]
-						}
-
-						if *f_SAMPLES || *f_PRINT_INFO {
-							block.Matched = ret[:]
-						}
 						m.Lock()
-						count += len(ret)
+						count += blockCount
 						block_specs[block.Name] = blockQuery
 						m.Unlock()
 					} else {
