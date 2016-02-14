@@ -46,4 +46,3 @@ wishlist / tbd
 --------------
 
 *  MapReduce execution model of custom code (embedded engine?)
-
