@@ -3,7 +3,7 @@ package sybil
 import "sync"
 
 type TableColumn struct {
-	Type        string
+	Type        int8
 	StringTable map[string]int32
 	RCache      map[int]bool
 

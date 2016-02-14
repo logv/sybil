@@ -48,7 +48,8 @@ func TestTableLoadRecords(test *testing.T) {
 		test.Error("Wrote 100 records, but read back", count)
 	}
 
-	if len(nt.BlockList) != BLOCK_COUNT {
+	// +1 is the Row Store Block...
+	if len(nt.BlockList) != BLOCK_COUNT+1 {
 		test.Error("Wrote", BLOCK_COUNT, "blocks, but came back with", len(nt.BlockList))
 	}
 
@@ -125,7 +126,7 @@ func TestAveraging(test *testing.T) {
 		test.Error("Wrote", COUNT, "records, but read back", count)
 	}
 
-	if len(nt.BlockList) != BLOCK_COUNT {
+	if len(nt.BlockList) != BLOCK_COUNT+1 {
 		test.Error("Wrote", BLOCK_COUNT, "blocks, but came back with", len(nt.BlockList))
 	}
 

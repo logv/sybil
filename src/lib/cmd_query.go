@@ -240,6 +240,10 @@ func RunQueryCmdLine() {
 		querySpec.TimeBucket = *f_TIME_BUCKET
 		log.Println("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*f_TIME_COL)
+		time_col_id, ok := t.KeyTable[*f_TIME_COL]
+		if ok {
+			TIME_COL_ID = time_col_id
+		}
 	}
 
 	querySpec.Limit = int16(*f_LIMIT)

@@ -23,6 +23,7 @@ var GROUP_BY []string
 var f_ADD_RECORDS *int
 
 var TIMESERIES = false
+var TIME_COL_ID int16
 var f_TIME *bool = &TIMESERIES
 var f_TIME_COL *string
 var f_TIME_BUCKET *int

@@ -1,13 +1,15 @@
 package sybil
 
-import "bytes"
 import "log"
 import "fmt"
 import "time"
 import "sync"
+import "bytes"
 import "sort"
 import "os"
 import "strconv"
+
+import "encoding/binary"
 
 var INTERNAL_RESULT_LIMIT = 100000
 
@@ -50,16 +52,20 @@ func (a SortResultsByCol) Less(i, j int) bool {
 }
 
 func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordList {
-	var buffer bytes.Buffer
+	var binarybuffer []byte = make([]byte, 8*len(querySpec.Groups))
+	bs := make([]byte, 8)
 	records := *recordsPtr
 
 	ret := make(RecordList, 0)
 
 	var result_map ResultMap
+	columns := make(map[int16]*TableColumn)
+
 	if querySpec.TimeBucket <= 0 {
 		result_map = querySpec.Results
 	}
 
+	var val uint64
 	for i := 0; i < len(records); i++ {
 		add := true
 		r := records[i]
@@ -81,41 +87,55 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 			continue
 		}
 
-		// BELOW HERE IS THE AGGREGATION CORE
-		if len(querySpec.Groups) == 0 {
-			buffer.WriteString("total")
-		}
-
 		// BUILD GROUPING KEY
-		for _, g := range querySpec.Groups {
+		// TODO: do a lot less string work here and
+		// build a grouping key based off the bytes?
+		for i, _ := range binarybuffer {
+			binarybuffer[i] = 0
+		}
+		for i, g := range querySpec.Groups {
+			for j, _ := range bs {
+				bs[j] = 0
+			}
+
+			_, ok := columns[g.name_id]
+			if !ok {
+				columns[g.name_id] = r.block.GetColumnInfo(g.name_id)
+				columns[g.name_id].Type = r.Populated[g.name_id]
+			}
+
 			switch r.Populated[g.name_id] {
 			case INT_VAL:
-				val := strconv.FormatInt(int64(r.Ints[g.name_id]), 10)
-				buffer.WriteString(val)
-
+				val = uint64(r.Ints[g.name_id])
 			case STR_VAL:
-				col_id := g.name_id
-				col := r.block.GetColumnInfo(col_id)
-				val := col.get_string_for_val(int32(r.Strs[col_id]))
-				buffer.WriteString(string(val))
+				val = uint64(r.Strs[g.name_id])
 			}
-			buffer.WriteString(GROUP_DELIMITER)
+
+			binary.LittleEndian.PutUint64(bs, val)
+			for j, _ := range bs {
+				binarybuffer[i*8+j] = bs[j]
+			}
 		}
 
-		group_key := buffer.String()
-		buffer.Reset()
+		var ok bool
+		group_key := string(binarybuffer)
+
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			val, ok := r.GetIntVal(*f_TIME_COL)
-			if !ok {
+			if len(r.Populated) <= int(TIME_COL_ID) {
 				continue
 			}
+
+			if r.Populated[TIME_COL_ID] != INT_VAL {
+				continue
+			}
+			val := int64(r.Ints[TIME_COL_ID])
 
 			big_record, b_ok := querySpec.Results[group_key]
 			if !b_ok {
 				if len(querySpec.Results) < INTERNAL_RESULT_LIMIT {
 					big_record = NewResult()
-					big_record.GroupByKey = group_key
+					big_record.BinaryByKey = group_key
 					querySpec.Results[group_key] = big_record
 					b_ok = true
 				}
@@ -125,13 +145,13 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 				big_record.Count++
 			}
 
-			val = int(val/querySpec.TimeBucket) * querySpec.TimeBucket
-			result_map, ok = querySpec.TimeResults[val]
+			val = int64(int(val) / querySpec.TimeBucket * querySpec.TimeBucket)
+			result_map, ok = querySpec.TimeResults[int(val)]
 
 			if !ok {
 				// TODO: this make call is kind of slow...
 				result_map = make(ResultMap)
-				querySpec.TimeResults[val] = result_map
+				querySpec.TimeResults[int(val)] = result_map
 			}
 
 		}
@@ -146,7 +166,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 			}
 
 			added_record = NewResult()
-			added_record.GroupByKey = group_key
+			added_record.BinaryByKey = group_key
 
 			result_map[group_key] = added_record
 		}
@@ -187,7 +207,57 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) RecordLis
 
 	}
 
+	// Now to unpack the byte buffers we oh so stupidly used in the group by...
+
+	if len(querySpec.TimeResults) > 0 {
+		for _, result_map := range querySpec.TimeResults {
+			translate_group_by(result_map, querySpec.Groups, columns)
+		}
+
+	}
+
+	if len(querySpec.Results) > 0 {
+		querySpec.Results = *translate_group_by(querySpec.Results, querySpec.Groups, columns)
+	}
+
 	return ret[:]
+}
+
+func translate_group_by(Results ResultMap, Groups []Grouping, columns map[int16]*TableColumn) *ResultMap {
+
+	var buffer bytes.Buffer
+
+	var newResults = make(ResultMap)
+	var bs []byte
+
+	for _, r := range Results {
+		buffer.Reset()
+		if len(Groups) == 0 {
+			buffer.WriteString("total")
+		}
+		for i, g := range Groups {
+			bs = []byte(r.BinaryByKey[i*8 : (i+1)*8])
+
+			col := columns[g.name_id]
+
+			val := binary.LittleEndian.Uint64(bs)
+			switch col.Type {
+			case INT_VAL:
+				buffer.WriteString(strconv.FormatInt(int64(val), 10))
+			case STR_VAL:
+				buffer.WriteString(col.get_string_for_val(int32(val)))
+
+			}
+
+			buffer.WriteString(GROUP_DELIMITER)
+
+		}
+
+		r.GroupByKey = buffer.String()
+		newResults[r.GroupByKey] = r
+	}
+
+	return &newResults
 }
 
 func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {

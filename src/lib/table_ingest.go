@@ -39,6 +39,8 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
 	dirname := path.Join(*f_DIR, t.Name, INGEST_DIR)
 
+	os.MkdirAll(dirname, 0777)
+
 	file, err := os.Open(dirname)
 	if err != nil {
 		log.Println("Can't open the ingestion dir", dirname)

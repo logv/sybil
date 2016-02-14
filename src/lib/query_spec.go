@@ -41,8 +41,9 @@ type Result struct {
 	Ints  map[string]float64
 	Hists map[string]*Hist
 
-	GroupByKey string
-	Count      int32
+	GroupByKey  string
+	BinaryByKey string
+	Count       int32
 }
 
 func NewResult() *Result {
