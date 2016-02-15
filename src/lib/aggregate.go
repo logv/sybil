@@ -12,6 +12,7 @@ import "strconv"
 import "encoding/binary"
 
 var INTERNAL_RESULT_LIMIT = 100000
+var GROUP_BY_WIDTH = 8 // bytes
 
 const (
 	NO_OP   = iota
@@ -52,8 +53,9 @@ func (a SortResultsByCol) Less(i, j int) bool {
 }
 
 func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
-	var binarybuffer []byte = make([]byte, 8*len(querySpec.Groups))
-	bs := make([]byte, 8)
+	var ok bool
+	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
+	bs := make([]byte, GROUP_BY_WIDTH)
 	records := *recordsPtr
 
 	matched_records := 0
@@ -92,12 +94,11 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
-		// BUILD GROUPING KEY
-		// TODO: do a lot less string work here and
-		// build a grouping key based off the bytes?
+		// BUILD GROUPING KEY USING BINARY BYTES
 		for i, _ := range binarybuffer {
 			binarybuffer[i] = 0
 		}
+
 		for i, g := range querySpec.Groups {
 			for j, _ := range bs {
 				bs[j] = 0
@@ -118,12 +119,9 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 			binary.LittleEndian.PutUint64(bs, val)
 			for j, _ := range bs {
-				binarybuffer[i*8+j] = bs[j]
+				binarybuffer[i*GROUP_BY_WIDTH+j] = bs[j]
 			}
 		}
-
-		var ok bool
-		group_key := string(binarybuffer)
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
@@ -136,12 +134,12 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			}
 			val := int64(r.Ints[TIME_COL_ID])
 
-			big_record, b_ok := querySpec.Results[group_key]
+			big_record, b_ok := querySpec.Results[string(binarybuffer)]
 			if !b_ok {
 				if len(querySpec.Results) < INTERNAL_RESULT_LIMIT {
 					big_record = NewResult()
-					big_record.BinaryByKey = group_key
-					querySpec.Results[group_key] = big_record
+					big_record.BinaryByKey = string(binarybuffer)
+					querySpec.Results[string(binarybuffer)] = big_record
 					b_ok = true
 				}
 			}
@@ -161,7 +159,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		}
 
-		added_record, ok := result_map[group_key]
+		added_record, ok := result_map[string(binarybuffer)]
 
 		// BUILD GROUPING RECORD
 		if !ok {
@@ -171,9 +169,9 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			}
 
 			added_record = NewResult()
-			added_record.BinaryByKey = group_key
+			added_record.BinaryByKey = string(binarybuffer)
 
-			result_map[group_key] = added_record
+			result_map[string(binarybuffer)] = added_record
 		}
 
 		added_record.Count++
@@ -242,7 +240,7 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns map[int16]
 			buffer.WriteString("total")
 		}
 		for i, g := range Groups {
-			bs = []byte(r.BinaryByKey[i*8 : (i+1)*8])
+			bs = []byte(r.BinaryByKey[i*GROUP_BY_WIDTH : (i+1)*GROUP_BY_WIDTH])
 
 			col := columns[g.name_id]
 
