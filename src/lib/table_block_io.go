@@ -165,6 +165,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	dec := gob.NewDecoder(file)
 	dec.Decode(&info)
 	iend := time.Now()
+	var wg sync.WaitGroup
 
 	if info.NumRecords <= 0 {
 		return &tb
@@ -203,15 +204,21 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 		file, _ := os.Open(filename)
 		dec := gob.NewDecoder(file)
-		switch {
-		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, info)
-		case strings.HasPrefix(fname, "set"):
-			tb.unpackSetCol(dec, info)
-		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, info)
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			switch {
+			case strings.HasPrefix(fname, "str"):
+				tb.unpackStrCol(dec, info)
+			case strings.HasPrefix(fname, "set"):
+				tb.unpackSetCol(dec, info)
+			case strings.HasPrefix(fname, "int"):
+				tb.unpackIntCol(dec, info)
+			}
+		}()
 	}
+
+	wg.Wait()
 
 	tb.Size = size
 
