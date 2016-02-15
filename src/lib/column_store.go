@@ -42,13 +42,13 @@ type SavedStrBucket struct {
 
 type SavedColumnInfo struct {
 	NumRecords int32
-	StrInfo    StrInfoTable
-	IntInfo    IntInfoTable
+
+	StrInfoMap SavedStrInfo
+	IntInfoMap SavedIntInfo
 }
 
 type SavedIntColumn struct {
 	Name            string
-	NameId          int16
 	DeltaEncodedIDs bool
 	BucketEncoded   bool
 	Bins            []SavedIntBucket
@@ -57,7 +57,6 @@ type SavedIntColumn struct {
 
 type SavedStrColumn struct {
 	Name            string
-	NameId          int16
 	DeltaEncodedIDs bool
 	BucketEncoded   bool
 	Bins            []SavedStrBucket
@@ -67,7 +66,6 @@ type SavedStrColumn struct {
 
 type SavedSetColumn struct {
 	Name            string
-	NameId          int16
 	Bins            []SavedSetBucket
 	Values          [][]int32
 	StringTable     []string

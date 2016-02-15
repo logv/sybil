@@ -10,14 +10,16 @@ type TableBlock struct {
 	Size       int64
 	Matched    RecordList
 
-	IntInfo map[int16]*IntInfo
-	StrInfo map[int16]*StrInfo
+	IntInfo IntInfoTable
+	StrInfo StrInfoTable
 
-	string_id_m          *sync.Mutex
+	disrepair   bool
+	table       *Table
+	string_id_m *sync.Mutex
+
 	val_string_id_lookup map[int32]string
-	table                *Table
-
-	columns map[int16]*TableColumn
+	columns              map[int16]*TableColumn
+	broken_keys          map[string]int16
 }
 
 func newTableBlock() TableBlock {
@@ -38,4 +40,13 @@ func (tb *TableBlock) get_key_id(name string) int16 {
 func (tb *TableBlock) get_string_for_key(id int16) string {
 	return tb.table.get_string_for_key(int(id))
 
+}
+
+func (tb *TableBlock) BrokenKey(name string, old_id int16) {
+	if tb.broken_keys == nil {
+		tb.broken_keys = make(map[string]int16)
+	}
+
+	tb.broken_keys[name] = old_id
+	tb.disrepair = true
 }

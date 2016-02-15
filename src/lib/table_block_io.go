@@ -114,16 +114,18 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 
-	if len(info.IntInfo) == 0 {
+	if len(info.IntInfoMap) == 0 {
 		return true
 	}
 
-	for field_id, _ := range info.StrInfo {
+	for field_name, _ := range info.StrInfoMap {
+		field_id := t.get_key_id(field_name)
 		min_record.ResizeFields(field_id)
 		max_record.ResizeFields(field_id)
 	}
 
-	for field_id, field_info := range info.IntInfo {
+	for field_name, field_info := range info.IntInfoMap {
+		field_id := t.get_key_id(field_name)
 		min_record.ResizeFields(field_id)
 		max_record.ResizeFields(field_id)
 
@@ -165,7 +167,6 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	dec := gob.NewDecoder(file)
 	dec.Decode(&info)
 	iend := time.Now()
-	var wg sync.WaitGroup
 
 	if info.NumRecords <= 0 {
 		return &tb
@@ -186,6 +187,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	files, _ := file.Readdir(-1)
 
 	size := int64(0)
+
+	var wg sync.WaitGroup
 
 	for _, f := range files {
 		fname := f.Name()

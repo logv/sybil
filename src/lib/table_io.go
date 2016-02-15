@@ -248,6 +248,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	count := 0
 	skipped := 0
 	block_count := 0
+	broken_count := 0
 	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
 	for f := range files {
@@ -258,6 +259,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		case strings.HasSuffix(v.Name(), "info.db"):
 			continue
 		case strings.HasSuffix(v.Name(), "old"):
+			continue
+		case strings.HasSuffix(v.Name(), "broken"):
 			continue
 		case strings.HasSuffix(v.Name(), "partial"):
 			continue
@@ -291,6 +294,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					} else {
 						log.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
 					}
+				}
+
+				if block.disrepair {
+					broken_count++
+					return
 				}
 
 				if len(block.RecordList) > 0 {
@@ -396,6 +404,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	t.populate_string_id_lookup()
 
 	log.Println("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
+	log.Println("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
 	if f_LOAD_AND_QUERY != nil && *f_LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
@@ -424,4 +433,21 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 	return t.LoadAndQueryRecords(loadSpec, nil)
+}
+
+func (t *Table) IsolateBrokenBlocks() {
+	for _, b := range t.BlockList {
+		if b.disrepair == false {
+			continue
+		}
+
+		log.Println("Repairing block", b.Name)
+		dirname := b.Name
+		newblock := fmt.Sprint(b.Name, ".broken")
+		err := os.Rename(dirname, newblock)
+		if err == nil {
+			log.Println("Renamed block to", newblock)
+		}
+
+	}
 }

@@ -144,10 +144,8 @@ func RunQueryCmdLine() {
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-	if *f_PRINT_KEYS {
-		log.Println("KEY TABLE", t.KeyTable)
-		log.Println("KEY TYPES", t.KeyTypes)
-	}
+	log.Println("KEY TABLE", t.KeyTable)
+	log.Println("KEY TYPES", t.KeyTypes)
 
 	used := make(map[int16]int)
 	for _, v := range t.KeyTable {
@@ -326,5 +324,8 @@ func RunQueryCmdLine() {
 
 	if *f_UPDATE_TABLE_INFO {
 		t.SaveTableInfo("info")
+		// Also go repair a bunch of blocks...
 	}
+
+	t.IsolateBrokenBlocks()
 }

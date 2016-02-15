@@ -70,7 +70,6 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			continue
 		}
 		intCol := SavedIntColumn{}
-		intCol.NameId = k
 		intCol.Name = col_name
 		intCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 
@@ -141,7 +140,6 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = col_name
-		setCol.NameId = k
 		setCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
@@ -222,7 +220,6 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		}
 		strCol := SavedStrColumn{}
 		strCol.Name = col_name
-		strCol.NameId = k
 		strCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
@@ -291,6 +288,9 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 	}
 }
 
+type SavedIntInfo map[string]*IntInfo
+type SavedStrInfo map[string]*StrInfo
+
 func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	records := tb.RecordList
 
@@ -301,7 +301,20 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
-	colInfo := SavedColumnInfo{NumRecords: int32(len(records)), IntInfo: tb.IntInfo, StrInfo: tb.StrInfo}
+	savedIntInfo := SavedIntInfo{}
+	savedStrInfo := SavedStrInfo{}
+
+	for k, v := range tb.IntInfo {
+		name := tb.get_string_for_key(k)
+		savedIntInfo[name] = v
+	}
+
+	for k, v := range tb.StrInfo {
+		name := tb.get_string_for_key(k)
+		savedStrInfo[name] = v
+	}
+
+	colInfo := SavedColumnInfo{NumRecords: int32(len(records)), IntInfoMap: savedIntInfo, StrInfoMap: savedStrInfo}
 	err := enc.Encode(colInfo)
 
 	if err != nil {
@@ -413,26 +426,19 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 }
 
 func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
-	records := tb.RecordList
+	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
 	var wg sync.WaitGroup
 
-	col_name := tb.table.get_string_for_key(int(into.NameId))
-	if col_name != into.Name {
-		shouldbe := tb.table.get_key_id(into.Name)
-		log.Println("WARNING: BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe, "SKIPPING!")
-		return
-
-	}
-	string_lookup := make(map[int32]string)
-
 	if err != nil {
 		log.Println("DECODE COL ERR:", err)
 	}
 
-	col := tb.GetColumnInfo(into.NameId)
+	string_lookup := make(map[int32]string)
+	col_id := tb.table.get_key_id(into.Name)
+	col := tb.GetColumnInfo(col_id)
 
 	wg.Add(2)
 
@@ -463,19 +469,19 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 					prev = r
 					record = records[r]
-					record.Populated[into.NameId] = STR_VAL
+					record.Populated[col_id] = STR_VAL
 
-					if int(into.NameId) >= len(record.Strs) {
+					if int(col_id) >= len(record.Strs) {
 						log.Println("FOUND A STRAY COLUMN...", into.Name, "RECORD LEN", len(record.Strs))
 					} else {
-						record.Strs[into.NameId] = StrField(bucket.Value)
+						record.Strs[col_id] = StrField(bucket.Value)
 					}
 				}
 			}
 		} else {
 			for r, v := range into.Values {
-				records[r].Strs[into.NameId] = StrField(v)
-				records[r].Populated[into.NameId] = STR_VAL
+				records[r].Strs[col_id] = StrField(v)
+				records[r].Populated[col_id] = STR_VAL
 			}
 
 		}
@@ -495,15 +501,10 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 		log.Println("DECODE COL ERR:", err)
 	}
 
-	col_name := tb.table.get_string_for_key(int(into.NameId))
-	if col_name != into.Name {
-		shouldbe := tb.table.get_key_id(into.Name)
-		log.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
-	}
-
+	col_id := tb.table.get_key_id(into.Name)
 	string_lookup := make(map[int32]string)
 
-	col := tb.GetColumnInfo(into.NameId)
+	col := tb.GetColumnInfo(col_id)
 	// unpack the string table
 	for k, v := range into.StringTable {
 		col.StringTable[v] = int32(k)
@@ -520,35 +521,35 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				cur_set, ok := records[r].SetMap[into.NameId]
+				cur_set, ok := records[r].SetMap[col_id]
 				if !ok {
 					cur_set = make(SetField, 0)
 				}
 
 				cur_set = append(cur_set, bucket.Value)
-				records[r].SetMap[into.NameId] = cur_set
+				records[r].SetMap[col_id] = cur_set
 
-				records[r].Populated[into.NameId] = SET_VAL
+				records[r].Populated[col_id] = SET_VAL
 				prev = r
 			}
 
 		}
 	} else {
 		for r, v := range into.Values {
-			cur_set, ok := records[r].SetMap[into.NameId]
+			cur_set, ok := records[r].SetMap[col_id]
 			if !ok {
 				cur_set = make(SetField, 0)
-				records[r].SetMap[into.NameId] = cur_set
+				records[r].SetMap[col_id] = cur_set
 			}
 
-			records[r].SetMap[into.NameId] = SetField(v)
-			records[r].Populated[into.NameId] = SET_VAL
+			records[r].SetMap[col_id] = SetField(v)
+			records[r].Populated[col_id] = SET_VAL
 		}
 	}
 }
 
 func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
-	records := tb.RecordList
+	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}
 	err := dec.Decode(into)
@@ -556,16 +557,12 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 		log.Println("DECODE COL ERR:", err)
 	}
 
-	col_name := tb.table.get_string_for_key(int(into.NameId))
-	if col_name != into.Name {
-		shouldbe := tb.table.get_key_id(into.Name)
-		log.Println("BLOCK", tb.Name, "HAS MISMATCHED COL INFO", into.Name, into.NameId, "IS", col_name, "BUT SHOULD BE", shouldbe)
-	}
+	col_id := tb.table.get_key_id(into.Name)
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			if *f_UPDATE_TABLE_INFO {
-				tb.table.update_int_info(into.NameId, bucket.Value)
+				tb.table.update_int_info(col_id, bucket.Value)
 			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -575,8 +572,8 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				records[r].Ints[into.NameId] = IntField(bucket.Value)
-				records[r].Populated[into.NameId] = INT_VAL
+				records[r].Ints[col_id] = IntField(bucket.Value)
+				records[r].Populated[col_id] = INT_VAL
 				prev = r
 			}
 
@@ -584,11 +581,11 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	} else {
 		for r, v := range into.Values {
 			if *f_UPDATE_TABLE_INFO {
-				tb.table.update_int_info(into.NameId, v)
+				tb.table.update_int_info(col_id, v)
 			}
 
-			records[r].Ints[into.NameId] = IntField(v)
-			records[r].Populated[into.NameId] = INT_VAL
+			records[r].Ints[col_id] = IntField(v)
+			records[r].Populated[col_id] = INT_VAL
 		}
 	}
 }
