@@ -9,6 +9,7 @@ import "strings"
 import "sort"
 import "runtime/debug"
 import "time"
+import "sync"
 
 type ValueMap map[int64][]uint32
 
@@ -416,6 +417,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
+	var wg sync.WaitGroup
 
 	col_name := tb.table.get_string_for_key(int(into.NameId))
 	if col_name != into.Name {
@@ -431,45 +433,56 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 
 	col := tb.GetColumnInfo(into.NameId)
-	// unpack the string table
-	for k, v := range into.StringTable {
-		col.StringTable[v] = int32(k)
-		string_lookup[int32(k)] = v
-	}
-	col.val_string_id_lookup = string_lookup
 
-	var record *Record
+	wg.Add(2)
 
-	if into.BucketEncoded {
-		for _, bucket := range into.Bins {
+	go func() {
+		// unpack the string table
+		for k, v := range into.StringTable {
+			col.StringTable[v] = int32(k)
+			string_lookup[int32(k)] = v
+		}
+		col.val_string_id_lookup = string_lookup
 
+		wg.Done()
+	}()
+
+	go func() {
+		var record *Record
+		if into.BucketEncoded {
 			prev := uint32(0)
-			val := string_lookup[bucket.Value]
-			value_id := col.get_val_id(val)
-			for _, r := range bucket.Records {
+			did := into.DeltaEncodedIDs
 
-				if into.DeltaEncodedIDs {
-					r = prev + r
-				}
+			for _, bucket := range into.Bins {
+				prev = 0
+				for _, r := range bucket.Records {
 
-				prev = r
-				record = records[r]
-				record.Populated[into.NameId] = STR_VAL
+					if did {
+						r = prev + r
+					}
 
-				if int(into.NameId) >= len(record.Strs) {
-					log.Println("FOUND A STRAY COLUMN...", into.Name, "RECORD LEN", len(record.Strs))
-				} else {
-					record.Strs[into.NameId] = StrField(value_id)
+					prev = r
+					record = records[r]
+					record.Populated[into.NameId] = STR_VAL
+
+					if int(into.NameId) >= len(record.Strs) {
+						log.Println("FOUND A STRAY COLUMN...", into.Name, "RECORD LEN", len(record.Strs))
+					} else {
+						record.Strs[into.NameId] = StrField(bucket.Value)
+					}
 				}
 			}
-		}
-	} else {
-		for r, v := range into.Values {
-			records[r].Strs[into.NameId] = StrField(v)
-			records[r].Populated[into.NameId] = STR_VAL
-		}
+		} else {
+			for r, v := range into.Values {
+				records[r].Strs[into.NameId] = StrField(v)
+				records[r].Populated[into.NameId] = STR_VAL
+			}
 
-	}
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 }
 
