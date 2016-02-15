@@ -71,7 +71,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 		}
 
 		if *f_OP == "avg" {
-			res[agg.name] = r.Ints[agg.name]
+			res[agg.name] = r.Hists[agg.name].Avg
 		}
 	}
 
@@ -131,7 +131,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 				fmt.Println(col_name, "No Data")
 			}
 		} else if *f_OP == "avg" {
-			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Ints[agg.name]))
+			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.name].Avg))
 		}
 	}
 }

@@ -78,8 +78,8 @@ func TestTableLoadRecords(test *testing.T) {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		val, err := strconv.ParseInt(k, 10, 64)
-		if err != nil || math.Abs(float64(val)-float64(v.Ints["age"])) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Ints["age"])
+		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Avg)) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Avg)
 		}
 	}
 
@@ -145,9 +145,9 @@ func TestAveraging(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(avg_age)-float64(v.Ints["age"])) > 0.1 {
-			fmt.Println("ACC", v.Ints["age"])
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Ints["age"])
+		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Avg)) > 0.1 {
+			fmt.Println("ACC", v.Hists["age"].Avg)
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
 		}
 	}
 	fmt.Println("RESULTS", len(querySpec.Results))

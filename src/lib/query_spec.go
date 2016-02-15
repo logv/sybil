@@ -39,7 +39,6 @@ type Aggregation struct {
 }
 
 type Result struct {
-	Ints  map[string]float64
 	Hists map[string]*Hist
 
 	GroupByKey  string
@@ -50,7 +49,6 @@ type Result struct {
 func NewResult() *Result {
 	added_record := &Result{}
 	added_record.Hists = make(map[string]*Hist)
-	added_record.Ints = make(map[string]float64)
 	added_record.Count = 0
 	return added_record
 }
@@ -77,19 +75,6 @@ func (rs *Result) Combine(next_result *Result) {
 	}
 
 	total_count := rs.Count + next_result.Count
-	next_ratio := float64(next_result.Count) / float64(total_count)
-	this_ratio := float64(rs.Count) / float64(total_count)
-
-	// Combine averages first...
-	for k, v := range next_result.Ints {
-		mval, ok := rs.Ints[k]
-		if !ok {
-			rs.Ints[k] = v
-		} else {
-			rs.Ints[k] = (v * next_ratio) + (mval * this_ratio)
-		}
-
-	}
 
 	// combine histograms...
 	for k, v := range next_result.Hists {

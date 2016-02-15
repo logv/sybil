@@ -47,8 +47,8 @@ func (a SortResultsByCol) Less(i, j int) bool {
 
 	}
 
-	t1 := a.Results[i].Ints[a.Col]
-	t2 := a.Results[j].Ints[a.Col]
+	t1 := a.Results[i].Hists[a.Col].Avg
+	t2 := a.Results[j].Hists[a.Col].Avg
 	return t1 > t2
 }
 
@@ -64,10 +64,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	}
 
 	var result_map ResultMap
-	length := 0
-	if querySpec != nil && querySpec.Table != nil {
-		length = len(querySpec.Table.KeyTable)
-	}
+	length := len(querySpec.Table.KeyTable)
 	columns := make([]*TableColumn, length)
 
 	if querySpec.TimeBucket <= 0 {
@@ -179,7 +176,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		}
 
 		added_record.Count++
-		count := float64(added_record.Count)
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 
 		for _, a := range querySpec.Aggregations {
@@ -187,27 +183,18 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			if r.Populated[a_id] == INT_VAL {
 				val := int(r.Ints[a_id])
 
-				if a.op_id == OP_AVG {
-					// Calculating averages
-					partial, ok := added_record.Ints[a.name]
-					if !ok {
-						partial = 0
+				hist, ok := added_record.Hists[a.name]
+
+				if !ok {
+					hist = r.block.table.NewHist(r.block.table.get_int_info(a_id))
+					if a.op_id == OP_HIST {
+						hist.TrackPercentiles()
 					}
 
-					partial = partial + (float64(val)-partial)/float64(count)
-
-					added_record.Ints[a.name] = partial
+					added_record.Hists[a.name] = hist
 				}
 
-				if a.op_id == OP_HIST {
-					hist, ok := added_record.Hists[a.name]
-
-					if !ok {
-						hist = r.block.table.NewHist(r.block.table.get_int_info(a_id))
-						added_record.Hists[a.name] = hist
-					}
-					hist.addValue(val)
-				}
+				hist.addValue(val)
 			}
 
 		}

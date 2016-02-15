@@ -8,10 +8,11 @@ type Hist struct {
 	Count int
 	Avg   float64
 
-	num_buckets int
-	bucket_size int
-	values      []int
-	avgs        []float64
+	num_buckets       int
+	bucket_size       int
+	values            []int
+	avgs              []float64
+	track_percentiles bool
 
 	outliers   []int
 	underliers []int
@@ -55,6 +56,10 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 	return h
 }
 
+func (h *Hist) TrackPercentiles() {
+	h.track_percentiles = true
+}
+
 func (h *Hist) addValue(value int) {
 	h.Count++
 	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)
@@ -65,6 +70,10 @@ func (h *Hist) addValue(value int) {
 
 	if value < h.Min {
 		h.Min = value
+	}
+
+	if !h.track_percentiles {
+		return
 	}
 
 	bucket_value := (value - h.Min) / h.bucket_size

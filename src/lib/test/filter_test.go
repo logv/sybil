@@ -66,9 +66,9 @@ func TestFilters(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(20-float64(v.Ints["age"])) > 0.1 {
-			fmt.Println("ACC", v.Ints["age"])
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Ints["age"])
+		if math.Abs(20-float64(v.Hists["age"].Avg)) > 0.1 {
+			fmt.Println("ACC", v.Hists["age"].Avg)
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
 		}
 	}
 	fmt.Println("RESULTS", len(querySpec.Results))
@@ -85,9 +85,9 @@ func TestFilters(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(20-float64(v.Ints["age"])) > 0.1 {
-			fmt.Println("ACC", v.Ints["age"])
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Ints["age"])
+		if math.Abs(20-float64(v.Hists["age"].Avg)) > 0.1 {
+			fmt.Println("ACC", v.Hists["age"].Avg)
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
 		}
 	}
 	fmt.Println("RESULTS", len(querySpec.Results))
