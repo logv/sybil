@@ -295,6 +295,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						blockQuery := CopyQuerySpec(querySpec)
 						blockCount := FilterAndAggRecords(blockQuery, &block.RecordList)
 
+						if HOLD_MATCHES {
+							block.Matched = blockQuery.Matched
+						}
+
 						m.Lock()
 						count += blockCount
 						block_specs[block.Name] = blockQuery
