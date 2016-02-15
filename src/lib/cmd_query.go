@@ -322,10 +322,4 @@ func RunQueryCmdLine() {
 		t.PrintColInfo()
 	}
 
-	if *f_UPDATE_TABLE_INFO {
-		t.SaveTableInfo("info")
-		// Also go repair a bunch of blocks...
-	}
-
-	t.IsolateBrokenBlocks()
 }

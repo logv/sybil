@@ -22,6 +22,7 @@ var GROUP_BY []string
 
 var f_ADD_RECORDS *int
 
+var WRITE_BLOCK_INFO = false
 var TIMESERIES = false
 var TIME_COL_ID int16
 var f_TIME *bool = &TIMESERIES

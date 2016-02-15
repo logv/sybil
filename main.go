@@ -7,7 +7,7 @@ import "log"
 func main() {
 
 	if len(os.Args) < 2 {
-		log.Fatal("Command should be one of: ingest, digest, query")
+		log.Fatal("Command should be one of: ingest, digest, query, index")
 	}
 
 	first_arg := os.Args[1]
@@ -19,7 +19,9 @@ func main() {
 		sybil.RunDigestCmdLine()
 	case "query":
 		sybil.RunQueryCmdLine()
+	case "index":
+		sybil.RunIndexCmdLine()
 	default:
-		log.Fatal("Unknown command:", os.Args[1])
+		log.Fatal("Unknown command:", os.Args[0])
 	}
 }

@@ -301,8 +301,17 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
+
 	savedIntInfo := SavedIntInfo{}
 	savedStrInfo := SavedStrInfo{}
+	if tb.Info != nil {
+		if tb.Info.IntInfoMap != nil {
+			savedIntInfo = tb.Info.IntInfoMap
+		}
+		if tb.Info.StrInfoMap != nil {
+			savedStrInfo = tb.Info.StrInfoMap
+		}
+	}
 
 	for k, v := range tb.IntInfo {
 		name := tb.get_string_for_key(k)
@@ -321,7 +330,14 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 		log.Fatal("encode:", err)
 	}
 
-	log.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(records), ")")
+	length := len(records)
+	if length == 0 {
+		length = 1
+	}
+
+	if DEBUG_TIMING {
+		log.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/length, ")")
+	}
 
 	w, _ := os.Create(col_fname)
 	network.WriteTo(w)
@@ -562,6 +578,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			if *f_UPDATE_TABLE_INFO {
+				tb.update_int_info(col_id, bucket.Value)
 				tb.table.update_int_info(col_id, bucket.Value)
 			}
 
@@ -581,6 +598,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	} else {
 		for r, v := range into.Values {
 			if *f_UPDATE_TABLE_INFO {
+				tb.update_int_info(col_id, v)
 				tb.table.update_int_info(col_id, v)
 			}
 

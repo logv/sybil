@@ -324,6 +324,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				}
 
+				if WRITE_BLOCK_INFO {
+					block.SaveInfoToColumns(block.Name)
+					CHUNKS_BEFORE_GC = 4
+				}
 				// don't delete when testing so we can verify block
 				// loading results
 				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
@@ -331,6 +335,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					if ok {
 						delete(t.BlockList, block.Name)
 					}
+
 				}
 			}()
 
