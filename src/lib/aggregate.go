@@ -64,7 +64,11 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	}
 
 	var result_map ResultMap
-	columns := make(map[int16]*TableColumn)
+	length := 0
+	if querySpec != nil && querySpec.Table != nil {
+		length = len(querySpec.Table.KeyTable)
+	}
+	columns := make([]*TableColumn, length)
 
 	if querySpec.TimeBucket <= 0 {
 		result_map = querySpec.Results
@@ -104,8 +108,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				bs[j] = 0
 			}
 
-			_, ok := columns[g.name_id]
-			if !ok {
+			tc := columns[g.name_id]
+			if tc == nil {
 				columns[g.name_id] = r.block.GetColumnInfo(g.name_id)
 				columns[g.name_id].Type = r.Populated[g.name_id]
 			}
@@ -227,7 +231,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 }
 
-func translate_group_by(Results ResultMap, Groups []Grouping, columns map[int16]*TableColumn) *ResultMap {
+func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableColumn) *ResultMap {
 
 	var buffer bytes.Buffer
 
@@ -266,6 +270,7 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns map[int16]
 
 func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
 	blockQuery := QuerySpec{}
+	blockQuery.Table = querySpec.Table
 	blockQuery.Punctuate()
 	blockQuery.TimeBucket = querySpec.TimeBucket
 	blockQuery.Filters = querySpec.Filters
@@ -292,6 +297,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 
 	astart := time.Now()
 	resultSpec := QuerySpec{}
+	resultSpec.Table = querySpec.Table
 	master_result := make(ResultMap)
 	master_time_result := make(map[int]ResultMap)
 
@@ -395,6 +401,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	start := time.Now()
 
+	querySpec.Table = t
 	block_specs := SearchBlocks(querySpec, t.BlockList)
 
 	// COMBINE THE PER BLOCK RESULTS

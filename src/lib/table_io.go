@@ -222,6 +222,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	files, _ := ioutil.ReadDir(path.Join(*f_DIR, t.Name))
 
+	if querySpec != nil {
+
+		querySpec.Table = t
+	}
+
 	var wg sync.WaitGroup
 	block_specs := make(map[string]*QuerySpec)
 
@@ -352,9 +357,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	if *f_READ_INGESTION_LOG {
 		if querySpec == nil {
 			rowStoreQuery.querySpec = &QuerySpec{}
+			rowStoreQuery.querySpec.Table = t
 			rowStoreQuery.querySpec.Punctuate()
 		} else {
 			rowStoreQuery.querySpec = CopyQuerySpec(querySpec)
+			rowStoreQuery.querySpec.Table = t
 		}
 
 		// Entrust AfterLoadQueryCB to call Done on wg

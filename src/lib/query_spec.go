@@ -19,6 +19,7 @@ type QuerySpec struct {
 	Matched     RecordList
 
 	BlockList map[string]TableBlock
+	Table     *Table
 }
 
 type Filter interface {
