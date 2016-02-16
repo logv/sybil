@@ -1,7 +1,7 @@
 how sybil works
 ---------------
 
-Sybil has two parts: the ingestion / digestion system and the query engine
+Sybil consists of the ingestion / digestion system and the query engine
 
 During the ingestion (and digestion) phase, Sybil reads records of data
 containing strings, integers and sets off stdin, then collates and writes the
@@ -15,21 +15,13 @@ Sybil can be used by itself, but it really works well as part of a real-time
 analytic pipeline. In general, Sybil is a good place to store transient,
 ephemeral or meta data - as such, it's a supplement to traditional DBs
 
-
-features sybil is lacking
---------------------------
-
-* Sybil does not support DELETE, JOIN or UPDATEs
-* Sybil is not a server
-
-
 cool parts of sybil
 -------------------
 
 * sybil runs on a single machine; no cluster headaches. 
-* schemas are dynamic: you ingest records into any DB with mixed schema and
-  issue queries on them. No table creation, no schema design. Just throw data
-  at it and query. If you were using NoSQL for analytics previously, sybil is
+* schemas are dynamic: ingest records into any DB with mixed schema and issue
+  queries on them. No table creation, no schema design. Just throw data at it
+  and query. If you were using NoSQL for analytics previously, sybil is
   probably for you
 * it's fast & multi-threaded; table scans and aggregations are done in parallel
 * it's a command line program, not a server - memory is returned to the OS as
@@ -40,6 +32,12 @@ cool parts of sybil
   time series (everyone loves time series) and raw sample queries
 * full histograms and outliers can be calculated for any rollup
 
+
+features sybil is lacking
+--------------------------
+
+* Sybil does not support DELETE, JOIN or UPDATEs
+* Sybil is not a server
 
 
 more info on column stores
