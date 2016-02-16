@@ -97,6 +97,21 @@ func (querySpec *QuerySpec) Punctuate() {
 	querySpec.TimeResults = make(map[int]ResultMap)
 }
 
+func (querySpec *QuerySpec) ResetResults() {
+	querySpec.Punctuate()
+
+	if querySpec.Table != nil && querySpec.Table.BlockList != nil {
+		// Reach into all our table blocks and reset their REGEX CACHE
+		for _, b := range querySpec.Table.BlockList {
+			for _, c := range b.columns {
+				if len(c.RCache) > 0 {
+					c.RCache = make(map[int]bool)
+				}
+			}
+		}
+	}
+}
+
 func (t *Table) Grouping(name string) Grouping {
 	col_id := t.get_key_id(name)
 	return Grouping{name, col_id}

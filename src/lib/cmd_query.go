@@ -202,7 +202,6 @@ func RunQueryCmdLine() {
 	}
 
 	querySpec := QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec.Punctuate()
 
 	for _, v := range groups {
 		col_id := t.get_key_id(v)

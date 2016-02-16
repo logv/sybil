@@ -10,8 +10,8 @@ Test Plan:
   x Load from column store
     x Verify ints, strs, sets
   * Filters:
-    * Int: gt, lt, !eq, ne
-    * Str: !eq, ne, re, nre
+    x Int: gt, lt, !eq, ne
+    x Str: !eq, ne, re, nre
     * Set: in nin
     * Work with samples
   * Aggregation Line
@@ -28,14 +28,16 @@ Test Plan:
 To Verify
 ---------
 
-
+  
+  * test for weighting columns / sample count
+  * tests for printing JSON
   * int64 bit integers stay from ingestion -> query
+  * time queries work: test each bucket looks reasonable
   * sets exist and can be queried
-  * time queries work
-  * JSON output
   * different types of columns can be packed and unpacked
     * bucket encoded
     * delta encoded
+    * serialized array
 
 
 Investigate

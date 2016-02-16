@@ -389,6 +389,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	querySpec.Table = t
 	block_specs := SearchBlocks(querySpec, t.BlockList)
+	querySpec.ResetResults()
 
 	// COMBINE THE PER BLOCK RESULTS
 	resultSpec := CombineResults(querySpec, block_specs)

@@ -75,7 +75,6 @@ func new_query_spec() *sybil.QuerySpec {
 	groupings := []sybil.Grouping{}
 
 	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec.Punctuate()
 
 	return &querySpec
 }

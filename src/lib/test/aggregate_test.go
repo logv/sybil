@@ -35,8 +35,6 @@ func TestTableLoadRecords(test *testing.T) {
 
 	nt.MatchAndAggregate(querySpec)
 
-	fmt.Println("RESULTS", len(querySpec.Results))
-
 	// TEST THAT WE GOT BACK 20 GROUP BY VALUES
 	if len(querySpec.Results) != 20 {
 		fmt.Println("PIGEON HOLE PRINCIPLED")
@@ -89,11 +87,9 @@ func TestAveraging(test *testing.T) {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Avg)) > 0.1 {
-			fmt.Println("ACC", v.Hists["age"].Avg)
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
 		}
 	}
-	fmt.Println("RESULTS", len(querySpec.Results))
 	delete_test_db()
 
 }

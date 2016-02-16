@@ -26,7 +26,7 @@ func TestSets(test *testing.T) {
 	}, block_count)
 
 	avg_age := float64(total_age) / float64(len(records))
-	log.Println("AVG AGE", avg_age)
+	log.Println("AVG AGE", avg_age-float64(min_count))
 
 	nt := save_and_reload_table(test, block_count)
 

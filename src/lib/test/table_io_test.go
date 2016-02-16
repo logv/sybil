@@ -28,7 +28,6 @@ func TestTableCreate(test *testing.T) {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
 
-	fmt.Println("KEY TABLE", nt.KeyTable)
 	nt.LoadTableInfo()
 
 	_, err := os.Open(fmt.Sprintf("db/%s/info.db", TEST_TABLE_NAME))
