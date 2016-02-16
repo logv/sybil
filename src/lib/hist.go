@@ -152,5 +152,6 @@ func (h *Hist) Combine(next_hist *Hist) {
 		h.Max = next_hist.Max
 	}
 
+	h.Samples = h.Samples + next_hist.Samples
 	h.Count = total
 }

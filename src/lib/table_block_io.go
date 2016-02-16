@@ -238,16 +238,18 @@ type AfterLoadQueryCB struct {
 
 func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
+		count := FilterAndAggRecords(cb.querySpec, &cb.records)
+		cb.count += count
+
+		if !HOLD_MATCHES {
+			cb.records = make(RecordList, 0)
+		}
+
 		cb.wg.Done()
 		return
 	}
 
-	if HOLD_MATCHES {
-		cb.records = append(cb.records, records...)
-	}
-
-	count := FilterAndAggRecords(cb.querySpec, &records)
-	cb.count += count
+	cb.records = append(cb.records, records...)
 
 	fmt.Fprint(os.Stderr, "+")
 }
