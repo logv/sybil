@@ -110,15 +110,13 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				columns[g.name_id].Type = r.Populated[g.name_id]
 			}
 
-			var val uint64
 			switch r.Populated[g.name_id] {
 			case INT_VAL:
-				val = uint64(r.Ints[g.name_id])
+				binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.name_id]))
 			case STR_VAL:
-				val = uint64(r.Strs[g.name_id])
+				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.name_id]))
 			}
 
-			binary.LittleEndian.PutUint64(bs, val)
 			copy(binarybuffer[i*GROUP_BY_WIDTH:], bs)
 		}
 
