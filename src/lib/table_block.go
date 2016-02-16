@@ -13,7 +13,6 @@ type TableBlock struct {
 	IntInfo IntInfoTable
 	StrInfo StrInfoTable
 
-	disrepair   bool
 	table       *Table
 	string_id_m *sync.Mutex
 
@@ -40,13 +39,4 @@ func (tb *TableBlock) get_key_id(name string) int16 {
 func (tb *TableBlock) get_string_for_key(id int16) string {
 	return tb.table.get_string_for_key(int(id))
 
-}
-
-func (tb *TableBlock) BrokenKey(name string, old_id int16) {
-	if tb.broken_keys == nil {
-		tb.broken_keys = make(map[string]int16)
-	}
-
-	tb.broken_keys[name] = old_id
-	tb.disrepair = true
 }

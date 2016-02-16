@@ -459,6 +459,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
 		// unpack the string table
 		for k, v := range into.StringTable {
 			col.StringTable[v] = int32(k)
@@ -466,18 +467,19 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 		}
 		col.val_string_id_lookup = string_lookup
 
-		wg.Done()
 	}()
 
 	go func() {
+		defer wg.Done()
 		var record *Record
+		var r uint32
 		if into.BucketEncoded {
 			prev := uint32(0)
 			did := into.DeltaEncodedIDs
 
 			for _, bucket := range into.Bins {
 				prev = 0
-				for _, r := range bucket.Records {
+				for _, r = range bucket.Records {
 
 					if did {
 						r = prev + r
@@ -487,11 +489,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 					record = records[r]
 					record.Populated[col_id] = STR_VAL
 
-					if int(col_id) >= len(record.Strs) {
-						log.Println("FOUND A STRAY COLUMN...", into.Name, "RECORD LEN", len(record.Strs))
-					} else {
-						record.Strs[col_id] = StrField(bucket.Value)
-					}
+					record.Strs[col_id] = StrField(bucket.Value)
 				}
 			}
 		} else {
@@ -501,7 +499,6 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 			}
 
 		}
-		wg.Done()
 	}()
 
 	wg.Wait()

@@ -9,6 +9,9 @@ import "math/rand"
 import "testing"
 import "strings"
 
+// TESTS:
+// table can save and read records in column form
+// tests string and ints get re-assembled
 func TestTableLoadRecords(test *testing.T) {
 	delete_test_db()
 	sybil.CHUNK_SIZE = 100
@@ -85,6 +88,7 @@ func TestTableLoadRecords(test *testing.T) {
 
 }
 
+// Tests that the average histogram works
 func TestAveraging(test *testing.T) {
 	delete_test_db()
 	sybil.CHUNK_SIZE = 100

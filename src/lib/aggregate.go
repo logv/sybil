@@ -55,7 +55,9 @@ func (a SortResultsByCol) Less(i, j int) bool {
 func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	var ok bool
 	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
+
 	bs := make([]byte, GROUP_BY_WIDTH)
+	zero := make([]byte, GROUP_BY_WIDTH)
 	records := *recordsPtr
 
 	matched_records := 0
@@ -71,7 +73,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		result_map = querySpec.Results
 	}
 
-	var val uint64
 	for i := 0; i < len(records); i++ {
 		add := true
 		r := records[i]
@@ -95,22 +96,15 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
-		// BUILD GROUPING KEY USING BINARY BYTES
-		for i, _ := range binarybuffer {
-			binarybuffer[i] = 0
-		}
-
 		for i, g := range querySpec.Groups {
-			for j, _ := range bs {
-				bs[j] = 0
-			}
+			copy(bs, zero)
 
-			tc := columns[g.name_id]
-			if tc == nil {
+			if columns[g.name_id] == nil {
 				columns[g.name_id] = r.block.GetColumnInfo(g.name_id)
 				columns[g.name_id].Type = r.Populated[g.name_id]
 			}
 
+			var val uint64
 			switch r.Populated[g.name_id] {
 			case INT_VAL:
 				val = uint64(r.Ints[g.name_id])
@@ -119,9 +113,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			}
 
 			binary.LittleEndian.PutUint64(bs, val)
-			for j, _ := range bs {
-				binarybuffer[i*GROUP_BY_WIDTH+j] = bs[j]
-			}
+			copy(binarybuffer[i*GROUP_BY_WIDTH:], bs)
 		}
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
@@ -179,14 +171,13 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 
 		for _, a := range querySpec.Aggregations {
-			a_id := a.name_id
-			if r.Populated[a_id] == INT_VAL {
-				val := int(r.Ints[a_id])
+			if r.Populated[a.name_id] == INT_VAL {
+				val := int(r.Ints[a.name_id])
 
 				hist, ok := added_record.Hists[a.name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.get_int_info(a_id))
+					hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
 					if a.op_id == OP_HIST {
 						hist.TrackPercentiles()
 					}

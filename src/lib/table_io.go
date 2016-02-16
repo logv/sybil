@@ -296,11 +296,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 				}
 
-				if block.disrepair {
-					broken_count++
-					return
-				}
-
 				if len(block.RecordList) > 0 {
 					block_count++
 
@@ -326,7 +321,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				if WRITE_BLOCK_INFO {
 					block.SaveInfoToColumns(block.Name)
-					CHUNKS_BEFORE_GC = 4
 				}
 				// don't delete when testing so we can verify block
 				// loading results
@@ -438,21 +432,4 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 	return t.LoadAndQueryRecords(loadSpec, nil)
-}
-
-func (t *Table) IsolateBrokenBlocks() {
-	for _, b := range t.BlockList {
-		if b.disrepair == false {
-			continue
-		}
-
-		log.Println("Repairing block", b.Name)
-		dirname := b.Name
-		newblock := fmt.Sprint(b.Name, ".broken")
-		err := os.Rename(dirname, newblock)
-		if err == nil {
-			log.Println("Renamed block to", newblock)
-		}
-
-	}
 }
