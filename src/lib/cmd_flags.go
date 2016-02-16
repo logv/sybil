@@ -22,6 +22,7 @@ var GROUP_BY []string
 
 var f_ADD_RECORDS *int
 
+var DELTA_ENCODE_RECORD_IDS = true
 var WRITE_BLOCK_INFO = false
 var TIMESERIES = false
 var TIME_COL_ID int16
