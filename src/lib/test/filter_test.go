@@ -11,51 +11,37 @@ import "strings"
 
 func TestFilters(test *testing.T) {
 	delete_test_db()
-	sybil.CHUNK_SIZE = 100
 
-	if testing.Short() {
-		test.Skip("Skipping test in short mode")
-		return
-	}
-
-	sybil.TEST_MODE = true
-
-	BLOCK_COUNT := 3
-	COUNT := sybil.CHUNK_SIZE * BLOCK_COUNT
-	t := sybil.GetTable(TEST_TABLE_NAME)
-
-	total_age := int64(0)
-	for i := 0; i < COUNT; i++ {
-		r := t.NewRecord()
-		r.AddIntField("id", int64(i))
+	block_count := 3
+	add_records(func(r *sybil.Record, i int) {
 		age := int64(rand.Intn(20)) + 10
-		total_age += age
+
+		r.AddIntField("id", int64(i))
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}
 
-	avg_age := float64(total_age) / float64(COUNT)
+	}, block_count)
 
-	t.SaveRecords()
+	save_and_reload_table(test, block_count)
 
+	testIntEq(test)
+	testStrEq(test)
+
+	delete_test_db()
+
+}
+
+func testIntEq(test *testing.T) {
 	nt := sybil.GetTable(TEST_TABLE_NAME)
-	loadSpec := sybil.NewLoadSpec()
-	loadSpec.LoadAllColumns = true
-	loadSpec.Str("age_str")
-	loadSpec.Int("id")
-	loadSpec.Int("age")
-
 	filters := []sybil.Filter{}
 	filters = append(filters, nt.IntFilter("age", "eq", 20))
 
 	aggs := []sybil.Aggregation{}
-	groupings := []sybil.Grouping{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs}
 	querySpec.Punctuate()
 
-	nt.LoadRecords(&loadSpec)
 	nt.MatchAndAggregate(&querySpec)
 
 	// Test Filtering to 20..
@@ -68,14 +54,22 @@ func TestFilters(test *testing.T) {
 
 		if math.Abs(20-float64(v.Hists["age"].Avg)) > 0.1 {
 			fmt.Println("ACC", v.Hists["age"].Avg)
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
 		}
 	}
-	fmt.Println("RESULTS", len(querySpec.Results))
+}
 
-	//
-	filters = []sybil.Filter{}
+func testStrEq(test *testing.T) {
+	nt := sybil.GetTable(TEST_TABLE_NAME)
+	filters := []sybil.Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "re", "20"))
+
+	aggs := []sybil.Aggregation{}
+	aggs = append(aggs, nt.Aggregation("age", "avg"))
+
+	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs}
+	querySpec.Punctuate()
+
 	nt.MatchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) <= 0 {
@@ -87,10 +81,8 @@ func TestFilters(test *testing.T) {
 
 		if math.Abs(20-float64(v.Hists["age"].Avg)) > 0.1 {
 			fmt.Println("ACC", v.Hists["age"].Avg)
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
 		}
 	}
-	fmt.Println("RESULTS", len(querySpec.Results))
-	delete_test_db()
 
 }

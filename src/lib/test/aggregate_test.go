@@ -9,65 +9,31 @@ import "math/rand"
 import "testing"
 import "strings"
 
-// TESTS:
-// table can save and read records in column form
-// tests string and ints get re-assembled
 func TestTableLoadRecords(test *testing.T) {
 	delete_test_db()
-	sybil.CHUNK_SIZE = 100
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	sybil.TEST_MODE = true
-	BLOCK_COUNT := 3
-	COUNT := sybil.CHUNK_SIZE * BLOCK_COUNT
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	block_count := 3
 
-	for i := 0; i < COUNT; i++ {
-		r := t.NewRecord()
-		r.AddIntField("id", int64(i))
+	add_records(func(r *sybil.Record, index int) {
+		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}
+	}, block_count)
 
-	t.SaveRecords()
+	nt := save_and_reload_table(test, block_count)
 
-	unload_test_table()
+	querySpec := new_query_spec()
 
-	nt := sybil.GetTable(TEST_TABLE_NAME)
-	nt.LoadTableInfo()
-	loadSpec := sybil.NewLoadSpec()
-	loadSpec.LoadAllColumns = true
-	loadSpec.Str("age_str")
-	loadSpec.Int("id")
-	loadSpec.Int("age")
-	count := nt.LoadRecords(&loadSpec)
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
 
-	if count != COUNT {
-		test.Error("Wrote 100 records, but read back", count)
-	}
-
-	// +1 is the Row Store Block...
-	if len(nt.BlockList) != BLOCK_COUNT+1 {
-		test.Error("Wrote", BLOCK_COUNT, "blocks, but came back with", len(nt.BlockList))
-	}
-
-	filters := []sybil.Filter{}
-	aggs := []sybil.Aggregation{}
-	groupings := []sybil.Grouping{}
-	groupings = append(groupings, nt.Grouping("age_str"))
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
-
-	fmt.Println("GROUPINGS", groupings)
-
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec.Punctuate()
-
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(querySpec)
 
 	fmt.Println("RESULTS", len(querySpec.Results))
 
@@ -91,60 +57,33 @@ func TestTableLoadRecords(test *testing.T) {
 // Tests that the average histogram works
 func TestAveraging(test *testing.T) {
 	delete_test_db()
-	sybil.CHUNK_SIZE = 100
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	sybil.TEST_MODE = true
-
-	BLOCK_COUNT := 3
-	COUNT := sybil.CHUNK_SIZE * BLOCK_COUNT
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	block_count := 3
 
 	total_age := int64(0)
-	for i := 0; i < COUNT; i++ {
-		r := t.NewRecord()
-		r.AddIntField("id", int64(i))
+	count := 0
+	add_records(func(r *sybil.Record, index int) {
+		count++
+		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		total_age += age
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}
+	}, block_count)
 
-	avg_age := float64(total_age) / float64(COUNT)
+	avg_age := float64(total_age) / float64(count)
 
-	t.SaveRecords()
+	nt := save_and_reload_table(test, block_count)
 
-	nt := sybil.GetTable(TEST_TABLE_NAME)
-	loadSpec := sybil.NewLoadSpec()
-	loadSpec.LoadAllColumns = true
-	loadSpec.Str("age_str")
-	loadSpec.Int("id")
-	loadSpec.Int("age")
-	count := nt.LoadRecords(&loadSpec)
+	querySpec := new_query_spec()
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
 
-	if count != COUNT {
-		test.Error("Wrote", COUNT, "records, but read back", count)
-	}
-
-	if len(nt.BlockList) != BLOCK_COUNT+1 {
-		test.Error("Wrote", BLOCK_COUNT, "blocks, but came back with", len(nt.BlockList))
-	}
-
-	filters := []sybil.Filter{}
-	aggs := []sybil.Aggregation{}
-	groupings := []sybil.Grouping{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
-
-	fmt.Println("GROUPINGS", groupings)
-
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec.Punctuate()
-
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(querySpec)
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)

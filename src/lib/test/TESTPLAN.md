@@ -36,3 +36,9 @@ To Verify
   * different types of columns can be packed and unpacked
     * bucket encoded
     * delta encoded
+
+
+Investigate
+-----------
+
+Why does testing feel clunky? How to make it feel 'smooth' to write tests?

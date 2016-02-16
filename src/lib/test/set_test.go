@@ -9,51 +9,26 @@ import "log"
 
 func TestSets(test *testing.T) {
 	delete_test_db()
-	sybil.CHUNK_SIZE = 100
-
-	if testing.Short() {
-		test.Skip("Skipping test in short mode")
-		return
-	}
-
-	BLOCK_COUNT := 3
-	COUNT := sybil.CHUNK_SIZE * BLOCK_COUNT
-	t := sybil.GetTable(TEST_TABLE_NAME)
-
 	total_age := int64(0)
-	for i := 0; i < COUNT; i++ {
-		r := t.NewRecord()
+
+	add_records(func(r *sybil.Record, i int) {}, 0)
+	block_count := 5
+	min_count := sybil.CHUNK_SIZE * block_count
+	records := add_records(func(r *sybil.Record, i int) {
 		set_id := []string{strconv.FormatInt(int64(i), 10)}
 		r.AddIntField("id_int", int64(i))
 		r.AddSetField("id_set", set_id)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
-		age := int64(rand.Intn(20)) + 10
+		age := int64(rand.Intn(20)) + int64(min_count)
 		total_age += age
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}
+	}, block_count)
 
-	avg_age := float64(total_age) / float64(COUNT)
+	avg_age := float64(total_age) / float64(len(records))
 	log.Println("AVG AGE", avg_age)
 
-	t.SaveRecords()
-	unload_test_table()
-
-	nt := sybil.GetTable(TEST_TABLE_NAME)
-	loadSpec := sybil.NewLoadSpec()
-	loadSpec.LoadAllColumns = true
-
-	filters := []sybil.Filter{}
-	filters = append(filters, nt.IntFilter("age", "eq", 20))
-
-	aggs := []sybil.Aggregation{}
-	groupings := []sybil.Grouping{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
-
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec.Punctuate()
-
-	nt.LoadRecords(&loadSpec)
+	nt := save_and_reload_table(test, block_count)
 
 	for _, b := range nt.BlockList {
 		for _, r := range b.RecordList {
@@ -69,12 +44,12 @@ func TestSets(test *testing.T) {
 			if !ok {
 				test.Error("MISSING STR ID")
 			}
-			ageval, _ := r.GetStrVal("age_str")
 
+			ageval, _ := r.GetStrVal("age_str")
 			pval, err := strconv.ParseInt(strval, 10, 64)
 
 			if ageval == strval {
-				test.Error("AGE and ID are aligned!")
+				test.Error("AGE and ID are aligned!", ageval, strval)
 			}
 
 			if pval != int64(ival) || err != nil {

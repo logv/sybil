@@ -6,30 +6,28 @@ import "testing"
 import "fmt"
 import "time"
 import "os"
+import "math/rand"
+import "strconv"
 
 func TestTableCreate(test *testing.T) {
 	delete_test_db()
-	unload_test_table()
 
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	block_count := 3
+	created := add_records(func(r *sybil.Record, index int) {
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(20)) + 10
+		r.AddIntField("age", age)
+		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+		r.AddIntField("time", int64(time.Now().Unix()))
+		r.AddStrField("name", fmt.Sprint("user", index))
+	}, block_count)
 
-	fmt.Println("TABLE", t)
+	nt := save_and_reload_table(test, block_count)
 
-	if t.Name != TEST_TABLE_NAME {
+	if nt.Name != TEST_TABLE_NAME {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
-	r := t.NewRecord()
 
-	r.AddIntField("age", 10)
-	r.AddIntField("time", int64(time.Now().Unix()))
-	r.AddStrField("name", "user1")
-
-	t.SaveTableInfo("info")
-	t.SaveRecords()
-
-	unload_test_table()
-
-	nt := sybil.GetTable(TEST_TABLE_NAME)
 	fmt.Println("KEY TABLE", nt.KeyTable)
 	nt.LoadTableInfo()
 
@@ -49,7 +47,7 @@ func TestTableCreate(test *testing.T) {
 		records = append(records, b.RecordList...)
 	}
 
-	if len(records) != 1 {
+	if len(records) != len(created) {
 		test.Error("More records were created than expected", len(records))
 	}
 
