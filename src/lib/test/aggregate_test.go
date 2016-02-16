@@ -93,3 +93,68 @@ func TestAveraging(test *testing.T) {
 	delete_test_db()
 
 }
+
+// Tests that the histogram works
+func TestHistograms(test *testing.T) {
+	delete_test_db()
+
+	if testing.Short() {
+		test.Skip("Skipping test in short mode")
+		return
+	}
+
+	block_count := 3
+
+	total_age := int64(0)
+	count := 0
+	add_records(func(r *sybil.Record, index int) {
+		count++
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(20)) + 10
+		total_age += age
+		r.AddIntField("age", age)
+		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+	}, block_count)
+
+	avg_age := float64(total_age) / float64(count)
+
+	nt := save_and_reload_table(test, block_count)
+
+	querySpec := new_query_spec()
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
+
+	nt.MatchAndAggregate(querySpec)
+
+	// testing that a histogram with single value looks uniform
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+
+		kval, _ := strconv.ParseInt(k, 10, 64)
+		percentiles := v.Hists["age"].GetPercentiles()
+		if int64(percentiles[25]) != kval {
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+		}
+		if int64(percentiles[50]) != kval {
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+		}
+		if int64(percentiles[75]) != kval {
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+		}
+	}
+
+	querySpec = new_query_spec()
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
+
+	nt.MatchAndAggregate(querySpec)
+
+	// testing that a histogram with single value looks uniform
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		percentiles := v.Hists["age"].GetPercentiles()
+		fmt.Println(percentiles)
+	}
+
+	delete_test_db()
+
+}

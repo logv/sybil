@@ -62,8 +62,13 @@ func (h *Hist) TrackPercentiles() {
 }
 
 func (h *Hist) addValue(value int, weight int64) {
-	h.Samples++
-	h.Count += weight
+	if WEIGHT_COL {
+		h.Samples++
+		h.Count += weight
+	} else {
+		h.Count++
+	}
+
 	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)*float64(weight)
 
 	if value > h.Max {
@@ -80,14 +85,14 @@ func (h *Hist) addValue(value int, weight int64) {
 
 	bucket_value := (value - h.Min) / h.bucket_size
 
-	if bucket_value >= len(h.avgs) {
+	if bucket_value >= len(h.values) {
 		h.outliers = append(h.outliers, value)
-		return
+		bucket_value = len(h.values) - 1
 	}
 
 	if bucket_value < 0 {
 		h.underliers = append(h.underliers, value)
-		return
+		bucket_value = 0
 	}
 
 	partial := h.avgs[bucket_value]
@@ -99,7 +104,7 @@ func (h *Hist) addValue(value int, weight int64) {
 	h.avgs[bucket_value] = partial + ((float64(value) - partial) / float64(h.values[bucket_value]) * float64(weight))
 }
 
-func (h *Hist) getPercentiles() []int {
+func (h *Hist) GetPercentiles() []int {
 	if h.Count == 0 {
 		return make([]int, 0)
 	}
@@ -119,15 +124,16 @@ func (h *Hist) getPercentiles() []int {
 	for _, k := range keys {
 		key_count := h.values[k]
 		count = count + key_count
-		p := 100 * count / h.Count
-		for ip := prev_p; ip < p; ip++ {
+		p := (100 * count) / h.Count
+		for ip := prev_p; ip <= p; ip++ {
 			percentiles[ip] = (k * h.bucket_size) + h.Min
+
 		}
 		percentiles[p] = k
 		prev_p = p
 	}
 
-	return percentiles
+	return percentiles[:100]
 }
 
 func (h *Hist) Combine(next_hist *Hist) {

@@ -67,7 +67,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
 		if *f_OP == "hist" {
-			res[agg.name] = r.Hists[agg.name].getPercentiles()
+			res[agg.name] = r.Hists[agg.name].GetPercentiles()
 		}
 
 		if *f_OP == "avg" {
@@ -132,7 +132,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 				log.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
 				continue
 			}
-			p := h.getPercentiles()
+			p := h.GetPercentiles()
 
 			if len(p) > 0 {
 				avg_str := fmt.Sprintf("%.2f", h.Avg)
