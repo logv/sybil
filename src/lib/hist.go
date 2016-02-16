@@ -3,14 +3,15 @@ package sybil
 import "sort"
 
 type Hist struct {
-	Max   int
-	Min   int
-	Count int
-	Avg   float64
+	Max     int
+	Min     int
+	Samples int
+	Count   int64
+	Avg     float64
 
 	num_buckets       int
 	bucket_size       int
-	values            []int
+	values            []int64
 	avgs              []float64
 	track_percentiles bool
 
@@ -50,7 +51,7 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 
 	h.num_buckets += 1
 
-	h.values = make([]int, h.num_buckets+1)
+	h.values = make([]int64, h.num_buckets+1)
 	h.avgs = make([]float64, h.num_buckets+1)
 
 	return h
@@ -60,9 +61,10 @@ func (h *Hist) TrackPercentiles() {
 	h.track_percentiles = true
 }
 
-func (h *Hist) addValue(value int) {
-	h.Count++
-	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)
+func (h *Hist) addValue(value int, weight int64) {
+	h.Samples++
+	h.Count += weight
+	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)*float64(weight)
 
 	if value > h.Max {
 		h.Max = value
@@ -91,12 +93,10 @@ func (h *Hist) addValue(value int) {
 	partial := h.avgs[bucket_value]
 
 	// update counts
-	count := h.values[bucket_value]
-	count++
-	h.values[bucket_value] = count
+	h.values[bucket_value] += weight
 
 	// update bucket averages
-	h.avgs[bucket_value] = partial + (float64(value)-partial)/float64(h.values[bucket_value])
+	h.avgs[bucket_value] = partial + ((float64(value) - partial) / float64(h.values[bucket_value]) * float64(weight))
 }
 
 func (h *Hist) getPercentiles() []int {
@@ -114,8 +114,8 @@ func (h *Hist) getPercentiles() []int {
 	sort.Ints(keys)
 
 	percentiles[0] = h.Min
-	count := 0
-	prev_p := 0
+	count := int64(0)
+	prev_p := int64(0)
 	for _, k := range keys {
 		key_count := h.values[k]
 		count = count + key_count
@@ -137,6 +137,14 @@ func (h *Hist) Combine(next_hist *Hist) {
 
 	total := h.Count + next_hist.Count
 	h.Avg = (h.Avg * (float64(h.Count) / float64(total))) + (next_hist.Avg * (float64(next_hist.Count) / float64(total)))
+
+	if h.Min > next_hist.Min {
+		h.Min = next_hist.Min
+	}
+
+	if h.Max < next_hist.Max {
+		h.Max = next_hist.Max
+	}
 
 	h.Count = total
 }

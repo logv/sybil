@@ -34,6 +34,7 @@ func addFlags() {
 	f_TIME = flag.Bool("time", false, "make a time rollup")
 	f_TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	f_TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
+	f_WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
 	f_OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	f_PRINT = flag.Bool("print", false, "Print some records")
@@ -242,6 +243,12 @@ func RunQueryCmdLine() {
 		if ok {
 			TIME_COL_ID = time_col_id
 		}
+	}
+
+	if *f_WEIGHT_COL != "" {
+		WEIGHT_COL = true
+		loadSpec.Int(*f_WEIGHT_COL)
+		WEIGHT_COL_ID = t.KeyTable[*f_WEIGHT_COL]
 	}
 
 	querySpec.Limit = int16(*f_LIMIT)

@@ -20,6 +20,7 @@ def rand_record():
     record["status"] = str(random.choice(STATII))
     record["host"] = random.choice(HOSTS)
     record["ping"] = abs(random.gauss(60, 20))
+    record["weight"] = random.choice([1, 10, 100])
     time_allowance = 60 * 60 * 24 * 7 * 4 # 1 month?
     record["time"] = int(time.time()) + random.randint(-time_allowance, time_allowance)
     record["host_cat"] = random.choice(HOSTS) + str(IDX)

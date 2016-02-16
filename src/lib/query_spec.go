@@ -43,7 +43,8 @@ type Result struct {
 
 	GroupByKey  string
 	BinaryByKey string
-	Count       int32
+	Count       int64
+	Samples     int64
 }
 
 func NewResult() *Result {
@@ -74,6 +75,7 @@ func (rs *Result) Combine(next_result *Result) {
 		return
 	}
 
+	total_samples := rs.Samples + next_result.Samples
 	total_count := rs.Count + next_result.Count
 
 	// combine histograms...
@@ -86,6 +88,7 @@ func (rs *Result) Combine(next_result *Result) {
 		}
 	}
 
+	rs.Samples = total_samples
 	rs.Count = total_count
 }
 

@@ -35,6 +35,10 @@ var f_LOAD_THEN_QUERY *bool = &FALSE
 var f_READ_INGESTION_LOG = &TRUE
 var f_SKIP_ROWSTORE = &FALSE
 
+var WEIGHT_COL = false
+var WEIGHT_COL_ID = int16(0)
+var f_WEIGHT_COL *string
+
 var f_JSON *bool = &FALSE
 var f_GC *bool = &TRUE
 

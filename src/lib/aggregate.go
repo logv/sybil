@@ -60,6 +60,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	zero := make([]byte, GROUP_BY_WIDTH)
 	records := *recordsPtr
 
+	var weight = int64(1)
+
 	matched_records := 0
 	if HOLD_MATCHES {
 		querySpec.Matched = make(RecordList, 0)
@@ -76,6 +78,10 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	for i := 0; i < len(records); i++ {
 		add := true
 		r := records[i]
+
+		if WEIGHT_COL && r.Populated[WEIGHT_COL_ID] == INT_VAL {
+			weight = int64(r.Ints[WEIGHT_COL_ID])
+		}
 
 		// FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
@@ -138,7 +144,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			}
 
 			if b_ok {
-				big_record.Count++
+				big_record.Samples++
+				big_record.Count += weight
 			}
 
 			val = int64(int(val) / querySpec.TimeBucket * querySpec.TimeBucket)
@@ -167,7 +174,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			result_map[string(binarybuffer)] = added_record
 		}
 
-		added_record.Count++
+		added_record.Samples++
+		added_record.Count += weight
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 
 		for _, a := range querySpec.Aggregations {
@@ -185,7 +193,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 					added_record.Hists[a.name] = hist
 				}
 
-				hist.addValue(val)
+				hist.addValue(val, weight)
 			}
 
 		}
