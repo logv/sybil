@@ -1,7 +1,7 @@
 Sybil has two main parts:
 
 * the storage engine
-  * the ingestion phase (writes data from stdin into the DB as records)
+  * the ingestion phase (writes data from stdin into the DB as rows)
   * the digestion phase (collates records into blocks of columns)
 * and the query engine (reads blocks from row and column store)
 
@@ -11,16 +11,14 @@ storage engine
 
 Sybil ingests data and creates records via a command line API and Stdin. 
 
-These new records are stored as rows on disk until a threshold is met (or a
-manual digestion is called), at which point all records in the row store are
-collated into column form.
+These new records are stored as rows on disk until a digestion is initiated, at
+which point all records in the row store are collated into column form.
 
 In Column form, records are stored in large blocks of column values. Depending
 on the column type and the cardinality of the column, the column can be stored
 as a bucketed value set (for low cardinality values) or as an array of values
 (for high cardinality columns: e.g. time column). When stored in bucket form,
-the record IDs are delta encoded - when stored in array form, the values are
-delta encodable
+the record IDs are delta encoded
 
 In Row and Column form, string values are actually stored as int32 values and a
 separate StringTable is kept alongside each file.
@@ -40,6 +38,21 @@ to be implemented
 * delete blocks older than
 * compressed column info
 
+
+multiple process file safety
+----------------------------
+
+In order for the DB to be safe for multiple processes to read and write, 'lock
+files' are used to prevent files from being changed while another process is
+reading them. There are 3 main locks in a given DB:
+
+* table info lock: used any time a table is read
+* table digestion lock: used to prevent multiple 'digestion' processes from running at once
+* block specific lock: used when collating a block in the digestion process
+
+If any of these locks are taken while a process tries to use that resource, the
+the command will fail. This has little to no effect on digestion or query
+calls, but can potentially lead to lost samples if the ingest command fails.
 
 
 query engine
@@ -66,29 +79,6 @@ Typical query execution should look familiar:
 
 
 
-bottlenecks
------------
-
-in the above execution model there are several performance bottlenecks:
-
-* The memory allocation
-* loading data off disk (since the data is encoded using `encoding/gob` it has a Reflection penalty)
-* The allocation and assignment of record values
-* filtering and aggregating results
-
-In a full table scan of 8.5 million records, an example breakdown of timing would look like: 
-
-    300ms allocate 8.5 mil records
-    200ms load a column of low cardinality data off disk
-    400ms load a column of high cardinality data off disk
-    700ms scan & group full table results
-    100ms additional aggregation time per int column
-
-the execution time would roughly be 1,800ms to do a group by + aggregate.
-Since the execution model is parallelized, block by block, the actual execution
-time can be spread across multiple cores and across 4 cores executes in 780 -
-820ms.
-
 supported
 ---------
 
@@ -113,6 +103,29 @@ unsupported
 * acid
 
 
+
+bottlenecks
+-----------
+
+in the above execution model there are several performance bottlenecks:
+
+* The memory allocation
+* loading data off disk (since the data is encoded using `encoding/gob` it has a Reflection penalty)
+* The allocation and assignment of record values
+* filtering and aggregating results
+
+In a full table scan of 8.5 million records, an example breakdown of timing would look like: 
+
+    300ms allocate 8.5 mil records
+    200ms load a column of low cardinality data off disk
+    400ms load a column of high cardinality data off disk
+    700ms scan & group full table results
+    100ms additional aggregation time per int column
+
+the execution time would roughly be 1,800ms to do a group by + aggregate.
+Since the execution model is parallelized, block by block, the actual execution
+time can be spread across multiple cores and across 4 cores executes in 780 -
+820ms.
 
 to be implemented
 -----------------

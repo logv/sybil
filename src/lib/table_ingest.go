@@ -1,5 +1,6 @@
 package sybil
 
+import "time"
 import "path"
 import "log"
 import "os"
@@ -15,6 +16,7 @@ import "strings"
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
 	log.Println("KEY TABLE", t.KeyTable)
+	log.Println("KEY TYPES", t.KeyTypes)
 
 	t.AppendRecordsToLog(t.newRecords[:], blockname)
 	t.newRecords = make(RecordList, 0)
@@ -24,9 +26,9 @@ func (t *Table) IngestRecords(blockname string) {
 	f_READ_INGESTION_LOG = &TRUE
 	DELETE_BLOCKS_AFTER_QUERY = false
 	HOLD_MATCHES = true
-	t.LoadRecords(nil)
-	log.Println("LOADED RECORDS", len(t.RowBlock.RecordList))
-	if t.RowBlock != nil && len(t.RowBlock.RecordList) > CHUNK_THRESHOLD {
+	loaded := t.LoadRecords(nil)
+	if loaded > 0 && t.RowBlock != nil && len(t.RowBlock.RecordList) > CHUNK_THRESHOLD {
+		log.Println("LOADED RECORDS", len(t.RowBlock.RecordList))
 		t.DigestRecords(INGEST_DIR)
 	}
 }
@@ -37,15 +39,22 @@ type AfterRowBlockLoad func(string, RecordList)
 
 func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
-	dirname := path.Join(*f_DIR, t.Name, INGEST_DIR)
+	dirname := path.Join(*f_DIR, t.Name, digest)
 
 	os.MkdirAll(dirname, 0777)
 
-	file, err := os.Open(dirname)
-	if err != nil {
-		log.Println("Can't open the ingestion dir", dirname)
-		return
+	var file *os.File
+	var err error
+	for i := 0; i < LOCK_TRIES; i++ {
+		file, err = os.Open(dirname)
+		if err != nil {
+			log.Println("Can't open the ingestion dir", dirname)
+			time.Sleep(LOCK_US)
+			continue
+		}
 	}
+
+	files, err := file.Readdir(0)
 
 	if t.RowBlock == nil {
 		t.RowBlock = &TableBlock{}
@@ -55,14 +64,9 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 		t.RowBlock.Name = ROW_STORE_BLOCK
 	}
 
-	files, err := file.Readdir(0)
-
 	for _, file := range files {
 		filename := file.Name()
 
-		if strings.HasPrefix(filename, digest) == false {
-			continue
-		}
 		if strings.HasSuffix(filename, ".db") == false {
 			continue
 		}
@@ -96,15 +100,43 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 
 }
 
+var DELETE_BLOCKS = make([]string, 0)
+
+func (t *Table) RestoreUingestedFiles() {
+	digesting := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
+	file, _ := os.Open(digesting)
+	files, _ := file.Readdir(0)
+
+	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
+	os.MkdirAll(ingestdir, 0777)
+
+	for _, file := range files {
+		log.Println("RESTORING UNINGESTED FILE", file.Name())
+		from := path.Join(digesting, file.Name())
+		to := path.Join(ingestdir, file.Name())
+		os.Rename(from, to)
+	}
+
+	os.Remove(digesting)
+
+}
+
 func SaveBlockChunkCB(digestname string, records RecordList) {
 
 	t := GetTable(*f_TABLE)
 	if digestname == NO_MORE_BLOCKS {
 		if len(t.newRecords) > 0 {
-			t.SaveRecords()
+			t.SaveRecordsToColumns()
 			t.ReleaseRecords()
 		}
 
+		for _, file := range DELETE_BLOCKS {
+			log.Println("REMOVING", file)
+			os.Remove(file)
+		}
+
+		t.RestoreUingestedFiles()
+		t.ReleaseLock(STOMACHE_DIR)
 		return
 	}
 
@@ -113,17 +145,37 @@ func SaveBlockChunkCB(digestname string, records RecordList) {
 		t.newRecords = append(t.newRecords, records...)
 	}
 
-	if len(t.newRecords) > CHUNK_THRESHOLD {
-		t.SaveRecords()
-		t.ReleaseRecords()
-	}
-
-	log.Println("Removing", digestname)
-	os.Remove(digestname)
+	DELETE_BLOCKS = append(DELETE_BLOCKS, digestname)
 
 }
 
+var STOMACHE_DIR = "stomache"
+
 // Go through rowstore and save records out to column store
 func (t *Table) DigestRecords(digest string) {
-	t.LoadRowStoreRecords(digest, SaveBlockChunkCB)
+	can_digest := t.GetLock(STOMACHE_DIR)
+
+	if !can_digest {
+		t.ReleaseLock("info")
+		log.Println("CANT GRAB LOCK FOR DIGEST RECORDS")
+		return
+	}
+
+	dirname := path.Join(*f_DIR, t.Name)
+	digestfile := path.Join(dirname, digest)
+	digesting := path.Join(dirname, STOMACHE_DIR)
+	_, err := os.Open(digesting)
+	if err == nil {
+		t.ReleaseLock(STOMACHE_DIR)
+		log.Println("Warning: Digesting dir already exists, skipping digestion")
+		return
+	}
+
+	err = os.Rename(digestfile, digesting)
+
+	if err == nil {
+		t.LoadRowStoreRecords(STOMACHE_DIR, SaveBlockChunkCB)
+	} else {
+		t.ReleaseLock(STOMACHE_DIR)
+	}
 }

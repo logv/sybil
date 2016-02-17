@@ -115,15 +115,20 @@ func (t *Table) get_key_id(name string) int16 {
 	return int16(t.KeyTable[name])
 }
 
-func (t *Table) set_key_type(name_id int16, col_type int8) {
+func (t *Table) set_key_type(name_id int16, col_type int8) bool {
 	cur_type, ok := t.KeyTypes[name_id]
 	if !ok {
 		t.KeyTypes[name_id] = col_type
 	} else {
 		if cur_type != col_type {
-			log.Println("Warning, trying to over-write column type for key", t.get_string_for_key(int(name_id)))
+			log.Println("TABLE", t.KeyTable)
+			log.Println("TYPES", t.KeyTypes)
+			log.Print("Warning, trying to over-write column type for key ", name_id, t.get_string_for_key(int(name_id)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
+			return false
 		}
 	}
+
+	return true
 
 }
 

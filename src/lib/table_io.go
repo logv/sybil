@@ -46,7 +46,7 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 		return
 	}
 	name_id := l.table.get_key_id(name)
-	log.Println("ASSERING COL TYPE", name, name_id, col_type, len(l.table.KeyTypes))
+	log.Println("ASSERTING COL TYPE", name, name_id, col_type, len(l.table.KeyTypes))
 
 	if l.table.KeyTypes[name_id] == 0 {
 		log.Fatal("Query Error! Column ", name, " does not exist")
@@ -84,8 +84,15 @@ func (l *LoadSpec) Set(name string) {
 }
 
 func (t *Table) saveTableInfo(fname string) {
+	if t.GetLock("info") == false {
+		return
+	}
+
+	defer t.ReleaseLock("info")
 	var network bytes.Buffer // Stand-in for the network.
-	filename := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.db", fname))
+	dirname := path.Join(*f_DIR, t.Name)
+	filename := path.Join(dirname, fmt.Sprintf("%s.db", fname))
+	flagfile := path.Join(dirname, fmt.Sprintf("%s.db.exists", fname))
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
@@ -96,9 +103,12 @@ func (t *Table) saveTableInfo(fname string) {
 	}
 
 	log.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
+	log.Println("TABLE INFO", t)
 
-	w, _ := os.Create(filename)
-	network.WriteTo(w)
+	tempfile, _ := ioutil.TempFile(dirname, "info.db")
+	network.WriteTo(tempfile)
+	os.Rename(tempfile.Name(), filename)
+	os.Create(flagfile)
 }
 
 func (t *Table) SaveTableInfo(fname string) {
@@ -154,7 +164,7 @@ func (t *Table) saveRecordList(records RecordList) bool {
 	return true
 }
 
-func (t *Table) SaveRecords() bool {
+func (t *Table) SaveRecordsToColumns() bool {
 	os.MkdirAll(path.Join(*f_DIR, t.Name), 0777)
 	col_id := t.get_key_id("time")
 
@@ -169,19 +179,28 @@ func (t *Table) SaveRecords() bool {
 
 }
 
-func (t *Table) LoadTableInfo() {
+func (t *Table) LoadTableInfo() bool {
 	saved_table := Table{}
 	start := time.Now()
 	tablename := t.Name
 	filename := path.Join(*f_DIR, tablename, "info.db")
-	file, _ := os.Open(filename)
+
+	var file *os.File
+	if t.GetLock("info") {
+		defer t.ReleaseLock("info")
+		file, _ = os.Open(filename)
+	} else {
+		log.Println("Warning: LOAD TABLE INFO LOCK TAKEN")
+		return false
+	}
+
 	log.Println("OPENING TABLE INFO FROM FILENAME", filename)
 	dec := gob.NewDecoder(file)
 	err := dec.Decode(&saved_table)
 	end := time.Now()
 	if err != nil {
-		log.Println("TABLE INFO DECODE:", err)
-		return
+		log.Println("Warning: TABLE INFO DECODE:", err)
+		return false
 	}
 
 	if DEBUG_TIMING {
@@ -191,22 +210,21 @@ func (t *Table) LoadTableInfo() {
 	if len(saved_table.KeyTable) > 0 {
 		t.KeyTable = saved_table.KeyTable
 	}
+
 	if len(saved_table.KeyTypes) > 0 {
 		t.KeyTypes = saved_table.KeyTypes
 	}
 
 	if saved_table.IntInfo != nil {
-		log.Println("LOADED CACHED INT INFO")
 		t.IntInfo = saved_table.IntInfo
 	}
 	if saved_table.StrInfo != nil {
-		log.Println("LOADED CACHED STR INFO")
 		t.StrInfo = saved_table.StrInfo
 	}
 
 	t.populate_string_id_lookup()
 
-	return
+	return true
 }
 
 // Remove our pointer to the blocklist so a GC is triggered and
@@ -214,6 +232,22 @@ func (t *Table) LoadTableInfo() {
 func (t *Table) ReleaseRecords() {
 	t.BlockList = make(map[string]*TableBlock, 0)
 	debug.FreeOSMemory()
+}
+
+func (t *Table) HasFlagFile() bool {
+	// Make a determination of whether this is a new table or not. if it is a
+	// new table, we are fine, but if it's not - we are in trouble!
+	flagfile := path.Join(*f_DIR, t.Name, "info.db.exists")
+	_, err := os.Open(flagfile)
+	// If the flagfile exists and we couldn't read the file info, we are in trouble!
+	if err == nil {
+		t.ReleaseLock("info")
+		log.Println("Warning: Table info missing, but flag file exists!")
+		return true
+	}
+
+	return false
+
 }
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
@@ -230,13 +264,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	var wg sync.WaitGroup
 	block_specs := make(map[string]*QuerySpec)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		t.LoadTableInfo()
-	}()
-
-	wg.Wait()
+	loaded_info := t.LoadTableInfo()
+	if loaded_info == false {
+		if t.HasFlagFile() {
+			return 0
+		}
+	}
 
 	m := &sync.Mutex{}
 
@@ -256,11 +289,15 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		v := files[len(files)-f-1]
 
 		switch {
+		case v.Name() == INGEST_DIR || v.Name() == STOMACHE_DIR:
+			continue
 		case strings.HasSuffix(v.Name(), "info.db"):
 			continue
 		case strings.HasSuffix(v.Name(), "old"):
 			continue
 		case strings.HasSuffix(v.Name(), "broken"):
+			continue
+		case strings.HasSuffix(v.Name(), "lock"):
 			continue
 		case strings.HasSuffix(v.Name(), "partial"):
 			continue
@@ -284,6 +321,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 
 				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
+				if block == nil {
+					log.Println("Warning: Error loading block from dir", filename)
+					return
+				}
 
 				fmt.Fprint(os.Stderr, ".")
 

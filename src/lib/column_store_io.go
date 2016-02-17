@@ -6,10 +6,8 @@ import "log"
 import "os"
 import "encoding/gob"
 import "strings"
-import "sort"
 import "runtime/debug"
 import "time"
-import "sync"
 
 type ValueMap map[int64][]uint32
 
@@ -99,9 +97,6 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 				intCol.Values[r] = v
 			}
 		}
-
-		// Sort the int buckets before saving them, so we don't have to sort them after reading.
-		sort.Sort(SortIntsByVal(intCol.Bins))
 
 		col_fname := fmt.Sprintf("%s/int_%s.db", dirname, tb.get_string_for_key(k))
 
@@ -253,6 +248,13 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			strCol.Values = make([]int32, max_r)
 			for k, v := range record_to_value {
 				strCol.Values[k] = v
+			}
+		}
+
+		for _, bucket := range strCol.Bins {
+			first_val := bucket.Records[0]
+			if first_val > 1000 {
+				log.Println("Warning", k, bucket.Value, "FIRST RECORD IS", first_val)
 			}
 		}
 
@@ -410,8 +412,12 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	// of the various block infos
 	tb.Name = dirname
 
+	defer tb.table.ReleaseLock(tb.Name)
+	if tb.table.GetLock(tb.Name) == false {
+		log.Fatal("Can't grab lock to save block", filename)
+	}
+
 	partialname := fmt.Sprintf("%s.partial", dirname)
-	os.RemoveAll(partialname)
 	oldblock := fmt.Sprintf("%s.old", dirname)
 
 	start := time.Now()
@@ -432,13 +438,22 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	// remove the old block
 	os.RemoveAll(oldblock)
 	err := os.Rename(dirname, oldblock)
+	if err != nil {
+		log.Fatal("ERROR RENAMING BLOCK", dirname, oldblock, err)
+	}
 	err = os.Rename(partialname, dirname)
+	if err != nil {
+		log.Fatal("ERROR RENAMING PARTIAL", partialname, dirname, err)
+	}
 
 	if err == nil {
 		os.RemoveAll(oldblock)
 	} else {
-		log.Println("ERROR SAVING BLOCK", err)
+		log.Fatal("ERROR SAVING BLOCK", partialname, dirname, err)
 	}
+
+	log.Println("RELEASING BLOCK", tb.Name)
+
 }
 
 func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
@@ -446,63 +461,61 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
-	var wg sync.WaitGroup
-
 	if err != nil {
 		log.Println("DECODE COL ERR:", err)
+		return
 	}
 
 	string_lookup := make(map[int32]string)
+	key_table_len := len(tb.table.KeyTable)
 	col_id := tb.table.get_key_id(into.Name)
+
+	if int(col_id) >= key_table_len {
+		log.Println("IGNORING COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
+		return
+	}
+
 	col := tb.GetColumnInfo(col_id)
+	// unpack the string table
+	for k, v := range into.StringTable {
+		col.StringTable[v] = int32(k)
+		string_lookup[int32(k)] = v
+	}
+	col.val_string_id_lookup = string_lookup
 
-	wg.Add(2)
+	var record *Record
+	var r uint32
+	if into.BucketEncoded {
+		prev := uint32(0)
+		did := into.DeltaEncodedIDs
 
-	go func() {
-		defer wg.Done()
-		// unpack the string table
-		for k, v := range into.StringTable {
-			col.StringTable[v] = int32(k)
-			string_lookup[int32(k)] = v
-		}
-		col.val_string_id_lookup = string_lookup
+		for _, bucket := range into.Bins {
+			prev = 0
+			for _, r = range bucket.Records {
 
-	}()
-
-	go func() {
-		defer wg.Done()
-		var record *Record
-		var r uint32
-		if into.BucketEncoded {
-			prev := uint32(0)
-			did := into.DeltaEncodedIDs
-
-			for _, bucket := range into.Bins {
-				prev = 0
-				for _, r = range bucket.Records {
-
-					if did {
-						r = prev + r
-					}
-
-					prev = r
-					record = records[r]
-					record.Populated[col_id] = STR_VAL
-
-					record.Strs[col_id] = StrField(bucket.Value)
+				if did {
+					r = prev + r
 				}
-			}
-		} else {
-			for r, v := range into.Values {
-				records[r].Strs[col_id] = StrField(v)
-				records[r].Populated[col_id] = STR_VAL
-			}
 
+				prev = r
+				record = records[r]
+
+				if record.Populated[col_id] != _NO_VAL {
+					log.Fatal("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
+				}
+
+				record.Populated[col_id] = STR_VAL
+				record.Strs[col_id] = StrField(bucket.Value)
+			}
 		}
-	}()
 
-	wg.Wait()
+	} else {
+		for r, v := range into.Values {
+			records[r].Strs[col_id] = StrField(v)
+			records[r].Populated[col_id] = STR_VAL
+		}
 
+	}
 }
 
 func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
@@ -584,6 +597,10 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 			for _, r := range bucket.Records {
 				if into.DeltaEncodedIDs {
 					r = r + prev
+				}
+
+				if records[r].Populated[col_id] != _NO_VAL {
+					log.Fatal("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
 				}
 
 				records[r].Ints[col_id] = IntField(bucket.Value)

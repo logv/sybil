@@ -21,6 +21,8 @@ func main() {
 		sybil.RunQueryCmdLine()
 	case "index":
 		sybil.RunIndexCmdLine()
+	case "inspect":
+		sybil.RunInspectCmdLine()
 	default:
 		log.Fatal("Unknown command:", os.Args[0])
 	}

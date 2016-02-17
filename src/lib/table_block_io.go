@@ -74,8 +74,19 @@ func (t *Table) FillPartialBlock() bool {
 
 	log.Println("OPENING PARTIAL BLOCK", filename)
 
+	if t.GetLock(filename) == false {
+		log.Println("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
+		return true
+	}
+
+	defer t.ReleaseLock(filename)
+
 	// Open up our last record block, see how full it is
 	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
+	if block == nil {
+		return true
+	}
+
 	partialRecords := block.RecordList
 	log.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
@@ -154,6 +165,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
+
 	tb := newTableBlock()
 	tb.Name = dirname
 
@@ -163,13 +175,19 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	info := SavedColumnInfo{}
 	istart := time.Now()
 	filename := fmt.Sprintf("%s/info.db", dirname)
+
 	file, _ := os.Open(filename)
 	dec := gob.NewDecoder(file)
-	dec.Decode(&info)
+	err := dec.Decode(&info)
+
+	if err != nil {
+		log.Println("Warning: ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
+		return nil
+	}
 	iend := time.Now()
 
 	if info.NumRecords <= 0 {
-		return &tb
+		return nil
 	}
 
 	if DEBUG_TIMING {
@@ -205,20 +223,20 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 		filename := fmt.Sprintf("%s/%s", dirname, fname)
 
-		file, _ := os.Open(filename)
+		file, err := os.Open(filename)
+		if err != nil {
+			log.Fatal("Error Loading Column!", filename, err)
+		}
+
 		dec := gob.NewDecoder(file)
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			switch {
-			case strings.HasPrefix(fname, "str"):
-				tb.unpackStrCol(dec, info)
-			case strings.HasPrefix(fname, "set"):
-				tb.unpackSetCol(dec, info)
-			case strings.HasPrefix(fname, "int"):
-				tb.unpackIntCol(dec, info)
-			}
-		}()
+		switch {
+		case strings.HasPrefix(fname, "str"):
+			tb.unpackStrCol(dec, info)
+		case strings.HasPrefix(fname, "set"):
+			tb.unpackSetCol(dec, info)
+		case strings.HasPrefix(fname, "int"):
+			tb.unpackIntCol(dec, info)
+		}
 	}
 
 	wg.Wait()

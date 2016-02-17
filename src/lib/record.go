@@ -1,5 +1,7 @@
 package sybil
 
+import "log"
+
 type Record struct {
 	Strs      []StrField
 	Ints      []IntField
@@ -108,7 +110,9 @@ func (r *Record) AddStrField(name string, val string) {
 	r.Strs[name_id] = StrField(value_id)
 	r.Populated[name_id] = STR_VAL
 
-	r.block.table.set_key_type(name_id, STR_VAL)
+	if r.block.table.set_key_type(name_id, STR_VAL) == false {
+		log.Fatalln("COULDNT SET STR VAL", name, val, name_id)
+	}
 }
 
 func (r *Record) AddIntField(name string, val int64) {
@@ -118,7 +122,9 @@ func (r *Record) AddIntField(name string, val int64) {
 	r.ResizeFields(name_id)
 	r.Ints[name_id] = IntField(val)
 	r.Populated[name_id] = INT_VAL
-	r.block.table.set_key_type(name_id, INT_VAL)
+	if r.block.table.set_key_type(name_id, INT_VAL) == false {
+		log.Fatalln("COULDNT SET INT VAL", name, val, name_id)
+	}
 }
 
 func (r *Record) AddSetField(name string, val []string) {
@@ -136,5 +142,7 @@ func (r *Record) AddSetField(name string, val []string) {
 
 	r.SetMap[name_id] = SetField(vals)
 	r.Populated[name_id] = SET_VAL
-	r.block.table.set_key_type(name_id, SET_VAL)
+	if r.block.table.set_key_type(name_id, SET_VAL) == false {
+		log.Fatalln("COULDNT SET SET VAL", name, val, name_id)
+	}
 }

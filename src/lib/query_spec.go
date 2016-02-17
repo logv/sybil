@@ -13,6 +13,7 @@ type QuerySpec struct {
 	Limit      int16
 	TimeBucket int
 
+	Error       bool
 	Results     ResultMap
 	TimeResults map[int]ResultMap
 	Sorted      []*Result

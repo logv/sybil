@@ -22,9 +22,9 @@ func RunDigestCmdLine() {
 	DELETE_BLOCKS_AFTER_QUERY = false
 
 	t := GetTable(*f_TABLE)
-	t.LoadRecords(nil)
-
-	log.Println("KEY TABLE", t.KeyTable)
-
+	if t.LoadTableInfo() == false {
+		log.Println("Warning: Couldn't grab table info, probably a problem with info.db")
+		return
+	}
 	t.DigestRecords(*digest_file)
 }

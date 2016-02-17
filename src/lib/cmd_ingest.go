@@ -193,7 +193,13 @@ func RunIngestCmdLine() {
 
 	t := GetTable(*f_TABLE)
 
-	t.LoadRecords(nil)
+	loaded := t.LoadTableInfo()
+	if loaded == false {
+		if t.HasFlagFile() {
+			log.Println("Warning: Ingestor couldn't read table info, losing samples")
+			return
+		}
+	}
 
 	if *f_CSV == false {
 		import_json_records()

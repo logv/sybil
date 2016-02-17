@@ -44,7 +44,7 @@ func save_and_reload_table(test *testing.T, expected_blocks int) *sybil.Table {
 	expected_count := sybil.CHUNK_SIZE * expected_blocks
 	t := sybil.GetTable(TEST_TABLE_NAME)
 
-	t.SaveRecords()
+	t.SaveRecordsToColumns()
 
 	unload_test_table()
 
