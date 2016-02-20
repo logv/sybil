@@ -74,12 +74,12 @@ func (t *Table) FillPartialBlock() bool {
 
 	log.Println("OPENING PARTIAL BLOCK", filename)
 
-	if t.GetLock(filename) == false {
+	if t.GrabBlockLock(filename) == false {
 		log.Println("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
 
-	defer t.ReleaseLock(filename)
+	defer t.ReleaseBlockLock(filename)
 
 	// Open up our last record block, see how full it is
 	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)

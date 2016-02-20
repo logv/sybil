@@ -6,6 +6,7 @@ import "path"
 import "bytes"
 import "encoding/gob"
 import "io/ioutil"
+import "time"
 import "os"
 
 type RowSavedInt struct {
@@ -150,11 +151,15 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 		return
 	}
 
+	// TODO: fix this up, so that we don't
 	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
+	tempingestdir := path.Join(*f_DIR, t.Name, TEMP_INGEST_DIR)
+	digestdir := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
+	os.MkdirAll(tempingestdir, 0777)
 
-	w, err := ioutil.TempFile(ingestdir, fmt.Sprintf("%s_", blockname))
+	w, err := ioutil.TempFile(tempingestdir, fmt.Sprintf("%s_", blockname))
 
 	marshalled_records := make([]*SavedRecord, len(records))
 	for i, r := range records {
@@ -174,11 +179,30 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	}
 
 	filename := fmt.Sprintf("%s.db", w.Name())
-	log.Println("NAME", w.Name())
+	basename := path.Base(filename)
 
 	log.Println("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
 
 	network.WriteTo(w)
-	os.Rename(w.Name(), filename)
 
+	for i := 0; i < 3; i++ {
+		fullname := path.Join(ingestdir, basename)
+		// need to keep re-trying, right?
+		err = os.Rename(w.Name(), fullname)
+		if err == nil {
+			break
+		}
+
+		if err != nil {
+			log.Println("WARNING: COULDNT RENAME TEMP INGEST BLOCK!", fullname, err)
+			log.Println("TRYING TO PLACE RECORDS IN DIGEST DIR")
+			fullname := path.Join(digestdir, basename)
+			err = os.Rename(w.Name(), fullname)
+			if err == nil {
+				break
+			}
+
+			time.Sleep(time.Millisecond * 10)
+		}
+	}
 }

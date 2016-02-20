@@ -23,7 +23,7 @@ func RunDigestCmdLine() {
 
 	t := GetTable(*f_TABLE)
 	if t.LoadTableInfo() == false {
-		log.Println("Warning: Couldn't grab table info, probably a problem with info.db")
+		log.Println("Warning: Couldn't read table info, exiting early")
 		return
 	}
 	t.DigestRecords(*digest_file)

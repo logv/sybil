@@ -412,8 +412,8 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	// of the various block infos
 	tb.Name = dirname
 
-	defer tb.table.ReleaseLock(tb.Name)
-	if tb.table.GetLock(tb.Name) == false {
+	defer tb.table.ReleaseBlockLock(filename)
+	if tb.table.GrabBlockLock(filename) == false {
 		log.Fatal("Can't grab lock to save block", filename)
 	}
 

@@ -1,3 +1,4 @@
+# A program to ingest and digest rapidly, used for stressing deadlocks and lock files
 
 PID=$$
 TOTAL=0
@@ -6,7 +7,7 @@ ITERS=1000
 for iter in `seq $ITERS`; do
   python scripts/fakedata/host_generator.py $NUM | ./bin/sybil ingest -table testingest >> ingest.${PID}.log 2>&1
   if [ $? -ne 0 ]; then
-    echo "PROBLEM WITH INGESTION!!!!!", $PID
+    echo "INGESTION FAILED!!!!!", $PID
     break
   fi
   TOTAL=$((( $TOTAL + $NUM )))
@@ -17,7 +18,7 @@ for iter in `seq $ITERS`; do
     if [ $? -eq 0 ]; then
       continue      
     else
-      echo "PROBLEM WITH DIGESTION DIGESTION DIGESTION!!!!!", $PID
+      echo "DIGESTION FAILED!!!!!", $PID
       break
     fi
   fi

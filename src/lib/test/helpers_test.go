@@ -20,8 +20,9 @@ func run_tests(m *testing.M) {
 
 func setup_test_vars(chunk_size int) {
 	sybil.TEST_MODE = true
-	sybil.CHUNK_SIZE = 100
-
+	sybil.CHUNK_SIZE = chunk_size
+	sybil.LOCK_US = 1
+	sybil.LOCK_TRIES = 3
 }
 
 func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {

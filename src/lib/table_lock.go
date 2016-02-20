@@ -3,6 +3,7 @@ package sybil
 import "log"
 import "path"
 import "os"
+import "syscall"
 import "fmt"
 import "strconv"
 import "io/ioutil"
@@ -11,8 +12,114 @@ import "time"
 var LOCK_US = time.Millisecond * 3
 var LOCK_TRIES = 100
 
-func is_active_pid(val []byte) bool {
+// Every LockFile should have a recovery plan
+type RecoverableLock interface {
+	Grab() bool
+	Release() bool
+	Recover() bool
+}
 
+type Lock struct {
+	name   string
+	table  *Table
+	broken bool
+}
+
+type InfoLock struct {
+	Lock
+}
+
+type BlockLock struct {
+	Lock
+}
+
+type DigestLock struct {
+	Lock
+}
+
+func RecoverLock(lock RecoverableLock) {
+	// TODO: log the auto recovery into a recovery file
+	lock.Recover()
+}
+
+func (l *InfoLock) Recover() bool {
+	t := l.Lock.table
+	log.Println("INFO LOCK RECOVERY")
+	dirname := path.Join(*f_DIR, t.Name)
+	backup := path.Join(dirname, "info.bak")
+	infodb := path.Join(dirname, "info.db")
+
+	if t.LoadTableInfoFrom(infodb) {
+		log.Println("LOADED REASONABLE TABLE INFO, DELETING LOCK")
+		l.ForceDeleteFile()
+		return true
+	}
+
+	if t.LoadTableInfoFrom(backup) {
+		log.Println("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
+		os.Remove(infodb)
+		os.Rename(backup, infodb)
+		l.ForceDeleteFile()
+		return l.Grab()
+	}
+
+	log.Println("CANT READ info.db OR RECOVER info.bak")
+	log.Println("TRY DELETING LOCK BY HAND FOR", l.name)
+
+	return false
+}
+
+func (l *DigestLock) Recover() bool {
+	log.Println("RECOVERING DIGEST LOCK", l.name)
+	t := l.table
+	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
+	stomache := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
+	os.MkdirAll(ingestdir, 0777)
+
+	// TODO: understand if any file in particular is messing things up...
+	t.RestoreUningestedFiles()
+	os.RemoveAll(stomache)
+	l.ForceDeleteFile()
+
+	return true
+}
+
+func (l *BlockLock) Recover() bool {
+	log.Println("RECOVERING BLOCK LOCK", l.name)
+	t := l.table
+	tb := t.LoadBlockFromDir(l.name, nil, true)
+	if tb == nil {
+		log.Println("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
+		// This block is not good! need to put it into remediation...
+		os.Rename(l.name, fmt.Sprint(l.name, ".broke"))
+		l.ForceDeleteFile()
+	} else {
+		log.Println("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")
+		os.RemoveAll(fmt.Sprint(l.name, ".partial"))
+		l.ForceDeleteFile()
+	}
+
+	return true
+}
+
+func (l *Lock) Recover() bool {
+	log.Println("UNIMPLEMENTED RECOVERY FOR LOCK", l.table.Name, l.name)
+	return false
+}
+
+func (l *Lock) ForceDeleteFile() {
+	t := l.table
+	digest := l.name
+
+	digest = path.Base(digest)
+	// Check to see if this file is locked...
+	lockfile := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+
+	log.Println("FORCE DELETING", lockfile)
+	os.RemoveAll(lockfile)
+}
+
+func is_active_pid(val []byte) bool {
 	// Check if its our PID or not...
 	pid_str := strconv.FormatInt(int64(os.Getpid()), 10)
 	if pid_str == string(val) {
@@ -20,15 +127,18 @@ func is_active_pid(val []byte) bool {
 	}
 
 	return false
-
 }
 
-func check_pid(lockfile string) bool {
+func check_pid(lockfile string, l *Lock) bool {
 	cangrab := false
+
+	var val []byte
+	var err error
+
 	for i := 0; i < LOCK_TRIES; i++ {
 		dirname := path.Dir(lockfile)
 		os.MkdirAll(dirname, 0777)
-		val, err := ioutil.ReadFile(lockfile)
+		val, err = ioutil.ReadFile(lockfile)
 
 		if err == nil {
 			// Check if its our PID or not...
@@ -44,16 +154,56 @@ func check_pid(lockfile string) bool {
 		}
 	}
 
+	// At this point, we check if the PID is active or not. If the PID isn't
+	// active, we enter recovery mode for this Lock()
+
+	// To check if a PID is active, we... first parse the PID in the file, then
+	// we ask the os for the process and send it Signal 0. If the process is
+	// alive, there will be no error, or if it isn't owned by us, we'll get an
+	// EPERM error
+	if cangrab == false {
+		val, err = ioutil.ReadFile(lockfile)
+		pid_int, err := strconv.ParseInt(string(val), 10, 32)
+		if err == nil {
+			process, err := os.FindProcess(int(pid_int))
+			// err is Always nil on *nix
+			if err == nil {
+				err := process.Signal(syscall.Signal(0))
+				if err == nil || err == syscall.EPERM {
+					// PROCESS IS STILL RUNNING
+				} else {
+					time.Sleep(time.Millisecond * 100)
+					nextval, err := ioutil.ReadFile(lockfile)
+
+					if err == nil {
+						if string(nextval) == string(val) {
+							if l.broken {
+								log.Println("SECOND TRY TO RECOVER A BROKEN LOCK... GIVING UP")
+								l.broken = false
+								return false
+							}
+
+							log.Println("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.name, val)
+							l.broken = true
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return cangrab
 }
 
-func (t *Table) GetLock(digest string) bool {
+func (l *Lock) Grab() bool {
+	t := l.table
+	digest := l.name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
 	lockfile := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
-	if check_pid(lockfile) == false {
+	if check_pid(lockfile, l) == false {
 		return false
 	}
 
@@ -71,7 +221,7 @@ func (t *Table) GetLock(digest string) bool {
 		nf.WriteString(strconv.FormatInt(pid, 10))
 		nf.Sync()
 
-		if check_pid(lockfile) == false {
+		if check_pid(lockfile, l) == false {
 			continue
 		}
 
@@ -79,12 +229,15 @@ func (t *Table) GetLock(digest string) bool {
 		return true
 	}
 
-	log.Println("LOCK FAIL!", lockfile, check_pid(lockfile))
+	log.Println("LOCK FAIL!", lockfile)
 	return false
 
 }
 
-func (t *Table) ReleaseLock(digest string) bool {
+func (l *Lock) Release() bool {
+	t := l.table
+	digest := l.name
+
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
 	lockfile := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.lock", digest))
@@ -98,9 +251,63 @@ func (t *Table) ReleaseLock(digest string) bool {
 		if is_active_pid(val) {
 			log.Println("UNLOCKING", lockfile)
 			os.RemoveAll(lockfile)
+			break
 		}
 
 	}
 
 	return true
+}
+
+func (t *Table) GrabInfoLock() bool {
+	lock := Lock{table: t, name: "info"}
+	info := &InfoLock{lock}
+	ret := info.Grab()
+	if !ret && info.broken {
+		ret = info.Recover()
+	}
+
+	return ret
+}
+
+func (t *Table) ReleaseInfoLock() bool {
+	lock := Lock{table: t, name: "info"}
+	info := &InfoLock{lock}
+	ret := info.Release()
+	return ret
+}
+
+func (t *Table) GrabDigestLock() bool {
+	lock := Lock{table: t, name: STOMACHE_DIR}
+	info := &DigestLock{lock}
+	ret := info.Grab()
+	if !ret && info.broken {
+		ret = info.Recover()
+	}
+	return ret
+}
+
+func (t *Table) ReleaseDigestLock() bool {
+	lock := Lock{table: t, name: STOMACHE_DIR}
+	info := &DigestLock{lock}
+	ret := info.Release()
+	return ret
+}
+
+func (t *Table) GrabBlockLock(name string) bool {
+	lock := Lock{table: t, name: name}
+	info := &BlockLock{lock}
+	ret := info.Grab()
+	if !ret && info.broken {
+		ret = info.Recover()
+	}
+	return ret
+
+}
+
+func (t *Table) ReleaseBlockLock(name string) bool {
+	lock := Lock{table: t, name: name}
+	info := &BlockLock{lock}
+	ret := info.Release()
+	return ret
 }

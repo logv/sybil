@@ -16,6 +16,7 @@ import "runtime/debug"
 var DEBUG_TIMING = false
 var CHUNKS_BEFORE_GC = 16
 var INGEST_DIR = "ingest"
+var TEMP_INGEST_DIR = ".ingest.temp"
 var DELETE_BLOCKS_AFTER_QUERY = true
 var HOLD_MATCHES = false
 
@@ -84,15 +85,20 @@ func (l *LoadSpec) Set(name string) {
 }
 
 func (t *Table) saveTableInfo(fname string) {
-	if t.GetLock("info") == false {
+	if t.GrabInfoLock() == false {
 		return
 	}
 
-	defer t.ReleaseLock("info")
+	defer t.ReleaseInfoLock()
 	var network bytes.Buffer // Stand-in for the network.
 	dirname := path.Join(*f_DIR, t.Name)
 	filename := path.Join(dirname, fmt.Sprintf("%s.db", fname))
+	backup := path.Join(dirname, fmt.Sprintf("%s.bak", fname))
+
 	flagfile := path.Join(dirname, fmt.Sprintf("%s.db.exists", fname))
+
+	// Create a backup file
+	cp(backup, filename)
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
@@ -180,23 +186,31 @@ func (t *Table) SaveRecordsToColumns() bool {
 }
 
 func (t *Table) LoadTableInfo() bool {
-	saved_table := Table{}
-	start := time.Now()
 	tablename := t.Name
 	filename := path.Join(*f_DIR, tablename, "info.db")
-
-	var file *os.File
-	if t.GetLock("info") {
-		defer t.ReleaseLock("info")
-		file, _ = os.Open(filename)
+	if t.GrabInfoLock() {
+		defer t.ReleaseInfoLock()
 	} else {
 		log.Println("Warning: LOAD TABLE INFO LOCK TAKEN")
 		return false
 	}
 
+	return t.LoadTableInfoFrom(filename)
+}
+
+func (t *Table) LoadTableInfoFrom(filename string) bool {
+	var file *os.File
+	saved_table := Table{}
+	start := time.Now()
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return false
+	}
+
 	log.Println("OPENING TABLE INFO FROM FILENAME", filename)
 	dec := gob.NewDecoder(file)
-	err := dec.Decode(&saved_table)
+	err = dec.Decode(&saved_table)
 	end := time.Now()
 	if err != nil {
 		log.Println("Warning: TABLE INFO DECODE:", err)
@@ -241,7 +255,7 @@ func (t *Table) HasFlagFile() bool {
 	_, err := os.Open(flagfile)
 	// If the flagfile exists and we couldn't read the file info, we are in trouble!
 	if err == nil {
-		t.ReleaseLock("info")
+		t.ReleaseInfoLock()
 		log.Println("Warning: Table info missing, but flag file exists!")
 		return true
 	}
@@ -289,7 +303,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		v := files[len(files)-f-1]
 
 		switch {
-		case v.Name() == INGEST_DIR || v.Name() == STOMACHE_DIR:
+		case v.Name() == INGEST_DIR || v.Name() == STOMACHE_DIR || v.Name() == TEMP_INGEST_DIR:
 			continue
 		case strings.HasSuffix(v.Name(), "info.db"):
 			continue

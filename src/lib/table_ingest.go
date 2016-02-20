@@ -102,7 +102,7 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 
 var DELETE_BLOCKS = make([]string, 0)
 
-func (t *Table) RestoreUingestedFiles() {
+func (t *Table) RestoreUningestedFiles() {
 	digesting := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
 	file, _ := os.Open(digesting)
 	files, _ := file.Readdir(0)
@@ -135,8 +135,8 @@ func SaveBlockChunkCB(digestname string, records RecordList) {
 			os.Remove(file)
 		}
 
-		t.RestoreUingestedFiles()
-		t.ReleaseLock(STOMACHE_DIR)
+		t.RestoreUningestedFiles()
+		t.ReleaseDigestLock()
 		return
 	}
 
@@ -153,10 +153,10 @@ var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
 func (t *Table) DigestRecords(digest string) {
-	can_digest := t.GetLock(STOMACHE_DIR)
+	can_digest := t.GrabDigestLock()
 
 	if !can_digest {
-		t.ReleaseLock("info")
+		t.ReleaseInfoLock()
 		log.Println("CANT GRAB LOCK FOR DIGEST RECORDS")
 		return
 	}
@@ -166,16 +166,19 @@ func (t *Table) DigestRecords(digest string) {
 	digesting := path.Join(dirname, STOMACHE_DIR)
 	_, err := os.Open(digesting)
 	if err == nil {
-		t.ReleaseLock(STOMACHE_DIR)
-		log.Println("Warning: Digesting dir already exists, skipping digestion")
+		t.ReleaseDigestLock()
+		log.Println("Digesting dir already exists, skipping digestion")
 		return
 	}
 
 	err = os.Rename(digestfile, digesting)
 
 	if err == nil {
+		// We don't want to leave someone without a place to put their
+		// ingestions...
+		os.MkdirAll(digestfile, 0777)
 		t.LoadRowStoreRecords(STOMACHE_DIR, SaveBlockChunkCB)
 	} else {
-		t.ReleaseLock(STOMACHE_DIR)
+		t.ReleaseDigestLock()
 	}
 }
