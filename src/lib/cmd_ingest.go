@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Dictionary map[string]interface{}
@@ -193,8 +194,17 @@ func RunIngestCmdLine() {
 
 	t := GetTable(*f_TABLE)
 
-	loaded := t.LoadTableInfo()
-	if loaded == false {
+	var loaded_table = false
+	for i := 0; i < 5; i++ {
+		loaded := t.LoadTableInfo()
+		if loaded == true {
+			loaded_table = true
+			break
+		}
+		time.Sleep(time.Millisecond * 10)
+	}
+
+	if loaded_table == false {
 		if t.HasFlagFile() {
 			log.Println("Warning: Ingestor couldn't read table info, losing samples")
 			return
