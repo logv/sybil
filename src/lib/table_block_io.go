@@ -40,6 +40,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 
 	ret := make([]*TableBlock, 0)
 
+	t.block_m.Lock()
 	for _, v := range t.BlockList {
 		if v.Name == ROW_STORE_BLOCK {
 			continue
@@ -49,6 +50,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 			ret = append(ret, v)
 		}
 	}
+	t.block_m.Unlock()
 
 	return ret
 }
@@ -165,8 +167,8 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
-
 	tb := newTableBlock()
+
 	tb.Name = dirname
 
 	tb.table = t

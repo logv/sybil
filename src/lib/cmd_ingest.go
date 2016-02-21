@@ -194,6 +194,8 @@ func RunIngestCmdLine() {
 
 	t := GetTable(*f_TABLE)
 
+	// We have 5 tries to load table info, just in case the lock is held by
+	// someone else
 	var loaded_table = false
 	for i := 0; i < 5; i++ {
 		loaded := t.LoadTableInfo()

@@ -48,6 +48,13 @@ func GetTable(name string) *Table {
 
 	t = &Table{Name: name}
 	LOADED_TABLES[name] = t
+
+	t.init_data_structures()
+
+	return t
+}
+
+func (t *Table) init_data_structures() {
 	t.key_string_id_lookup = make(map[int16]string)
 	t.val_string_id_lookup = make(map[int32]string)
 
@@ -65,7 +72,6 @@ func GetTable(name string) *Table {
 	t.record_m = &sync.Mutex{}
 	t.block_m = &sync.Mutex{}
 
-	return t
 }
 
 func (t *Table) get_string_for_key(id int) string {
@@ -85,6 +91,13 @@ func (t *Table) populate_string_id_lookup() {
 	}
 
 	for _, b := range t.BlockList {
+		if b.columns == nil && b.Name != ROW_STORE_BLOCK {
+			log.Println("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
+			t.block_m.Lock()
+			delete(t.BlockList, b.Name)
+			t.block_m.Unlock()
+			continue
+		}
 		for _, c := range b.columns {
 			for k, v := range c.StringTable {
 				c.val_string_id_lookup[v] = k

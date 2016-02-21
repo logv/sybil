@@ -109,7 +109,6 @@ func (t *Table) saveTableInfo(fname string) {
 	}
 
 	log.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
-	log.Println("TABLE INFO", t)
 
 	tempfile, _ := ioutil.TempFile(dirname, "info.db")
 	network.WriteTo(tempfile)
@@ -191,7 +190,7 @@ func (t *Table) LoadTableInfo() bool {
 	if t.GrabInfoLock() {
 		defer t.ReleaseInfoLock()
 	} else {
-		log.Println("Warning: LOAD TABLE INFO LOCK TAKEN")
+		log.Println("LOAD TABLE INFO LOCK TAKEN")
 		return false
 	}
 
@@ -200,7 +199,9 @@ func (t *Table) LoadTableInfo() bool {
 
 func (t *Table) LoadTableInfoFrom(filename string) bool {
 	var file *os.File
-	saved_table := Table{}
+	saved_table := Table{Name: t.Name}
+	saved_table.init_data_structures()
+
 	start := time.Now()
 
 	file, err := os.Open(filename)
@@ -236,7 +237,11 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 		t.StrInfo = saved_table.StrInfo
 	}
 
-	t.populate_string_id_lookup()
+	// If we are recovering the INFO lock, we won't necessarily have
+	// all fields filled out
+	if t.string_id_m != nil {
+		t.populate_string_id_lookup()
+	}
 
 	return true
 }
@@ -269,6 +274,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	log.Println("LOADING", t.Name)
 
 	files, _ := ioutil.ReadDir(path.Join(*f_DIR, t.Name))
+
+	if READ_ROWS_ONLY {
+		files = nil
+	}
 
 	if querySpec != nil {
 

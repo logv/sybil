@@ -13,6 +13,8 @@ import "strings"
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
 // to digest, move that file into stomache/ and begin digesting it
 
+var READ_ROWS_ONLY = false
+
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
 	log.Println("KEY TABLE", t.KeyTable)
@@ -24,6 +26,7 @@ func (t *Table) IngestRecords(blockname string) {
 	t.ReleaseRecords()
 
 	f_READ_INGESTION_LOG = &TRUE
+	READ_ROWS_ONLY = true
 	DELETE_BLOCKS_AFTER_QUERY = false
 	HOLD_MATCHES = true
 	loaded := t.LoadRecords(nil)

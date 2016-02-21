@@ -71,7 +71,12 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 		}
 
 		if *f_OP == "avg" {
-			res[agg.name] = r.Hists[agg.name].Avg
+			result, ok := r.Hists[agg.name]
+			if ok {
+				res[agg.name] = result.Avg
+			} else {
+				res[agg.name] = nil
+			}
 		}
 	}
 

@@ -10,7 +10,7 @@ import "io/ioutil"
 import "time"
 
 var LOCK_US = time.Millisecond * 3
-var LOCK_TRIES = 100
+var LOCK_TRIES = 50
 
 // Every LockFile should have a recovery plan
 type RecoverableLock interface {

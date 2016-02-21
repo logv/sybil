@@ -174,8 +174,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		added_record.Samples++
 		added_record.Count += weight
-		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 
+		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 		for _, a := range querySpec.Aggregations {
 			if r.Populated[a.name_id] == INT_VAL {
 				val := int(r.Ints[a.name_id])
