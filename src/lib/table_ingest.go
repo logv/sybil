@@ -120,7 +120,10 @@ func (t *Table) RestoreUningestedFiles() {
 		os.Rename(from, to)
 	}
 
-	os.Remove(digesting)
+	err := os.Remove(digesting)
+	if err != nil {
+		log.Println("REMOVING STOMACHE FAILED!", err)
+	}
 
 }
 
@@ -168,9 +171,13 @@ func (t *Table) DigestRecords(digest string) {
 	digestfile := path.Join(dirname, digest)
 	digesting := path.Join(dirname, STOMACHE_DIR)
 	_, err := os.Open(digesting)
+
+	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going
+	// to ruin us if it still exists (bc some proc didn't clean up after itself)
 	if err == nil {
 		t.ReleaseDigestLock()
-		log.Println("Digesting dir already exists, skipping digestion")
+		log.Println("DIGESTION DIR ALREADY EXISTS! EXITING EARLY")
+		time.Sleep(time.Millisecond * 50)
 		return
 	}
 

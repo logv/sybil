@@ -37,9 +37,9 @@ type DigestLock struct {
 	Lock
 }
 
-func RecoverLock(lock RecoverableLock) {
+func RecoverLock(lock RecoverableLock) bool {
 	// TODO: log the auto recovery into a recovery file
-	lock.Recover()
+	return lock.Recover()
 }
 
 func (l *InfoLock) Recover() bool {
@@ -129,11 +129,56 @@ func is_active_pid(val []byte) bool {
 	return false
 }
 
+func check_if_broken(lockfile string, l *Lock) bool {
+	var val []byte
+	var err error
+	// To check if a PID is active, we... first parse the PID in the file, then
+	// we ask the os for the process and send it Signal 0. If the process is
+	// alive, there will be no error, or if it isn't owned by us, we'll get an
+	// EPERM error
+	val, err = ioutil.ReadFile(lockfile)
+	pid_int, err := strconv.ParseInt(string(val), 10, 32)
+	if err == nil {
+		process, err := os.FindProcess(int(pid_int))
+		// err is Always nil on *nix
+		if err == nil {
+			err := process.Signal(syscall.Signal(0))
+			if err == nil || err == syscall.EPERM {
+				// PROCESS IS STILL RUNNING
+			} else {
+				time.Sleep(time.Millisecond * 100)
+				nextval, err := ioutil.ReadFile(lockfile)
+
+				if err == nil {
+					if string(nextval) == string(val) {
+						if l.broken {
+							log.Println("SECOND TRY TO RECOVER A BROKEN LOCK... GIVING UP")
+							l.broken = false
+							return true
+						}
+
+						log.Println("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.name, val)
+						l.broken = true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 func check_pid(lockfile string, l *Lock) bool {
 	cangrab := false
 
 	var val []byte
 	var err error
+
+	// check if the PID is active or not. If the PID isn't active, we enter
+	// recovery mode for this Lock() and say it's grabbable
+	if check_if_broken(lockfile, l) {
+		return true
+	}
 
 	for i := 0; i < LOCK_TRIES; i++ {
 		dirname := path.Dir(lockfile)
@@ -151,44 +196,6 @@ func check_pid(lockfile string, l *Lock) bool {
 		} else {
 			cangrab = true
 			break
-		}
-	}
-
-	// At this point, we check if the PID is active or not. If the PID isn't
-	// active, we enter recovery mode for this Lock()
-
-	// To check if a PID is active, we... first parse the PID in the file, then
-	// we ask the os for the process and send it Signal 0. If the process is
-	// alive, there will be no error, or if it isn't owned by us, we'll get an
-	// EPERM error
-	if cangrab == false {
-		val, err = ioutil.ReadFile(lockfile)
-		pid_int, err := strconv.ParseInt(string(val), 10, 32)
-		if err == nil {
-			process, err := os.FindProcess(int(pid_int))
-			// err is Always nil on *nix
-			if err == nil {
-				err := process.Signal(syscall.Signal(0))
-				if err == nil || err == syscall.EPERM {
-					// PROCESS IS STILL RUNNING
-				} else {
-					time.Sleep(time.Millisecond * 100)
-					nextval, err := ioutil.ReadFile(lockfile)
-
-					if err == nil {
-						if string(nextval) == string(val) {
-							if l.broken {
-								log.Println("SECOND TRY TO RECOVER A BROKEN LOCK... GIVING UP")
-								l.broken = false
-								return false
-							}
-
-							log.Println("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.name, val)
-							l.broken = true
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -264,7 +271,7 @@ func (t *Table) GrabInfoLock() bool {
 	info := &InfoLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
-		ret = info.Recover()
+		ret = RecoverLock(info)
 	}
 
 	return ret
@@ -282,7 +289,7 @@ func (t *Table) GrabDigestLock() bool {
 	info := &DigestLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
-		ret = info.Recover()
+		ret = RecoverLock(info)
 	}
 	return ret
 }
@@ -298,8 +305,10 @@ func (t *Table) GrabBlockLock(name string) bool {
 	lock := Lock{table: t, name: name}
 	info := &BlockLock{lock}
 	ret := info.Grab()
+	// INFO RECOVER IS GOING TO HAVE TIMING ISSUES... WHEN MULTIPLE THREADS ARE
+	// AT PLAY
 	if !ret && info.broken {
-		ret = info.Recover()
+		ret = RecoverLock(info)
 	}
 	return ret
 
