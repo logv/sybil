@@ -22,6 +22,8 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 	return name, err
 }
 
+var JSON_PATH string
+
 func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
 		key_name := fmt.Sprint(prefix, k)
@@ -63,8 +65,9 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			}
 
 			r.AddSetField(key_name, key_strs)
+		case nil:
 		default:
-			log.Println("TYPE IS UNKNOWN FOR FIELD", key_name)
+			log.Println(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
 		}
 	}
 }
@@ -129,29 +132,85 @@ func import_csv_records() {
 
 }
 
+func json_query(obj *interface{}, path []string) []interface{} {
+
+	var ret interface{}
+	ret = *obj
+
+	for _, key := range path {
+		if key == "$" {
+			continue
+		}
+
+		switch ing := ret.(type) {
+		case map[string]interface{}:
+			ret = ing[key]
+		case []interface{}:
+			// the key should be an integer key...
+			intkey, err := strconv.ParseInt(key, 10, 32)
+			if err != nil {
+				log.Println("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
+			} else {
+				ret = ing[intkey]
+			}
+		case nil:
+			continue
+		default:
+			log.Println(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
+		}
+
+	}
+
+	switch r := ret.(type) {
+	case []interface{}:
+		return r
+	case map[string]interface{}:
+		ret := make([]interface{}, 0)
+		ret = append(ret, r)
+		return ret
+	default:
+		log.Println(fmt.Sprintf("RET TYPE %T", r))
+	}
+
+	return nil
+}
+
 func import_json_records() {
 	t := GetTable(*f_TABLE)
+
+	path := strings.Split(JSON_PATH, ".")
+	log.Println("PATH IS", path)
 
 	dec := json.NewDecoder(os.Stdin)
 
 	for {
-		var recordmap Dictionary
+		var decoded interface{}
 
-		if err := dec.Decode(&recordmap); err != nil {
+		if err := dec.Decode(&decoded); err != nil {
 			if err == io.EOF {
 				break
 			}
-
-			log.Println("ERR:", err)
-
-			continue
+			if err != nil {
+				log.Println("ERR", err)
+			}
 		}
 
-		r := t.NewRecord()
+		records := json_query(&decoded, path)
+		decoded = nil
 
-		ingest_dictionary(r, &recordmap, "")
+		for _, ing := range records {
+			r := t.NewRecord()
+			switch dict := ing.(type) {
+			case map[string]interface{}:
+				ndict := Dictionary(dict)
+				ingest_dictionary(r, &ndict, "")
+			case Dictionary:
+				ingest_dictionary(r, &dict, "")
 
-		chunk_and_save()
+			}
+			chunk_and_save()
+		}
+
 	}
 
 }
@@ -166,6 +225,7 @@ func RunIngestCmdLine() {
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
+	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 
 	flag.Parse()
 
@@ -175,6 +235,8 @@ func RunIngestCmdLine() {
 		flag.PrintDefaults()
 		return
 	}
+
+	JSON_PATH = *f_JSON_PATH
 
 	if *f_PROFILE && PROFILER_ENABLED {
 		profile := RUN_PROFILER()
@@ -188,8 +250,8 @@ func RunIngestCmdLine() {
 		EXCLUDES[v] = true
 	}
 
-	for _, v := range EXCLUDES {
-		log.Println("EXCLUDING COLUMN", v)
+	for k, _ := range EXCLUDES {
+		log.Println("EXCLUDING COLUMN", k)
 	}
 
 	t := GetTable(*f_TABLE)
