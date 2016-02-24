@@ -144,6 +144,14 @@ func (h *Hist) GetBuckets() map[string]int64 {
 		ret[strconv.FormatInt(int64(k*h.bucket_size+h.Min), 10)] = v
 	}
 
+	for _, v := range h.outliers {
+		ret[strconv.FormatInt(int64(v), 10)] += 1
+	}
+
+	for _, v := range h.underliers {
+		ret[strconv.FormatInt(int64(v), 10)] += 1
+	}
+
 	return ret
 }
 
