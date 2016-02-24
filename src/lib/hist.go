@@ -1,6 +1,7 @@
 package sybil
 
 import "sort"
+import "strconv"
 
 type Hist struct {
 	Max     int
@@ -134,6 +135,16 @@ func (h *Hist) GetPercentiles() []int {
 	}
 
 	return percentiles[:100]
+}
+
+func (h *Hist) GetBuckets() map[string]int64 {
+	ret := make(map[string]int64, 0)
+
+	for k, v := range h.values {
+		ret[strconv.FormatInt(int64(k*h.bucket_size+h.Min), 10)] = v
+	}
+
+	return ret
 }
 
 func (h *Hist) Combine(next_hist *Hist) {

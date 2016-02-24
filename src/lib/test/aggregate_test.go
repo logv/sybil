@@ -4,6 +4,7 @@ import sybil "../"
 
 import "math"
 import "fmt"
+import "sort"
 import "strconv"
 import "math/rand"
 import "testing"
@@ -107,10 +108,13 @@ func TestHistograms(test *testing.T) {
 
 	total_age := int64(0)
 	count := 0
+	ages := make([]int, 0)
+
 	add_records(func(r *sybil.Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
+		ages = append(ages, int(age))
 		total_age += age
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
@@ -126,20 +130,19 @@ func TestHistograms(test *testing.T) {
 
 	nt.MatchAndAggregate(querySpec)
 
-	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		kval, _ := strconv.ParseInt(k, 10, 64)
 		percentiles := v.Hists["age"].GetPercentiles()
 		if int64(percentiles[25]) != kval {
-			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[25])
 		}
 		if int64(percentiles[50]) != kval {
 			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
 		}
 		if int64(percentiles[75]) != kval {
-			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[75])
 		}
 	}
 
@@ -148,11 +151,25 @@ func TestHistograms(test *testing.T) {
 
 	nt.MatchAndAggregate(querySpec)
 
+	sort.Ints(ages)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 		percentiles := v.Hists["age"].GetPercentiles()
-		fmt.Println(percentiles)
+
+		for k, v := range percentiles {
+			index := int(float64(k) / 100 * float64(len(ages)))
+			val := ages[index]
+
+			// TODO: margin of error should be less than 1!
+			if math.Abs(float64(v-val)) > 1 {
+				test.Error("P", k, "VAL", v, "EXPECTED", val)
+			}
+		}
+
+		fmt.Println("PERCENTILES", percentiles)
+		fmt.Println("AGES", ages)
+		fmt.Println("BUCKETS", v.Hists["age"].GetBuckets())
 	}
 
 	delete_test_db()

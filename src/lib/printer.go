@@ -67,7 +67,11 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
 		if *f_OP == "hist" {
-			res[agg.name] = r.Hists[agg.name].GetPercentiles()
+			inner := make(ResultJSON)
+			res[agg.name] = inner
+			inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
+			inner["buckets"] = r.Hists[agg.name].GetBuckets()
+			inner["count"] = r.Hists[agg.name].Count
 		}
 
 		if *f_OP == "avg" {
