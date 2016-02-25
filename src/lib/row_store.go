@@ -154,7 +154,6 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	// TODO: fix this up, so that we don't
 	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
 	tempingestdir := path.Join(*f_DIR, t.Name, TEMP_INGEST_DIR)
-	digestdir := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(tempingestdir, 0777)
@@ -194,14 +193,6 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 		}
 
 		if err != nil {
-			log.Println("WARNING: COULDNT RENAME TEMP INGEST BLOCK!", fullname, err)
-			log.Println("TRYING TO PLACE RECORDS IN DIGEST DIR")
-			fullname := path.Join(digestdir, basename)
-			err = os.Rename(w.Name(), fullname)
-			if err == nil {
-				break
-			}
-
 			time.Sleep(time.Millisecond * 10)
 		}
 	}

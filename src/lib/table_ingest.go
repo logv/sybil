@@ -2,6 +2,7 @@ package sybil
 
 import "time"
 import "path"
+import "io/ioutil"
 import "log"
 import "os"
 import "strings"
@@ -106,23 +107,35 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 var DELETE_BLOCKS = make([]string, 0)
 
 func (t *Table) RestoreUningestedFiles() {
-	digesting := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
-	file, _ := os.Open(digesting)
-	files, _ := file.Readdir(0)
+	if t.GrabDigestLock() == false {
+		log.Println("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
+		return
+	}
 
 	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
 	os.MkdirAll(ingestdir, 0777)
 
-	for _, file := range files {
-		log.Println("RESTORING UNINGESTED FILE", file.Name())
-		from := path.Join(digesting, file.Name())
-		to := path.Join(ingestdir, file.Name())
-		os.Rename(from, to)
-	}
+	digesting := path.Join(*f_DIR, t.Name)
+	file, _ := os.Open(digesting)
+	dirs, _ := file.Readdir(0)
 
-	err := os.Remove(digesting)
-	if err != nil {
-		log.Println("REMOVING STOMACHE FAILED!", err)
+	for _, dir := range dirs {
+		if strings.HasPrefix(dir.Name(), STOMACHE_DIR) && dir.IsDir() {
+			file, _ := os.Open(path.Join(digesting, dir.Name()))
+			files, _ := file.Readdir(0)
+			for _, file := range files {
+				log.Println("RESTORING UNINGESTED FILE", file.Name())
+				from := path.Join(digesting, file.Name())
+				to := path.Join(ingestdir, file.Name())
+				os.Rename(from, to)
+			}
+
+			err := os.Remove(path.Join(digesting, dir.Name()))
+			if err != nil {
+				log.Println("REMOVING STOMACHE FAILED!", err)
+			}
+
+		}
 	}
 
 }
@@ -169,25 +182,29 @@ func (t *Table) DigestRecords(digest string) {
 
 	dirname := path.Join(*f_DIR, t.Name)
 	digestfile := path.Join(dirname, digest)
-	digesting := path.Join(dirname, STOMACHE_DIR)
-	_, err := os.Open(digesting)
+	digesting, err := ioutil.TempDir(dirname, STOMACHE_DIR)
 
 	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going
 	// to ruin us if it still exists (bc some proc didn't clean up after itself)
-	if err == nil {
+	if err != nil {
 		t.ReleaseDigestLock()
-		log.Println("DIGESTION DIR ALREADY EXISTS! EXITING EARLY")
+		log.Println("ERROR CREATING DIGESTION DIR", err)
 		time.Sleep(time.Millisecond * 50)
 		return
 	}
 
-	err = os.Rename(digestfile, digesting)
+	file, _ := os.Open(digestfile)
 
+	files, err := file.Readdir(0)
 	if err == nil {
+		for _, f := range files {
+			os.Rename(path.Join(digestfile, f.Name()), path.Join(digesting, f.Name()))
+		}
 		// We don't want to leave someone without a place to put their
 		// ingestions...
 		os.MkdirAll(digestfile, 0777)
-		t.LoadRowStoreRecords(STOMACHE_DIR, SaveBlockChunkCB)
+		basename := path.Base(digesting)
+		t.LoadRowStoreRecords(basename, SaveBlockChunkCB)
 	} else {
 		t.ReleaseDigestLock()
 	}

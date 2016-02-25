@@ -73,12 +73,10 @@ func (l *DigestLock) Recover() bool {
 	log.Println("RECOVERING DIGEST LOCK", l.name)
 	t := l.table
 	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
-	stomache := path.Join(*f_DIR, t.Name, STOMACHE_DIR)
-	os.MkdirAll(ingestdir, 0777)
 
+	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
 	t.RestoreUningestedFiles()
-	os.RemoveAll(stomache)
 	l.ForceDeleteFile()
 
 	return true

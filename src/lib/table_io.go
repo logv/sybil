@@ -312,7 +312,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		v := files[len(files)-f-1]
 
 		switch {
-		case v.Name() == INGEST_DIR || v.Name() == STOMACHE_DIR || v.Name() == TEMP_INGEST_DIR:
+		case v.Name() == INGEST_DIR || v.Name() == TEMP_INGEST_DIR:
+			continue
+		case strings.HasPrefix(v.Name(), STOMACHE_DIR):
 			continue
 		case strings.HasSuffix(v.Name(), "info.db"):
 			continue
