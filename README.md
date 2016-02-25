@@ -1,20 +1,20 @@
-sybil is a command line write once analytics database with no up front schema;
-Written in Go, sybil is designed for fast ad-hoc analysis of heterogeneous data
+sybil is a write once analytics datastore with no up front schema requirements;
+just log JSON records to a table and run queries. written in Go, sybil is
+designed for fast ad-hoc analysis of multi-dimensional data
 
 installation
 ------------
 
     go get github.com/logV/sybil
 
-
 usage
 -----
 
 
-    # import from a file
+    # import from a file (one record per line)
     sybil ingest -table my_table < record.json
 
-    # query that file
+    # query that table
     sybil query -table my_table -info
     sybil query -table my_table -print
 

@@ -1,10 +1,3 @@
-Sybil has two main parts:
-
-* the storage engine
-  * the ingestion phase (writes data from stdin into the DB as rows)
-  * the digestion phase (collates records into blocks of columns)
-* and the query engine (reads blocks from row and column store)
-
 storage engine
 ==============
 
@@ -54,11 +47,14 @@ If any of these locks are taken while a process tries to use that resource, the
 the command will fail. This has little to no effect on digestion or query
 calls, but can potentially lead to lost samples if the ingest command fails.
 
+When a lock is owned by a PID that is dead (because of program failure or other
+reasons), sybil attempts an automatic recovery of the lock, based on its type.
+
 
 query engine
 ============
 
-The query engine (obviously) runs queries on data. It loads both the row blocks
+The query engine (perhaps unobviously) runs queries on data. It loads both the row blocks
 and column blocks off disk to execute queries. Blocks are loaded in parallel
 via go-routines and then aggregated and freed, stopping every so often to let a
 GC happen.
