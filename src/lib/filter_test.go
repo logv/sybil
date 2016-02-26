@@ -16,9 +16,11 @@ func TestFilters(test *testing.T) {
 	add_records(func(r *sybil.Record, i int) {
 		age := int64(rand.Intn(20)) + 10
 
+		age_str := strconv.FormatInt(int64(age), 10)
 		r.AddIntField("id", int64(i))
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+		r.AddStrField("age_str", age_str)
+		r.AddSetField("age_set", []string{age_str})
 
 	}, block_count)
 
@@ -33,6 +35,8 @@ func TestFilters(test *testing.T) {
 	testStrEq(test)
 	testStrRe(test)
 	testStrNeq(test)
+	testSetIn(test)
+	testSetNin(test)
 
 	delete_test_db()
 
@@ -225,8 +229,6 @@ func testStrRe(test *testing.T) {
 
 	nt.MatchAndAggregate(&querySpec)
 
-	log.Println("THE STR RE", querySpec.Results)
-
 	if len(querySpec.Results) != 10 {
 		test.Error("Str Filter for re returned no results", len(querySpec.Results), querySpec.Results)
 	}
@@ -240,6 +242,72 @@ func testStrRe(test *testing.T) {
 		if v.Hists["age"].Avg-20 < 0 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
 		}
+	}
+}
+
+func testSetIn(test *testing.T) {
+	nt := sybil.GetTable(TEST_TABLE_NAME)
+	filters := []sybil.Filter{}
+	filters = append(filters, nt.SetFilter("age_set", "in", "20"))
+
+	aggs := []sybil.Aggregation{}
+	aggs = append(aggs, nt.Aggregation("age", "avg"))
+
+	groupings := []sybil.Grouping{}
+	groupings = append(groupings, nt.Grouping("age"))
+
+	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+
+	nt.MatchAndAggregate(&querySpec)
+
+	if len(querySpec.Results) != 1 {
+		test.Error("Set Filter for in returned more (or less) than one results", len(querySpec.Results), querySpec.Results)
+	}
+
+	if len(querySpec.Results) <= 0 {
+		test.Error("Set Filter for age 20 returned no results")
+	}
+
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+
+		if v.Hists["age"].Avg-20 < 0 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
+		}
+	}
+
+	// TODO: MULTIPLE SET VALUE FILTER
+	//	filters = []sybil.Filter{}
+	//	filters = append(filters, nt.SetFilter("age_set", "in", "20,21,22"))
+	//	querySpec = sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	//
+	//	if len(querySpec.Results) != 3 {
+	//		test.Error("Set Filter for nin returned more (or less) than three results", len(querySpec.Results), querySpec.Results)
+	//	}
+
+}
+
+func testSetNin(test *testing.T) {
+	nt := sybil.GetTable(TEST_TABLE_NAME)
+	filters := []sybil.Filter{}
+	filters = append(filters, nt.SetFilter("age_set", "nin", "20"))
+
+	aggs := []sybil.Aggregation{}
+	aggs = append(aggs, nt.Aggregation("age", "avg"))
+
+	groupings := []sybil.Grouping{}
+	groupings = append(groupings, nt.Grouping("age"))
+
+	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+
+	nt.MatchAndAggregate(&querySpec)
+
+	if len(querySpec.Results) != 19 {
+		test.Error("Set Filter for in returned more (or less) than 19 results", len(querySpec.Results), querySpec.Results)
+	}
+
+	if len(querySpec.Results) <= 0 {
+		test.Error("Set Filter for age 20 returned no results")
 	}
 
 }

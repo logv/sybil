@@ -12,18 +12,18 @@ Test Plan:
   * Filters:
     * [x] Int: gt, lt, !eq, ne
     * [x] Str: !eq, ne, re, nre
-    * [ ] Set: in nin
+    * [x] Set: in nin
     * [ ] Work with samples
       * [ ] migrate f_SAMPLES into querySpec
   * [x] Aggregation Line
     * [x] Histograms
       * [ ] Outliers
-    * [ ] Time Bucketing
-    * [ ] Avgs
+    * [x] Time Bucketing
+    * [x] Avgs
   * [x] Group By (these are covered by aggregation tests)
     * [x] Strs
     * [x] Ints
-  * [ ] Order By
+  * [x] Order By
   * [ ] Digestion
     * [ ] Open Partial Blocks and re-fill them
     * [ ] Auto Digest during ingestion

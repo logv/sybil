@@ -130,6 +130,7 @@ func (filter SetFilter) Filter(r *Record) bool {
 	}
 
 	sets := r.SetMap[filter.FieldId]
+
 	val_id := col.get_val_id(filter.Value)
 
 	switch filter.Op {
