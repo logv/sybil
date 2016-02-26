@@ -153,10 +153,18 @@ func TestHistograms(test *testing.T) {
 	nt.MatchAndAggregate(querySpec)
 
 	sort.Ints(ages)
+
+	prev_count := int64(0)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 		percentiles := v.Hists["age"].GetPercentiles()
+
+		if v.Count > prev_count {
+			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
+		}
+
+		prev_count = v.Count
 
 		for k, v := range percentiles {
 			index := int(float64(k) / 100 * float64(len(ages)))
@@ -171,6 +179,25 @@ func TestHistograms(test *testing.T) {
 		fmt.Println("PERCENTILES", percentiles)
 		fmt.Println("AGES", ages)
 		fmt.Println("BUCKETS", v.Hists["age"].GetBuckets())
+	}
+
+	querySpec.OrderBy = "age"
+	nt.MatchAndAggregate(querySpec)
+
+	sort.Ints(ages)
+
+	prev_avg := float64(0)
+	// testing that a histogram with single value looks uniform
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		avg := v.Hists["age"].Avg
+
+		if avg < prev_avg {
+			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
+		}
+
+		prev_count = v.Count
+
 	}
 
 	delete_test_db()
@@ -222,6 +249,10 @@ func TestTimeSeries(test *testing.T) {
 	}
 
 	for _, b := range querySpec.TimeResults {
+		if len(b) <= 0 {
+			test.Error("TIME BUCKET IS INCORRECTLY EMPTY!")
+		}
+
 		for k, v := range b {
 			k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
@@ -240,4 +271,66 @@ func TestTimeSeries(test *testing.T) {
 	}
 
 	delete_test_db()
+}
+
+func TestOrderBy(test *testing.T) {
+	if testing.Short() {
+		test.Skip("Skipping test in short mode")
+		return
+	}
+
+	block_count := 3
+
+	total_age := int64(0)
+	count := 0
+	add_records(func(r *sybil.Record, index int) {
+		count++
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(20)) + 10
+		total_age += age
+		r.AddIntField("age", age)
+		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+	}, block_count)
+
+	avg_age := float64(total_age) / float64(count)
+
+	nt := save_and_reload_table(test, block_count)
+
+	querySpec := new_query_spec()
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+
+	nt.MatchAndAggregate(querySpec)
+
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+
+		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Avg)) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
+		}
+	}
+
+	querySpec.OrderBy = "age"
+	nt.MatchAndAggregate(querySpec)
+
+	prev_avg := float64(0)
+	// testing that a histogram with single value looks uniform
+
+	if len(querySpec.Results) <= 0 {
+		test.Error("NO RESULTS RETURNED FOR QUERY!")
+	}
+
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		avg := v.Hists["age"].Avg
+
+		if avg < prev_avg {
+			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
+		}
+
+		prev_avg = avg
+
+	}
+
+	delete_test_db()
+
 }

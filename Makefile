@@ -37,7 +37,6 @@ coverage:
 	go test -coverprofile cover.out ./src/lib 
 	sed -i "s|_${ROOT_DIR}|.|"	cover.out
 	go tool cover -html=cover.out -o cover.html
-	xdg-open cover.html
      
 
 nodeltaencoding: export BUILD_FLAGS += -tags denc
