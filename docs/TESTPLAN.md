@@ -20,7 +20,7 @@ Test Plan:
       * [ ] Outliers
     * [ ] Time Bucketing
     * [ ] Avgs
-  * [x]Group By (these are covered by aggregation tests)
+  * [x] Group By (these are covered by aggregation tests)
     * [x] Strs
     * [x] Ints
   * [ ] Order By
