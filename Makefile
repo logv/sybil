@@ -2,6 +2,7 @@ BUILD_CMD = /usr/bin/go install
 BINDIR = ./bin
 GOBINDIR = ./bin
 PROFILE = -tags profile
+ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 
 all: sybil
@@ -27,10 +28,16 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	go test ./src/lib/test
+	go test ./src/lib/
 
 testv:
-	go test ./src/lib/test -v
+	go test ./src/lib/ -v
+
+coverage:
+	go test -coverprofile cover.out ./src/lib 
+	sed -i "s|_${ROOT_DIR}|.|"	cover.out
+	go tool cover -html=cover.out -o cover.html
+	xdg-open cover.html
      
 
 nodeltaencoding: export BUILD_FLAGS += -tags denc

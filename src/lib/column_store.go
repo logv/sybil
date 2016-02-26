@@ -1,13 +1,5 @@
 package sybil
 
-// ByAge implements sort.Interface for []Person based on
-// the Age field.
-type SortIntsByVal []SavedIntBucket
-
-func (a SortIntsByVal) Len() int           { return len(a) }
-func (a SortIntsByVal) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a SortIntsByVal) Less(i, j int) bool { return a[i].Value < a[j].Value }
-
 // Before we save the new record list in a table, we tend to sort by time
 type RecordList []*Record
 type SortRecordsByTime struct {

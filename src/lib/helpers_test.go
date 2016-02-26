@@ -1,6 +1,6 @@
 package sybil_test
 
-import sybil "../"
+import sybil "./"
 import "os"
 import "fmt"
 import "testing"
@@ -11,6 +11,7 @@ type RecordSetupCB func(*sybil.Record, int)
 
 func TestMain(m *testing.M) {
 	run_tests(m)
+	delete_test_db()
 }
 
 func run_tests(m *testing.M) {

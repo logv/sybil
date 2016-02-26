@@ -23,7 +23,11 @@ Test Plan:
   * [x]Group By (these are covered by aggregation tests)
     * [x] Strs
     * [x] Ints
-  * [o]Order By
+  * [ ] Order By
+  * [ ] Digestion
+    * [ ] Open Partial Blocks and re-fill them
+    * [ ] Auto Digest during ingestion
+    * [ ] Digestion can fail gracefully
 
 Failure Plans
 -------------

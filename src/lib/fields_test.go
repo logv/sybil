@@ -1,6 +1,6 @@
 package sybil_test
 
-import sybil "../"
+import sybil "./"
 
 import "testing"
 import "math/rand"
