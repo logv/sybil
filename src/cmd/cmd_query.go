@@ -20,13 +20,6 @@ func queryTable(name string, loadSpec *sybil.LoadSpec, querySpec *sybil.QuerySpe
 	table.MatchAndAggregate(querySpec)
 
 	querySpec.PrintResults()
-
-	if *sybil.FLAGS.SESSION_COL != "" {
-		start := time.Now()
-		session_maps := sybil.SessionizeRecords(querySpec.Matched, *sybil.FLAGS.SESSION_COL)
-		end := time.Now()
-		log.Println("SESSIONIZED", len(querySpec.Matched), "RECORDS INTO", len(session_maps), "SESSIONS, TOOK", end.Sub(start))
-	}
 }
 
 func addFlags() {
