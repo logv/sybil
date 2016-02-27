@@ -71,7 +71,8 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			res[agg.name] = inner
 			inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
 			inner["buckets"] = r.Hists[agg.name].GetBuckets()
-			inner["count"] = r.Hists[agg.name].Count
+			inner["stddev"] = r.Hists[agg.name].GetStdDev()
+			inner["samples"] = r.Hists[agg.name].Samples
 		}
 
 		if *f_OP == "avg" {
@@ -145,7 +146,8 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 			if len(p) > 0 {
 				avg_str := fmt.Sprintf("%.2f", h.Avg)
-				fmt.Println(col_name, "|", h.Min, h.Max, "|", avg_str, "|", p[0], p[25], p[50], p[75], p[99])
+				std_str := fmt.Sprintf("%.2f", h.GetStdDev())
+				fmt.Println(col_name, "|", h.Min, h.Max, "|", avg_str, "|", p[0], p[25], p[50], p[75], p[99], "|", std_str)
 			} else {
 				fmt.Println(col_name, "No Data")
 			}

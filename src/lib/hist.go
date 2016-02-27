@@ -1,7 +1,10 @@
 package sybil
 
 import "sort"
+import "math"
 import "strconv"
+
+var NUM_BUCKETS = 1000
 
 type Hist struct {
 	Max     int
@@ -22,7 +25,7 @@ type Hist struct {
 
 func (t *Table) NewHist(info *IntInfo) *Hist {
 
-	buckets := 200 // resolution?
+	buckets := NUM_BUCKETS // resolution?
 	h := &Hist{}
 
 	h.num_buckets = buckets
@@ -135,6 +138,36 @@ func (h *Hist) GetPercentiles() []int {
 	}
 
 	return percentiles[:100]
+}
+
+// VARIANCE is defined as the squared error from the mean
+// STD DEV is defined as sqrt(VARIANCE)
+func (h *Hist) GetStdDev() float64 {
+	// TOTAL VALUES
+
+	sum_variance := float64(0)
+	for bucket, count := range h.values {
+		val := bucket*h.bucket_size + h.Min
+		delta := math.Pow(float64(val)-h.Avg, 2)
+		ratio := float64(count) / float64(h.Count)
+
+		// unbiased variance. probably unstable
+		sum_variance = sum_variance + math.Sqrt(float64(delta)*ratio)
+	}
+
+	for _, val := range h.outliers {
+		delta := math.Pow(float64(val)-h.Avg, 2)
+		ratio := 1 / float64(h.Count)
+		sum_variance = sum_variance + math.Sqrt(float64(delta)*ratio)
+	}
+
+	for _, val := range h.underliers {
+		delta := math.Pow(float64(val)-h.Avg, 2)
+		ratio := 1 / float64(h.Count)
+		sum_variance = sum_variance + math.Sqrt(float64(delta)*ratio)
+	}
+
+	return math.Sqrt(sum_variance)
 }
 
 func (h *Hist) GetBuckets() map[string]int64 {

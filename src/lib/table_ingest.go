@@ -7,12 +7,8 @@ import "log"
 import "os"
 import "strings"
 
-// there exists two dirs for ingesting and digesting:
-// ingest/
-// digest/
-
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
-// to digest, move that file into stomache/ and begin digesting it
+// to digest, make a new STOMACHE_DIR tempdir and move all files from ingest/ into it
 
 var READ_ROWS_ONLY = false
 
