@@ -12,6 +12,11 @@ import "strings"
 
 var READ_ROWS_ONLY = false
 
+func (t *Table) getNewIngestBlockName() (string, error) {
+	name, err := ioutil.TempDir(path.Join(*FLAGS.DIR, t.Name), "block")
+	return name, err
+}
+
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
 	log.Println("KEY TABLE", t.KeyTable)
@@ -22,7 +27,7 @@ func (t *Table) IngestRecords(blockname string) {
 	t.SaveTableInfo("info")
 	t.ReleaseRecords()
 
-	f_READ_INGESTION_LOG = &TRUE
+	FLAGS.READ_INGESTION_LOG = &TRUE
 	READ_ROWS_ONLY = true
 	DELETE_BLOCKS_AFTER_QUERY = false
 	HOLD_MATCHES = true
@@ -39,7 +44,7 @@ type AfterRowBlockLoad func(string, RecordList)
 
 func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
 	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
-	dirname := path.Join(*f_DIR, t.Name, digest)
+	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
 
 	os.MkdirAll(dirname, 0777)
 
@@ -90,7 +95,7 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 		return
 	}
 
-	t := GetTable(*f_TABLE)
+	t := GetTable(*FLAGS.TABLE)
 	block := t.RowBlock
 
 	if len(records) > 0 {
@@ -108,10 +113,10 @@ func (t *Table) RestoreUningestedFiles() {
 		return
 	}
 
-	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
 	os.MkdirAll(ingestdir, 0777)
 
-	digesting := path.Join(*f_DIR, t.Name)
+	digesting := path.Join(*FLAGS.DIR, t.Name)
 	file, _ := os.Open(digesting)
 	dirs, _ := file.Readdir(0)
 
@@ -138,7 +143,7 @@ func (t *Table) RestoreUningestedFiles() {
 
 func SaveBlockChunkCB(digestname string, records RecordList) {
 
-	t := GetTable(*f_TABLE)
+	t := GetTable(*FLAGS.TABLE)
 	if digestname == NO_MORE_BLOCKS {
 		if len(t.newRecords) > 0 {
 			t.SaveRecordsToColumns()
@@ -176,7 +181,7 @@ func (t *Table) DigestRecords(digest string) {
 		return
 	}
 
-	dirname := path.Join(*f_DIR, t.Name)
+	dirname := path.Join(*FLAGS.DIR, t.Name)
 	digestfile := path.Join(dirname, digest)
 	digesting, err := ioutil.TempDir(dirname, STOMACHE_DIR)
 

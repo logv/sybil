@@ -1,6 +1,7 @@
 package main
 
 import sybil "github.com/logV/sybil/src/lib"
+import cmd "github.com/logV/sybil/src/cmd"
 import "os"
 import "log"
 
@@ -12,17 +13,20 @@ func main() {
 
 	first_arg := os.Args[1]
 	os.Args = os.Args[1:]
+
+	sybil.SetDefaults()
+
 	switch first_arg {
 	case "ingest":
-		sybil.RunIngestCmdLine()
+		cmd.RunIngestCmdLine()
 	case "digest":
-		sybil.RunDigestCmdLine()
+		cmd.RunDigestCmdLine()
 	case "query":
-		sybil.RunQueryCmdLine()
+		cmd.RunQueryCmdLine()
 	case "index":
-		sybil.RunIndexCmdLine()
+		cmd.RunIndexCmdLine()
 	case "inspect":
-		sybil.RunInspectCmdLine()
+		cmd.RunInspectCmdLine()
 	default:
 		log.Fatal("Unknown command:", os.Args[0])
 	}

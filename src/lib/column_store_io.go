@@ -69,7 +69,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		}
 		intCol := SavedIntColumn{}
 		intCol.Name = col_name
-		intCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
+		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 
 		max_r := 0
 		record_to_value := make(map[uint32]int64)
@@ -135,7 +135,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = col_name
-		setCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
+		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
 		tb_col := tb.GetColumnInfo(k)
@@ -215,7 +215,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		}
 		strCol := SavedStrColumn{}
 		strCol.Name = col_name
-		strCol.DeltaEncodedIDs = DELTA_ENCODE_RECORD_IDS
+		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
 		temp_col := temp_block.GetColumnInfo(k)
@@ -394,7 +394,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		}
 	}
 
-	if DELTA_ENCODE_RECORD_IDS {
+	if OPTS.DELTA_ENCODE_RECORD_IDS {
 		delta_encode(same_ints)
 		delta_encode(same_strs)
 		delta_encode(same_sets)
@@ -587,7 +587,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			if *f_UPDATE_TABLE_INFO {
+			if *FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, bucket.Value)
 				tb.table.update_int_info(col_id, bucket.Value)
 			}
@@ -611,7 +611,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 		}
 	} else {
 		for r, v := range into.Values {
-			if *f_UPDATE_TABLE_INFO {
+			if *FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, v)
 				tb.table.update_int_info(col_id, v)
 			}

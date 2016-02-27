@@ -36,7 +36,7 @@ func printTimeResults(querySpec *QuerySpec) {
 	sort.Ints(keys)
 
 	log.Println("RESULT COUNT", len(querySpec.TimeResults))
-	if *f_JSON {
+	if *FLAGS.JSON {
 
 		marshalled_results := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
@@ -66,16 +66,19 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
-		if *f_OP == "hist" {
+		if *FLAGS.OP == "hist" {
 			inner := make(ResultJSON)
 			res[agg.name] = inner
-			inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
-			inner["buckets"] = r.Hists[agg.name].GetBuckets()
-			inner["stddev"] = r.Hists[agg.name].GetStdDev()
-			inner["samples"] = r.Hists[agg.name].Samples
+			h := r.Hists[agg.name]
+			if h != nil {
+				inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
+				inner["buckets"] = r.Hists[agg.name].GetBuckets()
+				inner["stddev"] = r.Hists[agg.name].GetStdDev()
+				inner["samples"] = r.Hists[agg.name].Samples
+			}
 		}
 
-		if *f_OP == "avg" {
+		if *FLAGS.OP == "avg" {
 			result, ok := r.Hists[agg.name]
 			if ok {
 				res[agg.name] = result.Avg
@@ -103,7 +106,7 @@ func printSortedResults(querySpec *QuerySpec) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
 
-	if *f_JSON {
+	if *FLAGS.JSON {
 		var results = make([]ResultJSON, 0)
 
 		for _, r := range sorted {
@@ -127,7 +130,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Print(fmt.Sprintf("%-20s", group_key)[:20])
 
 	fmt.Printf("%.0d", v.Count)
-	if WEIGHT_COL {
+	if OPTS.WEIGHT_COL {
 		fmt.Print(" (")
 		fmt.Print(v.Samples)
 		fmt.Print(")")
@@ -136,7 +139,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
-		if *f_OP == "hist" {
+		if *FLAGS.OP == "hist" {
 			h, ok := v.Hists[agg.name]
 			if !ok {
 				log.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
@@ -151,7 +154,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			} else {
 				fmt.Println(col_name, "No Data")
 			}
-		} else if *f_OP == "avg" {
+		} else if *FLAGS.OP == "avg" {
 			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.name].Avg))
 		}
 	}
@@ -159,14 +162,14 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 type ResultJSON map[string]interface{}
 
-func printResults(querySpec *QuerySpec) {
+func PrintResults(querySpec *QuerySpec) {
 	if querySpec.TimeBucket > 0 {
 		printTimeResults(querySpec)
 
 		return
 	}
 
-	if *f_JSON {
+	if *FLAGS.JSON {
 		// Need to marshall
 		var results = make([]ResultJSON, 0)
 
@@ -189,8 +192,8 @@ func printResults(querySpec *QuerySpec) {
 	}
 }
 
-func (qs *QuerySpec) printResults() {
-	if *f_PRINT {
+func (qs *QuerySpec) PrintResults() {
+	if *FLAGS.PRINT {
 		log.Println("PRINTING RESULTS")
 
 		if qs.TimeBucket > 0 {
@@ -198,7 +201,7 @@ func (qs *QuerySpec) printResults() {
 		} else if qs.OrderBy != "" {
 			printSortedResults(qs)
 		} else {
-			printResults(qs)
+			PrintResults(qs)
 		}
 	}
 }
@@ -228,9 +231,9 @@ func (r *Record) toSample() *Sample {
 	return &sample
 }
 
-func (t *Table) printSamples() {
+func (t *Table) PrintSamples() {
 	count := 0
-	records := make(RecordList, *f_LIMIT)
+	records := make(RecordList, *FLAGS.LIMIT)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
@@ -238,7 +241,7 @@ func (t *Table) printSamples() {
 				break
 			}
 
-			if count >= *f_LIMIT {
+			if count >= *FLAGS.LIMIT {
 				break
 			}
 
@@ -246,12 +249,12 @@ func (t *Table) printSamples() {
 			count++
 		}
 
-		if count >= *f_LIMIT {
+		if count >= *FLAGS.LIMIT {
 			break
 		}
 	}
 
-	if *f_JSON {
+	if *FLAGS.JSON {
 		samples := make([]*Sample, 0)
 		for _, r := range records {
 			if r == nil {
@@ -275,8 +278,8 @@ func (t *Table) printSamples() {
 	return
 }
 
-func printTables() {
-	files, err := ioutil.ReadDir(*f_DIR)
+func PrintTables() {
+	files, err := ioutil.ReadDir(*FLAGS.DIR)
 	if err != nil {
 		log.Println("No tables found")
 		return
@@ -288,7 +291,7 @@ func printTables() {
 		tables = append(tables, t.Name)
 	}
 
-	if *f_JSON {
+	if *FLAGS.JSON {
 		b, err := json.Marshal(tables)
 		if err == nil {
 			os.Stdout.Write(b)
@@ -341,7 +344,7 @@ func (t *Table) PrintColInfo() {
 		size += block.Size
 	}
 
-	if *f_JSON {
+	if *FLAGS.JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
 

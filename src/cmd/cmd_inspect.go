@@ -1,4 +1,6 @@
-package sybil
+package sybil_cmd
+
+import sybil "github.com/logV/sybil/src/lib"
 
 import "encoding/gob"
 import "flag"
@@ -10,7 +12,7 @@ func decodeInfoCol(digest_file *string) bool {
 
 	file, err := os.Open(*digest_file)
 	dec := gob.NewDecoder(file)
-	info := SavedColumnInfo{}
+	info := sybil.SavedColumnInfo{}
 	err = dec.Decode(&info)
 	log.Println("INFO", info)
 
@@ -27,7 +29,7 @@ func decodeIntCol(digest_file *string) bool {
 
 	file, err := os.Open(*digest_file)
 	dec := gob.NewDecoder(file)
-	info := SavedIntColumn{}
+	info := sybil.SavedIntColumn{}
 	err = dec.Decode(&info)
 	log.Println("INFO", info)
 
@@ -44,7 +46,7 @@ func decodeStrCol(digest_file *string) bool {
 
 	file, err := os.Open(*digest_file)
 	dec := gob.NewDecoder(file)
-	info := SavedStrColumn{}
+	info := sybil.SavedStrColumn{}
 	err = dec.Decode(&info)
 	log.Println("INFO", info)
 	bins := make([]string, 0)
@@ -65,11 +67,11 @@ func decodeStrCol(digest_file *string) bool {
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunInspectCmdLine() {
-	digest_file := flag.String("file", INGEST_DIR, "Name of file to inspect")
+	digest_file := flag.String("file", sybil.INGEST_DIR, "Name of file to inspect")
 	flag.Parse()
 
-	if *f_PROFILE && PROFILER_ENABLED {
-		profile := RUN_PROFILER()
+	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
+		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 

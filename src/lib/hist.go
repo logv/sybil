@@ -66,7 +66,7 @@ func (h *Hist) TrackPercentiles() {
 }
 
 func (h *Hist) addValue(value int, weight int64) {
-	if WEIGHT_COL {
+	if OPTS.WEIGHT_COL {
 		h.Samples++
 		h.Count += weight
 	} else {

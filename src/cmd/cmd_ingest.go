@@ -1,4 +1,6 @@
-package sybil
+package sybil_cmd
+
+import sybil "github.com/logV/sybil/src/lib"
 
 import (
 	"bufio"
@@ -6,10 +8,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -17,14 +17,9 @@ import (
 
 type Dictionary map[string]interface{}
 
-func (t *Table) getNewIngestBlockName() (string, error) {
-	name, err := ioutil.TempDir(path.Join(*f_DIR, t.Name), "block")
-	return name, err
-}
-
 var JSON_PATH string
 
-func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
+func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
 		key_name := fmt.Sprint(prefix, k)
 		_, ok := EXCLUDES[key_name]
@@ -72,28 +67,6 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	}
 }
 
-func chunk_and_save() {
-	t := GetTable(*f_TABLE)
-
-	IMPORTED_COUNT++
-
-	if IMPORTED_COUNT >= CHUNK_SIZE {
-		IMPORTED_COUNT -= CHUNK_SIZE
-
-		os.MkdirAll(path.Join(*f_DIR, t.Name), 0777)
-		name, err := t.getNewIngestBlockName()
-		if err == nil {
-			t.SaveRecordsToBlock(t.newRecords, name)
-			t.SaveTableInfo("info")
-			t.newRecords = make(RecordList, 0)
-			t.ReleaseRecords()
-		} else {
-			log.Fatal("ERROR SAVING BLOCK", err)
-		}
-	}
-
-}
-
 var IMPORTED_COUNT = 0
 
 func import_csv_records() {
@@ -105,7 +78,7 @@ func import_csv_records() {
 	header_fields := strings.Split(header, ",")
 	log.Println("HEADER FIELDS FOR CSV ARE", header_fields)
 
-	t := GetTable(*f_TABLE)
+	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -127,7 +100,7 @@ func import_csv_records() {
 
 		}
 
-		chunk_and_save()
+		t.ChunkAndSave()
 	}
 
 }
@@ -176,7 +149,7 @@ func json_query(obj *interface{}, path []string) []interface{} {
 }
 
 func import_json_records() {
-	t := GetTable(*f_TABLE)
+	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
 	log.Println("PATH IS", path)
@@ -208,7 +181,7 @@ func import_json_records() {
 				ingest_dictionary(r, &dict, "")
 
 			}
-			chunk_and_save()
+			t.ChunkAndSave()
 		}
 
 	}
@@ -221,7 +194,7 @@ var EXCLUDES = make(map[string]bool)
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
-	ingestfile := flag.String("file", INGEST_DIR, "name of dir to ingest into")
+	ingestfile := flag.String("file", sybil.INGEST_DIR, "name of dir to ingest into")
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
@@ -231,15 +204,15 @@ func RunIngestCmdLine() {
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
 
-	if *f_TABLE == "" {
+	if *sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
 	JSON_PATH = *f_JSON_PATH
 
-	if *f_PROFILE && PROFILER_ENABLED {
-		profile := RUN_PROFILER()
+	if *sybil.FLAGS.PROFILE {
+		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
@@ -254,7 +227,7 @@ func RunIngestCmdLine() {
 		log.Println("EXCLUDING COLUMN", k)
 	}
 
-	t := GetTable(*f_TABLE)
+	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else

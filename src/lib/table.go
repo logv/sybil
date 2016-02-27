@@ -190,3 +190,8 @@ func (t *Table) PrintRecords(records RecordList) {
 		t.PrintRecord(records[i])
 	}
 }
+
+func (t *Table) GetColumnType(v string) int8 {
+	col_id := t.get_key_id(v)
+	return t.KeyTypes[col_id]
+}

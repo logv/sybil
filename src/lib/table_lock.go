@@ -45,7 +45,7 @@ func RecoverLock(lock RecoverableLock) bool {
 func (l *InfoLock) Recover() bool {
 	t := l.Lock.table
 	log.Println("INFO LOCK RECOVERY")
-	dirname := path.Join(*f_DIR, t.Name)
+	dirname := path.Join(*FLAGS.DIR, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
@@ -72,7 +72,7 @@ func (l *InfoLock) Recover() bool {
 func (l *DigestLock) Recover() bool {
 	log.Println("RECOVERING DIGEST LOCK", l.name)
 	t := l.table
-	ingestdir := path.Join(*f_DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
@@ -111,7 +111,7 @@ func (l *Lock) ForceDeleteFile() {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	log.Println("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
@@ -218,7 +218,7 @@ func (l *Lock) Grab() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	if check_pid(lockfile, l) == false {
 		return false
@@ -257,7 +257,7 @@ func (l *Lock) Release() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*f_DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 	for i := 0; i < LOCK_TRIES; i++ {
 		val, err := ioutil.ReadFile(lockfile)
 

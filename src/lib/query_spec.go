@@ -128,6 +128,10 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 		agg.op_id = OP_HIST
 	}
 
-	log.Println("AGG", op, agg.op_id)
+	_, ok := t.IntInfo[col_id]
+	if !ok {
+		// TODO: tell our table we need to load all records!
+		log.Println("MISSING CACHED INFO FOR", agg)
+	}
 	return agg
 }

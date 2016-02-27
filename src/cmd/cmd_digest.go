@@ -1,27 +1,29 @@
-package sybil
+package sybil_cmd
 
 import "flag"
 import "log"
 
+import sybil "github.com/logV/sybil/src/lib"
+
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunDigestCmdLine() {
-	digest_file := flag.String("file", INGEST_DIR, "Name of block to digest")
+	digest_file := flag.String("file", sybil.INGEST_DIR, "Name of block to digest")
 	flag.Parse()
 
-	if *f_TABLE == "" {
+	if *sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *f_PROFILE && PROFILER_ENABLED {
-		profile := RUN_PROFILER()
+	if *sybil.FLAGS.PROFILE {
+		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	DELETE_BLOCKS_AFTER_QUERY = false
+	sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := GetTable(*f_TABLE)
+	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
 		log.Println("Warning: Couldn't read table info, exiting early")
 		return

@@ -33,14 +33,14 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
-	if a.Col == SORT_COUNT {
+	if a.Col == OPTS.SORT_COUNT {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 
 		return t1 > t2
 	}
 
-	if *f_OP == "hist" {
+	if *FLAGS.OP == "hist" {
 		t1 := a.Results[i].Hists[a.Col].Avg
 		t2 := a.Results[j].Hists[a.Col].Avg
 		return t1 > t2
@@ -79,8 +79,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		add := true
 		r := records[i]
 
-		if WEIGHT_COL && r.Populated[WEIGHT_COL_ID] == INT_VAL {
-			weight = int64(r.Ints[WEIGHT_COL_ID])
+		if OPTS.WEIGHT_COL && r.Populated[OPTS.WEIGHT_COL_ID] == INT_VAL {
+			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
 		}
 
 		// FILTERING
@@ -122,14 +122,14 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			if len(r.Populated) <= int(TIME_COL_ID) {
+			if len(r.Populated) <= int(OPTS.TIME_COL_ID) {
 				continue
 			}
 
-			if r.Populated[TIME_COL_ID] != INT_VAL {
+			if r.Populated[OPTS.TIME_COL_ID] != INT_VAL {
 				continue
 			}
-			val := int64(r.Ints[TIME_COL_ID])
+			val := int64(r.Ints[OPTS.TIME_COL_ID])
 
 			big_record, b_ok := querySpec.Results[string(binarybuffer)]
 			if !b_ok {
@@ -335,8 +335,8 @@ func SortResults(querySpec *QuerySpec) {
 			log.Println("SORTING TOOK", end.Sub(start))
 		}
 
-		if len(sorter.Results) > *f_LIMIT {
-			sorter.Results = sorter.Results[:*f_LIMIT]
+		if len(sorter.Results) > *FLAGS.LIMIT {
+			sorter.Results = sorter.Results[:*FLAGS.LIMIT]
 		}
 
 		querySpec.Sorted = sorter.Results
@@ -366,7 +366,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 
 			block_specs[this_block.Name] = blockQuery
 
-			if !*f_JSON {
+			if !*FLAGS.JSON {
 				fmt.Fprint(os.Stderr, ".")
 			}
 
@@ -375,7 +375,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 
 	wg.Wait()
 
-	if !*f_JSON {
+	if !*FLAGS.JSON {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 

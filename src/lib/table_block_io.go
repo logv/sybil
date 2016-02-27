@@ -16,11 +16,11 @@ func getBlockName(id int) string {
 }
 
 func getBlockDir(name string, id int) string {
-	return path.Join(*f_DIR, name, getBlockName(id))
+	return path.Join(*FLAGS.DIR, name, getBlockName(id))
 }
 
 func getBlockFilename(name string, id int) string {
-	return path.Join(*f_DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
+	return path.Join(*FLAGS.DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
 }
 
 func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {

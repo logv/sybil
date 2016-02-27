@@ -7,47 +7,95 @@ var TRUE = true
 
 var TEST_MODE = false
 
-var f_OP *string
-var f_PRINT *bool = &FALSE
-var f_INT_FILTERS *string
-var f_STR_FILTERS *string
-var f_SET_FILTERS *string
+type FlagDefs struct {
+	OP          *string
+	PRINT       *bool
+	INT_FILTERS *string
+	STR_FILTERS *string
+	SET_FILTERS *string
 
-var f_SESSION_COL *string
-var f_INTS *string
-var f_STRS *string
-var f_GROUPS *string
+	SESSION_COL *string
+	INTS        *string
+	STRS        *string
+	GROUPS      *string
 
-var GROUP_BY []string
+	ADD_RECORDS *int
 
-var f_ADD_RECORDS *int
+	TIME        *bool
+	TIME_COL    *string
+	TIME_BUCKET *int
 
-var DELTA_ENCODE_RECORD_IDS = true
-var WRITE_BLOCK_INFO = false
-var TIMESERIES = false
-var TIME_COL_ID int16
-var f_TIME *bool = &TIMESERIES
-var f_TIME_COL *string
-var f_TIME_BUCKET *int
+	PRINT_KEYS         *bool
+	LOAD_AND_QUERY     *bool
+	LOAD_THEN_QUERY    *bool
+	READ_INGESTION_LOG *bool
+	SKIP_ROWSTORE      *bool
 
-var f_PRINT_KEYS *bool = &TIMESERIES
-var f_LOAD_AND_QUERY *bool = &TRUE
-var f_LOAD_THEN_QUERY *bool = &FALSE
-var f_READ_INGESTION_LOG = &TRUE
-var f_SKIP_ROWSTORE = &FALSE
+	PROFILE     *bool
+	PROFILE_MEM *bool
 
-var WEIGHT_COL = false
-var WEIGHT_COL_ID = int16(0)
-var f_WEIGHT_COL *string
+	WEIGHT_COL *string
 
-var f_JSON *bool = &FALSE
-var f_GC *bool = &TRUE
+	LIMIT *int
 
-var SORT_COUNT = "$COUNT"
-var f_DIR = flag.String("dir", "./db/", "Directory to store DB files")
-var f_TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
-var f_PRINT_INFO = flag.Bool("info", false, "Print table info")
-var f_SORT = flag.String("sort", SORT_COUNT, "Int Column to sort by")
-var f_LIMIT = flag.Int("limit", 100, "Number of results to return")
+	JSON *bool
+	GC   *bool
 
-var f_UPDATE_TABLE_INFO = &FALSE
+	DIR        *string
+	SORT       *string
+	TABLE      *string
+	PRINT_INFO *bool
+	SAMPLES    *bool
+
+	UPDATE_TABLE_INFO *bool
+}
+
+type OptionDefs struct {
+	SORT_COUNT              string
+	SAMPLES                 bool
+	WEIGHT_COL              bool
+	WEIGHT_COL_ID           int16
+	DELTA_ENCODE_RECORD_IDS bool
+	WRITE_BLOCK_INFO        bool
+	TIMESERIES              bool
+	TIME_COL_ID             int16
+	GROUP_BY                []string
+}
+
+var FLAGS = FlagDefs{}
+var OPTS = OptionDefs{}
+
+func SetDefaults() {
+	OPTS.SORT_COUNT = "$COUNT"
+	OPTS.SAMPLES = false
+	OPTS.WEIGHT_COL = false
+	OPTS.WEIGHT_COL_ID = int16(0)
+	OPTS.DELTA_ENCODE_RECORD_IDS = true
+	OPTS.WRITE_BLOCK_INFO = false
+	OPTS.TIMESERIES = false
+
+	FLAGS.GC = &TRUE
+	FLAGS.JSON = &FALSE
+
+	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
+	FLAGS.LOAD_AND_QUERY = &TRUE
+	FLAGS.LOAD_THEN_QUERY = &FALSE
+	FLAGS.READ_INGESTION_LOG = &TRUE
+	FLAGS.SKIP_ROWSTORE = &FALSE
+	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
+	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
+	FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
+	FLAGS.SORT = flag.String("sort", OPTS.SORT_COUNT, "Int Column to sort by")
+	FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+
+	FLAGS.UPDATE_TABLE_INFO = &FALSE
+	FLAGS.SAMPLES = &FALSE
+
+	FLAGS.PROFILE = &FALSE
+	FLAGS.PROFILE_MEM = &FALSE
+	if PROFILER_ENABLED {
+		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
+		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
+	}
+
+}

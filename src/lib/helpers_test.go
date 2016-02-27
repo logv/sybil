@@ -20,6 +20,8 @@ func run_tests(m *testing.M) {
 }
 
 func setup_test_vars(chunk_size int) {
+	sybil.SetDefaults()
+
 	sybil.TEST_MODE = true
 	sybil.CHUNK_SIZE = chunk_size
 	sybil.LOCK_US = 1

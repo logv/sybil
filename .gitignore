@@ -6,3 +6,6 @@ tags
 output
 tmp/
 bin/
+data/
+sync.sh
+cover.*
