@@ -111,6 +111,7 @@ func RunQueryCmdLine() {
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
 	t.LoadTableInfo()
+	t.LoadRecords(nil)
 
 	count := 0
 	for _, block := range t.BlockList {
