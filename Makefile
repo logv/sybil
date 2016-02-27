@@ -34,7 +34,7 @@ testv:
 	go test ./src/lib/ -v
 
 coverage:
-	go test -coverprofile cover.out ./src/lib 
+	go test -covermode atomic -coverprofile cover.out ./src/lib 
 	sed -i "s|_${ROOT_DIR}|.|"	cover.out
 	go tool cover -html=cover.out -o cover.html
      
