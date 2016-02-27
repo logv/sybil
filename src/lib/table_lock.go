@@ -135,8 +135,20 @@ func check_if_broken(lockfile string, l *Lock) bool {
 	// alive, there will be no error, or if it isn't owned by us, we'll get an
 	// EPERM error
 	val, err = ioutil.ReadFile(lockfile)
-	pid_int, err := strconv.ParseInt(string(val), 10, 32)
+
+	var pid_int = int64(0)
 	if err == nil {
+		pid_int, err = strconv.ParseInt(string(val), 10, 32)
+
+		if err != nil && string(val) != "" {
+			l.broken = true
+			log.Println("CANT READ PID FROM INFO LOCK:", string(val), err)
+			log.Println("PUTTING INFO LOCK INTO RECOVERY")
+			return false
+		}
+	}
+
+	if err == nil && pid_int != 0 {
 		process, err := os.FindProcess(int(pid_int))
 		// err is Always nil on *nix
 		if err == nil {
