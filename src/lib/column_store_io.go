@@ -12,6 +12,7 @@ import "time"
 type ValueMap map[int64][]uint32
 
 var CARDINALITY_THRESHOLD = 4
+var DEBUG_RECORD_CONSISTENCY = false
 
 func delta_encode_col(col ValueMap) {
 	for _, records := range col {
@@ -500,8 +501,10 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 				prev = r
 				record = records[r]
 
-				if record.Populated[col_id] != _NO_VAL {
-					log.Fatal("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
+				if DEBUG_RECORD_CONSISTENCY {
+					if record.Populated[col_id] != _NO_VAL {
+						log.Fatal("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
+					}
 				}
 
 				record.Populated[col_id] = STR_VAL
@@ -599,8 +602,10 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				if records[r].Populated[col_id] != _NO_VAL {
-					log.Fatal("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
+				if DEBUG_RECORD_CONSISTENCY {
+					if records[r].Populated[col_id] != _NO_VAL {
+						log.Fatal("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
+					}
 				}
 
 				records[r].Ints[col_id] = IntField(bucket.Value)
