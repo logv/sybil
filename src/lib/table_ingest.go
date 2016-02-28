@@ -13,6 +13,7 @@ import "strings"
 var READ_ROWS_ONLY = false
 
 func (t *Table) getNewIngestBlockName() (string, error) {
+	log.Println("GETTING INGEST BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
 	name, err := ioutil.TempDir(path.Join(*FLAGS.DIR, t.Name), "block")
 	return name, err
 }
@@ -34,7 +35,7 @@ func (t *Table) IngestRecords(blockname string) {
 	loaded := t.LoadRecords(nil)
 	if loaded > 0 && t.RowBlock != nil && len(t.RowBlock.RecordList) > CHUNK_THRESHOLD {
 		log.Println("LOADED RECORDS", len(t.RowBlock.RecordList))
-		t.DigestRecords(INGEST_DIR)
+		t.DigestRecords()
 	}
 }
 
@@ -122,13 +123,17 @@ func (t *Table) RestoreUningestedFiles() {
 
 	for _, dir := range dirs {
 		if strings.HasPrefix(dir.Name(), STOMACHE_DIR) && dir.IsDir() {
-			file, _ := os.Open(path.Join(digesting, dir.Name()))
+			fname := path.Join(digesting, dir.Name())
+			file, _ := os.Open(fname)
 			files, _ := file.Readdir(0)
 			for _, file := range files {
 				log.Println("RESTORING UNINGESTED FILE", file.Name())
-				from := path.Join(digesting, file.Name())
+				from := path.Join(fname, file.Name())
 				to := path.Join(ingestdir, file.Name())
-				os.Rename(from, to)
+				err := os.Rename(from, to)
+				if err != nil {
+					log.Println("COULDNT RESTORE UNINGESTED FILE", from, to, err)
+				}
 			}
 
 			err := os.Remove(path.Join(digesting, dir.Name()))
@@ -155,7 +160,6 @@ func SaveBlockChunkCB(digestname string, records RecordList) {
 			os.Remove(file)
 		}
 
-		t.RestoreUningestedFiles()
 		t.ReleaseDigestLock()
 		return
 	}
@@ -172,7 +176,7 @@ func SaveBlockChunkCB(digestname string, records RecordList) {
 var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
-func (t *Table) DigestRecords(digest string) {
+func (t *Table) DigestRecords() {
 	can_digest := t.GrabDigestLock()
 
 	if !can_digest {
@@ -182,7 +186,7 @@ func (t *Table) DigestRecords(digest string) {
 	}
 
 	dirname := path.Join(*FLAGS.DIR, t.Name)
-	digestfile := path.Join(dirname, digest)
+	digestfile := path.Join(dirname, INGEST_DIR)
 	digesting, err := ioutil.TempDir(dirname, STOMACHE_DIR)
 
 	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going

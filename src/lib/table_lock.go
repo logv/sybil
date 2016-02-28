@@ -20,8 +20,8 @@ type RecoverableLock interface {
 }
 
 type Lock struct {
-	name   string
-	table  *Table
+	Name   string
+	Table  *Table
 	broken bool
 }
 
@@ -43,7 +43,7 @@ func RecoverLock(lock RecoverableLock) bool {
 }
 
 func (l *InfoLock) Recover() bool {
-	t := l.Lock.table
+	t := l.Lock.Table
 	log.Println("INFO LOCK RECOVERY")
 	dirname := path.Join(*FLAGS.DIR, t.Name)
 	backup := path.Join(dirname, "info.bak")
@@ -64,18 +64,20 @@ func (l *InfoLock) Recover() bool {
 	}
 
 	log.Println("CANT READ info.db OR RECOVER info.bak")
-	log.Println("TRY DELETING LOCK BY HAND FOR", l.name)
+	log.Println("TRY DELETING LOCK BY HAND FOR", l.Name)
 
 	return false
 }
 
 func (l *DigestLock) Recover() bool {
-	log.Println("RECOVERING DIGEST LOCK", l.name)
-	t := l.table
+	log.Println("RECOVERING DIGEST LOCK", l.Name)
+	t := l.Table
 	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
+	pid := int64(os.Getpid())
+	l.ForceMakeFile(pid)
 	t.RestoreUningestedFiles()
 	l.ForceDeleteFile()
 
@@ -83,17 +85,17 @@ func (l *DigestLock) Recover() bool {
 }
 
 func (l *BlockLock) Recover() bool {
-	log.Println("RECOVERING BLOCK LOCK", l.name)
-	t := l.table
-	tb := t.LoadBlockFromDir(l.name, nil, true)
-	if tb == nil {
+	log.Println("RECOVERING BLOCK LOCK", l.Name)
+	t := l.Table
+	tb := t.LoadBlockFromDir(l.Name, nil, true)
+	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
 		log.Println("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...
-		os.Rename(l.name, fmt.Sprint(l.name, ".broke"))
+		os.Rename(l.Name, fmt.Sprint(l.Name, ".broke"))
 		l.ForceDeleteFile()
 	} else {
 		log.Println("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")
-		os.RemoveAll(fmt.Sprint(l.name, ".partial"))
+		os.RemoveAll(fmt.Sprint(l.Name, ".partial"))
 		l.ForceDeleteFile()
 	}
 
@@ -101,13 +103,13 @@ func (l *BlockLock) Recover() bool {
 }
 
 func (l *Lock) Recover() bool {
-	log.Println("UNIMPLEMENTED RECOVERY FOR LOCK", l.table.Name, l.name)
+	log.Println("UNIMPLEMENTED RECOVERY FOR LOCK", l.Table.Name, l.Name)
 	return false
 }
 
 func (l *Lock) ForceDeleteFile() {
-	t := l.table
-	digest := l.name
+	t := l.Table
+	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
@@ -115,6 +117,27 @@ func (l *Lock) ForceDeleteFile() {
 
 	log.Println("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
+}
+
+func (l *Lock) ForceMakeFile(pid int64) {
+	t := l.Table
+	digest := l.Name
+
+	digest = path.Base(digest)
+	// Check to see if this file is locked...
+	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+
+	log.Println("FORCE MAKING", lockfile)
+	nf, err := os.Create(lockfile)
+	if err != nil {
+		nf, err = os.OpenFile(lockfile, os.O_CREATE, 0666)
+	}
+
+	defer nf.Close()
+
+	nf.WriteString(strconv.FormatInt(pid, 10))
+	nf.Sync()
+
 }
 
 func is_active_pid(val []byte) bool {
@@ -167,7 +190,7 @@ func check_if_broken(lockfile string, l *Lock) bool {
 							return true
 						}
 
-						log.Println("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.name, val)
+						log.Println("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.Name, val)
 						l.broken = true
 					}
 				}
@@ -213,8 +236,8 @@ func check_pid(lockfile string, l *Lock) bool {
 }
 
 func (l *Lock) Grab() bool {
-	t := l.table
-	digest := l.name
+	t := l.Table
+	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
@@ -252,8 +275,8 @@ func (l *Lock) Grab() bool {
 }
 
 func (l *Lock) Release() bool {
-	t := l.table
-	digest := l.name
+	t := l.Table
+	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
@@ -277,7 +300,7 @@ func (l *Lock) Release() bool {
 }
 
 func (t *Table) GrabInfoLock() bool {
-	lock := Lock{table: t, name: "info"}
+	lock := Lock{Table: t, Name: "info"}
 	info := &InfoLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
@@ -288,14 +311,14 @@ func (t *Table) GrabInfoLock() bool {
 }
 
 func (t *Table) ReleaseInfoLock() bool {
-	lock := Lock{table: t, name: "info"}
+	lock := Lock{Table: t, Name: "info"}
 	info := &InfoLock{lock}
 	ret := info.Release()
 	return ret
 }
 
 func (t *Table) GrabDigestLock() bool {
-	lock := Lock{table: t, name: STOMACHE_DIR}
+	lock := Lock{Table: t, Name: STOMACHE_DIR}
 	info := &DigestLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
@@ -305,14 +328,14 @@ func (t *Table) GrabDigestLock() bool {
 }
 
 func (t *Table) ReleaseDigestLock() bool {
-	lock := Lock{table: t, name: STOMACHE_DIR}
+	lock := Lock{Table: t, Name: STOMACHE_DIR}
 	info := &DigestLock{lock}
 	ret := info.Release()
 	return ret
 }
 
 func (t *Table) GrabBlockLock(name string) bool {
-	lock := Lock{table: t, name: name}
+	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
 	ret := info.Grab()
 	// INFO RECOVER IS GOING TO HAVE TIMING ISSUES... WHEN MULTIPLE THREADS ARE
@@ -325,7 +348,7 @@ func (t *Table) GrabBlockLock(name string) bool {
 }
 
 func (t *Table) ReleaseBlockLock(name string) bool {
-	lock := Lock{table: t, name: name}
+	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
 	ret := info.Release()
 	return ret

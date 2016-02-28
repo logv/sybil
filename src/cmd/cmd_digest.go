@@ -8,7 +8,6 @@ import sybil "github.com/logV/sybil/src/lib"
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though
 func RunDigestCmdLine() {
-	digest_file := flag.String("file", sybil.INGEST_DIR, "Name of block to digest")
 	flag.Parse()
 
 	if *sybil.FLAGS.TABLE == "" {
@@ -28,5 +27,5 @@ func RunDigestCmdLine() {
 		log.Println("Warning: Couldn't read table info, exiting early")
 		return
 	}
-	t.DigestRecords(*digest_file)
+	t.DigestRecords()
 }

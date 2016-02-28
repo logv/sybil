@@ -436,7 +436,28 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	log.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
 
 	debug.SetGCPercent(old_percent)
-	// remove the old block
+
+	// TODO: Add a stronger consistency check here
+	// For now, we load info.db and check NumRecords inside it to prevent
+	// catastrophics, but we could load everything potentially
+	start = time.Now()
+	nb := tb.table.LoadBlockFromDir(partialname, nil, false)
+	end = time.Now()
+
+	// TODO:
+	if nb == nil || nb.Info.NumRecords != int32(len(tb.RecordList)) {
+		log.Fatal("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
+	}
+
+	if DEBUG_RECORD_CONSISTENCY {
+		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
+		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
+			log.Fatal("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
+		}
+	}
+
+	log.Println("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
+
 	os.RemoveAll(oldblock)
 	err := os.Rename(dirname, oldblock)
 	if err != nil {

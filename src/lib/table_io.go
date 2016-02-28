@@ -271,11 +271,12 @@ func (t *Table) HasFlagFile() bool {
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
-	log.Println("LOADING", t.Name)
+	log.Println("LOADING", *FLAGS.DIR, t.Name)
 
 	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
 
 	if READ_ROWS_ONLY {
+		log.Println("ONLY READING RECORDS FROM ROW STORE")
 		files = nil
 	}
 
