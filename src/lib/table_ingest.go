@@ -146,7 +146,11 @@ func (t *Table) RestoreUningestedFiles() {
 
 }
 
-func SaveBlockChunkCB(digestname string, records RecordList) {
+type SaveBlockChunkCB struct {
+	digestdir string
+}
+
+func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 
 	t := GetTable(*FLAGS.TABLE)
 	if digestname == NO_MORE_BLOCKS {
@@ -160,6 +164,7 @@ func SaveBlockChunkCB(digestname string, records RecordList) {
 			os.Remove(file)
 		}
 
+		os.RemoveAll(cb.digestdir)
 		t.ReleaseDigestLock()
 		return
 	}
@@ -209,7 +214,8 @@ func (t *Table) DigestRecords() {
 		// ingestions...
 		os.MkdirAll(digestfile, 0777)
 		basename := path.Base(digesting)
-		t.LoadRowStoreRecords(basename, SaveBlockChunkCB)
+		cb := SaveBlockChunkCB{digesting}
+		t.LoadRowStoreRecords(basename, cb.CB)
 	} else {
 		t.ReleaseDigestLock()
 	}
