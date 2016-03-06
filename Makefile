@@ -49,6 +49,8 @@ profile: bindir
 
 tags: 
 	ctags --languages=+Go src/lib/*.go
+	starscope -e cscope
+	starscope -e ctags
 
 default: all
 

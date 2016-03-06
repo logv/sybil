@@ -17,6 +17,7 @@ type QuerySpec struct {
 	TimeResults map[int]ResultMap
 	Sorted      []*Result
 	Matched     RecordList
+	Sessions    SessionList
 
 	BlockList map[string]TableBlock
 	Table     *Table

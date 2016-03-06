@@ -8,6 +8,8 @@ type Record struct {
 	SetMap    map[int16]SetField
 	Populated []int8
 
+	Timestamp int64
+
 	block *TableBlock
 }
 

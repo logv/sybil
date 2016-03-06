@@ -14,14 +14,6 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var LIST_TABLES *bool
 
-func queryTable(name string, loadSpec *sybil.LoadSpec, querySpec *sybil.QuerySpec) {
-	table := sybil.GetTable(name)
-
-	table.MatchAndAggregate(querySpec)
-
-	querySpec.PrintResults()
-}
-
 func addFlags() {
 
 	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
@@ -259,42 +251,25 @@ func RunQueryCmdLine() {
 		// DISABLE GC FOR QUERY PATH
 		// NEVER TURN IT BACK ON!
 		log.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
-		old_percent := debug.SetGCPercent(-1)
+		debug.SetGCPercent(-1)
 
 		log.Println("USING LOAD SPEC", loadSpec)
 
 		log.Println("USING QUERY SPEC", querySpec)
 
-		var count int
 		start := time.Now()
-
 		// We can load and query at the same time
 		if *sybil.FLAGS.LOAD_AND_QUERY {
-			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
+			if *sybil.FLAGS.SESSION_COL != "" {
+				sessionSpec := sybil.NewSessionSpec()
+				t.LoadAndSessionize(&loadSpec, &querySpec, &sessionSpec)
+			} else {
+				count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
+			}
+
 			end := time.Now()
 			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.PrintResults()
-		} else { // or we can load, and then query!
-			sybil.DELETE_BLOCKS_AFTER_QUERY = false
-			count = t.LoadRecords(&loadSpec)
-			if *sybil.FLAGS.READ_INGESTION_LOG {
-				t.LoadRowStoreRecords(sybil.INGEST_DIR, sybil.LoadRowBlockCB)
-				count += len(t.RowBlock.RecordList)
-			}
-			end := time.Now()
-			log.Println("LOAD RECORDS TOOK", end.Sub(start), "COUNT:", count)
-
-			if count > MAX_RECORDS_NO_GC {
-				log.Println("MORE THAN", fmt.Sprintf("%dm", MAX_RECORDS_NO_GC/1000/1000), "RECORDS LOADED ENABLING GC")
-				gc_start := time.Now()
-				debug.SetGCPercent(old_percent)
-				end := time.Now()
-				log.Println("GC TOOK", end.Sub(gc_start))
-			}
-
-			queryTable(table, &loadSpec, &querySpec)
-			end = time.Now()
-			log.Println("LOAD THEN QUERY RECORDS TOOK", end.Sub(start))
 		}
 
 	}

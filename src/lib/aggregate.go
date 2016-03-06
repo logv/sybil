@@ -1,13 +1,11 @@
 package sybil
 
 import "log"
-import "fmt"
 import "time"
-import "sync"
 import "bytes"
 import "sort"
-import "os"
 import "strconv"
+import "sync"
 
 import "encoding/binary"
 
@@ -344,8 +342,8 @@ func SortResults(querySpec *QuerySpec) {
 
 }
 
+// OLD SEARCHING FUNCTIONS BELOW HERE
 func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[string]*QuerySpec {
-
 	var wg sync.WaitGroup
 	// Each block gets its own querySpec (for locking and combining purposes)
 	// after all queries finish executing, the specs are combined
@@ -366,18 +364,10 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 
 			block_specs[this_block.Name] = blockQuery
 
-			if !*FLAGS.JSON {
-				fmt.Fprint(os.Stderr, ".")
-			}
-
 		}()
 	}
 
 	wg.Wait()
-
-	if !*FLAGS.JSON {
-		fmt.Fprint(os.Stderr, "\n")
-	}
 
 	return block_specs
 }

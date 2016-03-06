@@ -254,7 +254,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 		for _, bucket := range strCol.Bins {
 			first_val := bucket.Records[0]
-			if first_val > 1000 {
+			if first_val > 1000 && DEBUG_RECORD_CONSISTENCY {
 				log.Println("Warning", k, bucket.Value, "FIRST RECORD IS", first_val)
 			}
 		}
@@ -609,6 +609,11 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	col_id := tb.table.get_key_id(into.Name)
 
+	is_time_col := false
+	if FLAGS.TIME_COL != nil {
+		is_time_col = into.Name == *FLAGS.TIME_COL
+	}
+
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			if *FLAGS.UPDATE_TABLE_INFO {
@@ -632,6 +637,11 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 				records[r].Ints[col_id] = IntField(bucket.Value)
 				records[r].Populated[col_id] = INT_VAL
 				prev = r
+
+				if is_time_col {
+					records[r].Timestamp = bucket.Value
+				}
+
 			}
 
 		}
@@ -644,6 +654,10 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 			records[r].Ints[col_id] = IntField(v)
 			records[r].Populated[col_id] = INT_VAL
+
+			if is_time_col {
+				records[r].Timestamp = v
+			}
 		}
 	}
 }

@@ -269,6 +269,30 @@ func (t *Table) HasFlagFile() bool {
 
 }
 
+func file_looks_like_block(v os.FileInfo) bool {
+
+	switch {
+
+	case v.Name() == INGEST_DIR || v.Name() == TEMP_INGEST_DIR:
+		return false
+	case strings.HasPrefix(v.Name(), STOMACHE_DIR):
+		return false
+	case strings.HasSuffix(v.Name(), "info.db"):
+		return false
+	case strings.HasSuffix(v.Name(), "old"):
+		return false
+	case strings.HasSuffix(v.Name(), "broken"):
+		return false
+	case strings.HasSuffix(v.Name(), "lock"):
+		return false
+	case strings.HasSuffix(v.Name(), "partial"):
+		return false
+	}
+
+	return true
+
+}
+
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	log.Println("LOADING", *FLAGS.DIR, t.Name)
@@ -308,28 +332,20 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	broken_count := 0
 	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
-	for f := range files {
-		// Load blocks in reverse order
-		v := files[len(files)-f-1]
 
-		switch {
-		case v.Name() == INGEST_DIR || v.Name() == TEMP_INGEST_DIR:
-			continue
-		case strings.HasPrefix(v.Name(), STOMACHE_DIR):
-			continue
-		case strings.HasSuffix(v.Name(), "info.db"):
-			continue
-		case strings.HasSuffix(v.Name(), "old"):
-			continue
-		case strings.HasSuffix(v.Name(), "broken"):
-			continue
-		case strings.HasSuffix(v.Name(), "lock"):
-			continue
-		case strings.HasSuffix(v.Name(), "partial"):
-			continue
+	broken_mutex := sync.Mutex{}
+	broken_blocks := make([]string, 0)
+	for f := range files {
+
+		// TODO: decide more formally on order of block loading
+		// SAMPLES: reverse chronological order
+		// EVERYTHING ELSE: chronological order
+		v := files[f]
+		if OPTS.SAMPLES {
+			v = files[len(files)-f-1]
 		}
 
-		if v.IsDir() {
+		if v.IsDir() && file_looks_like_block(v) {
 			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
 			this_block++
 
@@ -348,7 +364,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
 				if block == nil {
-					log.Println("Warning: Error loading block from dir", filename)
+					broken_mutex.Lock()
+					broken_blocks = append(broken_blocks, filename)
+					broken_mutex.Unlock()
 					return
 				}
 
@@ -366,7 +384,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				if len(block.RecordList) > 0 {
 					block_count++
 
-					if querySpec != nil {
+					if querySpec != nil { // Load and Query
 						blockQuery := CopyQuerySpec(querySpec)
 						blockCount := FilterAndAggRecords(blockQuery, &block.RecordList)
 
@@ -378,7 +396,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						count += blockCount
 						block_specs[block.Name] = blockQuery
 						m.Unlock()
-					} else {
+					} else { // Just doing a regular old block load
 						m.Lock()
 						count += len(block.RecordList)
 						m.Unlock()
@@ -410,6 +428,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 			if DELETE_BLOCKS_AFTER_QUERY && this_block%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
 				wg.Wait()
+
 				m.Lock()
 				start := time.Now()
 				old_percent := debug.SetGCPercent(100)
@@ -451,6 +470,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	wg.Wait()
 
 	fmt.Fprint(os.Stderr, "\n")
+
+	for _, broken_block_name := range broken_blocks {
+		log.Println("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")
+	}
 
 	if *FLAGS.READ_INGESTION_LOG {
 		log.Println("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))

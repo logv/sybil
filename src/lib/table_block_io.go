@@ -258,6 +258,7 @@ type AfterLoadQueryCB struct {
 
 func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
+		// TODO: add sessionization call over here, too
 		count := FilterAndAggRecords(cb.querySpec, &cb.records)
 		cb.count += count
 
