@@ -94,8 +94,20 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, max_r)
-			for r, v := range record_to_value {
-				intCol.Values[r] = v
+			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
+
+			for r, val := range record_to_value {
+				intCol.Values[r] = val
+			}
+
+			prev := int64(0)
+			for r, val := range intCol.Values {
+				if OPTS.DELTA_ENCODE_INT_VALUES {
+					intCol.Values[r] = val - prev
+					prev = val
+				} else {
+					intCol.Values[r] = val
+				}
 			}
 		}
 
@@ -646,10 +658,16 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 		}
 	} else {
+
+		prev := int64(0)
 		for r, v := range into.Values {
 			if *FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, v)
 				tb.table.update_int_info(col_id, v)
+			}
+
+			if into.ValueEncoded {
+				v = v + prev
 			}
 
 			records[r].Ints[col_id] = IntField(v)
@@ -658,6 +676,11 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 			if is_time_col {
 				records[r].Timestamp = v
 			}
+
+			if into.ValueEncoded {
+				prev = v
+			}
+
 		}
 	}
 }

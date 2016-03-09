@@ -42,6 +42,7 @@ type SavedColumnInfo struct {
 type SavedIntColumn struct {
 	Name            string
 	DeltaEncodedIDs bool
+	ValueEncoded    bool
 	BucketEncoded   bool
 	Bins            []SavedIntBucket
 	Values          []int64

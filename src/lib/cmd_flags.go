@@ -55,6 +55,7 @@ type OptionDefs struct {
 	SAMPLES                 bool
 	WEIGHT_COL              bool
 	WEIGHT_COL_ID           int16
+	DELTA_ENCODE_INT_VALUES bool
 	DELTA_ENCODE_RECORD_IDS bool
 	WRITE_BLOCK_INFO        bool
 	TIMESERIES              bool
@@ -70,6 +71,7 @@ func SetDefaults() {
 	OPTS.SAMPLES = false
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
+	OPTS.DELTA_ENCODE_INT_VALUES = true
 	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
 	OPTS.TIMESERIES = false
