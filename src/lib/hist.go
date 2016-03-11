@@ -65,7 +65,15 @@ func (h *Hist) TrackPercentiles() {
 	h.track_percentiles = true
 }
 
-func (h *Hist) addValue(value int, weight int64) {
+func (h *Hist) addValue(value int) {
+	h.addWeightedValue(value, 1)
+}
+
+func (h *Hist) Sum() int64 {
+	return int64(h.Avg * float64(h.Count))
+}
+
+func (h *Hist) addWeightedValue(value int, weight int64) {
 	if OPTS.WEIGHT_COL {
 		h.Samples++
 		h.Count += weight

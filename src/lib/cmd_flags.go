@@ -48,6 +48,10 @@ type FlagDefs struct {
 	SAMPLES    *bool
 
 	UPDATE_TABLE_INFO *bool
+
+	JOIN_TABLE *string
+	JOIN_KEY   *string
+	JOIN_GROUP *string
 }
 
 type OptionDefs struct {

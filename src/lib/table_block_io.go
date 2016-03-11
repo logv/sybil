@@ -262,10 +262,6 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		count := FilterAndAggRecords(cb.querySpec, &cb.records)
 		cb.count += count
 
-		if !HOLD_MATCHES {
-			cb.records = make(RecordList, 0)
-		}
-
 		cb.wg.Done()
 		return
 	}

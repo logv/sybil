@@ -38,6 +38,10 @@ func addFlags() {
 	sybil.FLAGS.SKIP_ROWSTORE = flag.Bool("no-read-log", false, "skip reading the ingestion log")
 
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
+
+	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
+	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
+	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
 }
 
 func RunQueryCmdLine() {

@@ -9,3 +9,4 @@ bin/
 data/
 sync.sh
 cover.*
+*.pyc

@@ -25,6 +25,9 @@ type Table struct {
 	key_string_id_lookup map[int16]string
 	val_string_id_lookup map[int32]string
 
+	// This is used for join tables
+	join_lookup map[string]*Record
+
 	string_id_m *sync.RWMutex
 	record_m    *sync.Mutex
 	block_m     *sync.Mutex
