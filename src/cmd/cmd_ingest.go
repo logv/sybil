@@ -234,7 +234,7 @@ func RunIngestCmdLine() {
 	var loaded_table = false
 	for i := 0; i < 5; i++ {
 		loaded := t.LoadTableInfo()
-		if loaded == true {
+		if loaded == true || t.HasFlagFile() == false {
 			loaded_table = true
 			break
 		}

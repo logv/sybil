@@ -14,7 +14,7 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var LIST_TABLES *bool
 
-func addFlags() {
+func addQueryFlags() {
 
 	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
 	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
@@ -30,7 +30,6 @@ func addFlags() {
 	LIST_TABLES = flag.Bool("tables", false, "List tables")
 	sybil.FLAGS.UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
-	sybil.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
 	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
 	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
@@ -39,13 +38,10 @@ func addFlags() {
 
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 
-	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
-	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
-	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
 }
 
 func RunQueryCmdLine() {
-	addFlags()
+	addQueryFlags()
 	flag.Parse()
 
 	if *LIST_TABLES {
@@ -233,10 +229,6 @@ func RunQueryCmdLine() {
 
 	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
 
-	if *sybil.FLAGS.SESSION_COL != "" {
-		loadSpec.Str(*sybil.FLAGS.SESSION_COL)
-	}
-
 	if *sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
 		sybil.DELETE_BLOCKS_AFTER_QUERY = false
@@ -253,7 +245,6 @@ func RunQueryCmdLine() {
 
 	if !*sybil.FLAGS.PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
-		// NEVER TURN IT BACK ON!
 		log.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		debug.SetGCPercent(-1)
 
@@ -264,12 +255,7 @@ func RunQueryCmdLine() {
 		start := time.Now()
 		// We can load and query at the same time
 		if *sybil.FLAGS.LOAD_AND_QUERY {
-			if *sybil.FLAGS.SESSION_COL != "" {
-				sessionSpec := sybil.NewSessionSpec()
-				t.LoadAndSessionize(&loadSpec, &querySpec, &sessionSpec)
-			} else {
-				count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
-			}
+			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
 			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))

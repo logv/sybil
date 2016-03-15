@@ -21,6 +21,8 @@ func main() {
 		cmd.RunIngestCmdLine()
 	case "digest":
 		cmd.RunDigestCmdLine()
+	case "session":
+		cmd.RunSessionizeCmdLine()
 	case "query":
 		cmd.RunQueryCmdLine()
 	case "index":

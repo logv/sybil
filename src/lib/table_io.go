@@ -47,7 +47,6 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 		return
 	}
 	name_id := l.table.get_key_id(name)
-	log.Println("ASSERTING COL TYPE", name, name_id, col_type, len(l.table.KeyTypes))
 
 	if l.table.KeyTypes[name_id] == 0 {
 		log.Fatal("Query Error! Column ", name, " does not exist")
@@ -171,9 +170,7 @@ func (t *Table) saveRecordList(records RecordList) bool {
 
 func (t *Table) SaveRecordsToColumns() bool {
 	os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
-	col_id := t.get_key_id("time")
-
-	sort.Sort(SortRecordsByTime{t.newRecords, col_id})
+	sort.Sort(SortRecordsByTime{t.newRecords})
 
 	t.FillPartialBlock()
 	ret := t.saveRecordList(t.newRecords)

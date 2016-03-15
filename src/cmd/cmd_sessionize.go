@@ -1,0 +1,89 @@
+package sybil_cmd
+
+import sybil "github.com/logV/sybil/src/lib"
+
+import "log"
+import "flag"
+import "time"
+import "runtime/debug"
+import "strings"
+
+func addSessionFlags() {
+	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
+	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	sybil.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
+	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
+	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
+	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
+}
+
+func RunSessionizeCmdLine() {
+	addSessionFlags()
+	flag.Parse()
+	start := time.Now()
+
+	table := *sybil.FLAGS.TABLE
+	if table == "" {
+		flag.PrintDefaults()
+		return
+	}
+
+	table_names := strings.Split(table, ",")
+	log.Println("LOADING TABLES", table_names)
+
+	tables := make([]*sybil.Table, 0)
+
+	for _, tablename := range table_names {
+		t := sybil.GetTable(tablename)
+		// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
+		// THE RIGHT COLUMN ID
+		t.LoadTableInfo()
+		t.LoadRecords(nil)
+
+		count := 0
+		for _, block := range t.BlockList {
+			count += int(block.Info.NumRecords)
+		}
+
+		log.Println("WILL INSPECT", count, "RECORDS FROM", tablename)
+
+		// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
+		log.Println("KEY TABLE", t.KeyTable)
+		log.Println("KEY TYPES", t.KeyTypes)
+
+		used := make(map[int16]int)
+		for _, v := range t.KeyTable {
+			used[v]++
+			if used[v] > 1 {
+				log.Fatal("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+				return
+			}
+		}
+
+		tables = append(tables, t)
+
+	}
+
+	debug.SetGCPercent(-1)
+	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
+		profile := sybil.RUN_PROFILER()
+		defer profile.Start().Stop()
+	}
+
+	filters := []sybil.Filter{}
+	groupings := []sybil.Grouping{}
+	aggs := []sybil.Aggregation{}
+	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+
+	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+
+	if *sybil.FLAGS.SESSION_COL != "" {
+		sessionSpec := sybil.NewSessionSpec()
+		sybil.LoadAndSessionize(tables, &querySpec, &sessionSpec)
+	}
+
+	end := time.Now()
+	log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+	querySpec.PrintResults()
+
+}

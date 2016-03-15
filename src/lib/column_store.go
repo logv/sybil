@@ -4,15 +4,13 @@ package sybil
 type RecordList []*Record
 type SortRecordsByTime struct {
 	RecordList
-
-	ColId int16
 }
 
 func (a RecordList) Len() int      { return len(a) }
 func (a RecordList) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a SortRecordsByTime) Less(i, j int) bool {
-	t1 := a.RecordList[i].Ints[a.ColId]
-	t2 := a.RecordList[j].Ints[a.ColId]
+	t1 := a.RecordList[i].Timestamp
+	t2 := a.RecordList[j].Timestamp
 
 	return t1 < t2
 }

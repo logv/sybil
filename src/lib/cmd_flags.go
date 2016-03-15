@@ -67,6 +67,8 @@ type OptionDefs struct {
 	GROUP_BY                []string
 }
 
+// TODO: merge these two into one thing
+// current problem is that FLAGS needs pointers
 var FLAGS = FlagDefs{}
 var OPTS = OptionDefs{}
 

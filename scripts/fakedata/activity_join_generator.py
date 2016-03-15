@@ -31,7 +31,7 @@ def rand_record(n):
 
 def generate_records():
     records = []
-    for j in xrange(USER_IDS):
+    for j in xrange(1,USER_IDS+1):
         record = rand_record(j)
         print json.dumps(record)
 
