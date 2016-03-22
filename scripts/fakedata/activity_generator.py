@@ -3,7 +3,7 @@ import random
 import sys
 import time
 
-ACTIONS = [ "pageload", "click", "pageunload", "chat" ]
+ACTIONS = [ "pageload", "pageunload", "click", "notif", "hover", "tooltip", "type", "chat", "comment" ]
 PAGES = [ "login", "home", "friends", "settings", "feed", "groups", "explore", "404" ]
 
 USER_IDS = 5000

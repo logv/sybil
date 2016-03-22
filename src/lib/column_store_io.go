@@ -517,6 +517,10 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 	col.val_string_id_lookup = string_lookup
 
+	is_path_col := false
+	if FLAGS.PATH_KEY != nil {
+		is_path_col = into.Name == *FLAGS.PATH_KEY
+	}
 	var record *Record
 	var r uint32
 	if into.BucketEncoded {
@@ -542,6 +546,10 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 				record.Populated[col_id] = STR_VAL
 				record.Strs[col_id] = StrField(bucket.Value)
+
+				if is_path_col {
+					record.Path = string_lookup[bucket.Value]
+				}
 			}
 		}
 

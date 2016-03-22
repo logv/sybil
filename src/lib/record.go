@@ -9,6 +9,7 @@ type Record struct {
 	Populated []int8
 
 	Timestamp int64
+	Path      string
 
 	block *TableBlock
 }

@@ -10,3 +10,5 @@ data/
 sync.sh
 cover.*
 *.pyc
+.starscope.db
+cscope.out

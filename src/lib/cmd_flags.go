@@ -52,6 +52,10 @@ type FlagDefs struct {
 	JOIN_TABLE *string
 	JOIN_KEY   *string
 	JOIN_GROUP *string
+	RETENTION  *bool
+
+	PATH_KEY    *string
+	PATH_LENGTH *int
 }
 
 type OptionDefs struct {

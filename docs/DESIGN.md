@@ -4,14 +4,16 @@ storage engine
 
 Sybil ingests data and creates records via a command line API and Stdin. 
 
-These new records are stored as rows on disk until a digestion is initiated, at
-which point all records in the row store are collated into column form.
+New records are stored as rows on disk until a threshold is hit or a manual
+digestion is initiated, at which point all records in the row store are
+collated into column form.
 
 In Column form, records are stored in large blocks of column values. Depending
 on the column type and the cardinality of the column, the column can be stored
 as a bucketed value set (for low cardinality values) or as an array of values
 (for high cardinality columns: e.g. time column). When stored in bucket form,
-the record IDs are delta encoded
+the record IDs are delta encoded. When stored in array form, the values
+themselves are delta encoded.
 
 In Row and Column form, string values are actually stored as int32 values and a
 separate StringTable is kept alongside each file.
@@ -24,6 +26,7 @@ supported
 
 * str, int64, set fields
 * column / row form
+
 
 to be implemented
 -----------------
@@ -86,14 +89,14 @@ supported
 * int filters
 * str filters
 * set filters
+* single key joins
 
 
- 
+
 unsupported
 -----------
 
 * update
-* join
 * delete
 * sql queries
 * acid
@@ -103,33 +106,32 @@ unsupported
 bottlenecks
 -----------
 
-in the above execution model there are several performance bottlenecks:
+in the query execution model there are several performance bottlenecks:
 
-* The memory allocation
-* loading data off disk (since the data is encoded using `encoding/gob` it has a Reflection penalty)
-* The allocation and assignment of record values
+* memory allocation
+* loading data off disk 
+* allocation and assignment of record values
 * filtering and aggregating results
 
 In a full table scan of 8.5 million records, an example breakdown of timing would look like: 
 
     300ms allocate 8.5 mil records
     200ms load a column of low cardinality data off disk
-    400ms load a column of high cardinality data off disk
-    700ms scan & group full table results
+    800ms scan & group full table results
     100ms additional aggregation time per int column
 
-the execution time would roughly be 1,800ms to do a group by + aggregate.
-Since the execution model is parallelized, block by block, the actual execution
-time can be spread across multiple cores and across 4 cores executes in 780 -
-820ms.
+execution time would roughly be ~1,500ms to do a group by + aggregate with a
+single core on a single int and single string column, but since the execution
+model is parallelized, the execution time can be spread across multiple cores
 
 to be implemented
 -----------------
 
 * AdHoc Column definitions
-* Join table with Updateable info (use SQLite or something for it?)
-* Sessionization: (using a single join key) 
-  * aggregation
-  * filtering using event ordering
 * MapReduce execution model of custom code with an embedded engine)
 
+
+sessionization engine
+=====================
+
+to be documented

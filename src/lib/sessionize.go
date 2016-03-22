@@ -8,27 +8,21 @@ import "strings"
 import "strconv"
 import "sync"
 import "time"
+import "bytes"
 
-// DECIDE:
-// should metadata be emitted into an event stream or should it be pulled via a join key?
-// for now... i guess metadata should be made via join key?
+import "runtime/debug"
 
-// NEXT:
-// * to do this, need to have our scripts generate multiple record types?
-// * do a join using the group key for the session
-
-// AFTER:
+// TODO:
 // * add first pass at filters
-// * add event level aggregations
+// * add event level aggregations for a session
 
 // GOALS:
-// Query support: "time spent on site", "number of sessions", ("retention"?)
+// Query support: "time spent on site", "retention", "common paths"
 // Do not use too much memory, be able to run live queries
 
 // FILTERING
-// session contains an event (with specific criterion for the event)
-// session contains an event followed by specific event
-// session does not contain event
+// session contains an event (or not) with specific criterion for the event
+// session contains an event (or not) followed by specific event
 
 // Filters are defined via descriptions of specific records & what to pull out of it
 // event1: description
@@ -37,16 +31,15 @@ import "time"
 // filter: event2 does not exist
 // filter: event1 does not follow event2
 
-// AGGREGATING
-// Aggregation based metrics in timeline:
-// Aggregation of timelines:
-// * length of sessions
-// * actions per session
-// * frequency of sessions (by calendar day)
+// SESSION AGGREGATIONS
+// x length of sessions
+// x actions per session
+// x frequency of sessions (by calendar day)
+// x common session patterns (pathing)
 // * number of actions per fixed time period
-// * common session patterns
 
-var SINGLE_EVENT_DURATION = int64(30)
+var SINGLE_EVENT_DURATION = int64(30) // i think this means 30 seconds
+var BLOCKS_BEFORE_GC = 8
 
 type SessionSpec struct {
 	ExpireAfter int // Seconds to expire a session after not seeing any new events
@@ -76,6 +69,8 @@ type SessionList struct {
 
 	JoinTable *Table
 	Results   map[string]*SessionStats
+
+	PathStats map[string]int
 
 	Expiration     int
 	LastExpiration int
@@ -109,6 +104,11 @@ func (sl *SessionList) ExpireRecords() int {
 type ActiveSession struct {
 	Records RecordList
 	Stats   *SessionStats
+
+	Path       []string
+	PathKey    bytes.Buffer
+	PathLength int
+	PathStats  map[string]int
 }
 
 type SessionStats struct {
@@ -185,7 +185,7 @@ func (as *ActiveSession) IsExpired() bool {
 	return false
 }
 
-var SESSION_CUTOFF = 60 * 60 * 24 // 1 day
+var SESSION_CUTOFF = 60 * 60 * 6 // 3 hours
 
 func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 	prev_time := 0
@@ -198,8 +198,33 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 		return sessions
 	}
 
+	var path_key bytes.Buffer
+	var path_length = *FLAGS.PATH_LENGTH
+
 	for i, r := range as.Records {
 		time_val := int(r.Timestamp)
+
+		if r.Path != "" {
+			path_val := r.Path
+
+			for i := 1; i < path_length; i++ {
+				as.Path[i-1] = as.Path[i]
+				path_key.WriteString(as.Path[i])
+				path_key.WriteString(GROUP_DELIMITER)
+			}
+
+			as.Path[path_length-1] = path_val
+
+			path_key.WriteString(r.Path)
+
+			if as.PathLength < path_length {
+				as.PathLength++
+			} else {
+				as.PathStats[path_key.String()]++
+			}
+
+			path_key.Reset()
+		}
 
 		if prev_time > 0 && time_val-prev_time > SESSION_CUTOFF {
 			last_slice = as.Records[i:]
@@ -227,6 +252,8 @@ func (sl *SessionList) AddRecord(group_key string, r *Record) {
 	if !ok {
 		session = &ActiveSession{}
 		session.Records = make(RecordList, 0)
+		session.Path = make([]string, *FLAGS.PATH_LENGTH)
+		session.PathStats = make(map[string]int)
 		session.Stats = NewSessionStats()
 		sl.List[group_key] = session
 	}
@@ -238,6 +265,10 @@ func (as *ActiveSession) CombineSession(session *ActiveSession) {
 	for _, r := range session.Records {
 		as.AddRecord(r)
 	}
+
+	for k, v := range session.PathStats {
+		as.PathStats[k] += v
+	}
 }
 
 func (as *SessionList) NoMoreRecordsBefore(timestamp int) {
@@ -247,6 +278,7 @@ func (as *SessionList) NoMoreRecordsBefore(timestamp int) {
 func (ss *SessionSpec) Finalize() {
 
 	var groups []string
+	var path_stats map[string]int = make(map[string]int)
 
 	sl := ss.Sessions
 
@@ -292,6 +324,15 @@ func (ss *SessionSpec) Finalize() {
 		duration := as.Stats.Calendar.Max - as.Stats.Calendar.Min
 		retention := duration / int(time.Hour.Seconds()*24)
 		stats.Retention.addValue(retention)
+
+		for k, v := range as.PathStats {
+			path_stats[k] += v
+		}
+	}
+
+	ss.Sessions.PathStats = make(map[string]int)
+	for key, count := range path_stats {
+		ss.Sessions.PathStats[key] = count
 	}
 
 }
@@ -303,9 +344,19 @@ func (ss *SessionSpec) PrintResults() {
 	log.Println("SESSIONS", ss.Count)
 	log.Println("AVERAGE EVENTS PER SESSIONS", ss.Count/len(ss.Sessions.List))
 
-	for key, s := range ss.Sessions.Results {
-		s.PrintStats(key)
+	if *FLAGS.PATH_KEY != "" {
+		if *FLAGS.JSON {
+			printJson(ss.Sessions.PathStats)
+			fmt.Println("")
+		} else {
+			log.Println("PATHS", len(ss.Sessions.PathStats))
+		}
+	} else {
+		for key, s := range ss.Sessions.Results {
+			s.PrintStats(key)
+		}
 	}
+
 }
 
 func (ss *SessionSpec) CombineSessions(sessionspec *SessionSpec) {
@@ -354,8 +405,6 @@ func (a SortBlocksByTime) Less(i, j int) bool {
 	return a[i].Info.IntInfoMap[time_col].Min < a[j].Info.IntInfoMap[time_col].Min
 
 }
-
-var BLOCKS_BEFORE_GC = 8
 
 func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *SessionSpec) int {
 
@@ -422,6 +471,10 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 			blockQuery := CopyQuerySpec(querySpec)
 			blockSession := NewSessionSpec()
 			loadSpec := this_block.table.NewLoadSpec()
+			if *FLAGS.PATH_KEY != "" {
+				loadSpec.Str(*FLAGS.PATH_KEY)
+			}
+
 			loadSpec.Str(*FLAGS.SESSION_COL)
 			loadSpec.Int(*FLAGS.TIME_COL)
 
@@ -447,10 +500,16 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 			wg.Wait()
 
 			fmt.Fprintf(os.Stderr, "+")
+			go func() {
+				old_percent := debug.SetGCPercent(100)
+				debug.SetGCPercent(old_percent)
+			}()
+
 			result_lock.Lock()
 			masterSession.Sessions.NoMoreRecordsBefore(int(min_time))
 			masterSession.ExpireRecords()
 			result_lock.Unlock()
+
 		}
 
 	}

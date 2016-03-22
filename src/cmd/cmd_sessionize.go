@@ -15,6 +15,10 @@ func addSessionFlags() {
 	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
 	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
 	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
+	sybil.FLAGS.PATH_KEY = flag.String("path-key", "", "Field to use for pathing")
+	sybil.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
+	sybil.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
+	sybil.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
 }
 
 func RunSessionizeCmdLine() {
