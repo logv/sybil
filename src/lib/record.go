@@ -149,3 +149,47 @@ func (r *Record) AddSetField(name string, val []string) {
 		log.Fatalln("COULDNT SET SET VAL", name, val, name_id)
 	}
 }
+
+var COPY_RECORD_INTERNS = false
+
+func (r *Record) CopyRecord() *Record {
+	nr := Record{}
+
+	if len(r.Ints) > 0 {
+		if COPY_RECORD_INTERNS {
+			nr.Ints = r.Ints
+		} else {
+			nr.Ints = make([]IntField, len(r.Populated))
+		}
+	}
+
+	if len(r.Strs) > 0 {
+		if COPY_RECORD_INTERNS {
+			nr.Strs = r.Strs
+		} else {
+			nr.Strs = make([]StrField, len(r.Populated))
+		}
+	}
+
+	if len(r.SetMap) > 0 {
+		nr.SetMap = r.SetMap
+	}
+
+	if COPY_RECORD_INTERNS {
+		nr.Populated = r.Populated
+	} else {
+		nr.Populated = make([]int8, len(r.Populated))
+		for i, _ := range r.Populated {
+			nr.Strs[i] = r.Strs[i]
+			nr.Ints[i] = r.Ints[i]
+			nr.Populated[i] = r.Populated[i]
+		}
+	}
+
+	nr.Timestamp = r.Timestamp
+	nr.Path = r.Path
+
+	nr.block = r.block
+
+	return &nr
+}

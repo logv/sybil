@@ -54,6 +54,8 @@ type FlagDefs struct {
 	JOIN_GROUP *string
 	RETENTION  *bool
 
+	SESSION_CUTOFF *int
+
 	PATH_KEY    *string
 	PATH_LENGTH *int
 }

@@ -12,6 +12,7 @@ func addSessionFlags() {
 	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
 	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	sybil.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
+	sybil.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
 	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
 	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
 	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
