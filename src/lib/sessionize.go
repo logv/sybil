@@ -520,6 +520,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 			go func() {
 				old_percent := debug.SetGCPercent(100)
 				debug.SetGCPercent(old_percent)
+
 			}()
 
 			result_lock.Lock()

@@ -163,7 +163,7 @@ func check_if_broken(lockfile string, l *Lock) bool {
 	if err == nil {
 		pid_int, err = strconv.ParseInt(string(val), 10, 32)
 
-		if err != nil && string(val) != "" {
+		if err != nil {
 			l.broken = true
 			log.Println("CANT READ PID FROM INFO LOCK:", string(val), err)
 			log.Println("PUTTING INFO LOCK INTO RECOVERY")
