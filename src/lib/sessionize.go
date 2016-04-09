@@ -353,7 +353,9 @@ func (ss *SessionSpec) PrintResults() {
 	log.Println("UNIQUE SESSION IDS", len(ss.Sessions.List))
 
 	log.Println("SESSIONS", ss.Count)
-	log.Println("AVERAGE EVENTS PER SESSIONS", ss.Count/len(ss.Sessions.List))
+	if len(ss.Sessions.List) > 0 {
+		log.Println("AVERAGE EVENTS PER SESSIONS", ss.Count/len(ss.Sessions.List))
+	}
 
 	if *FLAGS.PATH_KEY != "" {
 		if *FLAGS.JSON {
@@ -387,22 +389,29 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 		r := records[i]
 
 		session_col := *FLAGS.SESSION_COL
-		field_id := r.block.get_key_id(session_col)
-		var group_key string
-		switch r.Populated[field_id] {
-		case INT_VAL:
-			group_key = strconv.FormatInt(int64(r.Ints[field_id]), 10)
+		var group_key = bytes.NewBufferString("")
 
-		case STR_VAL:
-			field_col := r.block.GetColumnInfo(field_id)
-			group_key = field_col.get_string_for_val(int32(r.Strs[field_id]))
+		cols := strings.Split(session_col, ",")
+		for _, col := range cols {
+			field_id := r.block.get_key_id(col)
+			switch r.Populated[field_id] {
+			case INT_VAL:
+				group_key.WriteString(strconv.FormatInt(int64(r.Ints[field_id]), 10))
 
-		case _NO_VAL:
-			log.Println("MISSING EVENT KEY!")
+			case STR_VAL:
+				field_col := r.block.GetColumnInfo(field_id)
+				group_key.WriteString(field_col.get_string_for_val(int32(r.Strs[field_id])))
+
+			case _NO_VAL:
+				log.Println("MISSING EVENT KEY!")
+
+			}
+
+			group_key.WriteString(GROUP_DELIMITER)
 
 		}
 
-		sessionSpec.Sessions.AddRecord(group_key, r)
+		sessionSpec.Sessions.AddRecord(group_key.String(), r)
 
 		records[i] = nil
 	}
@@ -489,7 +498,10 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 				loadSpec.Str(*FLAGS.PATH_KEY)
 			}
 
-			loadSpec.Str(*FLAGS.SESSION_COL)
+			cols := strings.Split(*FLAGS.SESSION_COL, ",")
+			for _, col := range cols {
+				loadSpec.Str(col)
+			}
 			loadSpec.Int(*FLAGS.TIME_COL)
 
 			block := this_block.table.LoadBlockFromDir(this_block.Name, &loadSpec, false)
