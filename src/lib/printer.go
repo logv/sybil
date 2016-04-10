@@ -43,11 +43,17 @@ func printTimeResults(querySpec *QuerySpec) {
 			key := strconv.FormatInt(int64(k), 10)
 			marshalled_results[key] = make([]ResultJSON, 0)
 
-			for _, r := range v {
-				_, ok := is_top_result[r.GroupByKey]
-				if ok {
-					marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
+			if *FLAGS.OP == "distinct" {
+				marshalled_results[key] = append(marshalled_results[key],
+					ResultJSON{"Distinct": len(v), "Count": len(v)})
+			} else {
+				for _, r := range v {
+					_, ok := is_top_result[r.GroupByKey]
+					if ok {
+						marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
+					}
 				}
+
 			}
 
 		}
@@ -57,7 +63,7 @@ func printTimeResults(querySpec *QuerySpec) {
 	}
 
 	for _, k := range keys {
-		fmt.Println("BUCKET", k, len(querySpec.TimeResults[k]))
+		fmt.Println("COUNT DISTINCT", k, len(querySpec.TimeResults[k]))
 	}
 
 }
@@ -109,17 +115,27 @@ func printSortedResults(querySpec *QuerySpec) {
 	if *FLAGS.JSON {
 		var results = make([]ResultJSON, 0)
 
-		for _, r := range sorted {
-			var res = r.toResultJSON(querySpec)
-			results = append(results, res)
+		if *FLAGS.OP == "distinct" {
+			results = append(results, ResultJSON{"Distinct": len(querySpec.Results)})
+
+		} else {
+
+			for _, r := range sorted {
+				var res = r.toResultJSON(querySpec)
+				results = append(results, res)
+			}
 		}
 
 		printJson(results)
 		return
 	}
 
-	for _, v := range sorted {
-		printResult(querySpec, v)
+	if *FLAGS.OP == "distinct" {
+		fmt.Println("DISTINCT RESULTS", len(querySpec.Results))
+	} else {
+		for _, v := range sorted {
+			printResult(querySpec, v)
+		}
 	}
 }
 
@@ -182,12 +198,16 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	count := 0
-	for _, v := range querySpec.Results {
-		printResult(querySpec, v)
-		count++
-		if count >= int(querySpec.Limit) {
-			return
+	if *FLAGS.OP == "distinct" {
+		fmt.Println("DISTINCT VALUES:", len(querySpec.Results))
+	} else {
+		count := 0
+		for _, v := range querySpec.Results {
+			printResult(querySpec, v)
+			count++
+			if count >= int(querySpec.Limit) {
+				return
+			}
 		}
 	}
 }

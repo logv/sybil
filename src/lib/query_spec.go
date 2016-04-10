@@ -129,6 +129,10 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 		agg.op_id = OP_HIST
 	}
 
+	if op == "distinct" {
+		agg.op_id = OP_DISTINCT
+	}
+
 	_, ok := t.IntInfo[col_id]
 	if !ok {
 		// TODO: tell our table we need to load all records!

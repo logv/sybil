@@ -13,9 +13,10 @@ var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
 
 const (
-	NO_OP   = iota
-	OP_AVG  = iota
-	OP_HIST = iota
+	NO_OP       = iota
+	OP_AVG      = iota
+	OP_HIST     = iota
+	OP_DISTINCT = iota
 )
 
 var GROUP_DELIMITER = "\t"
@@ -175,7 +176,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 		for _, a := range querySpec.Aggregations {
-			if r.Populated[a.name_id] == INT_VAL {
+			switch r.Populated[a.name_id] {
+			case INT_VAL:
 				val := int(r.Ints[a.name_id])
 
 				hist, ok := added_record.Hists[a.name]
