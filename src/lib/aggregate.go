@@ -104,7 +104,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		for i, g := range querySpec.Groups {
 			copy(bs, zero)
 
-			if columns[g.name_id] == nil {
+			if columns[g.name_id] == nil && r.Populated[g.name_id] != _NO_VAL {
 				columns[g.name_id] = r.block.GetColumnInfo(g.name_id)
 				columns[g.name_id].Type = r.Populated[g.name_id]
 			}
