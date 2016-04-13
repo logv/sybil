@@ -7,7 +7,6 @@ import "fmt"
 import "flag"
 import "strings"
 import "time"
-import "strconv"
 import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -59,9 +58,6 @@ func RunQueryCmdLine() {
 	ints := make([]string, 0)
 	groups := make([]string, 0)
 	strs := make([]string, 0)
-	strfilters := make([]string, 0)
-	intfilters := make([]string, 0)
-	setfilters := make([]string, 0)
 
 	if *sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, ",")
@@ -76,17 +72,6 @@ func RunQueryCmdLine() {
 	if *sybil.FLAGS.INTS != "" {
 		ints = strings.Split(*sybil.FLAGS.INTS, ",")
 	}
-	if *sybil.FLAGS.INT_FILTERS != "" {
-		intfilters = strings.Split(*sybil.FLAGS.INT_FILTERS, ",")
-	}
-	if *sybil.FLAGS.STR_FILTERS != "" {
-		strfilters = strings.Split(*sybil.FLAGS.STR_FILTERS, ",")
-	}
-
-	if *sybil.FLAGS.SET_FILTERS != "" {
-		setfilters = strings.Split(*sybil.FLAGS.SET_FILTERS, ",")
-	}
-
 	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
@@ -136,48 +121,8 @@ func RunQueryCmdLine() {
 	}
 
 	loadSpec := t.NewLoadSpec()
-	filters := []sybil.Filter{}
-	for _, filt := range intfilters {
-		tokens := strings.Split(filt, ":")
-		col := tokens[0]
-		op := tokens[1]
-		val, _ := strconv.ParseInt(tokens[2], 10, 64)
-
-		if col == *sybil.FLAGS.TIME_COL {
-			bucket := int64(*sybil.FLAGS.TIME_BUCKET)
-			new_val := int64(val/bucket) * bucket
-
-			if val != new_val {
-				log.Println("ALIGNING TIME FILTER TO BUCKET", val, new_val)
-				val = new_val
-			}
-		}
-
-		filters = append(filters, t.IntFilter(col, op, int(val)))
-		loadSpec.Int(col)
-	}
-
-	for _, filter := range setfilters {
-		tokens := strings.Split(filter, ":")
-		col := tokens[0]
-		op := tokens[1]
-		val := tokens[2]
-		loadSpec.Set(col)
-
-		filters = append(filters, t.SetFilter(col, op, val))
-
-	}
-
-	for _, filter := range strfilters {
-		tokens := strings.Split(filter, ":")
-		col := tokens[0]
-		op := tokens[1]
-		val := tokens[2]
-		loadSpec.Str(col)
-
-		filters = append(filters, t.StrFilter(col, op, val))
-
-	}
+	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
+	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
 	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
 

@@ -2,6 +2,99 @@ package sybil
 
 import "regexp"
 import "log"
+import "strings"
+import "strconv"
+
+// This is the passed in flags
+type FilterSpec struct {
+	Int string
+	Str string
+	Set string
+}
+
+func checkTable(tokens []string, t *Table) bool {
+	if len(tokens) > 3 {
+		return t.Name == tokens[3]
+	} else {
+		return true
+	}
+}
+
+func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter {
+	strfilters := make([]string, 0)
+	intfilters := make([]string, 0)
+	setfilters := make([]string, 0)
+	if filterSpec.Int != "" {
+		intfilters = strings.Split(filterSpec.Int, ",")
+	}
+	if filterSpec.Str != "" {
+		strfilters = strings.Split(filterSpec.Str, ",")
+	}
+
+	if filterSpec.Set != "" {
+		setfilters = strings.Split(filterSpec.Set, ",")
+	}
+
+	filters := []Filter{}
+
+	for _, filt := range intfilters {
+		tokens := strings.Split(filt, ":")
+		col := tokens[0]
+		op := tokens[1]
+		val, _ := strconv.ParseInt(tokens[2], 10, 64)
+
+		if checkTable(tokens, t) != true {
+			continue
+		}
+
+		if col == *FLAGS.TIME_COL {
+			bucket := int64(*FLAGS.TIME_BUCKET)
+			new_val := int64(val/bucket) * bucket
+
+			if val != new_val {
+				log.Println("ALIGNING TIME FILTER TO BUCKET", val, new_val)
+				val = new_val
+			}
+		}
+
+		filters = append(filters, t.IntFilter(col, op, int(val)))
+		loadSpec.Int(col)
+	}
+
+	for _, filter := range setfilters {
+		tokens := strings.Split(filter, ":")
+		col := tokens[0]
+		op := tokens[1]
+		val := tokens[2]
+
+		if checkTable(tokens, t) != true {
+			continue
+		}
+		loadSpec.Set(col)
+
+		filters = append(filters, t.SetFilter(col, op, val))
+
+	}
+
+	for _, filter := range strfilters {
+		tokens := strings.Split(filter, ":")
+		col := tokens[0]
+		op := tokens[1]
+		val := tokens[2]
+
+		if checkTable(tokens, t) != true {
+			continue
+		}
+
+		loadSpec.Str(col)
+
+		filters = append(filters, t.StrFilter(col, op, val))
+
+	}
+
+	return filters
+
+}
 
 // FILTERS RETURN TRUE ON MATCH SUCCESS
 type NoFilter struct{}

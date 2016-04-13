@@ -20,6 +20,10 @@ func addSessionFlags() {
 	sybil.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
 	sybil.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
 	sybil.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
+
+	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
 }
 
 func RunSessionizeCmdLine() {
@@ -89,6 +93,4 @@ func RunSessionizeCmdLine() {
 
 	end := time.Now()
 	log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
-	querySpec.PrintResults()
-
 }

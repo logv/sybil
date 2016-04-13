@@ -67,7 +67,8 @@ type SessionList struct {
 	JoinTable *Table
 	Results   map[string]*SessionStats
 
-	PathStats map[string]int
+	PathCounts  map[string]int
+	PathUniques map[string]int
 
 	Expiration     int
 	LastExpiration int
@@ -208,6 +209,9 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 	var path_length = *FLAGS.PATH_LENGTH
 	current_session := make(RecordList, 0)
 
+	var avg_delta = 0.0
+	var num_delta = 0.0
+	var prev_deltas = make([]float64, 0)
 	for _, r := range as.Records {
 		time_val := int(r.Timestamp)
 
@@ -239,7 +243,26 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 			current_session = make(RecordList, 0)
 			current_session = append(current_session, r.CopyRecord())
 
+			log.Println("SESSION DISPERSION", time_val, avg_delta, num_delta, prev_deltas)
+
+			avg_delta = 0
+			num_delta = 0
+			prev_deltas = make([]float64, 0)
+
 		} else {
+
+			if prev_time > 0 {
+				delta := float64(time_val - prev_time)
+				prev_deltas = append(prev_deltas, delta)
+				num_delta += 1
+				div_delta := avg_delta
+				if div_delta == 0 {
+					div_delta = 1
+				}
+
+				avg_delta = avg_delta + (delta/div_delta)/num_delta
+			}
+
 			current_session = append(current_session, r.CopyRecord())
 		}
 		prev_time = time_val
@@ -287,7 +310,8 @@ func (as *SessionList) NoMoreRecordsBefore(timestamp int) {
 func (ss *SessionSpec) Finalize() {
 
 	var groups []string
-	var path_stats map[string]int = make(map[string]int)
+	var path_uniques map[string]int = make(map[string]int)
+	var path_counts map[string]int = make(map[string]int)
 
 	sl := ss.Sessions
 
@@ -330,7 +354,8 @@ func (ss *SessionSpec) Finalize() {
 		}
 
 		for k, v := range as.PathStats {
-			path_stats[k] += v
+			path_counts[k] += v
+			path_uniques[k] += 1
 		}
 
 		stats.CombineStats(as.Stats)
@@ -341,9 +366,11 @@ func (ss *SessionSpec) Finalize() {
 
 	}
 
-	ss.Sessions.PathStats = make(map[string]int)
-	for key, count := range path_stats {
-		ss.Sessions.PathStats[key] = count
+	ss.Sessions.PathUniques = make(map[string]int)
+	ss.Sessions.PathCounts = make(map[string]int)
+	for key, count := range path_counts {
+		ss.Sessions.PathCounts[key] = count
+		ss.Sessions.PathUniques[key] = path_uniques[key]
 	}
 
 }
@@ -359,10 +386,13 @@ func (ss *SessionSpec) PrintResults() {
 
 	if *FLAGS.PATH_KEY != "" {
 		if *FLAGS.JSON {
-			printJson(ss.Sessions.PathStats)
+			ret := make(map[string]interface{})
+			ret["uniques"] = ss.Sessions.PathUniques
+			ret["counts"] = ss.Sessions.PathCounts
+			printJson(ret)
 			fmt.Println("")
 		} else {
-			log.Println("PATHS", len(ss.Sessions.PathStats))
+			log.Println("PATHS", len(ss.Sessions.PathCounts))
 		}
 	} else {
 		for key, s := range ss.Sessions.Results {
@@ -387,6 +417,21 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 	records := *recordsptr
 	for i := 0; i < len(records); i++ {
 		r := records[i]
+
+		add := true
+		// FILTERING
+		for j := 0; j < len(querySpec.Filters); j++ {
+			// returns True if the record matches!
+			ret := querySpec.Filters[j].Filter(r) != true
+			if ret {
+				add = false
+				break
+			}
+		}
+
+		if !add {
+			continue
+		}
 
 		session_col := *FLAGS.SESSION_COL
 		var group_key = bytes.NewBufferString("")
@@ -479,6 +524,8 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 	result_lock := sync.Mutex{}
 	count_lock := sync.Mutex{}
 
+	filterSpec := FilterSpec{Int: *FLAGS.INT_FILTERS, Str: *FLAGS.STR_FILTERS, Set: *FLAGS.SET_FILTERS}
+
 	for i, b := range blocks {
 
 		min_time := b.Info.IntInfoMap[*FLAGS.TIME_COL].Min
@@ -503,6 +550,9 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 				loadSpec.Str(col)
 			}
 			loadSpec.Int(*FLAGS.TIME_COL)
+
+			filters := BuildFilters(this_block.table, &loadSpec, filterSpec)
+			blockQuery.Filters = filters
 
 			block := this_block.table.LoadBlockFromDir(this_block.Name, &loadSpec, false)
 			if block != nil {

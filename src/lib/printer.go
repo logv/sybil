@@ -198,7 +198,7 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if *FLAGS.OP == "distinct" {
+	if FLAGS.OP != nil && *FLAGS.OP == "distinct" {
 		fmt.Println("DISTINCT VALUES:", len(querySpec.Results))
 	} else {
 		count := 0
@@ -214,8 +214,6 @@ func PrintResults(querySpec *QuerySpec) {
 
 func (qs *QuerySpec) PrintResults() {
 	if *FLAGS.PRINT {
-		log.Println("PRINTING RESULTS")
-
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
 		} else if qs.OrderBy != "" {
