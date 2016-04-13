@@ -24,6 +24,8 @@ func addQueryFlags() {
 	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
 	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+
+	sybil.FLAGS.HIST_BUCKET = flag.Int("int-bucket", 0, "Int hist bucket size")
 	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
 	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
 	LIST_TABLES = flag.Bool("tables", false, "List tables")

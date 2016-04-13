@@ -24,6 +24,7 @@ type FlagDefs struct {
 	TIME        *bool
 	TIME_COL    *string
 	TIME_BUCKET *int
+	HIST_BUCKET *int
 
 	PRINT_KEYS         *bool
 	LOAD_AND_QUERY     *bool

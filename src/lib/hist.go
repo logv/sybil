@@ -1,7 +1,7 @@
 package sybil
 
-import "sort"
 import "math"
+import "sort"
 import "strconv"
 
 var NUM_BUCKETS = 1000
@@ -43,6 +43,11 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 
 	size := info.Max - info.Min
 	h.bucket_size = int(size / int64(buckets))
+
+	if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
+		h.bucket_size = *FLAGS.HIST_BUCKET
+	}
+
 	if h.bucket_size == 0 {
 		if size < 100 {
 			h.bucket_size = 1
