@@ -232,6 +232,11 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 
 			col := columns[g.name_id]
 
+			if col == nil {
+				buffer.WriteString(GROUP_DELIMITER)
+				continue
+			}
+
 			val := binary.LittleEndian.Uint64(bs)
 			switch col.Type {
 			case INT_VAL:
