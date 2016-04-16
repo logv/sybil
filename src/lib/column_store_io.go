@@ -8,6 +8,7 @@ import "encoding/gob"
 import "strings"
 import "runtime/debug"
 import "time"
+import "regexp"
 
 type ValueMap map[int64][]uint32
 
@@ -511,10 +512,36 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	col := tb.GetColumnInfo(col_id)
 	// unpack the string table
+
+	// Run our replacements!
+	str_replace, ok := OPTS.STR_REPLACEMENTS[into.Name]
+	bucket_replace := make(map[int32]int32)
+	var re *regexp.Regexp
+	if ok {
+		re, err = regexp.Compile(str_replace.pattern)
+	}
+
 	for k, v := range into.StringTable {
-		col.StringTable[v] = int32(k)
+		var nv = v
+		if re != nil {
+			nv = re.ReplaceAllString(v, str_replace.replace)
+		}
+
+		existing_key, exists := col.StringTable[nv]
+		log.Println("REPLACING", k, v, nv, existing_key)
+
+		v = nv
+
+		if exists {
+			bucket_replace[int32(k)] = existing_key
+		} else {
+			bucket_replace[int32(k)] = int32(k)
+			col.StringTable[v] = int32(k)
+		}
+
 		string_lookup[int32(k)] = v
 	}
+
 	col.val_string_id_lookup = string_lookup
 
 	is_path_col := false
@@ -523,6 +550,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 	var record *Record
 	var r uint32
+
 	if into.BucketEncoded {
 		prev := uint32(0)
 		did := into.DeltaEncodedIDs
@@ -530,6 +558,12 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 		for _, bucket := range into.Bins {
 			prev = 0
 			for _, r = range bucket.Records {
+
+				value := bucket.Value
+				new_value, should_replace := bucket_replace[value]
+				if should_replace {
+					value = new_value
+				}
 
 				if did {
 					r = prev + r
@@ -545,10 +579,10 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 				}
 
 				record.Populated[col_id] = STR_VAL
-				record.Strs[col_id] = StrField(bucket.Value)
+				record.Strs[col_id] = StrField(new_value)
 
 				if is_path_col {
-					record.Path = string_lookup[bucket.Value]
+					record.Path = string_lookup[new_value]
 				}
 			}
 		}

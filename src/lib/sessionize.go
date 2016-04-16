@@ -243,8 +243,6 @@ func (as *ActiveSession) ExpireRecords(timestamp int) []RecordList {
 			current_session = make(RecordList, 0)
 			current_session = append(current_session, r.CopyRecord())
 
-			log.Println("SESSION DISPERSION", time_val, avg_delta, num_delta, prev_deltas)
-
 			avg_delta = 0
 			num_delta = 0
 			prev_deltas = make([]float64, 0)

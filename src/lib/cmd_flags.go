@@ -12,6 +12,7 @@ type FlagDefs struct {
 	PRINT       *bool
 	INT_FILTERS *string
 	STR_FILTERS *string
+	STR_REPLACE *string // regex replacement for strings
 	SET_FILTERS *string
 
 	SESSION_COL *string
@@ -61,9 +62,15 @@ type FlagDefs struct {
 	PATH_LENGTH *int
 }
 
+type StrReplace struct {
+	pattern string
+	replace string
+}
+
 type OptionDefs struct {
 	SORT_COUNT              string
 	SAMPLES                 bool
+	STR_REPLACEMENTS        map[string]StrReplace
 	WEIGHT_COL              bool
 	WEIGHT_COL_ID           int16
 	DELTA_ENCODE_INT_VALUES bool

@@ -306,6 +306,21 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.Table = t
 	}
 
+	// Load and setup our OPTS.STR_REPLACEMENTS
+	OPTS.STR_REPLACEMENTS = make(map[string]StrReplace)
+	if FLAGS.STR_REPLACE != nil {
+		var replacements = strings.Split(*FLAGS.STR_REPLACE, ",")
+		for _, repl := range replacements {
+			tokens := strings.Split(repl, ":")
+			if len(tokens) > 2 {
+				col := tokens[0]
+				pattern := tokens[1]
+				replacement := tokens[2]
+				OPTS.STR_REPLACEMENTS[col] = StrReplace{pattern, replacement}
+			}
+		}
+	}
+
 	var wg sync.WaitGroup
 	block_specs := make(map[string]*QuerySpec)
 
