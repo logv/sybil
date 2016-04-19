@@ -152,11 +152,11 @@ func (ss *SessionStats) SummarizeSession(records RecordList) {
 		return
 	}
 
-	ss.NumEvents.addValue(len(records))
-	ss.NumSessions.addValue(1)
+	ss.NumEvents.addValue(int64(len(records)))
+	ss.NumSessions.addValue(int64(1))
 
 	if ss.LastSessionEnd > 0 {
-		ss.SessionDelta.addValue(int(records[0].Timestamp - ss.LastSessionEnd))
+		ss.SessionDelta.addValue(int64(records[0].Timestamp - ss.LastSessionEnd))
 	}
 
 	for _, r := range records {
@@ -164,13 +164,13 @@ func (ss *SessionStats) SummarizeSession(records RecordList) {
 	}
 
 	if len(records) == 1 {
-		ss.SessionDuration.addValue(int(SINGLE_EVENT_DURATION))
+		ss.SessionDuration.addValue(int64(SINGLE_EVENT_DURATION))
 		return
 	}
 
 	last_index := len(records) - 1
 	delta := records[last_index].Timestamp - records[0].Timestamp
-	ss.SessionDuration.addValue(int(delta))
+	ss.SessionDuration.addValue(int64(delta))
 	ss.LastSessionEnd = records[last_index].Timestamp
 
 }
@@ -360,7 +360,7 @@ func (ss *SessionSpec) Finalize() {
 		duration := as.Stats.Calendar.Max - as.Stats.Calendar.Min
 
 		retention := duration / int(time.Hour.Seconds()*24)
-		stats.Retention.addValue(retention)
+		stats.Retention.addValue(int64(retention))
 
 	}
 

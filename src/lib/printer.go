@@ -133,6 +133,10 @@ func printSortedResults(querySpec *QuerySpec) {
 	if *FLAGS.OP == "distinct" {
 		fmt.Println("DISTINCT RESULTS", len(querySpec.Results))
 	} else {
+		if len(sorted) > 1 {
+			printResult(querySpec, querySpec.Cumulative)
+		}
+
 		for _, v := range sorted {
 			printResult(querySpec, v)
 		}
@@ -202,6 +206,12 @@ func PrintResults(querySpec *QuerySpec) {
 		fmt.Println("DISTINCT VALUES:", len(querySpec.Results))
 	} else {
 		count := 0
+
+		log.Println("PRINTING CUMULATIVE RESULT")
+		if len(querySpec.Results) > 1 {
+			printResult(querySpec, querySpec.Cumulative)
+		}
+
 		for _, v := range querySpec.Results {
 			printResult(querySpec, v)
 			count++

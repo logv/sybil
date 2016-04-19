@@ -1,5 +1,6 @@
 package sybil
 
+import "log"
 import "math"
 import "sort"
 import "strconv"
@@ -7,8 +8,8 @@ import "strconv"
 var NUM_BUCKETS = 1000
 
 type Hist struct {
-	Max     int
-	Min     int
+	Max     int64
+	Min     int64
 	Samples int
 	Count   int64
 	Avg     float64
@@ -19,29 +20,26 @@ type Hist struct {
 	avgs              []float64
 	track_percentiles bool
 
-	outliers   []int
-	underliers []int
+	outliers   []int64
+	underliers []int64
+
+	table *Table
+	info  *IntInfo
 }
 
-func (t *Table) NewHist(info *IntInfo) *Hist {
-
-	buckets := NUM_BUCKETS // resolution?
-	h := &Hist{}
-
-	h.num_buckets = buckets
-
+func (h *Hist) SetupBuckets(buckets int, min, max int64) {
 	// set up initial variables for max and min to be extrema in other
 	// direction
-	h.Max = int(info.Min)
-	h.Min = int(info.Max)
-
 	h.Avg = 0
 	h.Count = 0
+	h.Min = min
+	h.Max = max
 
-	h.outliers = make([]int, 0)
-	h.underliers = make([]int, 0)
+	h.outliers = make([]int64, 0)
+	h.underliers = make([]int64, 0)
 
-	size := info.Max - info.Min
+	size := int64(max - min)
+	h.num_buckets = buckets
 	h.bucket_size = int(size / int64(buckets))
 
 	if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
@@ -63,6 +61,17 @@ func (t *Table) NewHist(info *IntInfo) *Hist {
 	h.values = make([]int64, h.num_buckets+1)
 	h.avgs = make([]float64, h.num_buckets+1)
 
+}
+
+func (t *Table) NewHist(info *IntInfo) *Hist {
+
+	buckets := NUM_BUCKETS // resolution?
+	h := &Hist{}
+	h.table = t
+	h.info = info
+
+	h.SetupBuckets(buckets, info.Min, info.Max)
+
 	return h
 }
 
@@ -70,7 +79,7 @@ func (h *Hist) TrackPercentiles() {
 	h.track_percentiles = true
 }
 
-func (h *Hist) addValue(value int) {
+func (h *Hist) addValue(value int64) {
 	h.addWeightedValue(value, 1)
 }
 
@@ -78,15 +87,15 @@ func (h *Hist) Sum() int64 {
 	return int64(h.Avg * float64(h.Count))
 }
 
-func (h *Hist) addWeightedValue(value int, weight int64) {
-	if OPTS.WEIGHT_COL {
+func (h *Hist) addWeightedValue(value int64, weight int64) {
+	if OPTS.WEIGHT_COL || weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {
 		h.Count++
 	}
 
-	h.Avg = h.Avg + (float64(value)-h.Avg)/float64(h.Count)*float64(weight)
+	h.Avg = h.Avg + ((float64(value)-h.Avg)/float64(h.Count))*float64(weight)
 
 	if value > h.Max {
 		h.Max = value
@@ -100,11 +109,11 @@ func (h *Hist) addWeightedValue(value int, weight int64) {
 		return
 	}
 
-	bucket_value := (value - h.Min) / h.bucket_size
+	bucket_value := (value - h.Min) / int64(h.bucket_size)
 
-	if bucket_value >= len(h.values) {
+	if bucket_value >= int64(len(h.values)) {
 		h.outliers = append(h.outliers, value)
-		bucket_value = len(h.values) - 1
+		bucket_value = int64(len(h.values) - 1)
 	}
 
 	if bucket_value < 0 {
@@ -121,12 +130,12 @@ func (h *Hist) addWeightedValue(value int, weight int64) {
 	h.avgs[bucket_value] = partial + ((float64(value) - partial) / float64(h.values[bucket_value]) * float64(weight))
 }
 
-func (h *Hist) GetPercentiles() []int {
+func (h *Hist) GetPercentiles() []int64 {
 	if h.Count == 0 {
-		return make([]int, 0)
+		return make([]int64, 0)
 	}
 
-	percentiles := make([]int, 101)
+	percentiles := make([]int64, 101)
 	keys := make([]int, 0)
 
 	// unpack the bucket values!
@@ -143,14 +152,23 @@ func (h *Hist) GetPercentiles() []int {
 		count = count + key_count
 		p := (100 * count) / h.Count
 		for ip := prev_p; ip <= p; ip++ {
-			percentiles[ip] = (k * h.bucket_size) + h.Min
+			percentiles[ip] = (int64(k) * int64(h.bucket_size)) + h.Min
 
 		}
-		percentiles[p] = k
+		percentiles[p] = int64(k)
 		prev_p = p
 	}
 
 	return percentiles[:100]
+}
+
+func (h *Hist) GetMeanVariance() float64 {
+	return h.GetVariance() / float64(h.Count)
+}
+
+func (h *Hist) GetVariance() float64 {
+	std := h.GetStdDev()
+	return std * std
 }
 
 // VARIANCE is defined as the squared error from the mean
@@ -160,24 +178,25 @@ func (h *Hist) GetStdDev() float64 {
 
 	sum_variance := float64(0)
 	for bucket, count := range h.values {
-		val := bucket*h.bucket_size + h.Min
-		delta := math.Pow(float64(val)-h.Avg, 2)
+		val := int64(bucket)*int64(h.bucket_size) + h.Min
+		delta := float64(val) - h.Avg
+
 		ratio := float64(count) / float64(h.Count)
 
 		// unbiased variance. probably unstable
-		sum_variance = sum_variance + math.Sqrt(float64(delta)*ratio)
+		sum_variance += (float64(delta*delta) * ratio)
 	}
 
 	for _, val := range h.outliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
-		sum_variance = sum_variance + math.Sqrt(float64(delta)*ratio)
+		sum_variance += (float64(delta) * ratio)
 	}
 
 	for _, val := range h.underliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
-		sum_variance = sum_variance + math.Sqrt(float64(delta)*ratio)
+		sum_variance += (float64(delta) * ratio)
 	}
 
 	return math.Sqrt(sum_variance)
@@ -187,7 +206,7 @@ func (h *Hist) GetBuckets() map[string]int64 {
 	ret := make(map[string]int64, 0)
 
 	for k, v := range h.values {
-		ret[strconv.FormatInt(int64(k*h.bucket_size+h.Min), 10)] = v
+		ret[strconv.FormatInt(int64(k)*int64(h.bucket_size)+h.Min, 10)] = v
 	}
 
 	for _, v := range h.outliers {
@@ -219,4 +238,17 @@ func (h *Hist) Combine(next_hist *Hist) {
 
 	h.Samples = h.Samples + next_hist.Samples
 	h.Count = total
+}
+
+func (h *Hist) Print() {
+	vals := make(map[int64]int64)
+
+	for val_index, count := range h.values {
+		if count > 0 {
+			val := int64(val_index)*int64(h.bucket_size) + h.Min
+			vals[val] = count
+		}
+	}
+
+	log.Println("HIST COUNTS ARE", vals)
 }

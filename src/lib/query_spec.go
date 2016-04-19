@@ -13,6 +13,7 @@ type QuerySpec struct {
 	Limit      int16
 	TimeBucket int
 
+	Cumulative  *Result
 	Results     ResultMap
 	TimeResults map[int]ResultMap
 	Sorted      []*Result
@@ -80,12 +81,14 @@ func (rs *Result) Combine(next_result *Result) {
 	total_count := rs.Count + next_result.Count
 
 	// combine histograms...
-	for k, v := range next_result.Hists {
+	for k, h := range next_result.Hists {
 		_, ok := rs.Hists[k]
 		if !ok {
-			rs.Hists[k] = v
+			nh := h.table.NewHist(h.info)
+			nh.Combine(h)
+			rs.Hists[k] = nh
 		} else {
-			rs.Hists[k].Combine(v)
+			rs.Hists[k].Combine(h)
 		}
 	}
 
@@ -112,7 +115,6 @@ func (querySpec *QuerySpec) ResetResults() {
 		}
 	}
 }
-
 func (t *Table) Grouping(name string) Grouping {
 	col_id := t.get_key_id(name)
 	return Grouping{name, col_id}

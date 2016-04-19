@@ -40,6 +40,7 @@ func addQueryFlags() {
 	sybil.FLAGS.SKIP_ROWSTORE = flag.Bool("no-read-log", false, "skip reading the ingestion log")
 
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
+	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
 }
 
@@ -209,6 +210,10 @@ func RunQueryCmdLine() {
 			end := time.Now()
 			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.PrintResults()
+
+			if sybil.FLAGS.ANOVA_ICC != nil && *sybil.FLAGS.ANOVA_ICC {
+				querySpec.CalculateICC()
+			}
 		}
 
 	}

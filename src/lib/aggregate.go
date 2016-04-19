@@ -178,7 +178,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		for _, a := range querySpec.Aggregations {
 			switch r.Populated[a.name_id] {
 			case INT_VAL:
-				val := int(r.Ints[a.name_id])
+				val := int64(r.Ints[a.name_id])
 
 				hist, ok := added_record.Hists[a.name]
 
@@ -290,8 +290,15 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	master_result := make(ResultMap)
 	master_time_result := make(map[int]ResultMap)
 
+	cumulative_result := NewResult()
+	cumulative_result.GroupByKey = "TOTAL"
+
 	for _, spec := range block_specs {
 		master_result.Combine(&spec.Results)
+
+		for _, result := range spec.Results {
+			cumulative_result.Combine(result)
+		}
 
 		for i, v := range spec.TimeResults {
 			mval, ok := master_time_result[i]
@@ -311,6 +318,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 		}
 	}
 
+	resultSpec.Cumulative = cumulative_result
 	resultSpec.TimeBucket = querySpec.TimeBucket
 	resultSpec.TimeResults = master_time_result
 	resultSpec.Results = master_result

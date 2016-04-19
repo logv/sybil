@@ -528,7 +528,6 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 		}
 
 		existing_key, exists := col.StringTable[nv]
-		log.Println("REPLACING", k, v, nv, existing_key)
 
 		v = nv
 

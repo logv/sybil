@@ -515,6 +515,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		aend := time.Now()
 		log.Println("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
 
+		querySpec.Cumulative = resultSpec.Cumulative
+
 		querySpec.Results = resultSpec.Results
 		querySpec.TimeResults = resultSpec.TimeResults
 

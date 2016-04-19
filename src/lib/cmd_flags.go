@@ -51,15 +51,19 @@ type FlagDefs struct {
 
 	UPDATE_TABLE_INFO *bool
 
+	// Join keys
 	JOIN_TABLE *string
 	JOIN_KEY   *string
 	JOIN_GROUP *string
-	RETENTION  *bool
 
+	// Sessionization stuff
 	SESSION_CUTOFF *int
+	RETENTION      *bool
+	PATH_KEY       *string
+	PATH_LENGTH    *int
 
-	PATH_KEY    *string
-	PATH_LENGTH *int
+	// STATS
+	ANOVA_ICC *bool
 }
 
 type StrReplace struct {
@@ -104,6 +108,7 @@ func SetDefaults() {
 	FLAGS.LOAD_THEN_QUERY = &FALSE
 	FLAGS.READ_INGESTION_LOG = &TRUE
 	FLAGS.SKIP_ROWSTORE = &FALSE
+	FLAGS.ANOVA_ICC = &FALSE
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 	FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
