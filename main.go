@@ -8,7 +8,7 @@ import "log"
 func main() {
 
 	if len(os.Args) < 2 {
-		log.Fatal("Command should be one of: ingest, digest, query, index")
+		log.Fatal("Command should be one of: ingest, digest, query, rebuild")
 	}
 
 	first_arg := os.Args[1]
@@ -27,6 +27,8 @@ func main() {
 		cmd.RunQueryCmdLine()
 	case "index":
 		cmd.RunIndexCmdLine()
+	case "rebuild":
+		cmd.RunRebuildCmdLine()
 	case "inspect":
 		cmd.RunInspectCmdLine()
 	default:
