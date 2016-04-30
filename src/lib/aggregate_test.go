@@ -171,7 +171,7 @@ func TestHistograms(test *testing.T) {
 			val := ages[index]
 
 			// TODO: margin of error should be less than 1!
-			if math.Abs(float64(v-val)) > 1 {
+			if math.Abs(float64(v-int64(val))) > 1 {
 				test.Error("P", k, "VAL", v, "EXPECTED", val)
 			}
 		}

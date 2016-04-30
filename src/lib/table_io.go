@@ -109,8 +109,16 @@ func (t *Table) saveTableInfo(fname string) {
 
 	log.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
 
-	tempfile, _ := ioutil.TempFile(dirname, "info.db")
-	network.WriteTo(tempfile)
+	tempfile, err := ioutil.TempFile(dirname, "info.db")
+	if err != nil {
+		log.Fatalln("ERROR CREATING TEMP FILE FOR TABLE INFO", err)
+	}
+
+	_, err = network.WriteTo(tempfile)
+	if err != nil {
+		log.Fatalln("ERROR SAVING TABLE INFO INTO TEMPFILE", err)
+	}
+
 	os.Rename(tempfile.Name(), filename)
 	os.Create(flagfile)
 }
