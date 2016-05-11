@@ -1,11 +1,35 @@
-sybil is a write once analytics datastore with no up front schema requirements;
-just log JSON records to a table and run queries. written in Go, sybil is
-designed for fast ad-hoc analysis of multi-dimensional data
+Sybil is a write once analytics datastore with no up front table schema requirements;
+just log JSON records to a table and run queries. Written in Go, sybil is
+designed for fast ad-hoc analysis of multi-dimensional data on a single machine.
+
+advantages
+----------
+
+  * Easy to setup and get data inside sybil - just pipe JSON on stdin to sybil
+  * Supports histograms (and percentiles), standard deviations and time series roll ups
+  * Runs really fast full table queries (analyze millions of samples in under a second!)
+  * Lower disk usage through per column compression schemes
+  * Serverless design with controlled memory usage
+
+disadvantages
+-------------
+
+  * Not optimized for write speed, mainly for query speed
+  * Does not support JOINS
+  * Doesn't have a transaction log or full ACID reliability guarantees
+  * No UPDATE operation on data - only writes
+  * Sybil is meant for use on a single machine, no sharding
 
 installation
 ============
 
     go get github.com/logV/sybil
+
+documentation
+=============
+
+[the wiki](http://github.com/logv/sybil/wiki)
+
 
 usage
 =====
@@ -41,3 +65,6 @@ querying records
 
     # make that a time series JSON blob
     ./bin/sybil query -table uptime -group status,host -int ping -json -op hist -time
+
+    # filter the previous query to samples that with host ~= mysite.*
+    ./bin/sybil query -table uptime -group status,host -int ping -json -op hist -time -str-filter host:re:mysite.*
