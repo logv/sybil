@@ -2,6 +2,10 @@ Sybil is a write once analytics datastore with no up front table schema requirem
 just log JSON records to a table and run queries. Written in Go, sybil is
 designed for fast ad-hoc analysis of multi-dimensional data on a single machine.
 
+more documentation is available [on the wiki](http://github.com/logv/sybil/wiki)
+and [in the repo](http://github.com/logv/sybil/blob/master/docs)
+
+
 advantages
 ----------
 
@@ -21,18 +25,10 @@ disadvantages
   * Sybil is meant for use on a single machine, no sharding
 
 installation
-============
+------------
 
     go get github.com/logV/sybil
 
-documentation
-=============
-
-[the wiki](http://github.com/logv/sybil/wiki)
-
-
-usage
-=====
 
 inserting records
 -----------------
@@ -49,6 +45,9 @@ inserting records
     # check out the db file structure
     ls -R db/
 
+    # turn the ingest log into column store
+    sybil digest -table my_collection
+
 
 querying records
 ----------------
@@ -61,10 +60,10 @@ querying records
     sybil query -table my_table -print
 
     # run a more complicated query (get status, host and histogram of pings)
-    ./bin/sybil query -table uptime -group status,host -int ping -print -op hist
+    sybil query -table uptime -group status,host -int ping -print -op hist
 
     # make that a time series JSON blob
-    ./bin/sybil query -table uptime -group status,host -int ping -json -op hist -time
+    sybil query -table uptime -group status,host -int ping -json -op hist -time
 
     # filter the previous query to samples that with host ~= mysite.*
-    ./bin/sybil query -table uptime -group status,host -int ping -json -op hist -time -str-filter host:re:mysite.*
+    sybil query -table uptime -group status,host -int ping -json -op hist -time -str-filter host:re:mysite.*
