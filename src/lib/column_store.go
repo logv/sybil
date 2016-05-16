@@ -1,5 +1,9 @@
 package sybil
 
+// the BLOCK_VERSION is how we get hints about decoding blocks for backwards
+// compatibility. at least, it will be in the future
+var BLOCK_VERSION = int32(1)
+
 // Before we save the new record list in a table, we tend to sort by time
 type RecordList []*Record
 type SortRecordsByTime struct {
@@ -44,6 +48,7 @@ type SavedIntColumn struct {
 	BucketEncoded   bool
 	Bins            []SavedIntBucket
 	Values          []int64
+	VERSION         int32
 }
 
 type SavedStrColumn struct {
@@ -53,6 +58,7 @@ type SavedStrColumn struct {
 	Bins            []SavedStrBucket
 	Values          []int32
 	StringTable     []string
+	VERSION         int32
 }
 
 type SavedSetColumn struct {
@@ -62,4 +68,28 @@ type SavedSetColumn struct {
 	StringTable     []string
 	DeltaEncodedIDs bool
 	BucketEncoded   bool
+	VERSION         int32
+}
+
+func NewSavedIntColumn() SavedIntColumn {
+	ret := SavedIntColumn{}
+
+	ret.VERSION = BLOCK_VERSION
+	return ret
+
+}
+func NewSavedStrColumn() SavedStrColumn {
+	ret := SavedStrColumn{}
+
+	ret.VERSION = BLOCK_VERSION
+	return ret
+
+}
+
+func NewSavedSetColumn() SavedSetColumn {
+	ret := SavedSetColumn{}
+
+	ret.VERSION = BLOCK_VERSION
+
+	return ret
 }

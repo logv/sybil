@@ -69,7 +69,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
 			continue
 		}
-		intCol := SavedIntColumn{}
+		intCol := NewSavedIntColumn()
+
 		intCol.Name = col_name
 		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 
@@ -227,7 +228,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
 			continue
 		}
-		strCol := SavedStrColumn{}
+		strCol := NewSavedStrColumn()
 		strCol.Name = col_name
 		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
@@ -598,7 +599,8 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 	records := tb.RecordList
 
-	into := &SavedSetColumn{}
+	saved_col := NewSavedSetColumn()
+	into := &saved_col
 	err := dec.Decode(into)
 	if err != nil {
 		log.Println("DECODE COL ERR:", err)
