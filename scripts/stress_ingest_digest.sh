@@ -13,4 +13,14 @@ for iter in `seq $ITERS`; do
   TOTAL=$((( $TOTAL + $NUM )))
   echo "TOTAL IS" $TOTAL
   sleep 0.01
+  if (( RANDOM % 10 == 0 )); then
+    ./bin/sybil digest -table testingest >> digest.${PID}.log 2>&1
+    if [ $? -eq 0 ]; then
+      continue      
+    else
+      echo "DIGESTION FAILED!!!!!", $PID
+      break
+    fi
+  fi
+
 done
