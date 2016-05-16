@@ -36,6 +36,7 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {
 }
 
 func (t *Table) FindPartialBlocks() []*TableBlock {
+	READ_ROWS_ONLY = false
 	t.LoadRecords(nil)
 
 	ret := make([]*TableBlock, 0)
