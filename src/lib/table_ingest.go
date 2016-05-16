@@ -27,7 +27,11 @@ func (t *Table) IngestRecords(blockname string) {
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
 	t.ReleaseRecords()
+}
 
+// TODO: figure out how often we actually do a collation check by storing last
+// collation inside a file somewhere
+func (t *Table) MaybeCompactRecords() {
 	FLAGS.READ_INGESTION_LOG = &TRUE
 	READ_ROWS_ONLY = true
 	DELETE_BLOCKS_AFTER_QUERY = false
