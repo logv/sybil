@@ -589,6 +589,11 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 	} else {
 		for r, v := range into.Values {
+			new_value, should_replace := bucket_replace[v]
+			if should_replace {
+				v = new_value
+			}
+
 			records[r].Strs[col_id] = StrField(v)
 			records[r].Populated[col_id] = STR_VAL
 		}

@@ -23,6 +23,10 @@ func (p PkgProfile) Stop() {
 	p.Stop()
 }
 
+func STOP_PROFILER() {
+	PROFILE.Stop()
+}
+
 var RUN_PROFILER = func() ProfilerStop {
 	log.Println("RUNNING ENABLED PROFILER")
 	return PkgProfile{}

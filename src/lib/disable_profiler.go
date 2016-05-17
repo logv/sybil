@@ -14,6 +14,8 @@ func (p NoProfile) Stop() {
 
 }
 
+var STOP_PROFILER = func() {
+}
 var RUN_PROFILER = func() ProfilerStop {
 	return NoProfile{}
 }
