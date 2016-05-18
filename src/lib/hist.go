@@ -35,48 +35,51 @@ func (h *Hist) SetupBuckets(buckets int, min, max int64) {
 	h.Min = min
 	h.Max = max
 
-	h.outliers = make([]int64, 0)
-	h.underliers = make([]int64, 0)
+	if h.track_percentiles {
 
-	size := int64(max - min)
-	h.num_buckets = buckets
-	h.bucket_size = int(size / int64(buckets))
+		h.outliers = make([]int64, 0)
+		h.underliers = make([]int64, 0)
 
-	if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-		h.bucket_size = *FLAGS.HIST_BUCKET
-	}
+		size := int64(max - min)
+		h.num_buckets = buckets
+		h.bucket_size = int(size / int64(buckets))
 
-	if h.bucket_size == 0 {
-		if size < 100 {
-			h.bucket_size = 1
-			h.num_buckets = int(size)
-		} else {
-			h.bucket_size = int(size / int64(100))
-			h.num_buckets = int(size / int64(h.bucket_size))
+		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
+			h.bucket_size = *FLAGS.HIST_BUCKET
 		}
+
+		if h.bucket_size == 0 {
+			if size < 100 {
+				h.bucket_size = 1
+				h.num_buckets = int(size)
+			} else {
+				h.bucket_size = int(size / int64(100))
+				h.num_buckets = int(size / int64(h.bucket_size))
+			}
+		}
+
+		h.num_buckets += 1
+
+		h.values = make([]int64, h.num_buckets+1)
+		h.avgs = make([]float64, h.num_buckets+1)
 	}
-
-	h.num_buckets += 1
-
-	h.values = make([]int64, h.num_buckets+1)
-	h.avgs = make([]float64, h.num_buckets+1)
-
 }
 
 func (t *Table) NewHist(info *IntInfo) *Hist {
 
-	buckets := NUM_BUCKETS // resolution?
 	h := &Hist{}
 	h.table = t
 	h.info = info
 
-	h.SetupBuckets(buckets, info.Min, info.Max)
+	h.SetupBuckets(NUM_BUCKETS, info.Min, info.Max)
 
 	return h
 }
 
 func (h *Hist) TrackPercentiles() {
 	h.track_percentiles = true
+
+	h.SetupBuckets(NUM_BUCKETS, h.info.Min, h.info.Max)
 }
 
 func (h *Hist) addValue(value int64) {

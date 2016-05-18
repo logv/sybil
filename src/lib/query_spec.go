@@ -85,6 +85,10 @@ func (rs *Result) Combine(next_result *Result) {
 		_, ok := rs.Hists[k]
 		if !ok {
 			nh := h.table.NewHist(h.info)
+			if h.track_percentiles {
+				nh.TrackPercentiles()
+			}
+
 			nh.Combine(h)
 			rs.Hists[k] = nh
 		} else {
