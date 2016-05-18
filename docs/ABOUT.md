@@ -1,16 +1,17 @@
-how sybil works
+what is sybil?
 ---------------
 
-Sybil has two main parts, the storage engine and query engine.
+Sybil is a simple append-only column based data store, meant for storing event
+or log data.  Sybil has two main parts, the storage engine (built on
+`encoding/gob`) and the query engine
 
-During the ingestion and digestion phases, Sybil reads records of data
-containing strings, integers and sets off stdin (ingestion phase), then
-collates (digestion phase) and writes the records into blocks (directories) of
-columns (files) on disk. 
+During the ingestion and digestion phases, Sybil's storage engine reads records
+of JSON or CSV data containing strings, integers and sets off stdin (ingestion
+phase), then collates (digestion phase) and writes the records into blocks
+(directories) of columns (files) on disk.
 
 Once records are on disk, the query engine lets you compose and run queries on
-the saved blocks for fast and iterative analysis. The main query operations
-supported are filtering, grouping and aggregating.
+the saved blocks. The query engine supports filtering, grouping and aggregating.
 
 Sybil can be used by itself, but it really works well as part of a real-time
 analytic pipeline. In general, Sybil is a good place to store transient,
@@ -27,10 +28,10 @@ cool parts of sybil
 * support for 3 query types: rollups (aka group by with aggregates),
   time series (everyone loves time series) and raw sample queries
 * full histograms and outliers can be calculated for any rollup
+* a block by block execution model releases memory to the OS as soon as each
+  block is finished processing, meaning memory stays under control (mostly)
 * it's a command line program, not a server - memory is returned to the OS as
   soon as each query is done
-* a block by block execution model releases memory to the OS as soon as each
-  block is finished processing, meaning memory stays under control
 
 
 features sybil is lacking

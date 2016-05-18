@@ -2,37 +2,25 @@ storage engine
 ==============
 
 
-Sybil ingests data and creates records via a command line API and Stdin. 
+When sybil ingests data via stdin, it creates new records that are stored as
+rows on disk (one file per call to ingest) until a manual digestion is
+initiated, at which point all records in the row store are collated into column
+form.
 
-New records are stored as rows on disk until a threshold is hit or a manual
-digestion is initiated, at which point all records in the row store are
-collated into column form.
+In Column form, records are stored in blocks of column values. Each block has
+an info file and one or more column files contained within.
 
-In Column form, records are stored in large blocks of column values. Depending
-on the column type and the cardinality of the column, the column can be stored
-as a bucketed value set (for low cardinality values) or as an array of values
-(for high cardinality columns: e.g. time column). When stored in bucket form,
-the record IDs are delta encoded. When stored in array form, the values
-themselves are delta encoded.
+Depending on the column type and the cardinality of the column, each column can
+be stored as a bucketed value set (for low cardinality values) or as an array
+of values (for high cardinality columns: e.g. time column). When stored in
+bucket form, the record IDs are delta encoded. When stored in array form, the
+values themselves are delta encoded.
 
 In Row and Column form, string values are actually stored as int32 values and a
 separate StringTable is kept alongside each file.
 
 NOTE: All data is stored using the `encoding/gob` module.
 
-
-supported
----------
-
-* str, int64, set fields
-* column / row form
-
-
-to be implemented
------------------
-
-* delete blocks older than
-* compressed column info
 
 
 multiple process file safety
@@ -42,7 +30,7 @@ In order for the DB to be safe for multiple processes to read and write, 'lock
 files' are used to prevent files from being changed while another process is
 reading them. There are 3 main locks in a given DB:
 
-* table info lock: used any time a table is read
+* table info lock: used (and held briefly) any time a table is read
 * table digestion lock: used to prevent multiple 'digestion' processes from running at once
 * block specific lock: used when collating a block in the digestion process
 
@@ -53,11 +41,14 @@ calls, but can potentially lead to lost samples if the ingest command fails.
 When a lock is owned by a PID that is dead (because of program failure or other
 reasons), sybil attempts an automatic recovery of the lock, based on its type.
 
+To keep high performance, it's better to have only one process writing to sybil
+to reduce lock contentions, but it's completely fine to have multiple writers.
+
 
 query engine
 ============
 
-The query engine (perhaps unobviously) runs queries on data. It loads both the row blocks
+The query engine runs queries on data. It loads both the row blocks
 and column blocks off disk to execute queries. Blocks are loaded in parallel
 via go-routines and then aggregated and freed, stopping every so often to let a
 GC happen.
@@ -109,11 +100,11 @@ bottlenecks
 in the query execution model there are several performance bottlenecks:
 
 * memory allocation
-* loading data off disk 
+* loading data off disk
 * allocation and assignment of record values
 * filtering and aggregating results
 
-In a full table scan of 8.5 million records, an example breakdown of timing would look like: 
+In a full table scan of 8.5 million records, an example breakdown of timing would look like:
 
     300ms allocate 8.5 mil records
     200ms load a column of low cardinality data off disk
