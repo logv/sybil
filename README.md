@@ -1,6 +1,6 @@
 Sybil is a write once analytics datastore with no up front table schema requirements;
 just log JSON records to a table and run queries. Written in Go, sybil is
-designed for fast ad-hoc analysis of multi-dimensional data on a single machine.
+designed for fast full table scans of multi-dimensional data on a single machine.
 
 more documentation is available [on the wiki](http://github.com/logv/sybil/wiki)
 and [in the repo](http://github.com/logv/sybil/blob/master/docs)
