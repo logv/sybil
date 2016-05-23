@@ -1,6 +1,6 @@
 package sybil_cmd
 
-import sybil "github.com/logV/sybil/src/lib"
+import sybil "github.com/logv/sybil/src/lib"
 import "flag"
 import "strings"
 

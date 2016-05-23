@@ -27,7 +27,7 @@ disadvantages
 installation
 ------------
 
-    go get github.com/logV/sybil
+    go get github.com/logv/sybil
 
 
 inserting records

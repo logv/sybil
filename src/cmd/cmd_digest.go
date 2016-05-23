@@ -3,7 +3,7 @@ package sybil_cmd
 import "flag"
 import "log"
 
-import sybil "github.com/logV/sybil/src/lib"
+import sybil "github.com/logv/sybil/src/lib"
 
 // appends records to our record input queue
 // every now and then, we should pack the input queue into a column, though

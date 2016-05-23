@@ -5,7 +5,7 @@ import "log"
 import "fmt"
 import "os"
 
-import sybil "github.com/logV/sybil/src/lib"
+import sybil "github.com/logv/sybil/src/lib"
 
 func askConfirmation() bool {
 

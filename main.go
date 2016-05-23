@@ -1,7 +1,7 @@
 package main
 
-import sybil "github.com/logV/sybil/src/lib"
-import cmd "github.com/logV/sybil/src/cmd"
+import sybil "github.com/logv/sybil/src/lib"
+import cmd "github.com/logv/sybil/src/cmd"
 
 import "fmt"
 import "os"
