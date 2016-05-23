@@ -23,6 +23,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	unload_test_table()
 	nt := sybil.GetTable(TEST_TABLE_NAME)
+	sybil.FLAGS.READ_INGESTION_LOG = &sybil.TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)

@@ -237,6 +237,8 @@ func TestTimeSeries(test *testing.T) {
 
 	nt := save_and_reload_table(test, block_count)
 
+	hist := "hist"
+	sybil.FLAGS.OP = &hist
 	querySpec := new_query_spec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))

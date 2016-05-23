@@ -65,7 +65,7 @@ func save_and_reload_table(test *testing.T, expected_blocks int) *sybil.Table {
 	}
 
 	// +1 is the Row Store Block...
-	if len(nt.BlockList) != expected_blocks+1 {
+	if len(nt.BlockList) != expected_blocks {
 		test.Error("Wrote", expected_blocks, "blocks, but came back with", len(nt.BlockList))
 	}
 
