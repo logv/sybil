@@ -23,6 +23,8 @@ func main() {
 		cmd.RunDigestCmdLine()
 	case "session":
 		cmd.RunSessionizeCmdLine()
+	case "trim":
+		cmd.RunTrimCmdLine()
 	case "query":
 		cmd.RunQueryCmdLine()
 	case "index":
