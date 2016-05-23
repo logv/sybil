@@ -31,7 +31,7 @@ type FlagDefs struct {
 	LOAD_AND_QUERY     *bool
 	LOAD_THEN_QUERY    *bool
 	READ_INGESTION_LOG *bool
-	SKIP_ROWSTORE      *bool
+	READ_ROWSTORE      *bool
 
 	PROFILE     *bool
 	PROFILE_MEM *bool
@@ -106,8 +106,8 @@ func SetDefaults() {
 	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
 	FLAGS.LOAD_AND_QUERY = &TRUE
 	FLAGS.LOAD_THEN_QUERY = &FALSE
-	FLAGS.READ_INGESTION_LOG = &TRUE
-	FLAGS.SKIP_ROWSTORE = &FALSE
+	FLAGS.READ_INGESTION_LOG = &FALSE
+	FLAGS.READ_ROWSTORE = &FALSE
 	FLAGS.ANOVA_ICC = &FALSE
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")

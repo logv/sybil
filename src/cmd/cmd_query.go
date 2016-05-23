@@ -37,7 +37,7 @@ func addQueryFlags() {
 	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
 	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
 
-	sybil.FLAGS.SKIP_ROWSTORE = flag.Bool("no-read-log", false, "skip reading the ingestion log")
+	sybil.FLAGS.READ_ROWSTORE = flag.Bool("-read-log", false, "read the ingestion log (can take longer!)")
 
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
@@ -86,8 +86,8 @@ func RunQueryCmdLine() {
 		sybil.FLAGS.LOAD_AND_QUERY = &FALSE
 	}
 
-	if *sybil.FLAGS.SKIP_ROWSTORE {
-		sybil.FLAGS.READ_INGESTION_LOG = &FALSE
+	if *sybil.FLAGS.READ_ROWSTORE {
+		sybil.FLAGS.READ_INGESTION_LOG = &TRUE
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
