@@ -3,12 +3,37 @@ package sybil_cmd
 import "flag"
 import "log"
 import "fmt"
+import "os"
 
 import sybil "github.com/logV/sybil/src/lib"
+
+func askConfirmation() bool {
+
+	var response string
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if response == "Y" {
+		return true
+	}
+
+	if response == "N" {
+		return false
+	}
+
+	fmt.Println("Y or N only")
+	return askConfirmation()
+
+}
 
 func RunTrimCmdLine() {
 	MB_LIMIT := flag.Int("mb", 0, "max table size in MB")
 	DELETE_BEFORE := flag.Int("before", 0, "delete blocks with data older than TIMESTAMP")
+	DELETE := flag.Bool("delete", false, "delete blocks? be careful! will actually delete your data!")
+	REALLY := flag.Bool("really", false, "don't prompt before deletion")
+
 	sybil.FLAGS.TIME_COL = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
 	flag.Parse()
 
@@ -38,9 +63,34 @@ func RunTrimCmdLine() {
 	trimSpec.MBLimit = int64(*MB_LIMIT)
 
 	to_trim := t.TrimTable(&trimSpec)
+
+	log.Println("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
 	if len(to_trim) > 0 {
 		for _, b := range to_trim {
 			fmt.Println(b.Name)
 		}
+	}
+
+	if *DELETE {
+		if *REALLY != true {
+			// TODO: prompt for deletion
+			fmt.Println("DELETE THE ABOVE BLOCKS? (Y/N)")
+			if askConfirmation() == false {
+				log.Println("ABORTING")
+				return
+			}
+
+		}
+
+		log.Println("DELETING CANDIDATE BLOCKS")
+		for _, b := range to_trim {
+			log.Println("DELETING", b.Name)
+			if len(b.Name) > 5 {
+				os.RemoveAll(b.Name)
+			} else {
+				log.Println("REFUSING TO DELETE", b.Name)
+			}
+		}
+
 	}
 }
