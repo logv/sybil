@@ -111,9 +111,6 @@ func SetDefaults() {
 	FLAGS.ANOVA_ICC = &FALSE
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
-	FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	FLAGS.SORT = flag.String("sort", OPTS.SORT_COUNT, "Int Column to sort by")
-	FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
 	FLAGS.SAMPLES = &FALSE

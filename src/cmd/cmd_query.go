@@ -15,6 +15,10 @@ var LIST_TABLES *bool
 
 func addQueryFlags() {
 
+	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
+	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
+	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+
 	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
 	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	sybil.FLAGS.TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")

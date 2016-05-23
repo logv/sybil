@@ -26,6 +26,7 @@ func addSessionFlags() {
 	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
 
 	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 }
 
 func RunSessionizeCmdLine() {
