@@ -318,9 +318,8 @@ func (ss *SessionSpec) Finalize() {
 	}
 
 	for join_key, as := range sl.List {
-
-		// TODO: determine if this is an int or string
 		var group_key = ""
+		join_key = strings.TrimSpace(join_key)
 
 		if sl.JoinTable != nil {
 			r := sl.JoinTable.GetRecordById(join_key)
