@@ -72,6 +72,32 @@ querying records
     # filter the previous query to samples that with host ~= mysite.*
     sybil query -table uptime -group status,host -int ping -json -op hist -time -str-filter host:re:mysite.*
 
+
+trimming old records
+--------------------
+
+    # list all blocks that won't fit in 100MB (give or take a few MB)
+    sybil trim -table uptime -time-col time -mb 100
+
+    # list all blocks that have no data newer than a week ago 
+    # TIP: other time durations can be used, like: day, month & year
+    sybil trim -table uptime -time-col time -before `date --date "-1 week" +%s`
+
+    # the above two trimming commands can be combined!
+    # list all blocks that have no data newer than a week and fit within 100mb
+    sybil trim -table uptime -time-col time -before `date --date "-1 week" +%s` -mb 100
+
+    # delete the blocks that won't fit in memory
+    # TIP: use -really flag if you don't want to be prompted (for use in scripts)
+    sybil trim -table uptime -time-col time -mb 100 -delete
+
+Using the output block names and xargs, it is possible to write pruning or
+archival scripts that are more advanced than just block deletion. 
+
+for example: a script could choose to delete memory heavy columns once the
+block falls out of the memory limit, or a script could tar up blocks once they
+are out of the tables' date limit
+
 additional information
 ----------------------
 
