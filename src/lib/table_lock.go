@@ -214,8 +214,6 @@ func check_pid(lockfile string, l *Lock) bool {
 	}
 
 	for i := 0; i < LOCK_TRIES; i++ {
-		dirname := path.Dir(lockfile)
-		os.MkdirAll(dirname, 0777)
 		val, err = ioutil.ReadFile(lockfile)
 
 		if err == nil {
