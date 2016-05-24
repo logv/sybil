@@ -48,13 +48,20 @@ var NO_MORE_BLOCKS = GROUP_DELIMITER
 type AfterRowBlockLoad func(string, RecordList)
 
 func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
-	// TODO: REFUSE TO DIGEST IF THE DIGEST AREA ALREADY EXISTS
 	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
+	var err error
 
-	os.MkdirAll(dirname, 0777)
+	// if the row store dir does not exist, skip the whole function
+	_, err = os.Stat(dirname)
+	if os.IsNotExist(err) {
+		if after_block_load_cb != nil {
+			after_block_load_cb(NO_MORE_BLOCKS, nil)
+		}
+
+		return
+	}
 
 	var file *os.File
-	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
 		file, err = os.Open(dirname)
 		if err != nil {
@@ -65,7 +72,6 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	}
 
 	files, err := file.Readdir(0)
-
 	if t.RowBlock == nil {
 		t.RowBlock = &TableBlock{}
 		(*t.RowBlock).RecordList = make(RecordList, 0)

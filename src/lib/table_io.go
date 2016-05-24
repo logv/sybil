@@ -437,7 +437,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		log.Println("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
 		count += rowStoreQuery.count
 
-		if DELETE_BLOCKS_AFTER_QUERY == false {
+		if DELETE_BLOCKS_AFTER_QUERY == false && t.RowBlock != nil {
 			log.Println("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
 			t.RowBlock.RecordList = rowStoreQuery.records
 		}
