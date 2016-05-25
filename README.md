@@ -74,15 +74,15 @@ querying records
     # make that a time series JSON blob
     sybil query -table uptime -group status,host -int ping -json -op hist -time
 
-		# filter the previous query to samples that with host ~= mysite.*
-		sybil query -table uptime -group status,host -int ping -json -op hist -time -str-filter host:re:mysite.*
+    # filter the previous query to samples that with host ~= mysite.*
+    sybil query -table uptime -group status,host -int ping -json -op hist -time -str-filter host:re:mysite.*
 
-		# add a time filter for data newer than a week week old
-		sybil query -table uptime -group status,host -int-filter time:lt:`date --date="-1 week" +%s`
+    # add a time filter for data newer than a week week old
+    sybil query -table uptime -group status,host -int-filter time:lt:`date --date="-1 week" +%s`
 
-		# add a time filter for data between 1 month and 1 week old
-		sybil query -table uptime -group status,host \
-			-int-filter time:lt:`date --date="-1 week" +%s`,time:gt:`date --date="-1 month" +%s`
+    # add a time filter for data between 1 month and 1 week old
+    sybil query -table uptime -group status,host \
+      -int-filter time:lt:`date --date="-1 week" +%s`,time:gt:`date --date="-1 month" +%s`
 
 
 
