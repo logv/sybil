@@ -8,6 +8,8 @@ import "strconv"
 import "os"
 import "fmt"
 import "io/ioutil"
+import "text/tabwriter"
+import "time"
 
 func printJson(data interface{}) {
 	b, err := json.Marshal(data)
@@ -62,9 +64,36 @@ func printTimeResults(querySpec *QuerySpec) {
 		return
 	}
 
-	for _, k := range keys {
-		fmt.Println("COUNT DISTINCT", k, len(querySpec.TimeResults[k]))
+	top_results := make([]string, 0)
+	for _, r := range querySpec.Sorted {
+		top_results = append(top_results, r.GroupByKey)
 	}
+
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 0, 1, 0, ' ', tabwriter.AlignRight)
+
+	for _, time_bucket := range keys {
+		results := querySpec.TimeResults[time_bucket]
+		time_str := time.Unix(int64(time_bucket), 0).Format(OPTS.TIME_FORMAT)
+
+		if *FLAGS.OP == "distinct" {
+			fmt.Fprintln(w, time_str, "\t", len(results), "\t")
+		} else {
+			for _, r := range results {
+				if len(r.Hists) == 0 {
+					fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t")
+				} else {
+					for agg, hist := range r.Hists {
+						avg_str := fmt.Sprintf("%.2f", hist.Avg)
+						fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t", agg, "\t", avg_str, "\t")
+					}
+				}
+
+			}
+		}
+	}
+
+	w.Flush()
 
 }
 
@@ -372,6 +401,17 @@ func (t *Table) PrintColInfo() {
 		size += block.Size
 	}
 
+	suffixes := []string{"B", "KB", "MB", "GB", "TB", "PB"}
+
+	suffix_idx := 0
+
+	small_size := size
+
+	for ; small_size > 1024; small_size /= 1024 {
+		suffix_idx += 1
+
+	}
+
 	if *FLAGS.JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
@@ -400,8 +440,8 @@ func (t *Table) PrintColInfo() {
 		fmt.Println("")
 		fmt.Println("Stats")
 		fmt.Println("  count", count)
-		fmt.Println("  storageSize", size)
-		fmt.Println("  avgObjSize", float64(size)/float64(count))
+		fmt.Println("  storageSize", small_size, suffixes[suffix_idx])
+		fmt.Println("  avgObjSize", fmt.Sprintf("%.02f", float64(size)/float64(count)), "bytes")
 	}
 
 }

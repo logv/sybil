@@ -82,6 +82,7 @@ type OptionDefs struct {
 	WRITE_BLOCK_INFO        bool
 	TIMESERIES              bool
 	TIME_COL_ID             int16
+	TIME_FORMAT             string
 	GROUP_BY                []string
 }
 
@@ -99,6 +100,7 @@ func SetDefaults() {
 	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
 	OPTS.TIMESERIES = false
+	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 	FLAGS.GC = &TRUE
 	FLAGS.JSON = &FALSE

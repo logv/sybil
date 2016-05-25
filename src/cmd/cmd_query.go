@@ -12,6 +12,7 @@ import "runtime/debug"
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var LIST_TABLES *bool
+var TIME_FORMAT *string
 
 func addQueryFlags() {
 
@@ -34,7 +35,6 @@ func addQueryFlags() {
 	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
 	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
 	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
-	LIST_TABLES = flag.Bool("tables", false, "List tables")
 	sybil.FLAGS.UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
 
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
@@ -46,6 +46,10 @@ func addQueryFlags() {
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
+	LIST_TABLES = flag.Bool("tables", false, "List tables")
+
+	TIME_FORMAT = flag.String("time-format", "", "time format to use")
+
 }
 
 func RunQueryCmdLine() {
@@ -55,6 +59,10 @@ func RunQueryCmdLine() {
 	if *LIST_TABLES {
 		sybil.PrintTables()
 		return
+	}
+
+	if *TIME_FORMAT != "" {
+		sybil.OPTS.TIME_FORMAT = sybil.GetTimeFormat(*TIME_FORMAT)
 	}
 
 	table := *sybil.FLAGS.TABLE
