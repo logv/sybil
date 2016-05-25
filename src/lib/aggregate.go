@@ -292,8 +292,10 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 
 	cumulative_result := NewResult()
 	cumulative_result.GroupByKey = "TOTAL"
-	for _, _ = range querySpec.Groups[1:] {
-		cumulative_result.GroupByKey += "\t"
+	if len(querySpec.Groups) > 1 {
+		for _, _ = range querySpec.Groups[1:] {
+			cumulative_result.GroupByKey += "\t"
+		}
 	}
 
 	for _, spec := range block_specs {
