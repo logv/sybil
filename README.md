@@ -3,24 +3,22 @@ just log JSON records to a table and run queries. Written in Go, sybil is
 designed for fast full table scans of multi-dimensional data on a single machine.
 
 more documentation is available [on the wiki](http://github.com/logv/sybil/wiki)
-and [in the repo](http://github.com/logv/sybil/blob/master/docs)
-
+and [in the repo](http://github.com/logv/sybil/blob/master/docs).
 
 advantages
 ----------
 
   * Easy to setup and get data inside sybil - just pipe JSON on stdin to sybil
   * Supports histograms (and percentiles), standard deviations and time series roll ups
-  * Runs fast full table queries (analyze millions of samples in under a second!)
+  * Runs fast full table queries ([performance notes](http://github.com/logv/sybil/wiki/Performance))
   * Lower disk usage through per column compression schemes
   * Serverless design with controlled memory usage
+  * Per table retention policies (specify max age and/or size of tables)
 
 disadvantages
 -------------
 
-  * Not optimized for write speed, mostly for query speed ([see the performance notes](http://github.com/logv/sybil/wiki/Performance) for more info)
-  * Does not support JOINS
-  * Doesn't have a transaction log or full ACID reliability guarantees
+  * JOINS not supported
   * No UPDATE operation on data - only writes
   * Sybil is meant for use on a single machine, no sharding
 
@@ -41,6 +39,13 @@ inserting records
 
     # import from a CSV file
     sybil ingest -csv -table my_csv_table < some_csv.csv
+
+    # import samples from a subkey of an already existing JSON doc
+    # the pathname here would be used for the following document:
+    # {
+    #    records: [ sample, sample, sample ]
+    # }
+    sybil ingest -table my_other_table -path "$.records" < my_json_doc.json
 
     # check out the db file structure
     ls -R db/
@@ -79,7 +84,7 @@ trimming old records
     # list all blocks that won't fit in 100MB (give or take a few MB)
     sybil trim -table uptime -time-col time -mb 100
 
-    # list all blocks that have no data newer than a week ago 
+    # list all blocks that have no data newer than a week ago
     # TIP: other time durations can be used, like: day, month & year
     sybil trim -table uptime -time-col time -before `date --date "-1 week" +%s`
 
@@ -91,12 +96,7 @@ trimming old records
     # TIP: use -really flag if you don't want to be prompted (for use in scripts)
     sybil trim -table uptime -time-col time -mb 100 -delete
 
-Using the output block names and xargs, it is possible to write pruning or
-archival scripts that are more advanced than just block deletion. 
 
-for example: a script could choose to delete memory heavy columns once the
-block falls out of the memory limit, or a script could tar up blocks once they
-are out of the tables' date limit
 
 additional information
 ----------------------
