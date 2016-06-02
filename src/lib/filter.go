@@ -47,7 +47,8 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 			continue
 		}
 
-		if col == *FLAGS.TIME_COL {
+		// we align the Time Filter to the Time Bucket iff we are doing a time series query
+		if col == *FLAGS.TIME_COL && *FLAGS.TIME {
 			bucket := int64(*FLAGS.TIME_BUCKET)
 			new_val := int64(val/bucket) * bucket
 
