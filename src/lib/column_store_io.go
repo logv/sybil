@@ -557,13 +557,13 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 		for _, bucket := range into.Bins {
 			prev = 0
-			for _, r = range bucket.Records {
+			value := bucket.Value
+			new_value, should_replace := bucket_replace[value]
+			if should_replace {
+				value = new_value
+			}
 
-				value := bucket.Value
-				new_value, should_replace := bucket_replace[value]
-				if should_replace {
-					value = new_value
-				}
+			for _, r = range bucket.Records {
 
 				if did {
 					r = prev + r
