@@ -6,6 +6,7 @@ import "bytes"
 import "sort"
 import "strconv"
 import "sync"
+import "math"
 
 import "encoding/binary"
 
@@ -114,6 +115,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.name_id]))
 			case STR_VAL:
 				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.name_id]))
+			case _NO_VAL:
+				binary.LittleEndian.PutUint64(bs, math.MaxUint64)
 			}
 
 			copy(binarybuffer[i*GROUP_BY_WIDTH:], bs)
