@@ -563,6 +563,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 				value = new_value
 			}
 
+			cast_value := StrField(new_value)
 			for _, r = range bucket.Records {
 
 				if did {
@@ -578,8 +579,8 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 					}
 				}
 
-				record.Populated[col_id] = STR_VAL
-				record.Strs[col_id] = StrField(new_value)
+				records[r].Populated[col_id] = STR_VAL
+				records[r].Strs[col_id] = cast_value
 
 				if is_path_col {
 					record.Path = string_lookup[new_value]
