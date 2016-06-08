@@ -367,10 +367,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				// don't delete when testing so we can verify block
 				// loading results
 				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
+					t.block_m.Lock()
 					_, ok := t.BlockList[block.Name]
 					if ok {
 						delete(t.BlockList, block.Name)
 					}
+					t.block_m.Unlock()
 
 				}
 			}()
