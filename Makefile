@@ -1,6 +1,6 @@
 BUILD_CMD = /usr/bin/go install
 BINDIR = ./bin
-GOBINDIR = ./bin
+GOBINDIR = `readlink -f ./bin`
 PROFILE = -tags profile
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
