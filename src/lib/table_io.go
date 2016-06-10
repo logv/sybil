@@ -442,6 +442,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		if DELETE_BLOCKS_AFTER_QUERY == false && t.RowBlock != nil {
 			log.Println("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
 			t.RowBlock.RecordList = rowStoreQuery.records
+			t.RowBlock.Matched = rowStoreQuery.records
 		}
 	}
 
