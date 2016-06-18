@@ -1,14 +1,14 @@
 Sybil is an append only analytics datastore with no up front table schema
-requirements; log JSON records to a table and run queries. Written in Go, sybil
-is designed for fast full table scans of multi-dimensional data on a single
-machine.
+requirements; just log JSON records to a table and run queries. Written in Go,
+sybil is designed for fast full table scans of multi-dimensional data on a
+single machine.
 
 more documentation is available [on the wiki](http://github.com/logv/sybil/wiki)
 and [in the repo](http://github.com/logv/sybil/blob/master/docs).
 
 if sybil by itself is uninteresting (who wants to run command line queries,
 anyways?), sybil is a supported backend for
-[snorkel](http://github.com/logv/snorkel) - a practical data analysis UI
+[snorkel](http://github.com/logv/snorkel)
 
 advantages
 ----------
