@@ -35,6 +35,10 @@ Failure Plans
   * [ ] Mixed Key Tables
   * [ ] Table Corruption
   * [ ] Re-Ingestion
+  * [ ] Lock Recovery
+    * [ ] table info lock
+    * [ ] block lock
+    * [ ] digest lock
 
 
 Integration / E2E Tests
