@@ -375,6 +375,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 	// TODO: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
 	// That would mean pushing the call to 'FilterAndAggRecords' to the loading area
+	spec_lock := sync.Mutex{}
 	for _, block := range block_list {
 		wg.Add(1)
 		this_block := block
@@ -385,7 +386,9 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 
 			FilterAndAggRecords(blockQuery, &this_block.RecordList)
 
+			spec_lock.Lock()
 			block_specs[this_block.Name] = blockQuery
+			spec_lock.Unlock()
 
 		}()
 	}

@@ -15,8 +15,8 @@ type Calendar struct {
 	Weekly  ActivityMap
 	Monthly ActivityMap
 
-	Min int
-	Max int
+	Min int64
+	Max int64
 }
 
 func NewCalendar() *Calendar {
@@ -58,8 +58,8 @@ func (c *Calendar) AddActivity(timestamp int) {
 		punch_calendar(&c.Monthly, timestamp/(int(time.Hour.Seconds())*24*7*30))
 	}
 
-	c.Min = int(math.Min(float64(timestamp), float64(c.Min)))
-	c.Max = int(math.Max(float64(timestamp), float64(c.Max)))
+	c.Min = int64(math.Min(float64(timestamp), float64(c.Min)))
+	c.Max = int64(math.Max(float64(timestamp), float64(c.Max)))
 }
 
 func (c *Calendar) CombineCalendar(cc *Calendar) {
@@ -67,6 +67,6 @@ func (c *Calendar) CombineCalendar(cc *Calendar) {
 	copy_calendar(c.Weekly, cc.Weekly)
 	copy_calendar(c.Monthly, cc.Monthly)
 
-	c.Min = int(math.Min(float64(cc.Min), float64(c.Min)))
-	c.Max = int(math.Max(float64(cc.Max), float64(c.Max)))
+	c.Min = int64(math.Min(float64(cc.Min), float64(c.Min)))
+	c.Max = int64(math.Max(float64(cc.Max), float64(c.Max)))
 }

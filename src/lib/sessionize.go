@@ -358,7 +358,7 @@ func (ss *SessionSpec) Finalize() {
 		stats.CombineStats(as.Stats)
 		duration := as.Stats.Calendar.Max - as.Stats.Calendar.Min
 
-		retention := duration / int(time.Hour.Seconds()*24)
+		retention := duration / int64(time.Hour.Seconds()*24)
 		stats.Retention.addValue(int64(retention))
 
 	}
