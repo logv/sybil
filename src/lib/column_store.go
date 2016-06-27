@@ -34,6 +34,8 @@ type SavedStrBucket struct {
 	Records []uint32
 }
 
+type SavedBlockCache map[string]*SavedColumnInfo
+
 type SavedColumnInfo struct {
 	NumRecords int32
 

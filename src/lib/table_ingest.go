@@ -18,6 +18,16 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 	return name, err
 }
 
+func (t *Table) getNewCacheBlockFile() (*os.File, error) {
+	log.Println("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
+	table_cache_dir := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR)
+	os.MkdirAll(table_cache_dir, 0755)
+
+	// this info block needs to be moved once its finished being written to
+	file, err := ioutil.TempFile(table_cache_dir, "info")
+	return file, err
+}
+
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
 	log.Println("KEY TABLE", t.KeyTable)

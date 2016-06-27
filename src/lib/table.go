@@ -19,6 +19,9 @@ type Table struct {
 	StrInfo StrInfoTable
 	IntInfo IntInfoTable
 
+	BlockInfoCache map[string]*SavedColumnInfo
+	NewBlockInfos  []string
+
 	// List of new records that haven't been saved to file yet
 	newRecords RecordList
 
@@ -65,6 +68,10 @@ func (t *Table) init_data_structures() {
 	t.KeyTypes = make(map[int16]int8)
 
 	t.BlockList = make(map[string]*TableBlock, 0)
+
+	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
+	t.NewBlockInfos = make([]string, 0)
+
 	t.StrInfo = make(StrInfoTable)
 	t.IntInfo = make(IntInfoTable)
 

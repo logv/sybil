@@ -17,8 +17,11 @@ var DEBUG_TIMING = false
 var CHUNKS_BEFORE_GC = 16
 var INGEST_DIR = "ingest"
 var TEMP_INGEST_DIR = ".ingest.temp"
+var CACHE_DIR = "cache"
+
 var DELETE_BLOCKS_AFTER_QUERY = true
 var HOLD_MATCHES = false
+var BLOCKS_PER_CACHE_FILE = 64
 
 func (t *Table) saveTableInfo(fname string) {
 	if t.GrabInfoLock() == false {
@@ -217,6 +220,8 @@ func file_looks_like_block(v os.FileInfo) bool {
 
 	case v.Name() == INGEST_DIR || v.Name() == TEMP_INGEST_DIR:
 		return false
+	case v.Name() == CACHE_DIR:
+		return false
 	case strings.HasPrefix(v.Name(), STOMACHE_DIR):
 		return false
 	case strings.HasSuffix(v.Name(), "info.db"):
@@ -232,6 +237,87 @@ func file_looks_like_block(v os.FileInfo) bool {
 	}
 
 	return true
+
+}
+
+func (t *Table) LoadBlockCache() {
+	if t.GrabCacheLock() == false {
+		return
+	}
+
+	defer t.ReleaseCacheLock()
+	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
+
+	if err != nil {
+		return
+	}
+
+	for _, block_file := range files {
+		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
+		block_cache := SavedBlockCache{}
+		if err != nil {
+			continue
+		}
+
+		file, err := os.Open(filename)
+		if err != nil {
+			continue
+		}
+
+		dec := gob.NewDecoder(file)
+		err = dec.Decode(&block_cache)
+
+		for k, v := range block_cache {
+			t.BlockInfoCache[k] = v
+		}
+	}
+
+	log.Println("FILLED BLOCK CACHE WITH", len(t.BlockInfoCache), "ITEMS")
+}
+
+func (t *Table) WriteBlockCache() {
+	if len(t.NewBlockInfos) == 0 {
+		return
+	}
+
+	if t.GrabCacheLock() == false {
+		return
+	}
+
+	defer t.ReleaseCacheLock()
+
+	log.Println("WRITING BLOCK CACHE, OUTSTANDING", len(t.NewBlockInfos))
+
+	var num_blocks = len(t.NewBlockInfos) / BLOCKS_PER_CACHE_FILE
+
+	for i := 0; i < num_blocks; i++ {
+		cached_info := t.NewBlockInfos[i*BLOCKS_PER_CACHE_FILE : (i+1)*BLOCKS_PER_CACHE_FILE]
+
+		block_file, err := t.getNewCacheBlockFile()
+		if err != nil {
+			log.Println("TROUBLE CREATING CACHE BLOCK FILE")
+			break
+		}
+		block_cache := SavedBlockCache{}
+
+		for _, block_name := range cached_info {
+			block_cache[block_name] = t.BlockInfoCache[block_name]
+		}
+
+		enc := gob.NewEncoder(block_file)
+		err = enc.Encode(&block_cache)
+		if err != nil {
+			log.Println("ERROR ENCODING BLOCK CACHE", err)
+		}
+
+		pathname := fmt.Sprintf("%s.db", block_file.Name())
+
+		log.Println("RENAMING", block_file.Name(), pathname)
+		os.Rename(block_file.Name(), pathname)
+
+	}
+
+	t.NewBlockInfos = t.NewBlockInfos[:0]
 
 }
 
@@ -479,11 +565,15 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		log.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
+	t.WriteBlockCache()
+
 	return count
 
 }
 
 func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
+	t.LoadBlockCache()
+
 	return t.LoadAndQueryRecords(loadSpec, nil)
 }
 

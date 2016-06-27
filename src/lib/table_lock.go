@@ -33,6 +33,10 @@ type BlockLock struct {
 	Lock
 }
 
+type CacheLock struct {
+	Lock
+}
+
 type DigestLock struct {
 	Lock
 }
@@ -348,6 +352,23 @@ func (t *Table) GrabBlockLock(name string) bool {
 func (t *Table) ReleaseBlockLock(name string) bool {
 	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
+	ret := info.Release()
+	return ret
+}
+
+func (t *Table) GrabCacheLock() bool {
+	lock := Lock{Table: t, Name: CACHE_DIR}
+	info := &CacheLock{lock}
+	ret := info.Grab()
+	if !ret && info.broken {
+		ret = RecoverLock(info)
+	}
+	return ret
+}
+
+func (t *Table) ReleaseCacheLock() bool {
+	lock := Lock{Table: t, Name: CACHE_DIR}
+	info := &CacheLock{lock}
 	ret := info.Release()
 	return ret
 }

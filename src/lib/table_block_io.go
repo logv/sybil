@@ -7,21 +7,6 @@ import "os"
 import "strings"
 import "encoding/gob"
 import "sync"
-import "path"
-import "strconv"
-
-// Helpers for block directory structure
-func getBlockName(id int) string {
-	return fmt.Sprintf("digest%05s", strconv.FormatInt(int64(id), 10))
-}
-
-func getBlockDir(name string, id int) string {
-	return path.Join(*FLAGS.DIR, name, getBlockName(id))
-}
-
-func getBlockFilename(name string, id int) string {
-	return path.Join(*FLAGS.DIR, name, fmt.Sprintf("%05s.db", getBlockName(id)))
-}
 
 func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {
 	if len(records) == 0 {
@@ -118,12 +103,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 		return true
 	}
 
-	// find out how many records are kept in this dir...
-	info := SavedColumnInfo{}
-	filename := fmt.Sprintf("%s/info.db", dirname)
-	file, _ := os.Open(filename)
-	dec := gob.NewDecoder(file)
-	dec.Decode(&info)
+	info := t.LoadBlockInfo(dirname)
 
 	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
@@ -165,14 +145,14 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	return add
 }
 
-// TODO: have this only pull the blocks into column format and not materialize
-// the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
-	tb := newTableBlock()
+func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
-	tb.Name = dirname
-
-	tb.table = t
+	t.block_m.Lock()
+	cached_info, ok := t.BlockInfoCache[dirname]
+	t.block_m.Unlock()
+	if ok {
+		return cached_info
+	}
 
 	// find out how many records are kept in this dir...
 	info := SavedColumnInfo{}
@@ -185,26 +165,52 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 	if err != nil {
 		log.Println("Warning: ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
-		return nil
+		return &info
 	}
 	iend := time.Now()
-
-	if info.NumRecords <= 0 {
-		return nil
-	}
 
 	if DEBUG_TIMING {
 		log.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
 	t.block_m.Lock()
+	t.BlockInfoCache[dirname] = &info
+	t.block_m.Unlock()
+
+	if info.NumRecords >= int32(CHUNK_SIZE) {
+		t.NewBlockInfos = append(t.NewBlockInfos, dirname)
+	}
+
+	return &info
+}
+
+// TODO: have this only pull the blocks into column format and not materialize
+// the columns immediately
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
+	tb := newTableBlock()
+
+	tb.Name = dirname
+
+	tb.table = t
+
+	info := t.LoadBlockInfo(dirname)
+
+	if info == nil {
+		return nil
+	}
+
+	if info.NumRecords <= 0 {
+		return nil
+	}
+
+	t.block_m.Lock()
 	t.BlockList[dirname] = &tb
 	t.block_m.Unlock()
 
-	tb.allocateRecords(loadSpec, info, load_records)
-	tb.Info = &info
+	tb.allocateRecords(loadSpec, *info, load_records)
+	tb.Info = info
 
-	file, _ = os.Open(dirname)
+	file, _ := os.Open(dirname)
 	files, _ := file.Readdir(-1)
 
 	size := int64(0)
@@ -234,11 +240,11 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		dec := gob.NewDecoder(file)
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, info)
+			tb.unpackStrCol(dec, *info)
 		case strings.HasPrefix(fname, "set"):
-			tb.unpackSetCol(dec, info)
+			tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, info)
+			tb.unpackIntCol(dec, *info)
 		}
 	}
 
