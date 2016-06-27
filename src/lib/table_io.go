@@ -454,8 +454,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				// loading results
 				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
 					t.block_m.Lock()
-					_, ok := t.BlockList[block.Name]
+					tb, ok := t.BlockList[block.Name]
 					if ok {
+						tb.RecycleSlab(loadSpec)
+
 						delete(t.BlockList, block.Name)
 					}
 					t.block_m.Unlock()
@@ -473,14 +475,16 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 			if DELETE_BLOCKS_AFTER_QUERY && this_block%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
 				wg.Wait()
-
-				m.Lock()
 				start := time.Now()
-				old_percent := debug.SetGCPercent(100)
-				debug.SetGCPercent(old_percent)
-				m.Unlock()
-				end := time.Now()
 
+				if *FLAGS.RECYCLE_MEM == false {
+					m.Lock()
+					old_percent := debug.SetGCPercent(100)
+					debug.SetGCPercent(old_percent)
+					m.Unlock()
+				}
+
+				end := time.Now()
 				fmt.Fprint(os.Stderr, ",")
 				end = time.Now()
 				block_gc_time += end.Sub(start)

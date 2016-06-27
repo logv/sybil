@@ -13,6 +13,7 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var LIST_TABLES *bool
 var TIME_FORMAT *string
+var NO_RECYCLE_MEM *bool
 
 func addQueryFlags() {
 
@@ -49,6 +50,7 @@ func addQueryFlags() {
 	LIST_TABLES = flag.Bool("tables", false, "List tables")
 
 	TIME_FORMAT = flag.String("time-format", "", "time format to use")
+	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
 }
 
@@ -80,6 +82,10 @@ func RunQueryCmdLine() {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, ",")
 		sybil.OPTS.GROUP_BY = groups
 
+	}
+
+	if *NO_RECYCLE_MEM == true {
+		sybil.FLAGS.RECYCLE_MEM = &sybil.FALSE
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS

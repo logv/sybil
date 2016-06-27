@@ -36,6 +36,8 @@ type FlagDefs struct {
 	PROFILE     *bool
 	PROFILE_MEM *bool
 
+	RECYCLE_MEM *bool
+
 	WEIGHT_COL *string
 
 	LIMIT *int
@@ -116,6 +118,8 @@ func SetDefaults() {
 
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
 	FLAGS.SAMPLES = &FALSE
+
+	FLAGS.RECYCLE_MEM = &TRUE
 
 	DEFAULT_LIMIT := 100
 	FLAGS.LIMIT = &DEFAULT_LIMIT

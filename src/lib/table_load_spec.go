@@ -1,12 +1,17 @@
 package sybil
 
 import "log"
+import "sync"
 
 type LoadSpec struct {
-	columns        map[string]bool
-	files          map[string]bool
+	columns map[string]bool
+	files   map[string]bool
+
 	LoadAllColumns bool
 	table          *Table
+
+	slabs  []*RecordList
+	slab_m *sync.Mutex
 }
 
 func NewLoadSpec() LoadSpec {
@@ -14,6 +19,9 @@ func NewLoadSpec() LoadSpec {
 	l.files = make(map[string]bool)
 	l.columns = make(map[string]bool)
 
+	l.slabs = make([]*RecordList, 0)
+
+	l.slab_m = &sync.Mutex{}
 	return l
 }
 
