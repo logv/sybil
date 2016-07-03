@@ -273,7 +273,26 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		return
 	}
 
-	cb.records = append(cb.records, records...)
+	querySpec := cb.querySpec
+
+	for _, r := range records {
+		add := true
+		// FILTERING
+		for j := 0; j < len(querySpec.Filters); j++ {
+			// returns True if the record matches!
+			ret := querySpec.Filters[j].Filter(r) != true
+			if ret {
+				add = false
+				break
+			}
+		}
+
+		if !add {
+			continue
+		}
+
+		cb.records = append(cb.records, r)
+	}
 
 	fmt.Fprint(os.Stderr, "+")
 }
