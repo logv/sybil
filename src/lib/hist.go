@@ -6,6 +6,7 @@ import "sort"
 import "strconv"
 
 var NUM_BUCKETS = 1000
+var DEBUG_OUTLIERS = false
 
 type Hist struct {
 	Max     int64
@@ -91,6 +92,15 @@ func (h *Hist) Sum() int64 {
 }
 
 func (h *Hist) addWeightedValue(value int64, weight int64) {
+	// TODO: use more appropriate discard method for .Min to express an order of
+	// magnitude
+	if value > h.info.Max*10 || value < h.info.Min {
+		if DEBUG_OUTLIERS {
+			log.Println("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+		}
+		return
+	}
+
 	if OPTS.WEIGHT_COL || weight > 1 {
 		h.Samples++
 		h.Count += weight

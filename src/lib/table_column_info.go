@@ -1,6 +1,8 @@
 package sybil
 
 import "sort"
+import "math"
+import "log"
 
 // THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
 // it adds update_int_info and update_str_info to Table/TableBlock
@@ -18,6 +20,7 @@ type IntInfo struct {
 	Min   int64
 	Max   int64
 	Avg   float64
+	M2    float64 // used for calculating std dev, expressed as M2 / (Count - 1)
 	Count int
 }
 
@@ -67,6 +70,9 @@ func update_str_info(str_info_table map[int16]*StrInfo, name int16, val, increme
 	info.TopStringCount[int32(val)] += increment
 }
 
+var STD_CUTOFF = 1000.0 // if value is 1000 SDs away, we ignore it
+var MIN_CUTOFF = 5      // need at least this many elements before we determine min/max
+
 func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 	info, ok := int_info_table[name]
 	if !ok {
@@ -78,16 +84,50 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 		info.Count = 1
 	}
 
+	delta := float64(val) - info.Avg
+	stddev := info.M2 / float64(info.Count-1)
+	if stddev <= 1 {
+		stddev = math.Max(info.Avg, 1.0) // assume large standard deviation early on
+	}
+
+	ignored := false
+
 	if info.Max < val {
-		info.Max = val
+		// calculate how off the current value is from mean in terms of our
+		// standard deviation and decide whether it is an extreme outlier or not
+		delta_in_stddev := math.Abs(delta) / stddev
+
+		if delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF {
+			info.Max = val
+		} else {
+			ignored = true
+
+			if info.Count > MIN_CUTOFF {
+				log.Println("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+			}
+		}
 	}
 
 	if info.Min > val {
-		info.Min = val
+		delta_in_stddev := math.Abs(delta) / stddev
+
+		if delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF {
+			info.Min = val
+		} else {
+			ignored = true
+			if info.Count > MIN_CUTOFF {
+				log.Println("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+			}
+		}
 	}
 
-	info.Avg = info.Avg + (float64(val)-info.Avg)/float64(info.Count)
+	if ignored == false || info.Count < MIN_CUTOFF {
+		info.Avg = info.Avg + delta/float64(info.Count)
 
+		// for online variance calculation
+		info.M2 = info.M2 + delta*(float64(val)-info.Avg)
+
+	}
 	info.Count++
 }
 

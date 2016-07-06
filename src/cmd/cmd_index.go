@@ -31,4 +31,5 @@ func RunIndexCmdLine() {
 		loadSpec.Int(v)
 	}
 	t.LoadRecords(&loadSpec)
+	t.SaveTableInfo("info")
 }

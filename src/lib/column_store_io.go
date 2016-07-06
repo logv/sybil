@@ -88,6 +88,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 			// bookkeeping for info.db
 			tb.update_int_info(k, bucket)
+			tb.table.update_int_info(k, bucket)
 		}
 
 		intCol.BucketEncoded = true

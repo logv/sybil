@@ -362,6 +362,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		}
 	}
 
+	if *FLAGS.UPDATE_TABLE_INFO {
+		log.Println("RESETTING TABLE INFO FOR OVERWRITING")
+		t.IntInfo = make(IntInfoTable)
+		t.StrInfo = make(StrInfoTable)
+	}
+
 	m := &sync.Mutex{}
 
 	load_all := false
