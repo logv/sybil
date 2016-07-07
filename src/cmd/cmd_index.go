@@ -5,7 +5,6 @@ import "flag"
 import "strings"
 
 func RunIndexCmdLine() {
-	var f_STRS = flag.String("str", "", "Str values to index")
 	var f_INTS = flag.String("int", "", "Integer values to index")
 	flag.Parse()
 	if *sybil.FLAGS.TABLE == "" {
@@ -18,11 +17,6 @@ func RunIndexCmdLine() {
 		ints = strings.Split(*f_INTS, ",")
 	}
 
-	var strs []string
-	if *f_STRS != "" {
-		ints = strings.Split(*f_STRS, ",")
-	}
-
 	sybil.FLAGS.UPDATE_TABLE_INFO = &TRUE
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
@@ -33,9 +27,6 @@ func RunIndexCmdLine() {
 	sybil.OPTS.WRITE_BLOCK_INFO = true
 
 	loadSpec := t.NewLoadSpec()
-	for _, v := range strs {
-		loadSpec.Str(v)
-	}
 	for _, v := range ints {
 		loadSpec.Int(v)
 	}
