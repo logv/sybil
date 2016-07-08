@@ -52,6 +52,7 @@ type FlagDefs struct {
 	SAMPLES    *bool
 
 	UPDATE_TABLE_INFO *bool
+	SKIP_OUTLIERS     *bool
 
 	// Join keys
 	JOIN_TABLE *string
@@ -117,6 +118,7 @@ func SetDefaults() {
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
+	FLAGS.SKIP_OUTLIERS = &TRUE
 	FLAGS.SAMPLES = &FALSE
 
 	FLAGS.RECYCLE_MEM = &TRUE
