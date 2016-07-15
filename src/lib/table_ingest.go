@@ -86,7 +86,9 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 		t.RowBlock = &TableBlock{}
 		(*t.RowBlock).RecordList = make(RecordList, 0)
 		t.RowBlock.Info = &SavedColumnInfo{}
+		t.block_m.Lock()
 		t.BlockList[ROW_STORE_BLOCK] = t.RowBlock
+		t.block_m.Unlock()
 		t.RowBlock.Name = ROW_STORE_BLOCK
 	}
 
