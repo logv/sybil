@@ -8,6 +8,7 @@ import "fmt"
 import "strconv"
 import "io/ioutil"
 import "time"
+import "encoding/gob"
 
 var LOCK_US = time.Millisecond * 3
 var LOCK_TRIES = 50
@@ -104,6 +105,43 @@ func (l *BlockLock) Recover() bool {
 	}
 
 	return true
+}
+
+func (l *CacheLock) Recover() bool {
+	log.Println("RECOVERING BLOCK LOCK", l.Name)
+	t := l.Table
+	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
+
+	if err != nil {
+		l.ForceDeleteFile()
+		return true
+	}
+
+	for _, block_file := range files {
+		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
+		block_cache := SavedBlockCache{}
+
+		file, err := os.Open(filename)
+		if err != nil {
+			os.RemoveAll(filename)
+			continue
+		}
+
+		dec := gob.NewDecoder(file)
+		err = dec.Decode(&block_cache)
+
+		if err != nil {
+			os.RemoveAll(filename)
+			log.Println("DELETING BAD CACHE FILE", filename)
+
+		}
+
+	}
+
+	l.ForceDeleteFile()
+
+	return true
+
 }
 
 func (l *Lock) Recover() bool {
