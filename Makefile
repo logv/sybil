@@ -28,7 +28,7 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	go test ./src/lib/
+	go test ./src/lib/ -v 2>/dev/null
 
 testv:
 	go test ./src/lib/ -v
