@@ -377,7 +377,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	count := 0
 	skipped := 0
-	block_count := 0
 	broken_count := 0
 	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
@@ -431,7 +430,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 
 				if len(block.RecordList) > 0 {
-					block_count++
 
 					if querySpec != nil { // Load and Query
 						blockQuery := CopyQuerySpec(querySpec)
@@ -518,7 +516,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		wg.Add(1)
 		go func() {
 			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
+			m.Lock()
 			logend = time.Now()
+			m.Unlock()
 		}()
 	}
 
@@ -531,8 +531,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	if *FLAGS.READ_INGESTION_LOG {
+		m.Lock()
 		log.Println("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		log.Println("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
+		m.Unlock()
 		count += rowStoreQuery.count
 
 		if DELETE_BLOCKS_AFTER_QUERY == false && t.RowBlock != nil {

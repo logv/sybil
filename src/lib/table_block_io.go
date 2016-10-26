@@ -175,11 +175,10 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 	t.block_m.Lock()
 	t.BlockInfoCache[dirname] = &info
-	t.block_m.Unlock()
-
 	if info.NumRecords >= int32(CHUNK_SIZE) {
 		t.NewBlockInfos = append(t.NewBlockInfos, dirname)
 	}
+	t.block_m.Unlock()
 
 	return &info
 }

@@ -292,6 +292,7 @@ func (l *Lock) Grab() bool {
 
 		nf, err := os.Create(lockfile)
 		if err != nil {
+			log.Println("CANT CREATE LOCK FILE:", err)
 			continue
 		}
 

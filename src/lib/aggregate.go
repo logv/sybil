@@ -204,8 +204,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	// Now to unpack the byte buffers we oh so stupidly used in the group by...
 
 	if len(querySpec.TimeResults) > 0 {
-		for _, result_map := range querySpec.TimeResults {
-			translate_group_by(result_map, querySpec.Groups, columns)
+		for k, result_map := range querySpec.TimeResults {
+			querySpec.TimeResults[k] = *translate_group_by(result_map, querySpec.Groups, columns)
 		}
 
 	}

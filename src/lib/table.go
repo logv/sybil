@@ -3,6 +3,8 @@ package sybil
 import "fmt"
 import "log"
 import "sync"
+import "os"
+import "path"
 
 var ROW_STORE_BLOCK = "ROW_STORE"
 
@@ -193,6 +195,11 @@ func (t *Table) PrintRecord(r *Record) {
 
 		}
 	}
+}
+
+func (t *Table) MakeDir() {
+	tabledir := path.Join(*FLAGS.DIR, t.Name)
+	os.MkdirAll(tabledir, 0755)
 }
 
 func (t *Table) PrintRecords(records RecordList) {

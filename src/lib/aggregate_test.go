@@ -2,10 +2,11 @@ package sybil_test
 
 import sybil "./"
 
-import "math"
 import "fmt"
+import "log"
 import "sort"
 import "strconv"
+import "math"
 import "math/rand"
 import "testing"
 import "strings"
@@ -154,7 +155,7 @@ func TestHistograms(test *testing.T) {
 
 	sort.Ints(ages)
 
-	prev_count := int64(0)
+	prev_count := int64(math.MaxInt64)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
@@ -176,9 +177,9 @@ func TestHistograms(test *testing.T) {
 			}
 		}
 
-		fmt.Println("PERCENTILES", percentiles)
-		fmt.Println("AGES", ages)
-		fmt.Println("BUCKETS", v.Hists["age"].GetBuckets())
+		log.Println("PERCENTILES", percentiles)
+		log.Println("AGES", ages)
+		log.Println("BUCKETS", v.Hists["age"].GetBuckets())
 	}
 
 	querySpec.OrderBy = "age"
