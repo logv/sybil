@@ -2,7 +2,6 @@ package sybil
 
 import "log"
 import "fmt"
-import "encoding/gob"
 import "io/ioutil"
 import "path"
 import "os"
@@ -22,8 +21,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 	info := SavedColumnInfo{}
 	filename := fmt.Sprintf("%s/info.db", dirname)
 
-	file, _ := os.Open(filename)
-	dec := gob.NewDecoder(file)
+	dec := GetFileDecoder(filename)
 	err := dec.Decode(&info)
 
 	if err != nil {
@@ -35,7 +33,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 		return nil
 	}
 
-	file, _ = os.Open(dirname)
+	file, _ := os.Open(dirname)
 	files, _ := file.Readdir(-1)
 
 	size := int64(0)
@@ -50,7 +48,9 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 		col_name := fname
 		col_type := _NO_VAL
 
-		col_name = strings.Replace(col_name, ".db", "", 1)
+		col_name = strings.TrimRight(col_name, ".gz")
+		col_name = strings.TrimRight(col_name, ".db")
+
 		switch {
 		case strings.HasPrefix(fname, "str"):
 			col_name = strings.Replace(col_name, "str_", "", 1)

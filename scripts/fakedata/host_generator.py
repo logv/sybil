@@ -17,13 +17,14 @@ def rand_record():
 
     global IDX
 
+    rand_host = random.choice(HOSTS)
     record["status"] = str(random.choice(STATII))
-    record["host"] = random.choice(HOSTS)
+    record["host"] = rand_host
     record["ping"] = abs(random.gauss(60, 20))
     record["weight"] = random.choice([1, 10, 100])
     time_allowance = 60 * 60 * 24 * 7 * 4 # 1 month?
     record["time"] = int(time.time()) + random.randint(-time_allowance, time_allowance)
-    record["host_cat"] = random.choice(HOSTS) + str(IDX)
+    record["host_cat"] = rand_host + str(IDX)
     record["index_set"] = [ IDX ]
     record["index_int"] = IDX
     record["index_str"] = str(IDX)

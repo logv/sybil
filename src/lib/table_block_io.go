@@ -5,8 +5,9 @@ import "fmt"
 import "time"
 import "os"
 import "strings"
-import "encoding/gob"
 import "sync"
+
+var GZIP_EXT = ".gz"
 
 func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {
 	if len(records) == 0 {
@@ -159,8 +160,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 	istart := time.Now()
 	filename := fmt.Sprintf("%s/info.db", dirname)
 
-	file, _ := os.Open(filename)
-	dec := gob.NewDecoder(file)
+	dec := GetFileDecoder(filename)
 	err := dec.Decode(&info)
 
 	if err != nil {
@@ -214,15 +214,16 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 	size := int64(0)
 
-	var wg sync.WaitGroup
-
 	for _, f := range files {
 		fname := f.Name()
 		fsize := f.Size()
 		size += fsize
 
+		// over here, we have to accomodate .gz extension, i guess
 		if loadSpec != nil {
-			if loadSpec.files[fname] != true && load_records == false {
+			// we cut off extensions to check our loadSpec
+			cname := strings.TrimRight(fname, GZIP_EXT)
+			if loadSpec.files[cname] != true && load_records == false {
 				continue
 			}
 		} else if load_records == false {
@@ -231,12 +232,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 		filename := fmt.Sprintf("%s/%s", dirname, fname)
 
-		file, err := os.Open(filename)
-		if err != nil {
-			log.Fatal("Error Loading Column!", filename, err)
-		}
+		dec := GetFileDecoder(filename)
 
-		dec := gob.NewDecoder(file)
 		switch {
 		case strings.HasPrefix(fname, "str"):
 			tb.unpackStrCol(dec, *info)
@@ -246,8 +243,6 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 			tb.unpackIntCol(dec, *info)
 		}
 	}
-
-	wg.Wait()
 
 	tb.Size = size
 

@@ -9,6 +9,7 @@ Test Plan:
   * [x] Write to column store
   * [x] Load from column store
     * [x] Verify ints, strs, sets
+    * [x] Verify compressed db and info files are readable
   * Filters:
     * [x] Int: gt, lt, !eq, ne
     * [x] Str: !eq, ne, re, nre

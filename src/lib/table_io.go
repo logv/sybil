@@ -143,20 +143,14 @@ func (t *Table) LoadTableInfo() bool {
 }
 
 func (t *Table) LoadTableInfoFrom(filename string) bool {
-	var file *os.File
 	saved_table := Table{Name: t.Name}
 	saved_table.init_data_structures()
 
 	start := time.Now()
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return false
-	}
-
 	log.Println("OPENING TABLE INFO FROM FILENAME", filename)
-	dec := gob.NewDecoder(file)
-	err = dec.Decode(&saved_table)
+	dec := GetFileDecoder(filename)
+	err := dec.Decode(&saved_table)
 	end := time.Now()
 	if err != nil {
 		log.Println("Warning: TABLE INFO DECODE:", err)
@@ -259,13 +253,11 @@ func (t *Table) LoadBlockCache() {
 			continue
 		}
 
-		file, err := os.Open(filename)
+		dec := GetFileDecoder(filename)
+		err = dec.Decode(&block_cache)
 		if err != nil {
 			continue
 		}
-
-		dec := gob.NewDecoder(file)
-		err = dec.Decode(&block_cache)
 
 		for k, v := range block_cache {
 			t.BlockInfoCache[k] = v

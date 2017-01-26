@@ -108,15 +108,9 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	log.Println("LOADING RECORDS FROM LOG", filename)
 	var marshalled_records []*SavedRecord
 
-	file, err := os.Open(filename)
-
-	if err != nil {
-		log.Println("ERROR OPENING FILE", filename, err)
-	}
-
 	// Create an encoder and send a value.
-	enc := gob.NewDecoder(file)
-	err = enc.Decode(&marshalled_records)
+	dec := GetFileDecoder(filename)
+	err := dec.Decode(&marshalled_records)
 
 	if err != nil {
 		log.Println("ERROR LOADING INGESTION LOG", err)
@@ -128,16 +122,9 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	var marshalled_records []*SavedRecord
 
-	file, err := os.Open(filename)
-
-	if err != nil {
-		log.Println("ERROR OPENING FILE", filename, err)
-	}
-
 	// Create an encoder and send a value.
-	enc := gob.NewDecoder(file)
-	err = enc.Decode(&marshalled_records)
-
+	dec := GetFileDecoder(filename)
+	err := dec.Decode(&marshalled_records)
 	if err != nil {
 		log.Println("ERROR LOADING INGESTION LOG", err)
 	}
@@ -147,8 +134,8 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	for i, r := range marshalled_records {
 		ret[i] = r.toRecord(t)
 	}
-
 	return ret
+
 }
 
 func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {

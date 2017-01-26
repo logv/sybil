@@ -17,7 +17,8 @@ func setupCommands() {
 	CMD_FUNCS["session"] = cmd.RunSessionizeCmdLine
 	CMD_FUNCS["trim"] = cmd.RunTrimCmdLine
 	CMD_FUNCS["query"] = cmd.RunQueryCmdLine
-	CMD_FUNCS["rebuild"] = cmd.RunIndexCmdLine
+	CMD_FUNCS["index"] = cmd.RunIndexCmdLine
+	CMD_FUNCS["rebuild"] = cmd.RunRebuildCmdLine
 	CMD_FUNCS["inspect"] = cmd.RunInspectCmdLine
 
 	for k, _ := range CMD_FUNCS {

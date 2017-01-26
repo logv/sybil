@@ -95,7 +95,10 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	for _, file := range files {
 		filename := file.Name()
 
-		if strings.HasSuffix(filename, ".db") == false {
+		// we can open .gz files as well as regular .db files
+		cname := strings.TrimRight(filename, GZIP_EXT)
+
+		if strings.HasSuffix(cname, ".db") == false {
 			continue
 		}
 

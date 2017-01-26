@@ -2,19 +2,15 @@ package sybil_cmd
 
 import sybil "github.com/logv/sybil/src/lib"
 
-import "encoding/gob"
 import "flag"
 import "log"
 import "strconv"
-import "os"
 
 func decodeTableInfo(digest_file *string) bool {
+	dec := sybil.GetFileDecoder(*digest_file)
 
 	saved_table := sybil.Table{}
-
-	file, err := os.Open(*digest_file)
-	dec := gob.NewDecoder(file)
-	err = dec.Decode(&saved_table)
+	err := dec.Decode(&saved_table)
 
 	if err != nil || len(saved_table.KeyTable) == 0 {
 		return false
@@ -27,11 +23,10 @@ func decodeTableInfo(digest_file *string) bool {
 }
 
 func decodeInfoCol(digest_file *string) bool {
+	dec := sybil.GetFileDecoder(*digest_file)
 
-	file, err := os.Open(*digest_file)
-	dec := gob.NewDecoder(file)
 	info := sybil.SavedColumnInfo{}
-	err = dec.Decode(&info)
+	err := dec.Decode(&info)
 
 	if err != nil {
 		log.Println("ERROR", err)
@@ -45,11 +40,10 @@ func decodeInfoCol(digest_file *string) bool {
 }
 
 func decodeIntCol(digest_file *string) bool {
+	dec := sybil.GetFileDecoder(*digest_file)
 
-	file, err := os.Open(*digest_file)
-	dec := gob.NewDecoder(file)
 	info := sybil.SavedIntColumn{}
-	err = dec.Decode(&info)
+	err := dec.Decode(&info)
 
 	if err != nil {
 		log.Println("ERROR", err)
@@ -63,11 +57,10 @@ func decodeIntCol(digest_file *string) bool {
 }
 
 func decodeStrCol(digest_file *string) bool {
+	dec := sybil.GetFileDecoder(*digest_file)
 
-	file, err := os.Open(*digest_file)
-	dec := gob.NewDecoder(file)
 	info := sybil.SavedStrColumn{}
-	err = dec.Decode(&info)
+	err := dec.Decode(&info)
 
 	bins := make([]string, 0)
 	for _, bin := range info.Bins {

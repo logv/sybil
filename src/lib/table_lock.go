@@ -8,7 +8,6 @@ import "fmt"
 import "strconv"
 import "io/ioutil"
 import "time"
-import "encoding/gob"
 
 var LOCK_US = time.Millisecond * 3
 var LOCK_TRIES = 50
@@ -121,14 +120,12 @@ func (l *CacheLock) Recover() bool {
 		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
 		block_cache := SavedBlockCache{}
 
-		file, err := os.Open(filename)
+		dec := GetFileDecoder(filename)
+		err := dec.Decode(&block_cache)
 		if err != nil {
 			os.RemoveAll(filename)
 			continue
 		}
-
-		dec := gob.NewDecoder(file)
-		err = dec.Decode(&block_cache)
 
 		if err != nil {
 			os.RemoveAll(filename)
