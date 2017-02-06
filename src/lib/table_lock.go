@@ -284,12 +284,13 @@ func (l *Lock) Grab() bool {
 		return false
 	}
 
+	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
 		time.Sleep(LOCK_US)
 
-		nf, err := os.Create(lockfile)
-		if err != nil {
-			log.Println("CANT CREATE LOCK FILE:", err)
+		nf, er := os.Create(lockfile)
+		if er != nil {
+			err = er
 			continue
 		}
 
@@ -307,6 +308,7 @@ func (l *Lock) Grab() bool {
 		return true
 	}
 
+	log.Println("CANT CREATE LOCK FILE:", err)
 	log.Println("LOCK FAIL!", lockfile)
 	return false
 
