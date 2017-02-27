@@ -3,7 +3,7 @@ package sybil_test
 import sybil "./"
 
 import "fmt"
-import "log"
+
 import "sort"
 import "strconv"
 import "math"
@@ -177,9 +177,9 @@ func TestHistograms(test *testing.T) {
 			}
 		}
 
-		log.Println("PERCENTILES", percentiles)
-		log.Println("AGES", ages)
-		log.Println("BUCKETS", v.Hists["age"].GetBuckets())
+		Debug("PERCENTILES", percentiles)
+		Debug("AGES", ages)
+		Debug("BUCKETS", v.Hists["age"].GetBuckets())
 	}
 
 	querySpec.OrderBy = "age"

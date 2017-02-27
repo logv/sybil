@@ -78,7 +78,7 @@ Emergency Maintenance Commands:
 func printCommandHelp() {
 	sort.Strings(CMD_KEYS)
 
-	fmt.Printf(USAGE)
+	fmt.Print(USAGE)
 	log.Fatal()
 }
 

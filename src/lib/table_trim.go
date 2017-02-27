@@ -1,7 +1,7 @@
 package sybil
 
 import "sort"
-import "log"
+
 
 type TrimSpec struct {
 	MBLimit      int64 // size limit of DB in megabytes
@@ -12,7 +12,7 @@ type TrimSpec struct {
 // memory limits
 func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 	t.LoadRecords(nil)
-	log.Println("TRIMMING TABLE, MEMORY LIMIT", trimSpec.MBLimit, "TIME LIMIT", trimSpec.DeleteBefore)
+	Debug("TRIMMING TABLE, MEMORY LIMIT", trimSpec.MBLimit, "TIME LIMIT", trimSpec.DeleteBefore)
 
 	blocks := make([]*TableBlock, 0)
 	to_trim := make([]*TableBlock, 0)

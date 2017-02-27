@@ -1,7 +1,5 @@
 package sybil
 
-import "fmt"
-import "log"
 import "sync"
 import "os"
 import "path"
@@ -104,7 +102,7 @@ func (t *Table) populate_string_id_lookup() {
 
 	for _, b := range t.BlockList {
 		if b.columns == nil && b.Name != ROW_STORE_BLOCK {
-			log.Println("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
+			Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
 			t.block_m.Lock()
 			delete(t.BlockList, b.Name)
 			t.block_m.Unlock()
@@ -146,9 +144,9 @@ func (t *Table) set_key_type(name_id int16, col_type int8) bool {
 		t.KeyTypes[name_id] = col_type
 	} else {
 		if cur_type != col_type {
-			log.Println("TABLE", t.KeyTable)
-			log.Println("TYPES", t.KeyTypes)
-			log.Print("Warning, trying to over-write column type for key ", name_id, t.get_string_for_key(int(name_id)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
+			Debug("TABLE", t.KeyTable)
+			Debug("TYPES", t.KeyTypes)
+			Warn("trying to over-write column type for key ", name_id, t.get_string_for_key(int(name_id)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
 			return false
 		}
 	}
@@ -171,25 +169,25 @@ func (t *Table) NewRecord() *Record {
 }
 
 func (t *Table) PrintRecord(r *Record) {
-	log.Println("RECORD", r)
+	Print("RECORD", r)
 
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			fmt.Println("  ", name, col.get_string_for_key(name), val)
+			Print("  ", name, col.get_string_for_key(name), val)
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			fmt.Println("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
+			Print("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
 		}
 	}
 	for name, vals := range r.SetMap {
 		if r.Populated[name] == SET_VAL {
 			col := r.block.GetColumnInfo(int16(name))
 			for _, val := range vals {
-				fmt.Println("  ", name, col.get_string_for_key(int(name)), val, col.get_string_for_val(int32(val)))
+				Print("  ", name, col.get_string_for_key(int(name)), val, col.get_string_for_val(int32(val)))
 
 			}
 

@@ -2,7 +2,6 @@ package sybil_cmd
 
 import sybil "github.com/logv/sybil/src/lib"
 
-import "log"
 import "fmt"
 import "flag"
 import "strings"
@@ -27,7 +26,7 @@ func addQueryFlags() {
 	sybil.FLAGS.WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
 	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
-	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
+	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
 	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
@@ -118,7 +117,7 @@ func RunQueryCmdLine() {
 		count += int(block.Info.NumRecords)
 	}
 
-	log.Println("WILL INSPECT", count, "RECORDS")
+	sybil.Debug("WILL INSPECT", count, "RECORDS")
 
 	groupings := []sybil.Grouping{}
 	for _, g := range groups {
@@ -131,14 +130,14 @@ func RunQueryCmdLine() {
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-	log.Println("KEY TABLE", t.KeyTable)
-	log.Println("KEY TYPES", t.KeyTypes)
+	sybil.Debug("KEY TABLE", t.KeyTable)
+	sybil.Debug("KEY TYPES", t.KeyTypes)
 
 	used := make(map[int16]int)
 	for _, v := range t.KeyTable {
 		used[v]++
 		if used[v] > 1 {
-			log.Fatal("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+			sybil.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
 			return
 		}
 	}
@@ -158,7 +157,7 @@ func RunQueryCmdLine() {
 		default:
 			t.PrintColInfo()
 			fmt.Println("")
-			log.Fatal("Unknown column type for column: ", v, t.GetColumnType(v))
+			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
 		}
 
 	}
@@ -181,7 +180,7 @@ func RunQueryCmdLine() {
 	if *sybil.FLAGS.TIME {
 		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = *sybil.FLAGS.TIME_BUCKET
-		log.Println("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
+		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*sybil.FLAGS.TIME_COL)
 		time_col_id, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
 		if ok {
@@ -213,12 +212,12 @@ func RunQueryCmdLine() {
 
 	if !*sybil.FLAGS.PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
-		log.Println("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
+		sybil.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		debug.SetGCPercent(-1)
 
-		log.Println("USING LOAD SPEC", loadSpec)
+		sybil.Debug("USING LOAD SPEC", loadSpec)
 
-		log.Println("USING QUERY SPEC", querySpec)
+		sybil.Debug("USING QUERY SPEC", querySpec)
 
 		start := time.Now()
 		// We can load and query at the same time
@@ -226,7 +225,7 @@ func RunQueryCmdLine() {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
-			log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.PrintResults()
 
 			if sybil.FLAGS.ANOVA_ICC != nil && *sybil.FLAGS.ANOVA_ICC {

@@ -5,7 +5,7 @@ import sybil "./"
 import "strconv"
 import "math/rand"
 import "testing"
-import "log"
+
 
 func TestTableDigestRowRecords(test *testing.T) {
 	delete_test_db()
@@ -47,7 +47,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	count := int32(0)
 	for _, b := range nt.BlockList {
-		log.Println("COUNTING RECORDS IN", b.Name)
+		Debug("COUNTING RECORDS IN", b.Name)
 		count += b.Info.NumRecords
 	}
 

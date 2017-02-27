@@ -1,6 +1,5 @@
 package sybil
 
-import "log"
 import "time"
 import "bytes"
 import "sort"
@@ -280,7 +279,7 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 	}
 	end := time.Now()
 
-	log.Println("JOINING", len(matched), "MATCHED RECORDS TOOK", end.Sub(start))
+	Debug("JOINING", len(matched), "MATCHED RECORDS TOOK", end.Sub(start))
 	return matched
 
 }
@@ -332,7 +331,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	resultSpec.Results = master_result
 
 	aend := time.Now()
-	log.Println("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
+	Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
 
 	return &resultSpec
 }
@@ -353,7 +352,7 @@ func SortResults(querySpec *QuerySpec) {
 
 		end := time.Now()
 		if DEBUG_TIMING {
-			log.Println("SORTING TOOK", end.Sub(start))
+			Debug("SORTING TOOK", end.Sub(start))
 		}
 
 		if len(sorter.Results) > *FLAGS.LIMIT {
@@ -409,7 +408,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	resultSpec := CombineResults(querySpec, block_specs)
 
 	aend := time.Now()
-	log.Println("AGGREGATING TOOK", aend.Sub(start))
+	Debug("AGGREGATING TOOK", aend.Sub(start))
 
 	querySpec.Results = resultSpec.Results
 	querySpec.TimeResults = resultSpec.TimeResults
@@ -424,6 +423,6 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	SortResults(querySpec)
 
-	log.Println(len(matched), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
+	Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }

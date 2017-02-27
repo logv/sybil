@@ -1,7 +1,7 @@
 package sybil
 
 import "regexp"
-import "log"
+
 import "strings"
 import "strconv"
 
@@ -53,7 +53,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 			new_val := int64(val/bucket) * bucket
 
 			if val != new_val {
-				log.Println("ALIGNING TIME FILTER TO BUCKET", val, new_val)
+				Debug("ALIGNING TIME FILTER TO BUCKET", val, new_val)
 				val = new_val
 			}
 		}
@@ -264,7 +264,7 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 	if op == "re" || op == "nre" {
 		strFilter.Regex, err = regexp.Compile(value)
 		if err != nil {
-			log.Println("REGEX ERROR", err, "WITH", value)
+			Debug("REGEX ERROR", err, "WITH", value)
 		}
 	}
 

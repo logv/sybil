@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 import "path"
 import "os"
 import "syscall"
@@ -48,33 +48,33 @@ func RecoverLock(lock RecoverableLock) bool {
 
 func (l *InfoLock) Recover() bool {
 	t := l.Lock.Table
-	log.Println("INFO LOCK RECOVERY")
+	Debug("INFO LOCK RECOVERY")
 	dirname := path.Join(*FLAGS.DIR, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
 	if t.LoadTableInfoFrom(infodb) {
-		log.Println("LOADED REASONABLE TABLE INFO, DELETING LOCK")
+		Debug("LOADED REASONABLE TABLE INFO, DELETING LOCK")
 		l.ForceDeleteFile()
 		return true
 	}
 
 	if t.LoadTableInfoFrom(backup) {
-		log.Println("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
+		Debug("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
 		os.Remove(infodb)
 		os.Rename(backup, infodb)
 		l.ForceDeleteFile()
 		return l.Grab()
 	}
 
-	log.Println("CANT READ info.db OR RECOVER info.bak")
-	log.Println("TRY DELETING LOCK BY HAND FOR", l.Name)
+	Debug("CANT READ info.db OR RECOVER info.bak")
+	Debug("TRY DELETING LOCK BY HAND FOR", l.Name)
 
 	return false
 }
 
 func (l *DigestLock) Recover() bool {
-	log.Println("RECOVERING DIGEST LOCK", l.Name)
+	Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
 	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
 
@@ -89,16 +89,16 @@ func (l *DigestLock) Recover() bool {
 }
 
 func (l *BlockLock) Recover() bool {
-	log.Println("RECOVERING BLOCK LOCK", l.Name)
+	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
 	tb := t.LoadBlockFromDir(l.Name, nil, true)
 	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
-		log.Println("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
+		Debug("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...
 		os.Rename(l.Name, fmt.Sprint(l.Name, ".broke"))
 		l.ForceDeleteFile()
 	} else {
-		log.Println("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")
+		Debug("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")
 		os.RemoveAll(fmt.Sprint(l.Name, ".partial"))
 		l.ForceDeleteFile()
 	}
@@ -107,7 +107,7 @@ func (l *BlockLock) Recover() bool {
 }
 
 func (l *CacheLock) Recover() bool {
-	log.Println("RECOVERING BLOCK LOCK", l.Name)
+	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
 	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
 
@@ -129,7 +129,7 @@ func (l *CacheLock) Recover() bool {
 
 		if err != nil {
 			os.RemoveAll(filename)
-			log.Println("DELETING BAD CACHE FILE", filename)
+			Debug("DELETING BAD CACHE FILE", filename)
 
 		}
 
@@ -142,7 +142,7 @@ func (l *CacheLock) Recover() bool {
 }
 
 func (l *Lock) Recover() bool {
-	log.Println("UNIMPLEMENTED RECOVERY FOR LOCK", l.Table.Name, l.Name)
+	Debug("UNIMPLEMENTED RECOVERY FOR LOCK", l.Table.Name, l.Name)
 	return false
 }
 
@@ -154,7 +154,7 @@ func (l *Lock) ForceDeleteFile() {
 	// Check to see if this file is locked...
 	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
-	log.Println("FORCE DELETING", lockfile)
+	Debug("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
 }
 
@@ -166,7 +166,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 	// Check to see if this file is locked...
 	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
-	log.Println("FORCE MAKING", lockfile)
+	Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
 	if err != nil {
 		nf, err = os.OpenFile(lockfile, os.O_CREATE, 0666)
@@ -204,8 +204,8 @@ func check_if_broken(lockfile string, l *Lock) bool {
 
 		if err != nil {
 			l.broken = true
-			log.Println("CANT READ PID FROM INFO LOCK:", string(val), err)
-			log.Println("PUTTING INFO LOCK INTO RECOVERY")
+			Debug("CANT READ PID FROM INFO LOCK:", string(val), err)
+			Debug("PUTTING INFO LOCK INTO RECOVERY")
 			return false
 		}
 	}
@@ -224,12 +224,12 @@ func check_if_broken(lockfile string, l *Lock) bool {
 				if err == nil {
 					if string(nextval) == string(val) {
 						if l.broken {
-							log.Println("SECOND TRY TO RECOVER A BROKEN LOCK... GIVING UP")
+							Debug("SECOND TRY TO RECOVER A BROKEN LOCK... GIVING UP")
 							l.broken = false
 							return true
 						}
 
-						log.Println("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.Name, val)
+						Debug("OWNER PROCESS IS DEAD, MARKING LOCK FOR RECOVERY", l.Name, val)
 						l.broken = true
 					}
 				}
@@ -304,12 +304,12 @@ func (l *Lock) Grab() bool {
 			continue
 		}
 
-		log.Println("LOCKING", lockfile)
+		Debug("LOCKING", lockfile)
 		return true
 	}
 
-	log.Println("CANT CREATE LOCK FILE:", err)
-	log.Println("LOCK FAIL!", lockfile)
+	Debug("CANT CREATE LOCK FILE:", err)
+	Debug("LOCK FAIL!", lockfile)
 	return false
 
 }
@@ -329,7 +329,7 @@ func (l *Lock) Release() bool {
 		}
 
 		if is_active_pid(val) {
-			log.Println("UNLOCKING", lockfile)
+			Debug("UNLOCKING", lockfile)
 			os.RemoveAll(lockfile)
 			break
 		}

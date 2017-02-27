@@ -1,6 +1,5 @@
 package sybil
 
-import "log"
 import "fmt"
 import "time"
 import "os"
@@ -50,7 +49,7 @@ func (t *Table) FillPartialBlock() bool {
 
 	open_blocks := t.FindPartialBlocks()
 
-	log.Println("OPEN BLOCKS", open_blocks)
+	Debug("OPEN BLOCKS", open_blocks)
 	var filename string
 
 	if len(open_blocks) == 0 {
@@ -61,10 +60,10 @@ func (t *Table) FillPartialBlock() bool {
 		filename = b.Name
 	}
 
-	log.Println("OPENING PARTIAL BLOCK", filename)
+	Debug("OPENING PARTIAL BLOCK", filename)
 
 	if t.GrabBlockLock(filename) == false {
-		log.Println("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
+		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
 
@@ -77,7 +76,7 @@ func (t *Table) FillPartialBlock() bool {
 	}
 
 	partialRecords := block.RecordList
-	log.Println("LAST BLOCK HAS", len(partialRecords), "RECORDS")
+	Debug("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
 	if len(partialRecords) < CHUNK_SIZE {
 		delta := CHUNK_SIZE - len(partialRecords)
@@ -85,7 +84,7 @@ func (t *Table) FillPartialBlock() bool {
 			delta = len(t.newRecords)
 		}
 
-		log.Println("SAVING PARTIAL RECORDS", delta, "TO", filename)
+		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
 		t.SaveRecordsToBlock(partialRecords, filename)
 		if delta < len(t.newRecords) {
@@ -164,13 +163,13 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		log.Println("Warning: ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
+		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
 		return &info
 	}
 	iend := time.Now()
 
 	if DEBUG_TIMING {
-		log.Println("LOAD BLOCK INFO TOOK", iend.Sub(istart))
+		Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
 	t.block_m.Lock()
@@ -288,5 +287,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, r)
 	}
 
-	fmt.Fprint(os.Stderr, "+")
+	if *DEBUG_FLAG {
+		fmt.Fprint(os.Stderr, "+")
+	}
 }

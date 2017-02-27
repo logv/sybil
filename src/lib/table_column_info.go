@@ -2,7 +2,7 @@ package sybil
 
 import "sort"
 import "math"
-import "log"
+
 
 // THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
 // it adds update_int_info and update_str_info to Table/TableBlock
@@ -103,7 +103,7 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 			ignored = true
 
 			if info.Count > MIN_CUTOFF {
-				log.Println("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+				Debug("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 		} else {
 			ignored = true
 			if info.Count > MIN_CUTOFF {
-				log.Println("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+				Debug("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
 			}
 		}
 	}

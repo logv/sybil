@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 
 type Record struct {
 	Strs      []StrField
@@ -114,7 +114,7 @@ func (r *Record) AddStrField(name string, val string) {
 	r.Populated[name_id] = STR_VAL
 
 	if r.block.table.set_key_type(name_id, STR_VAL) == false {
-		log.Fatalln("COULDNT SET STR VAL", name, val, name_id)
+		Error("COULDNT SET STR VAL", name, val, name_id)
 	}
 }
 
@@ -126,7 +126,7 @@ func (r *Record) AddIntField(name string, val int64) {
 	r.Ints[name_id] = IntField(val)
 	r.Populated[name_id] = INT_VAL
 	if r.block.table.set_key_type(name_id, INT_VAL) == false {
-		log.Fatalln("COULDNT SET INT VAL", name, val, name_id)
+		Error("COULDNT SET INT VAL", name, val, name_id)
 	}
 }
 
@@ -146,7 +146,7 @@ func (r *Record) AddSetField(name string, val []string) {
 	r.SetMap[name_id] = SetField(vals)
 	r.Populated[name_id] = SET_VAL
 	if r.block.table.set_key_type(name_id, SET_VAL) == false {
-		log.Fatalln("COULDNT SET SET VAL", name, val, name_id)
+		Error("COULDNT SET SET VAL", name, val, name_id)
 	}
 }
 

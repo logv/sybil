@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 import "sync"
 
 type LoadSpec struct {
@@ -39,7 +39,7 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 	name_id := l.table.get_key_id(name)
 
 	if l.table.KeyTypes[name_id] == 0 {
-		log.Fatal("Query Error! Column ", name, " does not exist")
+		Error("Query Error! Column ", name, " does not exist")
 	}
 
 	if l.table.KeyTypes[name_id] != col_type {
@@ -53,7 +53,7 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 			col_type_name = "Set"
 		}
 
-		log.Fatal("Query Error! Key ", name, " exists, but is not of type ", col_type_name)
+		Error("Query Error! Key ", name, " exists, but is not of type ", col_type_name)
 	}
 }
 

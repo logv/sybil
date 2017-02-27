@@ -1,7 +1,6 @@
 package sybil_cmd
 
 import "flag"
-import "log"
 
 import sybil "github.com/logv/sybil/src/lib"
 
@@ -24,7 +23,7 @@ func RunDigestCmdLine() {
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
-		log.Println("Warning: Couldn't read table info, exiting early")
+		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}
 	t.DigestRecords()

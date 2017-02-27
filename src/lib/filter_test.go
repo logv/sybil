@@ -7,7 +7,7 @@ import "math/rand"
 import "strconv"
 import "math"
 import "strings"
-import "log"
+
 
 func TestFilters(test *testing.T) {
 	delete_test_db()
@@ -121,7 +121,7 @@ func testIntNeq(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		log.Println("TEST INT NEQ", k, v.Hists["age"].Avg)
+		Debug("TEST INT NEQ", k, v.Hists["age"].Avg)
 		if math.Abs(20-float64(v.Hists["age"].Avg)) < 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Avg)
 		}
@@ -167,10 +167,10 @@ func testStrEq(test *testing.T) {
 
 	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
 
-	log.Println("QUERY SPEC", querySpec.Results)
+	Debug("QUERY SPEC", querySpec.Results)
 
 	nt.MatchAndAggregate(&querySpec)
-	log.Println("QUERY SPEC RESULTS", querySpec.Results)
+	Debug("QUERY SPEC RESULTS", querySpec.Results)
 
 	if len(querySpec.Results) <= 0 {
 		test.Error("Str Filter for age 20 returned no results")

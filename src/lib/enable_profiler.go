@@ -3,7 +3,7 @@
 package sybil
 
 import "github.com/pkg/profile"
-import "log"
+
 
 var PROFILER_ENABLED = true
 var PROFILE ProfilerStart
@@ -28,6 +28,6 @@ func STOP_PROFILER() {
 }
 
 var RUN_PROFILER = func() ProfilerStop {
-	log.Println("RUNNING ENABLED PROFILER")
+	Debug("RUNNING ENABLED PROFILER")
 	return PkgProfile{}
 }

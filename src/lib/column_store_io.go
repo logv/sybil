@@ -2,7 +2,7 @@ package sybil
 
 import "fmt"
 import "bytes"
-import "log"
+
 import "os"
 import "encoding/gob"
 import "strings"
@@ -66,7 +66,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 	for k, v := range same_ints {
 		col_name := tb.get_string_for_key(k)
 		if col_name == "" {
-			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
+			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
 			continue
 		}
 		intCol := NewSavedIntColumn()
@@ -123,7 +123,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		err := enc.Encode(intCol)
 
 		if err != nil {
-			log.Fatal("encode:", err)
+			Error("encode:", err)
 		}
 
 		action := "SERIALIZED"
@@ -131,7 +131,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		log.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 
@@ -146,7 +146,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		if col_name == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
-			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
+			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
 			continue
 		}
 		setCol := SavedSetColumn{}
@@ -204,7 +204,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		err := enc.Encode(setCol)
 
 		if err != nil {
-			log.Fatal("encode:", err)
+			Error("encode:", err)
 		}
 
 		action := "SERIALIZED"
@@ -212,7 +212,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		log.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 		network.WriteTo(w)
@@ -226,7 +226,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		if col_name == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
-			log.Println("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
+			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
 			continue
 		}
 		strCol := NewSavedStrColumn()
@@ -270,7 +270,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		for _, bucket := range strCol.Bins {
 			first_val := bucket.Records[0]
 			if first_val > 1000 && DEBUG_RECORD_CONSISTENCY {
-				log.Println("Warning", k, bucket.Value, "FIRST RECORD IS", first_val)
+				Warn(k, bucket.Value, "FIRST RECORD IS", first_val)
 			}
 		}
 
@@ -290,7 +290,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		err := enc.Encode(strCol)
 
 		if err != nil {
-			log.Fatal("encode:", err)
+			Error("encode:", err)
 		}
 
 		action := "SERIALIZED"
@@ -298,7 +298,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		log.Println(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(col_fname)
 		network.WriteTo(w)
@@ -345,7 +345,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	err := enc.Encode(colInfo)
 
 	if err != nil {
-		log.Fatal("encode:", err)
+		Error("encode:", err)
 	}
 
 	length := len(records)
@@ -354,7 +354,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	}
 
 	if DEBUG_TIMING {
-		log.Println("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/length, ")")
+		Debug("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/length, ")")
 	}
 
 	w, _ := os.Create(col_fname)
@@ -430,7 +430,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 
 	defer tb.table.ReleaseBlockLock(filename)
 	if tb.table.GrabBlockLock(filename) == false {
-		log.Fatal("Can't grab lock to save block", filename)
+		Error("Can't grab lock to save block", filename)
 	}
 
 	partialname := fmt.Sprintf("%s.partial", dirname)
@@ -440,7 +440,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	old_percent := debug.SetGCPercent(-1)
 	separated_columns := tb.SeparateRecordsIntoColumns()
 	end := time.Now()
-	log.Println("COLLATING BLOCKS TOOK", end.Sub(start))
+	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
 	tb.SaveIntsToColumns(partialname, separated_columns.ints)
 	tb.SaveStrsToColumns(partialname, separated_columns.strs)
@@ -448,7 +448,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	tb.SaveInfoToColumns(partialname)
 
 	end = time.Now()
-	log.Println("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
+	Debug("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
 
 	debug.SetGCPercent(old_percent)
 
@@ -461,35 +461,35 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 
 	// TODO:
 	if nb == nil || nb.Info.NumRecords != int32(len(tb.RecordList)) {
-		log.Fatal("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
+		Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
 		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
-			log.Fatal("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
+			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 		}
 	}
 
-	log.Println("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
+	Debug("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
 
 	os.RemoveAll(oldblock)
 	err := os.Rename(dirname, oldblock)
 	if err != nil {
-		log.Fatal("ERROR RENAMING BLOCK", dirname, oldblock, err)
+		Error("ERROR RENAMING BLOCK", dirname, oldblock, err)
 	}
 	err = os.Rename(partialname, dirname)
 	if err != nil {
-		log.Fatal("ERROR RENAMING PARTIAL", partialname, dirname, err)
+		Error("ERROR RENAMING PARTIAL", partialname, dirname, err)
 	}
 
 	if err == nil {
 		os.RemoveAll(oldblock)
 	} else {
-		log.Fatal("ERROR SAVING BLOCK", partialname, dirname, err)
+		Error("ERROR SAVING BLOCK", partialname, dirname, err)
 	}
 
-	log.Println("RELEASING BLOCK", tb.Name)
+	Debug("RELEASING BLOCK", tb.Name)
 
 }
 
@@ -499,7 +499,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
 	if err != nil {
-		log.Println("DECODE COL ERR:", err)
+		Debug("DECODE COL ERR:", err)
 		return
 	}
 
@@ -508,7 +508,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	col_id := tb.table.get_key_id(into.Name)
 
 	if int(col_id) >= key_table_len {
-		log.Println("IGNORING COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
+		Debug("IGNORING COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
@@ -576,7 +576,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 				if DEBUG_RECORD_CONSISTENCY {
 					if record.Populated[col_id] != _NO_VAL {
-						log.Fatal("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
+						Error("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
 					}
 				}
 
@@ -610,7 +610,7 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 	into := &saved_col
 	err := dec.Decode(into)
 	if err != nil {
-		log.Println("DECODE COL ERR:", err)
+		Debug("DECODE COL ERR:", err)
 	}
 
 	col_id := tb.table.get_key_id(into.Name)
@@ -666,7 +666,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 	into := &SavedIntColumn{}
 	err := dec.Decode(into)
 	if err != nil {
-		log.Println("DECODE COL ERR:", err)
+		Debug("DECODE COL ERR:", err)
 	}
 
 	col_id := tb.table.get_key_id(into.Name)
@@ -692,7 +692,7 @@ func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
 
 				if DEBUG_RECORD_CONSISTENCY {
 					if records[r].Populated[col_id] != _NO_VAL {
-						log.Fatal("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
+						Error("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
 					}
 				}
 

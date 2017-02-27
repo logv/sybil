@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 import "math"
 import "sort"
 import "strconv"
@@ -96,7 +96,7 @@ func (h *Hist) addWeightedValue(value int64, weight int64) {
 	// magnitude
 	if value > h.info.Max*10 || value < h.info.Min {
 		if DEBUG_OUTLIERS {
-			log.Println("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+			Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
 		}
 		return
 	}
@@ -263,5 +263,5 @@ func (h *Hist) Print() {
 		}
 	}
 
-	log.Println("HIST COUNTS ARE", vals)
+	Debug("HIST COUNTS ARE", vals)
 }

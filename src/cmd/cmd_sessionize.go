@@ -2,7 +2,6 @@ package sybil_cmd
 
 import sybil "github.com/logv/sybil/src/lib"
 
-import "log"
 import "flag"
 import "time"
 import "runtime/debug"
@@ -41,7 +40,7 @@ func RunSessionizeCmdLine() {
 	}
 
 	table_names := strings.Split(table, ",")
-	log.Println("LOADING TABLES", table_names)
+	sybil.Debug("LOADING TABLES", table_names)
 
 	tables := make([]*sybil.Table, 0)
 
@@ -57,17 +56,17 @@ func RunSessionizeCmdLine() {
 			count += int(block.Info.NumRecords)
 		}
 
-		log.Println("WILL INSPECT", count, "RECORDS FROM", tablename)
+		sybil.Debug("WILL INSPECT", count, "RECORDS FROM", tablename)
 
 		// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-		log.Println("KEY TABLE", t.KeyTable)
-		log.Println("KEY TYPES", t.KeyTypes)
+		sybil.Debug("KEY TABLE", t.KeyTable)
+		sybil.Debug("KEY TYPES", t.KeyTypes)
 
 		used := make(map[int16]int)
 		for _, v := range t.KeyTable {
 			used[v]++
 			if used[v] > 1 {
-				log.Fatal("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+				sybil.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
 				return
 			}
 		}
@@ -95,5 +94,5 @@ func RunSessionizeCmdLine() {
 	}
 
 	end := time.Now()
-	log.Println("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+	sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 }

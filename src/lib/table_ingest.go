@@ -3,7 +3,7 @@ package sybil
 import "time"
 import "path"
 import "io/ioutil"
-import "log"
+
 import "os"
 import "strings"
 
@@ -13,13 +13,13 @@ import "strings"
 var READ_ROWS_ONLY = false
 
 func (t *Table) getNewIngestBlockName() (string, error) {
-	log.Println("GETTING INGEST BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
+	Debug("GETTING INGEST BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
 	name, err := ioutil.TempDir(path.Join(*FLAGS.DIR, t.Name), "block")
 	return name, err
 }
 
 func (t *Table) getNewCacheBlockFile() (*os.File, error) {
-	log.Println("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
+	Debug("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
 	table_cache_dir := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR)
 	os.MkdirAll(table_cache_dir, 0755)
 
@@ -30,8 +30,8 @@ func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 
 // Go through newRecords list and save all the new records out to a row store
 func (t *Table) IngestRecords(blockname string) {
-	log.Println("KEY TABLE", t.KeyTable)
-	log.Println("KEY TYPES", t.KeyTypes)
+	Debug("KEY TABLE", t.KeyTable)
+	Debug("KEY TYPES", t.KeyTypes)
 
 	t.AppendRecordsToLog(t.newRecords[:], blockname)
 	t.newRecords = make(RecordList, 0)
@@ -48,7 +48,7 @@ func (t *Table) MaybeCompactRecords() {
 	HOLD_MATCHES = true
 	loaded := t.LoadRecords(nil)
 	if loaded > 0 && t.RowBlock != nil && len(t.RowBlock.RecordList) > CHUNK_THRESHOLD {
-		log.Println("LOADED RECORDS", len(t.RowBlock.RecordList))
+		Debug("LOADED RECORDS", len(t.RowBlock.RecordList))
 		t.DigestRecords()
 	}
 }
@@ -75,7 +75,7 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	for i := 0; i < LOCK_TRIES; i++ {
 		file, err = os.Open(dirname)
 		if err != nil {
-			log.Println("Can't open the ingestion dir", dirname)
+			Debug("Can't open the ingestion dir", dirname)
 			time.Sleep(LOCK_US)
 			continue
 		}
@@ -135,7 +135,7 @@ var DELETE_BLOCKS = make([]string, 0)
 
 func (t *Table) RestoreUningestedFiles() {
 	if t.GrabDigestLock() == false {
-		log.Println("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
+		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
 		return
 	}
 
@@ -152,18 +152,18 @@ func (t *Table) RestoreUningestedFiles() {
 			file, _ := os.Open(fname)
 			files, _ := file.Readdir(0)
 			for _, file := range files {
-				log.Println("RESTORING UNINGESTED FILE", file.Name())
+				Debug("RESTORING UNINGESTED FILE", file.Name())
 				from := path.Join(fname, file.Name())
 				to := path.Join(ingestdir, file.Name())
 				err := os.Rename(from, to)
 				if err != nil {
-					log.Println("COULDNT RESTORE UNINGESTED FILE", from, to, err)
+					Debug("COULDNT RESTORE UNINGESTED FILE", from, to, err)
 				}
 			}
 
 			err := os.Remove(path.Join(digesting, dir.Name()))
 			if err != nil {
-				log.Println("REMOVING STOMACHE FAILED!", err)
+				Debug("REMOVING STOMACHE FAILED!", err)
 			}
 
 		}
@@ -185,7 +185,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 		}
 
 		for _, file := range DELETE_BLOCKS {
-			log.Println("REMOVING", file)
+			Debug("REMOVING", file)
 			os.Remove(file)
 		}
 
@@ -194,7 +194,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 		return
 	}
 
-	log.Println("LOADED", len(records), "FOR DIGESTION FROM", digestname)
+	Debug("LOADED", len(records), "FOR DIGESTION FROM", digestname)
 	if len(records) > 0 {
 		t.newRecords = append(t.newRecords, records...)
 	}
@@ -211,7 +211,7 @@ func (t *Table) DigestRecords() {
 
 	if !can_digest {
 		t.ReleaseInfoLock()
-		log.Println("CANT GRAB LOCK FOR DIGEST RECORDS")
+		Debug("CANT GRAB LOCK FOR DIGEST RECORDS")
 		return
 	}
 
@@ -223,7 +223,7 @@ func (t *Table) DigestRecords() {
 	// to ruin us if it still exists (bc some proc didn't clean up after itself)
 	if err != nil {
 		t.ReleaseDigestLock()
-		log.Println("ERROR CREATING DIGESTION DIR", err)
+		Debug("ERROR CREATING DIGESTION DIR", err)
 		time.Sleep(time.Millisecond * 50)
 		return
 	}

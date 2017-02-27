@@ -8,7 +8,7 @@ if [ "$#" -eq 1 ]; then
 fi
 ITERS=1000
 for iter in `seq $ITERS`; do
-  python scripts/fakedata/host_generator.py $NUM | ./bin/sybil ingest -table testingest >> ingest.${PID}.log 2>&1
+  python scripts/fakedata/host_generator.py $NUM | ./bin/sybil ingest -debug -table testingest >> ingest.${PID}.log 2>&1
   if [ $? -ne 0 ]; then
     echo "INGESTION FAILED!!!!!", $PID
     break

@@ -5,7 +5,7 @@ import sybil "./"
 import "compress/gzip"
 import "fmt"
 import "path"
-import "log"
+
 import "io/ioutil"
 import "math/rand"
 import "os"
@@ -105,7 +105,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 	// DOING SO
 	for blockname, _ := range blocks {
 		files, _ := ioutil.ReadDir(blockname)
-		log.Println("READING BLOCKNAME", blockname)
+		Debug("READING BLOCKNAME", blockname)
 		for _, f := range files {
 			filename := path.Join(blockname, f.Name())
 			if !strings.HasSuffix(filename, ".db") {
@@ -122,10 +122,10 @@ func TestOpenCompressedColumn(test *testing.T) {
 			zinfo := gzip.NewWriter(file)
 			zinfo.Write(dat)
 			zinfo.Close()
-			log.Println("CREATED GZIP FILE", zfilename)
+			Debug("CREATED GZIP FILE", zfilename)
 
 			err = os.RemoveAll(filename)
-			log.Println("REMOVED", filename, err)
+			Debug("REMOVED", filename, err)
 
 		}
 	}

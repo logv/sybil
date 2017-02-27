@@ -7,6 +7,9 @@ import "testing"
 
 var TEST_TABLE_NAME = "__TEST0__"
 
+// we copy over Debug from sybil package for usage
+var Debug = sybil.Debug
+
 type RecordSetupCB func(*sybil.Record, int)
 
 func TestMain(m *testing.M) {

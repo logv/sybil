@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 import "strconv"
 
 func (t *Table) BuildJoinMap() {
@@ -9,9 +9,9 @@ func (t *Table) BuildJoinMap() {
 
 	t.join_lookup = make(map[string]*Record)
 
-	log.Println("BUILDING JOIN TABLE MAPPING")
+	Debug("BUILDING JOIN TABLE MAPPING")
 
-	log.Println("BLOCKS", len(t.BlockList))
+	Debug("BLOCKS", len(t.BlockList))
 	for _, b := range t.BlockList {
 		for _, r := range b.RecordList {
 			switch r.Populated[joinid] {
@@ -27,7 +27,7 @@ func (t *Table) BuildJoinMap() {
 		}
 	}
 
-	log.Println("ROWS", len(t.RowBlock.RecordList))
+	Debug("ROWS", len(t.RowBlock.RecordList))
 	for _, r := range t.RowBlock.RecordList {
 		switch r.Populated[joinid] {
 		case INT_VAL:

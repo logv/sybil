@@ -5,7 +5,7 @@ import sybil "./"
 import "testing"
 import "math/rand"
 import "strconv"
-import "log"
+
 
 func TestSets(test *testing.T) {
 	delete_test_db()
@@ -26,7 +26,7 @@ func TestSets(test *testing.T) {
 	}, block_count)
 
 	avg_age := float64(total_age) / float64(len(records))
-	log.Println("AVG AGE", avg_age-float64(min_count))
+	Debug("AVG AGE", avg_age-float64(min_count))
 
 	nt := save_and_reload_table(test, block_count)
 
@@ -57,7 +57,7 @@ func TestSets(test *testing.T) {
 			}
 
 			if strval != setval[0] {
-				log.Println("SET AND STR vals misaligned", setval, strval)
+				Debug("SET AND STR vals misaligned", setval, strval)
 			}
 
 		}

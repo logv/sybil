@@ -1,6 +1,5 @@
 package sybil
 
-import "log"
 import "sort"
 import "strings"
 import "encoding/json"
@@ -16,13 +15,13 @@ func printJson(data interface{}) {
 	if err == nil {
 		os.Stdout.Write(b)
 	} else {
-		log.Fatal("JSON encoding error", err)
+		Error("JSON encoding error", err)
 	}
 }
 
 func printTimeResults(querySpec *QuerySpec) {
-	log.Println("PRINTING TIME RESULTS")
-	log.Println("CHECKING SORT ORDER", len(querySpec.Sorted))
+	Debug("PRINTING TIME RESULTS")
+	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
 	is_top_result := make(map[string]bool)
 	for _, result := range querySpec.Sorted {
@@ -37,7 +36,7 @@ func printTimeResults(querySpec *QuerySpec) {
 
 	sort.Ints(keys)
 
-	log.Println("RESULT COUNT", len(querySpec.TimeResults))
+	Debug("RESULT COUNT", len(querySpec.TimeResults))
 	if *FLAGS.JSON {
 
 		marshalled_results := make(map[string][]ResultJSON)
@@ -176,7 +175,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	group_key := strings.Replace(v.GroupByKey, GROUP_DELIMITER, ",", -1)
 	group_key = strings.TrimRight(group_key, ",")
 
-	fmt.Print(fmt.Sprintf("%-20s", group_key)[:20])
+	fmt.Printf(fmt.Sprintf("%-20s", group_key)[:20])
 
 	fmt.Printf("%.0d", v.Count)
 	if OPTS.WEIGHT_COL {
@@ -184,14 +183,14 @@ func printResult(querySpec *QuerySpec, v *Result) {
 		fmt.Print(v.Samples)
 		fmt.Print(")")
 	}
-	fmt.Print("\n")
+	fmt.Printf("\n")
 
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.name)
 		if *FLAGS.OP == "hist" {
 			h, ok := v.Hists[agg.name]
 			if !ok {
-				log.Println("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
+				Debug("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
 				continue
 			}
 			p := h.GetPercentiles()
@@ -236,7 +235,7 @@ func PrintResults(querySpec *QuerySpec) {
 	} else {
 		count := 0
 
-		log.Println("PRINTING CUMULATIVE RESULT")
+		Debug("PRINTING CUMULATIVE RESULT")
 		if len(querySpec.Results) > 1 {
 			printResult(querySpec, querySpec.Cumulative)
 		}
@@ -348,7 +347,7 @@ func (t *Table) PrintSamples() {
 func PrintTables() {
 	files, err := ioutil.ReadDir(*FLAGS.DIR)
 	if err != nil {
-		log.Println("No tables found")
+		Error("No tables found!")
 		return
 	}
 
@@ -363,7 +362,7 @@ func PrintTables() {
 		if err == nil {
 			os.Stdout.Write(b)
 		} else {
-			log.Fatal("JSON encoding error", err)
+			Error("JSON encoding error", err)
 		}
 
 		return

@@ -7,7 +7,7 @@ ITERS=1000
 for iter in `seq $ITERS`; do
   sleep 10
   echo "DIGESTING ITER $iter"
-  ./bin/sybil digest -table testingest >> digest.${PID}.log 2>&1
+  ./bin/sybil digest -debug -table testingest >> digest.${PID}.log 2>&1
   echo "DONE"
   if [ $? -eq 0 ]; then
     continue      

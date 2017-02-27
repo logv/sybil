@@ -1,6 +1,5 @@
 package sybil
 
-import "log"
 import "fmt"
 import "path"
 import "bytes"
@@ -105,7 +104,7 @@ type SavedRecords struct {
 }
 
 func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
-	log.Println("LOADING RECORDS FROM LOG", filename)
+	Debug("LOADING RECORDS FROM LOG", filename)
 	var marshalled_records []*SavedRecord
 
 	// Create an encoder and send a value.
@@ -113,7 +112,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	err := dec.Decode(&marshalled_records)
 
 	if err != nil {
-		log.Println("ERROR LOADING INGESTION LOG", err)
+		Debug("ERROR LOADING INGESTION LOG", err)
 	}
 
 	return marshalled_records
@@ -126,7 +125,7 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	dec := GetFileDecoder(filename)
 	err := dec.Decode(&marshalled_records)
 	if err != nil {
-		log.Println("ERROR LOADING INGESTION LOG", err)
+		Debug("ERROR LOADING INGESTION LOG", err)
 	}
 
 	ret := make(RecordList, len(marshalled_records))
@@ -159,20 +158,20 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 
 	var network bytes.Buffer // Stand-in for the network.
 
-	log.Println("SAVING RECORDS", len(marshalled_records), "TO INGESTION LOG")
+	Debug("SAVING RECORDS", len(marshalled_records), "TO INGESTION LOG")
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
 	err = enc.Encode(marshalled_records)
 
 	if err != nil {
-		log.Fatal("encode:", err)
+		Error("encode:", err)
 	}
 
 	filename := fmt.Sprintf("%s.db", w.Name())
 	basename := path.Base(filename)
 
-	log.Println("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
+	Debug("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
 
 	network.WriteTo(w)
 

@@ -1,7 +1,7 @@
 package sybil
 
 import "fmt"
-import "log"
+
 import "os"
 import "sort"
 import "strings"
@@ -340,7 +340,7 @@ func (ss *SessionSpec) Finalize() {
 
 		if DEBUG_RECORD_CONSISTENCY {
 			if group_key == "" {
-				log.Println("COULDNT FIND JOIN RECORD FOR", join_key)
+				Debug("COULDNT FIND JOIN RECORD FOR", join_key)
 			}
 		}
 
@@ -373,12 +373,12 @@ func (ss *SessionSpec) Finalize() {
 }
 
 func (ss *SessionSpec) PrintResults() {
-	log.Println("SESSION STATS")
-	log.Println("UNIQUE SESSION IDS", len(ss.Sessions.List))
+	Debug("SESSION STATS")
+	Debug("UNIQUE SESSION IDS", len(ss.Sessions.List))
 
-	log.Println("SESSIONS", ss.Count)
+	Debug("SESSIONS", ss.Count)
 	if len(ss.Sessions.List) > 0 {
-		log.Println("AVERAGE EVENTS PER SESSIONS", ss.Count/len(ss.Sessions.List))
+		Debug("AVERAGE EVENTS PER SESSIONS", ss.Count/len(ss.Sessions.List))
 	}
 
 	if *FLAGS.PATH_KEY != "" {
@@ -389,7 +389,7 @@ func (ss *SessionSpec) PrintResults() {
 			printJson(ret)
 			fmt.Println("")
 		} else {
-			log.Println("PATHS", len(ss.Sessions.PathCounts))
+			Debug("PATHS", len(ss.Sessions.PathCounts))
 		}
 	} else {
 		for key, s := range ss.Sessions.Results {
@@ -445,7 +445,7 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 				group_key.WriteString(field_col.get_string_for_val(int32(r.Strs[field_id])))
 
 			case _NO_VAL:
-				log.Println("MISSING EVENT KEY!")
+				Debug("MISSING EVENT KEY!")
 
 			}
 
@@ -497,13 +497,13 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 	}
 
 	sort.Sort(SortBlocksByTime(blocks))
-	log.Println("SORTED BLOCKS", len(blocks))
+	Debug("SORTED BLOCKS", len(blocks))
 
 	masterSession := NewSessionSpec()
 	// Setup the join table for the session spec
 	if *FLAGS.JOIN_TABLE != "" {
 		start := time.Now()
-		log.Println("LOADING JOIN TABLE", *FLAGS.JOIN_TABLE)
+		Debug("LOADING JOIN TABLE", *FLAGS.JOIN_TABLE)
 		jt := GetTable(*FLAGS.JOIN_TABLE)
 		masterSession.Sessions.JoinTable = jt
 
@@ -515,7 +515,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		jt.LoadRecords(&joinLoadSpec)
 		end := time.Now()
 
-		log.Println("LOADING JOIN TABLE TOOK", end.Sub(start))
+		Debug("LOADING JOIN TABLE TOOK", end.Sub(start))
 
 		jt.BuildJoinMap()
 
@@ -541,8 +541,10 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		wg.Add(1)
 		go func() {
 
-			//			log.Println("LOADING BLOCK", this_block.Name, min_time)
-			fmt.Fprintf(os.Stderr, ".")
+			//			Debug("LOADING BLOCK", this_block.Name, min_time)
+			if *DEBUG_FLAG {
+				fmt.Fprint(os.Stderr, ".")
+			}
 			blockQuery := CopyQuerySpec(querySpec)
 			blockSession := NewSessionSpec()
 			loadSpec := this_block.table.NewLoadSpec()
@@ -582,7 +584,9 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		if block_index%BLOCKS_BEFORE_GC == 0 && block_index > 0 {
 			wg.Wait()
 
-			fmt.Fprintf(os.Stderr, "+")
+			if *DEBUG_FLAG {
+				fmt.Fprintf(os.Stderr, "+")
+			}
 
 			go func() {
 				old_percent := debug.SetGCPercent(100)
@@ -607,7 +611,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 	masterSession.Sessions.NoMoreRecordsBefore(int(max_time) + 2*session_cutoff)
 	masterSession.ExpireRecords()
 	fmt.Fprintf(os.Stderr, "\n")
-	log.Println("INSPECTED", count, "RECORDS")
+	Debug("INSPECTED", count, "RECORDS")
 
 	// Kick off the final grouping, aggregations and joining of sessions
 	masterSession.Finalize()

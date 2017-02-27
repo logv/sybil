@@ -3,7 +3,7 @@ package sybil_cmd
 import sybil "github.com/logv/sybil/src/lib"
 
 import "flag"
-import "log"
+
 import "strconv"
 
 func decodeTableInfo(digest_file *string) bool {
@@ -16,7 +16,7 @@ func decodeTableInfo(digest_file *string) bool {
 		return false
 	}
 
-	log.Println("TABLE INFO", saved_table)
+	sybil.Print("TABLE INFO", saved_table)
 
 	return true
 
@@ -29,11 +29,11 @@ func decodeInfoCol(digest_file *string) bool {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		log.Println("ERROR", err)
+		sybil.Print("ERROR", err)
 		return false
 	}
 
-	log.Println("INFO COL", info)
+	sybil.Print("INFO COL", info)
 
 	return true
 
@@ -46,11 +46,11 @@ func decodeIntCol(digest_file *string) bool {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		log.Println("ERROR", err)
+		sybil.Print("ERROR", err)
 		return false
 	}
 
-	log.Println("INT COL", info)
+	sybil.Print("INT COL", info)
 
 	return true
 
@@ -68,12 +68,12 @@ func decodeStrCol(digest_file *string) bool {
 	}
 
 	if err != nil {
-		log.Println("ERROR", err)
+		sybil.Print("ERROR", err)
 		return false
 	}
 
-	log.Println("STR COL", info)
-	log.Println("BINS ARE", bins)
+	sybil.Print("STR COL", info)
+	sybil.Print("BINS ARE", bins)
 
 	return true
 
@@ -86,7 +86,7 @@ func RunInspectCmdLine() {
 	flag.Parse()
 
 	if *digest_file == "" || digest_file == nil {
-		log.Println("Please specify a file to inspect with the -file flag")
+		sybil.Print("Please specify a file to inspect with the -file flag")
 		return
 	}
 

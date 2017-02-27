@@ -1,6 +1,5 @@
 package sybil
 
-import "log"
 import "fmt"
 import "io/ioutil"
 import "path"
@@ -25,7 +24,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		log.Println("Warning: ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
+		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
 		return nil
 	}
 
@@ -150,8 +149,8 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 	wg.Wait()
 
 	// TODO: verify that the KEY TABLE and KEY TYPES
-	log.Println("TYPE COUNTS", this_block, type_counts)
-	log.Println("KEY TABLE", t.KeyTable)
-	log.Println("KEY TYPES", t.KeyTypes)
+	Debug("TYPE COUNTS", this_block, type_counts)
+	Debug("KEY TABLE", t.KeyTable)
+	Debug("KEY TYPES", t.KeyTypes)
 
 }

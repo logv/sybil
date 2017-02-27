@@ -28,10 +28,10 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	go test ./src/lib/ -v 2>/dev/null
+	go test ./src/lib/ -v
 
 testv:
-	go test ./src/lib/ -v
+	go test ./src/lib/ -v -debug
 
 coverage:
 	go test -covermode atomic -coverprofile cover.out ./src/lib 

@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 import "strings"
 import "time"
 
@@ -26,10 +26,10 @@ func GetTimeFormat(time_fmt string) string {
 	const_fmt := strings.ToLower(time_fmt)
 	time_format, ok := FORMATS[const_fmt]
 	if ok {
-		log.Println("USING TIME FORMAT", time_format, "FOR", time_fmt)
+		Debug("USING TIME FORMAT", time_format, "FOR", time_fmt)
 		return time_format
 	}
 
-	log.Println("USING TIME FORMAT", time_format)
+	Debug("USING TIME FORMAT", time_format)
 	return time_format
 }

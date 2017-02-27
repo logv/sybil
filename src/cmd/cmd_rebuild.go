@@ -1,7 +1,6 @@
 package sybil_cmd
 
 import "flag"
-import "log"
 
 import sybil "github.com/logv/sybil/src/lib"
 
@@ -26,7 +25,7 @@ func RunRebuildCmdLine() {
 
 	loaded := t.LoadTableInfo() && *FORCE_UPDATE == false
 	if loaded {
-		log.Println("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
+		sybil.Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
 		return
 	}
 
@@ -35,12 +34,12 @@ func RunRebuildCmdLine() {
 	// TODO: prompt to see if this table info looks good and then write it to
 	// original info.db
 	if *REPLACE_INFO == true {
-		log.Println("REPLACING info.db WITH DATA COMPUTED ABOVE")
+		sybil.Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
 		lock := sybil.Lock{Table: t, Name: "info"}
 		lock.ForceDeleteFile()
 		t.SaveTableInfo("info")
 	} else {
-		log.Println("SAVING TO temp_info.db")
+		sybil.Print("SAVING TO temp_info.db")
 		t.SaveTableInfo("temp_info")
 	}
 }

@@ -1,7 +1,7 @@
 package sybil
 
 import "fmt"
-import "log"
+
 import "os"
 import "strings"
 import "encoding/gob"
@@ -13,13 +13,13 @@ func getCompressedDecoder(filename string) *gob.Decoder {
 
 	file, err := os.Open(filename)
 	if err != nil {
-		log.Println("COULDNT OPEN GZ", filename)
+		Debug("COULDNT OPEN GZ", filename)
 		return gob.NewDecoder(file)
 	}
 
 	reader, err := gzip.NewReader(file)
 	if err != nil {
-		log.Println("COULDNT DECOMPRESS GZ", filename)
+		Debug("COULDNT DECOMPRESS GZ", filename)
 		return gob.NewDecoder(reader)
 	}
 

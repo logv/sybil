@@ -1,7 +1,7 @@
 package sybil
 
 import "fmt"
-import "log"
+
 import "os"
 import "path"
 import "sort"
@@ -44,19 +44,19 @@ func (t *Table) saveTableInfo(fname string) {
 	err := enc.Encode(t)
 
 	if err != nil {
-		log.Fatal("encode:", err)
+		Error("encode:", err)
 	}
 
-	log.Println("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
+	Debug("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
 
 	tempfile, err := ioutil.TempFile(dirname, "info.db")
 	if err != nil {
-		log.Fatalln("ERROR CREATING TEMP FILE FOR TABLE INFO", err)
+		Error("ERROR CREATING TEMP FILE FOR TABLE INFO", err)
 	}
 
 	_, err = network.WriteTo(tempfile)
 	if err != nil {
-		log.Fatalln("ERROR SAVING TABLE INFO INTO TEMPFILE", err)
+		Error("ERROR SAVING TABLE INFO INTO TEMPFILE", err)
 	}
 
 	os.Rename(tempfile.Name(), filename)
@@ -82,7 +82,7 @@ func (t *Table) saveRecordList(records RecordList) bool {
 		return false
 	}
 
-	log.Println("SAVING RECORD LIST", len(records), t.Name)
+	Debug("SAVING RECORD LIST", len(records), t.Name)
 
 	chunk_size := CHUNK_SIZE
 	chunks := len(records) / chunk_size
@@ -90,14 +90,14 @@ func (t *Table) saveRecordList(records RecordList) bool {
 	if chunks == 0 {
 		filename, err := t.getNewIngestBlockName()
 		if err != nil {
-			log.Fatal("ERR SAVING BLOCK", filename, err)
+			Error("ERR SAVING BLOCK", filename, err)
 		}
 		t.SaveRecordsToBlock(records, filename)
 	} else {
 		for j := 0; j < chunks; j++ {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
-				log.Fatal("ERR SAVING BLOCK", filename, err)
+				Error("ERR SAVING BLOCK", filename, err)
 			}
 			t.SaveRecordsToBlock(records[j*chunk_size:(j+1)*chunk_size], filename)
 		}
@@ -106,7 +106,7 @@ func (t *Table) saveRecordList(records RecordList) bool {
 		if len(records) > chunks*chunk_size {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
-				log.Fatal("Error creating new ingestion block", err)
+				Error("Error creating new ingestion block", err)
 			}
 
 			t.SaveRecordsToBlock(records[chunks*chunk_size:], filename)
@@ -135,7 +135,7 @@ func (t *Table) LoadTableInfo() bool {
 	if t.GrabInfoLock() {
 		defer t.ReleaseInfoLock()
 	} else {
-		log.Println("LOAD TABLE INFO LOCK TAKEN")
+		Debug("LOAD TABLE INFO LOCK TAKEN")
 		return false
 	}
 
@@ -148,17 +148,17 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 
 	start := time.Now()
 
-	log.Println("OPENING TABLE INFO FROM FILENAME", filename)
+	Debug("OPENING TABLE INFO FROM FILENAME", filename)
 	dec := GetFileDecoder(filename)
 	err := dec.Decode(&saved_table)
 	end := time.Now()
 	if err != nil {
-		log.Println("Warning: TABLE INFO DECODE:", err)
+		Debug("TABLE INFO DECODE:", err)
 		return false
 	}
 
 	if DEBUG_TIMING {
-		log.Println("TABLE INFO OPEN TOOK", end.Sub(start))
+		Debug("TABLE INFO OPEN TOOK", end.Sub(start))
 	}
 
 	if len(saved_table.KeyTable) > 0 {
@@ -200,7 +200,7 @@ func (t *Table) HasFlagFile() bool {
 	// If the flagfile exists and we couldn't read the file info, we are in trouble!
 	if err == nil {
 		t.ReleaseInfoLock()
-		log.Println("Warning: Table info missing, but flag file exists!")
+		Warn("Table info missing, but flag file exists!")
 		return true
 	}
 
@@ -264,7 +264,7 @@ func (t *Table) LoadBlockCache() {
 		}
 	}
 
-	log.Println("FILLED BLOCK CACHE WITH", len(t.BlockInfoCache), "ITEMS")
+	Debug("FILLED BLOCK CACHE WITH", len(t.BlockInfoCache), "ITEMS")
 }
 
 func (t *Table) WriteBlockCache() {
@@ -278,7 +278,7 @@ func (t *Table) WriteBlockCache() {
 
 	defer t.ReleaseCacheLock()
 
-	log.Println("WRITING BLOCK CACHE, OUTSTANDING", len(t.NewBlockInfos))
+	Debug("WRITING BLOCK CACHE, OUTSTANDING", len(t.NewBlockInfos))
 
 	var num_blocks = len(t.NewBlockInfos) / BLOCKS_PER_CACHE_FILE
 
@@ -287,7 +287,7 @@ func (t *Table) WriteBlockCache() {
 
 		block_file, err := t.getNewCacheBlockFile()
 		if err != nil {
-			log.Println("TROUBLE CREATING CACHE BLOCK FILE")
+			Debug("TROUBLE CREATING CACHE BLOCK FILE")
 			break
 		}
 		block_cache := SavedBlockCache{}
@@ -299,12 +299,12 @@ func (t *Table) WriteBlockCache() {
 		enc := gob.NewEncoder(block_file)
 		err = enc.Encode(&block_cache)
 		if err != nil {
-			log.Println("ERROR ENCODING BLOCK CACHE", err)
+			Debug("ERROR ENCODING BLOCK CACHE", err)
 		}
 
 		pathname := fmt.Sprintf("%s.db", block_file.Name())
 
-		log.Println("RENAMING", block_file.Name(), pathname)
+		Debug("RENAMING", block_file.Name(), pathname)
 		os.Rename(block_file.Name(), pathname)
 
 	}
@@ -315,12 +315,12 @@ func (t *Table) WriteBlockCache() {
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
-	log.Println("LOADING", *FLAGS.DIR, t.Name)
+	Debug("LOADING", *FLAGS.DIR, t.Name)
 
 	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
 
 	if READ_ROWS_ONLY {
-		log.Println("ONLY READING RECORDS FROM ROW STORE")
+		Debug("ONLY READING RECORDS FROM ROW STORE")
 		files = nil
 	}
 
@@ -355,7 +355,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	if *FLAGS.UPDATE_TABLE_INFO {
-		log.Println("RESETTING TABLE INFO FOR OVERWRITING")
+		Debug("RESETTING TABLE INFO FOR OVERWRITING")
 		t.IntInfo = make(IntInfoTable)
 		t.StrInfo = make(StrInfoTable)
 	}
@@ -410,14 +410,16 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					return
 				}
 
-				fmt.Fprint(os.Stderr, ".")
+				if *DEBUG_FLAG {
+					fmt.Fprint(os.Stderr, ".")
+				}
 
 				end := time.Now()
 				if DEBUG_TIMING {
 					if loadSpec != nil {
-						log.Println("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
+						Debug("LOADED BLOCK FROM DIR", filename, "TOOK", end.Sub(start))
 					} else {
-						log.Println("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
+						Debug("LOADED INFO FOR BLOCK", filename, "TOOK", end.Sub(start))
 					}
 				}
 
@@ -481,7 +483,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 
 				end := time.Now()
-				fmt.Fprint(os.Stderr, ",")
+				if *DEBUG_FLAG {
+					fmt.Fprint(os.Stderr, ",")
+				}
 				end = time.Now()
 				block_gc_time += end.Sub(start)
 			}
@@ -516,42 +520,44 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 
-	fmt.Fprint(os.Stderr, "\n")
+	if *DEBUG_FLAG {
+		fmt.Fprint(os.Stderr, "\n")
+	}
 
 	for _, broken_block_name := range broken_blocks {
-		log.Println("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")
+		Debug("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")
 	}
 
 	if *FLAGS.READ_INGESTION_LOG {
 		m.Lock()
-		log.Println("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
-		log.Println("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
+		Debug("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
+		Debug("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
 		m.Unlock()
 		count += rowStoreQuery.count
 
 		if DELETE_BLOCKS_AFTER_QUERY == false && t.RowBlock != nil {
-			log.Println("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
+			Debug("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
 			t.RowBlock.RecordList = rowStoreQuery.records
 			t.RowBlock.Matched = rowStoreQuery.records
 		}
 	}
 
 	if block_gc_time > 0 {
-		log.Println("BLOCK GC TOOK", block_gc_time)
+		Debug("BLOCK GC TOOK", block_gc_time)
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
 	t.populate_string_id_lookup()
 
-	log.Println("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
-	log.Println("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
+	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
+	Debug("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
 		resultSpec := CombineResults(querySpec, block_specs)
 
 		aend := time.Now()
-		log.Println("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
+		Debug("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
 
 		querySpec.Cumulative = resultSpec.Cumulative
 
@@ -564,9 +570,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	end := time.Now()
 
 	if loadSpec != nil {
-		log.Println(count, "RECORDS LOADED FROM BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
+		Debug("LOADED", count, "RECORDS FROM BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
-		log.Println("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
+		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
 	t.WriteBlockCache()
@@ -592,7 +598,7 @@ func (t *Table) ChunkAndSave() {
 			t.newRecords = make(RecordList, 0)
 			t.ReleaseRecords()
 		} else {
-			log.Fatal("ERROR SAVING BLOCK", err)
+			Error("ERROR SAVING BLOCK", err)
 		}
 	}
 

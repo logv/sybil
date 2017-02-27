@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 import "time"
 
 func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
@@ -57,7 +57,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 			case STR_VAL:
 				has_strs = true
 			default:
-				log.Fatal("MISSING KEY TYPE FOR COL", v)
+				Error("MISSING KEY TYPE FOR COL", v)
 			}
 		}
 	} else {
@@ -80,7 +80,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		mend := time.Now()
 
 		if DEBUG_TIMING {
-			log.Println("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+			Debug("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
 		}
 
 		start := time.Now()
@@ -107,7 +107,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		end := time.Now()
 
 		if DEBUG_TIMING {
-			log.Println("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+			Debug("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
 		}
 	}
 

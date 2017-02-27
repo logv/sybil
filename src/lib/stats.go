@@ -1,7 +1,7 @@
 package sybil
 
 import "math"
-import "log"
+
 
 // Using an analysis of variance, calculate the intra class correlation co-efficient
 // The ICC is defined as: (mean square between) / (mean square between + mean square within)
@@ -87,7 +87,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 
 		iccs[agg.name] = icc
 
-		log.Println(agg.name, "ICC", int(icc*100))
+		Debug(agg.name, "ICC", int(icc*100))
 	}
 
 	return iccs

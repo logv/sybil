@@ -1,6 +1,6 @@
 package sybil
 
-import "log"
+
 
 type ResultMap map[string]*Result
 
@@ -142,7 +142,7 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	_, ok := t.IntInfo[col_id]
 	if !ok {
 		// TODO: tell our table we need to load all records!
-		log.Println("MISSING CACHED INFO FOR", agg)
+		Debug("MISSING CACHED INFO FOR", agg)
 	}
 	return agg
 }
