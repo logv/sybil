@@ -46,6 +46,10 @@ func addQueryFlags() {
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
+	if sybil.ENABLE_LUA {
+		sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
+	}
+
 	LIST_TABLES = flag.Bool("tables", false, "List tables")
 
 	TIME_FORMAT = flag.String("time-format", "", "time format to use")
@@ -81,6 +85,10 @@ func RunQueryCmdLine() {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, ",")
 		sybil.OPTS.GROUP_BY = groups
 
+	}
+
+	if *sybil.FLAGS.LUAFILE != "" {
+		sybil.SetLuaScript(*sybil.FLAGS.LUAFILE)
 	}
 
 	if *NO_RECYCLE_MEM == true {

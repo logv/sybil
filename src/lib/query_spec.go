@@ -1,6 +1,6 @@
 package sybil
 
-
+import "C"
 
 type ResultMap map[string]*Result
 
@@ -22,6 +22,9 @@ type QuerySpec struct {
 
 	BlockList map[string]TableBlock
 	Table     *Table
+
+	LuaResult LuaTable
+	LuaState  *C.struct_lua_State
 }
 
 type Filter interface {

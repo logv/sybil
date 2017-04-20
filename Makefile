@@ -2,6 +2,7 @@ BUILD_CMD = /usr/bin/go install
 BINDIR = ./bin
 GOBINDIR = `readlink -f ./bin`
 PROFILE = -tags profile
+LUA = -tags lua
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 
@@ -45,6 +46,10 @@ nodeltaencoding: bindir
 
 profile: export BUILD_FLAGS += -tags profile
 profile: bindir
+	make all
+
+luajit: export BUILD_FLAGS += -tags luajit
+luajit: bindir
 	make all
 
 tags: 

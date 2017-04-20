@@ -6,6 +6,7 @@ var FALSE = false
 var TRUE = true
 
 var TEST_MODE = false
+var ENABLE_LUA = false
 
 type FlagDefs struct {
 	OP          *string
@@ -51,6 +52,9 @@ type FlagDefs struct {
 	PRINT_INFO *bool
 	SAMPLES    *bool
 
+	LUA     *bool
+	LUAFILE *string
+
 	UPDATE_TABLE_INFO *bool
 	SKIP_OUTLIERS     *bool
 
@@ -93,6 +97,7 @@ type OptionDefs struct {
 // current problem is that FLAGS needs pointers
 var FLAGS = FlagDefs{}
 var OPTS = OptionDefs{}
+var EMPTY = ""
 
 func SetDefaults() {
 	OPTS.SORT_COUNT = "$COUNT"
@@ -121,6 +126,8 @@ func SetDefaults() {
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
 	FLAGS.SKIP_OUTLIERS = &TRUE
 	FLAGS.SAMPLES = &FALSE
+	FLAGS.LUA = &FALSE
+	FLAGS.LUAFILE = &EMPTY
 
 	FLAGS.RECYCLE_MEM = &TRUE
 
@@ -134,4 +141,5 @@ func SetDefaults() {
 		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 	}
 
+	initLua()
 }
