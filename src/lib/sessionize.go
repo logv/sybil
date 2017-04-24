@@ -122,6 +122,7 @@ type ActiveSession struct {
 
 type SessionStats struct {
 	NumEvents       Hist
+	NumBounces      Hist
 	NumSessions     Hist
 	SessionDuration Hist
 	Retention       Hist
@@ -140,6 +141,7 @@ func NewSessionStats() *SessionStats {
 
 func (ss *SessionStats) CombineStats(stats *SessionStats) {
 	ss.NumEvents.Combine(&stats.NumEvents)
+	ss.NumBounces.Combine(&stats.NumBounces)
 	ss.NumSessions.Combine(&stats.NumSessions)
 	ss.SessionDuration.Combine(&stats.SessionDuration)
 	ss.SessionDelta.Combine(&stats.SessionDelta)
@@ -164,7 +166,7 @@ func (ss *SessionStats) SummarizeSession(records RecordList) {
 	}
 
 	if len(records) == 1 {
-		ss.SessionDuration.addValue(int64(SINGLE_EVENT_DURATION))
+		ss.NumBounces.addValue(int64(1))
 		return
 	}
 
@@ -180,8 +182,18 @@ func (ss *SessionStats) PrintStats(key string) {
 	fmt.Printf("%s:\n", key)
 	fmt.Printf("  %d sessions\n", ss.NumSessions.Sum())
 	fmt.Printf("  total events: %d\n", ss.NumEvents.Sum())
+
+	if ss.NumBounces.Count > 0 {
+		fmt.Printf("  total bounces: %d\n", ss.NumBounces.Count)
+		bounce_rate := ss.NumBounces.Sum() * 1000 / ss.NumSessions.Sum()
+		fmt.Printf("  bounce rate: %v%%\n", bounce_rate/10.0)
+	}
+
 	fmt.Printf("  avg events per session: %0.2f\n", float64(ss.NumEvents.Avg))
-	fmt.Printf("  avg duration: %d minutes\n", duration/60)
+	if duration > 0 {
+		fmt.Printf("  avg duration: %d minutes\n", duration/60)
+	}
+
 	fmt.Printf("  avg retention: %d days\n", int(ss.Retention.Avg))
 }
 

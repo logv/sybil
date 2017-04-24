@@ -1,6 +1,5 @@
 package sybil
 
-
 import "math"
 import "sort"
 import "strconv"
@@ -94,11 +93,13 @@ func (h *Hist) Sum() int64 {
 func (h *Hist) addWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
-	if value > h.info.Max*10 || value < h.info.Min {
-		if DEBUG_OUTLIERS {
-			Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+	if h.info != nil {
+		if value > h.info.Max*10 || value < h.info.Min {
+			if DEBUG_OUTLIERS {
+				Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+			}
+			return
 		}
-		return
 	}
 
 	if OPTS.WEIGHT_COL || weight > 1 {
