@@ -3,7 +3,7 @@
 package sybil
 
 /*
-#cgo LDFLAGS: -lluajit-5.1
+#cgo LDFLAGS: -lluajit-5.1 -ldl -lm
 #include <stdlib.h>
 #include <stdio.h>
 #include <luajit-2.0/lua.h>
