@@ -2,7 +2,6 @@ package sybil
 
 import "math"
 
-
 // Using an analysis of variance, calculate the intra class correlation co-efficient
 // The ICC is defined as: (mean square between) / (mean square between + mean square within)
 // or: (mean square between - mean square within) / (mean square between + mean square within)
@@ -22,6 +21,7 @@ import "math"
 // variance against the overall average.
 func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 	iccs := make(map[string]float64)
+	t := GetTable(*FLAGS.TABLE)
 	for _, agg := range querySpec.Aggregations {
 		cumulative, ok := querySpec.Cumulative.Hists[agg.name]
 		if !ok {
@@ -54,8 +54,11 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		// for calculating between groups, we create a new histogram and insert
 		// each group's average into the histogram (+ it's count as a weight) and
 		// then take the variance of that
-		between_groups := Hist{}
-		between_groups.SetupBuckets(10000, int64(min_avg), int64(max_avg))
+		info := IntInfo{}
+		info.Min = int64(min_avg)
+		info.Max = int64(max_avg)
+
+		between_groups := t.NewHist(&info)
 		between_groups.TrackPercentiles()
 
 		sum_of_squares_within := float64(0.0)
