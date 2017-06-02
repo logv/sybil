@@ -1,6 +1,5 @@
 package sybil
 
-
 import "path"
 import "os"
 import "syscall"
@@ -11,6 +10,7 @@ import "time"
 
 var LOCK_US = time.Millisecond * 3
 var LOCK_TRIES = 50
+var MAX_LOCK_BREAKS = 5
 
 // Every LockFile should have a recovery plan
 type RecoverableLock interface {
@@ -18,6 +18,8 @@ type RecoverableLock interface {
 	Release() bool
 	Recover() bool
 }
+
+var BREAK_MAP = make(map[string]int, 0)
 
 type Lock struct {
 	Name   string
@@ -203,9 +205,20 @@ func check_if_broken(lockfile string, l *Lock) bool {
 		pid_int, err = strconv.ParseInt(string(val), 10, 32)
 
 		if err != nil {
-			l.broken = true
-			Debug("CANT READ PID FROM INFO LOCK:", string(val), err)
-			Debug("PUTTING INFO LOCK INTO RECOVERY")
+			breaks, ok := BREAK_MAP[lockfile]
+			if ok {
+				breaks = breaks + 1
+			} else {
+				breaks = 1
+			}
+
+			BREAK_MAP[lockfile] = breaks
+
+			Debug("CANT READ PID FROM LOCK:", lockfile, string(val), err, breaks)
+			if breaks > MAX_LOCK_BREAKS {
+				l.broken = true
+				Debug("PUTTING LOCK INTO RECOVERY", lockfile)
+			}
 			return false
 		}
 	}
@@ -280,13 +293,17 @@ func (l *Lock) Grab() bool {
 	// Check to see if this file is locked...
 	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
-	if check_pid(lockfile, l) == false {
-		return false
-	}
-
 	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
 		time.Sleep(LOCK_US)
+		if check_pid(lockfile, l) == false {
+			if l.broken {
+				Debug("MARKING BROKEN LOCKFILE", lockfile)
+				return false
+			}
+
+			continue
+		}
 
 		nf, er := os.Create(lockfile)
 		if er != nil {
@@ -298,6 +315,7 @@ func (l *Lock) Grab() bool {
 
 		pid := int64(os.Getpid())
 		nf.WriteString(strconv.FormatInt(pid, 10))
+		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
 
 		if check_pid(lockfile, l) == false {
