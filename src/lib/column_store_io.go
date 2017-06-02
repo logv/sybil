@@ -421,7 +421,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 }
 
-func (tb *TableBlock) SaveToColumns(filename string) {
+func (tb *TableBlock) SaveToColumns(filename string) bool {
 	dirname := strings.Replace(filename, ".db", "", 1)
 
 	// Important to set the BLOCK's dirName so we can keep track
@@ -430,7 +430,8 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 
 	defer tb.table.ReleaseBlockLock(filename)
 	if tb.table.GrabBlockLock(filename) == false {
-		Error("Can't grab lock to save block", filename)
+		Debug("Can't grab lock to save block", filename)
+		return false
 	}
 
 	partialname := fmt.Sprintf("%s.partial", dirname)
@@ -490,6 +491,7 @@ func (tb *TableBlock) SaveToColumns(filename string) {
 	}
 
 	Debug("RELEASING BLOCK", tb.Name)
+	return true
 
 }
 

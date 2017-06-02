@@ -8,16 +8,16 @@ import "sync"
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string) {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
 	if len(records) == 0 {
-		return
+		return true
 	}
 
 	temp_block := newTableBlock()
 	temp_block.RecordList = records
 	temp_block.table = t
 
-	temp_block.SaveToColumns(filename)
+	return temp_block.SaveToColumns(filename)
 }
 
 func (t *Table) FindPartialBlocks() []*TableBlock {
@@ -69,7 +69,9 @@ func (t *Table) FillPartialBlock() bool {
 
 	defer t.ReleaseBlockLock(filename)
 
-	// Open up our last record block, see how full it is
+	// open up our last record block, see how full it is
+	delete(t.BlockInfoCache, filename)
+
 	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
 	if block == nil {
 		return true
@@ -86,7 +88,11 @@ func (t *Table) FillPartialBlock() bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		t.SaveRecordsToBlock(partialRecords, filename)
+		if t.SaveRecordsToBlock(partialRecords, filename) == false {
+			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
+			return false
+		}
+
 		if delta < len(t.newRecords) {
 			t.newRecords = t.newRecords[delta:]
 		} else {

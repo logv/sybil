@@ -267,6 +267,10 @@ func (t *Table) LoadBlockCache() {
 	Debug("FILLED BLOCK CACHE WITH", len(t.BlockInfoCache), "ITEMS")
 }
 
+func (t *Table) ResetBlockCache() {
+	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
+}
+
 func (t *Table) WriteBlockCache() {
 	if len(t.NewBlockInfos) == 0 {
 		return

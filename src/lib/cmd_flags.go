@@ -33,6 +33,7 @@ type FlagDefs struct {
 	LOAD_THEN_QUERY    *bool
 	READ_INGESTION_LOG *bool
 	READ_ROWSTORE      *bool
+	SKIP_COMPACT       *bool
 
 	PROFILE     *bool
 	PROFILE_MEM *bool
@@ -113,6 +114,8 @@ func SetDefaults() {
 	FLAGS.GC = &TRUE
 	FLAGS.JSON = &FALSE
 	FLAGS.PRINT = &TRUE
+
+	FLAGS.SKIP_COMPACT = &FALSE
 
 	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
 	FLAGS.LOAD_AND_QUERY = &TRUE

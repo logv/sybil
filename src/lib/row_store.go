@@ -180,11 +180,14 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 		// need to keep re-trying, right?
 		err = os.Rename(w.Name(), fullname)
 		if err == nil {
-			break
+			// we are done writing, time to exit
+			return
 		}
 
 		if err != nil {
 			time.Sleep(time.Millisecond * 10)
 		}
 	}
+
+	Warn("COULDNT INGEST INTO ROW STORE")
 }

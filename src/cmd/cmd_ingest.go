@@ -18,6 +18,9 @@ type Dictionary map[string]interface{}
 
 var JSON_PATH string
 
+// how many times we try to grab table info when ingesting
+var TABLE_INFO_GRABS = 10
+
 func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
 		key_name := fmt.Sprint(prefix, k)
@@ -198,6 +201,8 @@ func RunIngestCmdLine() {
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
+	f_SKIP_COMPACT := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
+	sybil.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
 
 	flag.Parse()
 
@@ -231,7 +236,7 @@ func RunIngestCmdLine() {
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else
 	var loaded_table = false
-	for i := 0; i < 5; i++ {
+	for i := 0; i < TABLE_INFO_GRABS; i++ {
 		loaded := t.LoadTableInfo()
 		if loaded == true || t.HasFlagFile() == false {
 			loaded_table = true
@@ -242,7 +247,7 @@ func RunIngestCmdLine() {
 
 	if loaded_table == false {
 		if t.HasFlagFile() {
-			sybil.Warn("Ingestor couldn't read table info, losing samples")
+			sybil.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
 	}
