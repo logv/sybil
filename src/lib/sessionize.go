@@ -554,7 +554,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		go func() {
 
 			//			Debug("LOADING BLOCK", this_block.Name, min_time)
-			if *DEBUG_FLAG {
+			if *FLAGS.DEBUG {
 				fmt.Fprint(os.Stderr, ".")
 			}
 			blockQuery := CopyQuerySpec(querySpec)
@@ -596,7 +596,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		if block_index%BLOCKS_BEFORE_GC == 0 && block_index > 0 {
 			wg.Wait()
 
-			if *DEBUG_FLAG {
+			if *FLAGS.DEBUG {
 				fmt.Fprintf(os.Stderr, "+")
 			}
 

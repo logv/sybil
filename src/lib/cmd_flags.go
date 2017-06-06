@@ -44,8 +44,9 @@ type FlagDefs struct {
 
 	LIMIT *int
 
-	JSON *bool
-	GC   *bool
+	DEBUG *bool
+	JSON  *bool
+	GC    *bool
 
 	DIR        *string
 	SORT       *string
@@ -125,6 +126,8 @@ func SetDefaults() {
 	FLAGS.ANOVA_ICC = &FALSE
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
+
+	FLAGS.DEBUG = flag.Bool("debug", false, "enable debug logging")
 
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
 	FLAGS.SKIP_OUTLIERS = &TRUE

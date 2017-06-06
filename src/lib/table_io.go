@@ -414,7 +414,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					return
 				}
 
-				if *DEBUG_FLAG {
+				if *FLAGS.DEBUG {
 					fmt.Fprint(os.Stderr, ".")
 				}
 
@@ -487,7 +487,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 
 				end := time.Now()
-				if *DEBUG_FLAG {
+				if *FLAGS.DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
 				end = time.Now()
@@ -524,7 +524,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 
-	if *DEBUG_FLAG {
+	if *FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 
