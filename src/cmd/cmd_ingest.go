@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -34,13 +35,15 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 		case string:
 			if INT_CAST[key_name] == true {
 				val, err := strconv.ParseInt(iv, 10, 64)
-				if err != nil {
+				if err == nil {
 					r.AddIntField(key_name, int64(val))
 				}
 			} else {
 				r.AddStrField(key_name, iv)
 
 			}
+		case int64:
+			r.AddIntField(key_name, int64(iv))
 		case float64:
 			r.AddIntField(key_name, int64(iv))
 		// nested fields
@@ -202,6 +205,7 @@ func RunIngestCmdLine() {
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	f_SKIP_COMPACT := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
+	f_REOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
 	sybil.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
 
 	flag.Parse()
@@ -214,6 +218,17 @@ func RunIngestCmdLine() {
 	}
 
 	JSON_PATH = *f_JSON_PATH
+
+	if *f_REOPEN != "" {
+
+		infile, err := os.OpenFile(*f_REOPEN, syscall.O_RDONLY|syscall.O_CREAT, 0666)
+		if err != nil {
+			sybil.Error("ERROR OPENING INFILE", err)
+		}
+
+		os.Stdin = infile
+
+	}
 
 	if *sybil.FLAGS.PROFILE {
 		profile := sybil.RUN_PROFILER()

@@ -5,7 +5,6 @@ import "bytes"
 
 import "os"
 import "encoding/gob"
-import "strings"
 import "runtime/debug"
 import "time"
 import "regexp"
@@ -422,7 +421,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 }
 
 func (tb *TableBlock) SaveToColumns(filename string) bool {
-	dirname := strings.Replace(filename, ".db", "", 1)
+	dirname := filename
 
 	// Important to set the BLOCK's dirName so we can keep track
 	// of the various block infos
