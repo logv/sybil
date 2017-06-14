@@ -64,7 +64,7 @@ func (l *InfoLock) Recover() bool {
 	if t.LoadTableInfoFrom(backup) {
 		Debug("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
 		os.Remove(infodb)
-		os.Rename(backup, infodb)
+		RenameAndMod(backup, infodb)
 		l.ForceDeleteFile()
 		return l.Grab()
 	}
@@ -97,7 +97,7 @@ func (l *BlockLock) Recover() bool {
 	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
 		Debug("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...
-		os.Rename(l.Name, fmt.Sprint(l.Name, ".broke"))
+		RenameAndMod(l.Name, fmt.Sprint(l.Name, ".broke"))
 		l.ForceDeleteFile()
 	} else {
 		Debug("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")

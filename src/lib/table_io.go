@@ -23,6 +23,11 @@ var DELETE_BLOCKS_AFTER_QUERY = true
 var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
+func RenameAndMod(src, dst string) error {
+	os.Chmod(src, 0750)
+	return os.Rename(src, dst)
+}
+
 func (t *Table) saveTableInfo(fname string) {
 	if t.GrabInfoLock() == false {
 		return
@@ -59,7 +64,7 @@ func (t *Table) saveTableInfo(fname string) {
 		Error("ERROR SAVING TABLE INFO INTO TEMPFILE", err)
 	}
 
-	os.Rename(tempfile.Name(), filename)
+	RenameAndMod(tempfile.Name(), filename)
 	os.Create(flagfile)
 }
 
@@ -309,7 +314,7 @@ func (t *Table) WriteBlockCache() {
 		pathname := fmt.Sprintf("%s.db", block_file.Name())
 
 		Debug("RENAMING", block_file.Name(), pathname)
-		os.Rename(block_file.Name(), pathname)
+		RenameAndMod(block_file.Name(), pathname)
 
 	}
 

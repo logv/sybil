@@ -224,7 +224,7 @@ func (t *Table) RestoreUningestedFiles() {
 				Debug("RESTORING UNINGESTED FILE", file.Name())
 				from := path.Join(fname, file.Name())
 				to := path.Join(ingestdir, file.Name())
-				err := os.Rename(from, to)
+				err := RenameAndMod(from, to)
 				if err != nil {
 					Debug("COULDNT RESTORE UNINGESTED FILE", from, to, err)
 				}
@@ -314,7 +314,7 @@ func (t *Table) DigestRecords() {
 
 	if err == nil {
 		for _, f := range files {
-			os.Rename(path.Join(digestfile, f.Name()), path.Join(digesting, f.Name()))
+			RenameAndMod(path.Join(digestfile, f.Name()), path.Join(digesting, f.Name()))
 		}
 		// We don't want to leave someone without a place to put their
 		// ingestions...

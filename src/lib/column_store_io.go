@@ -474,11 +474,11 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	Debug("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
 
 	os.RemoveAll(oldblock)
-	err := os.Rename(dirname, oldblock)
+	err := RenameAndMod(dirname, oldblock)
 	if err != nil {
 		Error("ERROR RENAMING BLOCK", dirname, oldblock, err)
 	}
-	err = os.Rename(partialname, dirname)
+	err = RenameAndMod(partialname, dirname)
 	if err != nil {
 		Error("ERROR RENAMING PARTIAL", partialname, dirname, err)
 	}

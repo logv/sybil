@@ -178,7 +178,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	for i := 0; i < 3; i++ {
 		fullname := path.Join(ingestdir, basename)
 		// need to keep re-trying, right?
-		err = os.Rename(w.Name(), fullname)
+		err = RenameAndMod(w.Name(), fullname)
 		if err == nil {
 			// we are done writing, time to exit
 			return
