@@ -612,3 +612,9 @@ func (t *Table) ChunkAndSave() {
 	}
 
 }
+
+func (t *Table) IsNotExist() bool {
+	table_dir := path.Join(*FLAGS.DIR, t.Name)
+	_, err := ioutil.ReadDir(table_dir)
+	return err != nil
+}

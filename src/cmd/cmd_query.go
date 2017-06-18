@@ -75,7 +75,11 @@ func RunQueryCmdLine() {
 		flag.PrintDefaults()
 		return
 	}
+
 	t := sybil.GetTable(table)
+	if t.IsNotExist() {
+		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.DIR)
+	}
 
 	ints := make([]string, 0)
 	groups := make([]string, 0)
