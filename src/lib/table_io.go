@@ -23,8 +23,9 @@ var DELETE_BLOCKS_AFTER_QUERY = true
 var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
+// TODO: We should really split this into two functions based on dir / file
 func RenameAndMod(src, dst string) error {
-	os.Chmod(src, 0750)
+	os.Chmod(src, 0755)
 	return os.Rename(src, dst)
 }
 
