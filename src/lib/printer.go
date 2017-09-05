@@ -310,16 +310,6 @@ func (t *Table) PrintSamples() {
 		}
 	}
 
-	if t.RowBlock != nil && count < *FLAGS.LIMIT {
-		for _, r := range t.RowBlock.Matched {
-			if count >= *FLAGS.LIMIT {
-				break
-			}
-			records[count] = r
-			count++
-		}
-	}
-
 	if *FLAGS.JSON {
 		samples := make([]*Sample, 0)
 		for _, r := range records {
