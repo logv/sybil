@@ -1,10 +1,13 @@
 package sybil
 
+import "bytes"
 import "fmt"
 import "time"
 import "os"
+import "path"
 import "strings"
 import "sync"
+import "compress/gzip"
 
 var GZIP_EXT = ".gz"
 
@@ -247,10 +250,12 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		case strings.HasPrefix(fname, "int"):
 			tb.unpackIntCol(dec, *info)
 		}
+
 	}
 
 	tb.Size = size
 
+	file.Close()
 	return &tb
 }
 
@@ -296,4 +301,48 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 	if *FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "+")
 	}
+}
+
+func (b *TableBlock) ExportBlockData() {
+	if len(b.RecordList) == 0 {
+		return
+	}
+
+	tsv_data := make([]string, 0)
+
+	for _, r := range b.RecordList {
+		sample := r.toTSVRow()
+		tsv_data = append(tsv_data, strings.Join(sample, "\t"))
+
+	}
+
+	export_name := path.Base(b.Name)
+	dir_name := path.Dir(b.Name)
+	fName := path.Join(dir_name, "export", export_name+".tsv.gz")
+
+	os.MkdirAll(path.Join(dir_name, "export"), 0755)
+
+	tsv_header := strings.Join(b.RecordList[0].sampleHeader(), "\t")
+	tsv_str := strings.Join(tsv_data, "\n")
+	Debug("SAVING TSV ", len(tsv_str), "RECORDS", len(tsv_data), fName)
+
+	all_data := strings.Join([]string{tsv_header, tsv_str}, "\n")
+	// Need to save these to a file.
+	//	Print(tsv_headers)
+	//	Print(tsv_str)
+
+	// GZIPPING
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	w.Write([]byte(all_data))
+	w.Close() // You must close this first to flush the bytes to the buffer.
+
+	f, _ := os.Create(fName)
+	_, err := f.Write(buf.Bytes())
+	f.Close()
+
+	if err != nil {
+		Warn("COULDNT SAVE TSV FOR", fName, err)
+	}
+
 }

@@ -6,6 +6,7 @@ import "fmt"
 import "flag"
 import "strings"
 import "time"
+import "path"
 import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -40,6 +41,8 @@ func addQueryFlags() {
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
 	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
 	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
+
+	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
 
 	sybil.FLAGS.READ_ROWSTORE = flag.Bool("read-log", false, "read the ingestion log (can take longer!)")
 
@@ -222,6 +225,10 @@ func RunQueryCmdLine() {
 		return
 	}
 
+	if *sybil.FLAGS.EXPORT {
+		loadSpec.LoadAllColumns = true
+	}
+
 	if !*sybil.FLAGS.PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
 		sybil.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
@@ -245,6 +252,10 @@ func RunQueryCmdLine() {
 			}
 		}
 
+	}
+
+	if *sybil.FLAGS.EXPORT {
+		sybil.Print("EXPORTED RECORDS TO", path.Join(t.Name, "export"))
 	}
 
 	if *sybil.FLAGS.PRINT_INFO {

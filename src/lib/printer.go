@@ -264,6 +264,47 @@ func (qs *QuerySpec) PrintResults() {
 
 type Sample map[string]interface{}
 
+func (r *Record) toTSVRow() []string {
+
+	row := make([]string, 0)
+	for name, val := range r.Ints {
+		if r.Populated[name] == INT_VAL {
+			row = append(row, strconv.FormatInt(int64(val), 10))
+		}
+	}
+	for name, val := range r.Strs {
+		if r.Populated[name] == STR_VAL {
+			col := r.block.GetColumnInfo(int16(name))
+			row = append(row, col.get_string_for_val(int32(val)))
+		}
+	}
+
+	return row
+
+}
+
+func (r *Record) sampleHeader() []string {
+	if r == nil {
+		return nil
+	}
+
+	header := make([]string, 0)
+	for name, _ := range r.Ints {
+		if r.Populated[name] == INT_VAL {
+			col := r.block.GetColumnInfo(int16(name))
+			header = append(header, col.get_string_for_key(name))
+		}
+	}
+	for name, _ := range r.Strs {
+		if r.Populated[name] == STR_VAL {
+			col := r.block.GetColumnInfo(int16(name))
+			header = append(header, col.get_string_for_key(name))
+		}
+	}
+
+	return header
+}
+
 func (r *Record) toSample() *Sample {
 	if r == nil {
 		return nil

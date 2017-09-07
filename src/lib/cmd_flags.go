@@ -11,6 +11,7 @@ var ENABLE_LUA = false
 type FlagDefs struct {
 	OP          *string
 	PRINT       *bool
+	EXPORT      *bool
 	INT_FILTERS *string
 	STR_FILTERS *string
 	STR_REPLACE *string // regex replacement for strings
@@ -115,6 +116,7 @@ func SetDefaults() {
 	FLAGS.GC = &TRUE
 	FLAGS.JSON = &FALSE
 	FLAGS.PRINT = &TRUE
+	FLAGS.EXPORT = &FALSE
 
 	FLAGS.SKIP_COMPACT = &FALSE
 

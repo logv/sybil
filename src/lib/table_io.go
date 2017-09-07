@@ -458,6 +458,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				if OPTS.WRITE_BLOCK_INFO {
 					block.SaveInfoToColumns(block.Name)
 				}
+
+				if *FLAGS.EXPORT {
+					block.ExportBlockData()
+				}
 				// don't delete when testing so we can verify block
 				// loading results
 				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
