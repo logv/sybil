@@ -25,20 +25,20 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)
 	if filterSpec.Int != "" {
-		intfilters = strings.Split(filterSpec.Int, ",")
+		intfilters = strings.Split(filterSpec.Int, *FLAGS.FIELD_SEPARATOR)
 	}
 	if filterSpec.Str != "" {
-		strfilters = strings.Split(filterSpec.Str, ",")
+		strfilters = strings.Split(filterSpec.Str, *FLAGS.FIELD_SEPARATOR)
 	}
 
 	if filterSpec.Set != "" {
-		setfilters = strings.Split(filterSpec.Set, ",")
+		setfilters = strings.Split(filterSpec.Set, *FLAGS.FIELD_SEPARATOR)
 	}
 
 	filters := []Filter{}
 
 	for _, filt := range intfilters {
-		tokens := strings.Split(filt, ":")
+		tokens := strings.Split(filt, *FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val, _ := strconv.ParseInt(tokens[2], 10, 64)
@@ -63,7 +63,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range setfilters {
-		tokens := strings.Split(filter, ":")
+		tokens := strings.Split(filter, *FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]
@@ -78,7 +78,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range strfilters {
-		tokens := strings.Split(filter, ":")
+		tokens := strings.Split(filter, *FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]

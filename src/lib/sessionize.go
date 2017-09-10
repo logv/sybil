@@ -326,7 +326,7 @@ func (ss *SessionSpec) Finalize() {
 	sl := ss.Sessions
 
 	if sl.JoinTable != nil {
-		groups = strings.Split(*FLAGS.JOIN_GROUP, ",")
+		groups = strings.Split(*FLAGS.JOIN_GROUP, *FLAGS.FIELD_SEPARATOR)
 	}
 
 	for join_key, as := range sl.List {
@@ -445,7 +445,7 @@ func SessionizeRecords(querySpec *QuerySpec, sessionSpec *SessionSpec, recordspt
 		session_col := *FLAGS.SESSION_COL
 		var group_key = bytes.NewBufferString("")
 
-		cols := strings.Split(session_col, ",")
+		cols := strings.Split(session_col, *FLAGS.FIELD_SEPARATOR)
 		for _, col := range cols {
 			field_id := r.block.get_key_id(col)
 			switch r.Populated[field_id] {
@@ -564,7 +564,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 				loadSpec.Str(*FLAGS.PATH_KEY)
 			}
 
-			cols := strings.Split(*FLAGS.SESSION_COL, ",")
+			cols := strings.Split(*FLAGS.SESSION_COL, *FLAGS.FIELD_SEPARATOR)
 			for _, col := range cols {
 				loadSpec.Str(col)
 			}

@@ -39,7 +39,7 @@ func RunSessionizeCmdLine() {
 		return
 	}
 
-	table_names := strings.Split(table, ",")
+	table_names := strings.Split(table, *sybil.FLAGS.FIELD_SEPARATOR)
 	sybil.Debug("LOADING TABLES", table_names)
 
 	tables := make([]*sybil.Table, 0)

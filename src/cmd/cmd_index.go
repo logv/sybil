@@ -14,7 +14,7 @@ func RunIndexCmdLine() {
 
 	var ints []string
 	if *f_INTS != "" {
-		ints = strings.Split(*f_INTS, ",")
+		ints = strings.Split(*f_INTS, *sybil.FLAGS.FIELD_SEPARATOR)
 	}
 
 	sybil.FLAGS.UPDATE_TABLE_INFO = &TRUE

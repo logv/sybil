@@ -342,7 +342,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	// Load and setup our OPTS.STR_REPLACEMENTS
 	OPTS.STR_REPLACEMENTS = make(map[string]StrReplace)
 	if FLAGS.STR_REPLACE != nil {
-		var replacements = strings.Split(*FLAGS.STR_REPLACE, ",")
+		var replacements = strings.Split(*FLAGS.STR_REPLACE, *FLAGS.FIELD_SEPARATOR)
 		for _, repl := range replacements {
 			tokens := strings.Split(repl, ":")
 			if len(tokens) > 2 {

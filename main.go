@@ -20,6 +20,7 @@ func setupCommands() {
 	CMD_FUNCS["index"] = cmd.RunIndexCmdLine
 	CMD_FUNCS["rebuild"] = cmd.RunRebuildCmdLine
 	CMD_FUNCS["inspect"] = cmd.RunInspectCmdLine
+	CMD_FUNCS["version"] = cmd.RunVersionCmdLine
 
 	for k, _ := range CMD_FUNCS {
 		CMD_KEYS = append(CMD_KEYS, k)

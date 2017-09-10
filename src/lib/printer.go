@@ -485,3 +485,21 @@ func (t *Table) PrintColInfo() {
 	}
 
 }
+
+func PrintVersionInfo() {
+
+	version_info := GetVersionInfo()
+
+	if *FLAGS.JSON {
+		printJson(version_info)
+
+	} else {
+		for k, v := range version_info {
+			fmt.Println(k, ":", v)
+		}
+
+	}
+
+	return
+
+}

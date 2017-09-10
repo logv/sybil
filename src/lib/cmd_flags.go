@@ -29,6 +29,8 @@ type FlagDefs struct {
 	TIME_BUCKET *int
 	HIST_BUCKET *int
 
+	FIELD_SEPARATOR    *string
+	FILTER_SEPARATOR   *string
 	PRINT_KEYS         *bool
 	LOAD_AND_QUERY     *bool
 	LOAD_THEN_QUERY    *bool
@@ -130,6 +132,8 @@ func SetDefaults() {
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 
 	FLAGS.DEBUG = flag.Bool("debug", false, "enable debug logging")
+	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
+	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
 
 	FLAGS.UPDATE_TABLE_INFO = &FALSE
 	FLAGS.SKIP_OUTLIERS = &TRUE

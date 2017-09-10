@@ -89,7 +89,7 @@ func RunQueryCmdLine() {
 	strs := make([]string, 0)
 
 	if *sybil.FLAGS.GROUPS != "" {
-		groups = strings.Split(*sybil.FLAGS.GROUPS, ",")
+		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
 		sybil.OPTS.GROUP_BY = groups
 
 	}
@@ -104,10 +104,10 @@ func RunQueryCmdLine() {
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
 	if *sybil.FLAGS.STRS != "" {
-		strs = strings.Split(*sybil.FLAGS.STRS, ",")
+		strs = strings.Split(*sybil.FLAGS.STRS, *sybil.FLAGS.FIELD_SEPARATOR)
 	}
 	if *sybil.FLAGS.INTS != "" {
-		ints = strings.Split(*sybil.FLAGS.INTS, ",")
+		ints = strings.Split(*sybil.FLAGS.INTS, *sybil.FLAGS.FIELD_SEPARATOR)
 	}
 	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
 		profile := sybil.RUN_PROFILER()
