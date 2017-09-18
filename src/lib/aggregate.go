@@ -40,14 +40,14 @@ func (a SortResultsByCol) Less(i, j int) bool {
 	}
 
 	if *FLAGS.OP == "hist" {
-		t1 := a.Results[i].Hists[a.Col].Avg
-		t2 := a.Results[j].Hists[a.Col].Avg
+		t1 := a.Results[i].Hists[a.Col].Mean()
+		t2 := a.Results[j].Hists[a.Col].Mean()
 		return t1 > t2
 
 	}
 
-	t1 := a.Results[i].Hists[a.Col].Avg
-	t2 := a.Results[j].Hists[a.Col].Avg
+	t1 := a.Results[i].Hists[a.Col].Mean()
+	t2 := a.Results[j].Hists[a.Col].Mean()
 	return t1 > t2
 }
 
@@ -189,15 +189,17 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist, ok := added_record.Hists[a.name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
-					if a.op_id == OP_HIST {
-						hist.TrackPercentiles()
+					if *FLAGS.HDR_HIST && ENABLE_HDR {
+						hist = newHDRHist(r.block.table, r.block.table.get_int_info(a.name_id))
+					} else if *FLAGS.LOG_HIST {
+						hist = r.block.table.NewMultiHist(r.block.table.get_int_info(a.name_id))
+					} else {
+						hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
 					}
-
 					added_record.Hists[a.name] = hist
 				}
 
-				hist.addWeightedValue(val, weight)
+				hist.RecordValues(val, weight)
 			}
 
 		}

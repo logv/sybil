@@ -44,7 +44,7 @@ type Aggregation struct {
 }
 
 type Result struct {
-	Hists map[string]*Hist
+	Hists map[string]Histogram
 
 	GroupByKey  string
 	BinaryByKey string
@@ -54,7 +54,7 @@ type Result struct {
 
 func NewResult() *Result {
 	added_record := &Result{}
-	added_record.Hists = make(map[string]*Hist)
+	added_record.Hists = make(map[string]Histogram)
 	added_record.Count = 0
 	return added_record
 }
@@ -87,10 +87,7 @@ func (rs *Result) Combine(next_result *Result) {
 	for k, h := range next_result.Hists {
 		_, ok := rs.Hists[k]
 		if !ok {
-			nh := h.table.NewHist(h.info)
-			if h.track_percentiles {
-				nh.TrackPercentiles()
-			}
+			nh := h.NewHist()
 
 			nh.Combine(h)
 			rs.Hists[k] = nh

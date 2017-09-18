@@ -48,8 +48,8 @@ func TestTableLoadRecords(test *testing.T) {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		val, err := strconv.ParseInt(k, 10, 64)
-		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Avg)) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Avg)
+		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Mean())
 		}
 	}
 
@@ -89,8 +89,8 @@ func TestAveraging(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Avg)) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
+		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Mean())
 		}
 	}
 	delete_test_db()
@@ -125,6 +125,8 @@ func TestHistograms(test *testing.T) {
 	avg_age := float64(total_age) / float64(count)
 
 	nt := save_and_reload_table(test, block_count)
+	var HIST = "hist"
+	sybil.FLAGS.OP = &HIST
 
 	querySpec := new_query_spec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
@@ -191,7 +193,7 @@ func TestHistograms(test *testing.T) {
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
-		avg := v.Hists["age"].Avg
+		avg := v.Hists["age"].Mean()
 
 		if avg < prev_avg {
 			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
@@ -307,8 +309,8 @@ func TestOrderBy(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Avg)) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Avg)
+		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Mean())
 		}
 	}
 
@@ -324,7 +326,7 @@ func TestOrderBy(test *testing.T) {
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
-		avg := v.Hists["age"].Avg
+		avg := v.Hists["age"].Mean()
 
 		if avg < prev_avg {
 			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")

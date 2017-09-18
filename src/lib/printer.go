@@ -83,7 +83,7 @@ func printTimeResults(querySpec *QuerySpec) {
 					fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t")
 				} else {
 					for agg, hist := range r.Hists {
-						avg_str := fmt.Sprintf("%.2f", hist.Avg)
+						avg_str := fmt.Sprintf("%.2f", hist.Mean())
 						fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t", agg, "\t", avg_str, "\t")
 					}
 				}
@@ -96,6 +96,17 @@ func printTimeResults(querySpec *QuerySpec) {
 
 }
 
+func getSparseBuckets(buckets map[string]int64) map[string]int64 {
+	non_zero_buckets := make(map[string]int64)
+	for k, v := range buckets {
+		if v > 0 {
+			non_zero_buckets[k] = v
+		}
+	}
+
+	return non_zero_buckets
+}
+
 func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
@@ -106,16 +117,16 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			h := r.Hists[agg.name]
 			if h != nil {
 				inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
-				inner["buckets"] = r.Hists[agg.name].GetBuckets()
-				inner["stddev"] = r.Hists[agg.name].GetStdDev()
-				inner["samples"] = r.Hists[agg.name].Samples
+				inner["buckets"] = getSparseBuckets(r.Hists[agg.name].GetBuckets())
+				inner["stddev"] = r.Hists[agg.name].StdDev()
+				inner["samples"] = r.Hists[agg.name].TotalCount()
 			}
 		}
 
 		if *FLAGS.OP == "avg" {
 			result, ok := r.Hists[agg.name]
 			if ok {
-				res[agg.name] = result.Avg
+				res[agg.name] = result.Mean()
 			} else {
 				res[agg.name] = nil
 			}
@@ -196,14 +207,14 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			p := h.GetPercentiles()
 
 			if len(p) > 0 {
-				avg_str := fmt.Sprintf("%.2f", h.Avg)
-				std_str := fmt.Sprintf("%.2f", h.GetStdDev())
-				fmt.Println(col_name, "|", h.Min, h.Max, "|", avg_str, "|", p[0], p[25], p[50], p[75], p[99], "|", std_str)
+				avg_str := fmt.Sprintf("%.2f", h.Mean())
+				std_str := fmt.Sprintf("%.2f", h.StdDev())
+				fmt.Println(col_name, "|", h.Min(), h.Max(), "|", avg_str, "|", p[0], p[25], p[50], p[75], p[99], "|", std_str)
 			} else {
 				fmt.Println(col_name, "No Data")
 			}
 		} else if *FLAGS.OP == "avg" {
-			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.name].Avg))
+			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.name].Mean()))
 		}
 	}
 }

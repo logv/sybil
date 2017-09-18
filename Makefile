@@ -42,6 +42,10 @@ coverage:
 	go tool cover -html=cover.out -o cover.html
 
 
+hdrhist: export BUILD_FLAGS += -tags hdrhist
+hdrhist: bindir
+	make all
+
 nodeltaencoding: export BUILD_FLAGS += -tags denc
 nodeltaencoding: bindir
 	make all

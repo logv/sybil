@@ -28,6 +28,8 @@ type FlagDefs struct {
 	TIME_COL    *string
 	TIME_BUCKET *int
 	HIST_BUCKET *int
+	HDR_HIST    *bool
+	LOG_HIST    *bool
 
 	FIELD_SEPARATOR    *string
 	FILTER_SEPARATOR   *string
@@ -142,6 +144,9 @@ func SetDefaults() {
 	FLAGS.LUAFILE = &EMPTY
 
 	FLAGS.RECYCLE_MEM = &TRUE
+
+	FLAGS.HDR_HIST = &FALSE
+	FLAGS.LOG_HIST = &FALSE
 
 	DEFAULT_LIMIT := 100
 	FLAGS.LIMIT = &DEFAULT_LIMIT

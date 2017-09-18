@@ -47,8 +47,8 @@ func TestTableLoadRowRecords(test *testing.T) {
 		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
 
 		val, err := strconv.ParseInt(k, 10, 64)
-		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Avg)) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Avg)
+		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Mean())
 		}
 	}
 

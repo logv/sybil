@@ -121,14 +121,14 @@ type ActiveSession struct {
 }
 
 type SessionStats struct {
-	NumEvents       Hist
-	NumBounces      Hist
-	NumSessions     Hist
-	SessionDuration Hist
-	Retention       Hist
+	NumEvents       BasicHist
+	NumBounces      BasicHist
+	NumSessions     BasicHist
+	SessionDuration BasicHist
+	Retention       BasicHist
 	Calendar        *Calendar
 
-	SessionDelta Hist
+	SessionDelta BasicHist
 
 	LastSessionEnd int64
 }
