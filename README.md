@@ -19,6 +19,7 @@ advantages
   * Lower disk usage through per column compression schemes
   * Serverless design with controlled memory usage
   * Per table retention policies (specify max age and/or size of tables)
+  * Per block query cache (optional) that avoids recomputation
 
 disadvantages
 -------------

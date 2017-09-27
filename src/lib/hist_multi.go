@@ -10,12 +10,11 @@ type MultiHist struct {
 	Count   int64
 	Avg     float64
 
-	track_percentiles bool
-	num_hists         int
+	PercentileMode bool
 
-	subhists []*HistCompat
+	Subhists []*HistCompat
+	Info     *IntInfo
 	table    *Table
-	info     *IntInfo
 }
 
 var HIST_FACTOR_POW = uint(1)
@@ -24,7 +23,7 @@ func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 
 	h := &MultiHist{}
 	h.table = t
-	h.info = info
+	h.Info = info
 
 	h.Avg = 0
 	h.Count = 0
@@ -49,10 +48,10 @@ func (h *MultiHist) Sum() int64 {
 func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
-	if h.info != nil {
-		if value > h.info.Max*10 || value < h.info.Min {
+	if h.Info != nil {
+		if value > h.Info.Max*10 || value < h.Info.Min {
 			if DEBUG_OUTLIERS {
-				Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+				Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
 			}
 			return
 		}
@@ -75,12 +74,12 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 		h.Min = value
 	}
 
-	if !h.track_percentiles {
+	if !h.PercentileMode {
 		return
 	}
 
-	for _, sh := range h.subhists {
-		if value >= sh.info.Min && value <= sh.info.Max {
+	for _, sh := range h.Subhists {
+		if value >= sh.Info.Min && value <= sh.Info.Max {
 			sh.addWeightedValue(value, weight)
 			break
 		}
@@ -173,7 +172,7 @@ func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
 
 func (h *MultiHist) GetBuckets() map[string]int64 {
 	all_buckets := make(map[string]int64, 0)
-	for _, subhist := range h.subhists {
+	for _, subhist := range h.Subhists {
 		for key, count := range subhist.GetBuckets() {
 			all_buckets[key] = count
 		}
@@ -184,7 +183,7 @@ func (h *MultiHist) GetBuckets() map[string]int64 {
 
 func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
 	all_buckets := make(map[int64]int64, 0)
-	for _, subhist := range h.subhists {
+	for _, subhist := range h.Subhists {
 		for key, count := range subhist.GetSparseBuckets() {
 			_, ok := all_buckets[key]
 
@@ -202,8 +201,8 @@ func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
 
 func (h *MultiHist) Combine(oh interface{}) {
 	next_hist := oh.(*MultiHistCompat)
-	for i, subhist := range h.subhists {
-		subhist.Combine(next_hist.subhists[i])
+	for i, subhist := range h.Subhists {
+		subhist.Combine(next_hist.Subhists[i])
 	}
 
 	total := h.Count + next_hist.Count
@@ -222,30 +221,29 @@ func (h *MultiHist) Combine(oh interface{}) {
 }
 
 func (h *MultiHist) TrackPercentiles() {
-	h.track_percentiles = true
-	bucket_size := (h.Max - h.Min)
+	h.PercentileMode = true
+	BucketSize := (h.Max - h.Min)
 
 	// We create 1:1 buckets for the smallest bucket, then increase
 	// logarithmically
 	num_hists := 0
-	for t := bucket_size; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
+	for t := BucketSize; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
 		num_hists += 1
 	}
-	h.num_hists = num_hists
 
-	h.subhists = make([]*HistCompat, num_hists+1)
+	h.Subhists = make([]*HistCompat, num_hists+1)
 
 	right_edge := h.Max
 
 	for i := 0; i < num_hists; i++ {
-		bucket_size >>= HIST_FACTOR_POW
+		BucketSize >>= HIST_FACTOR_POW
 		info := IntInfo{}
-		info.Min = right_edge - bucket_size
+		info.Min = right_edge - BucketSize
 		info.Max = right_edge
 
 		right_edge = info.Min
-		h.subhists[i] = h.table.NewHist(&info)
-		h.subhists[i].TrackPercentiles()
+		h.Subhists[i] = h.table.NewHist(&info)
+		h.Subhists[i].TrackPercentiles()
 	}
 
 	// Add the smallest hist to the end from h.Min -> the last bucket
@@ -253,12 +251,11 @@ func (h *MultiHist) TrackPercentiles() {
 	info.Min = h.Min
 	info.Max = right_edge
 
-	h.subhists[num_hists] = h.table.NewHist(&info)
-	h.subhists[num_hists].TrackPercentiles()
+	h.Subhists[num_hists] = h.table.NewHist(&info)
+	h.Subhists[num_hists].TrackPercentiles()
 
 }
 
 func (h *MultiHist) Print() {
-
 	Debug("HIST COUNTS ARE", 0)
 }

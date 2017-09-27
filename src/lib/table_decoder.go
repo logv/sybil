@@ -37,7 +37,12 @@ func GetFileDecoder(filename string) *gob.Decoder {
 	// if we try to open the file and its missing, maybe there is a .gz version of it
 	if err != nil {
 		zfilename := fmt.Sprintf("%s%s", filename, GZIP_EXT)
-		return getCompressedDecoder(zfilename)
+		_, err = os.Open(zfilename)
+
+		// if we can open this file, we return compressed file decoder
+		if err == nil {
+			return getCompressedDecoder(zfilename)
+		}
 	}
 
 	// otherwise, we just return vanilla decoder for this file

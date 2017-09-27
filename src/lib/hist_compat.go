@@ -4,21 +4,19 @@ package sybil
 
 type HistCompat struct {
 	*BasicHist
-
-	Histogram *BasicHist
 }
 
 func (hc *HistCompat) Min() int64 {
 
-	return hc.Histogram.Min
+	return hc.BasicHist.Min
 }
 
 func (hc *HistCompat) Max() int64 {
-	return hc.Histogram.Max
+	return hc.BasicHist.Max
 }
 
 func (hc *HistCompat) NewHist() Histogram {
-	return hc.table.NewHist(hc.info)
+	return hc.table.NewHist(&hc.Info)
 }
 
 func (h *HistCompat) Mean() float64 {
@@ -68,7 +66,7 @@ func (hc *MultiHistCompat) Max() int64 {
 }
 
 func (hc *MultiHistCompat) NewHist() Histogram {
-	return hc.table.NewMultiHist(hc.info)
+	return hc.table.NewMultiHist(hc.Info)
 }
 
 func (h *MultiHistCompat) Mean() float64 {

@@ -279,6 +279,38 @@ func (t *Table) ResetBlockCache() {
 	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
 }
 
+func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
+
+	// NOW WE SAVE OUR QUERY CACHE HERE...
+	savestart := time.Now()
+
+	if *FLAGS.CACHED_QUERIES {
+		for blockName, blockQuery := range to_cache_specs {
+
+			if blockName == INGEST_DIR {
+				continue
+			}
+
+			blockQuery.SaveCachedResults(blockName)
+			if *FLAGS.DEBUG {
+				fmt.Fprint(os.Stderr, "s")
+			}
+		}
+
+		saveend := time.Now()
+
+		if len(to_cache_specs) > 0 {
+			if *FLAGS.DEBUG {
+				fmt.Fprint(os.Stderr, "\n")
+			}
+			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
+		}
+	}
+
+	// END QUERY CACHE SAVING
+
+}
+
 func (t *Table) WriteBlockCache() {
 	if len(t.NewBlockInfos) == 0 {
 		return
@@ -358,6 +390,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	var wg sync.WaitGroup
 	block_specs := make(map[string]*QuerySpec)
+	to_cache_specs := make(map[string]*QuerySpec)
 
 	loaded_info := t.LoadTableInfo()
 	if loaded_info == false {
@@ -380,6 +413,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	count := 0
+	cached_count := 0
+	cached_blocks := 0
+	loaded_count := 0
 	skipped := 0
 	broken_count := 0
 	this_block := 0
@@ -414,16 +450,35 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					return
 				}
 
-				block := t.LoadBlockFromDir(filename, loadSpec, load_all)
-				if block == nil {
-					broken_mutex.Lock()
-					broken_blocks = append(broken_blocks, filename)
-					broken_mutex.Unlock()
-					return
+				var cachedSpec *QuerySpec
+				var cachedBlock *TableBlock
+
+				if querySpec != nil {
+					cachedBlock, cachedSpec = t.getCachedQueryForBlock(filename, querySpec)
+				}
+
+				var block *TableBlock
+				if cachedSpec == nil {
+					// couldnt load the cached query results
+					block = t.LoadBlockFromDir(filename, loadSpec, load_all)
+					if block == nil {
+						broken_mutex.Lock()
+						broken_blocks = append(broken_blocks, filename)
+						broken_mutex.Unlock()
+						return
+					}
+				} else {
+					// we are using cached query results
+					block = cachedBlock
 				}
 
 				if *FLAGS.DEBUG {
-					fmt.Fprint(os.Stderr, ".")
+					if cachedSpec != nil {
+						fmt.Fprint(os.Stderr, "c")
+					} else {
+						fmt.Fprint(os.Stderr, ".")
+
+					}
 				}
 
 				end := time.Now()
@@ -435,24 +490,39 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 				}
 
-				if len(block.RecordList) > 0 {
-
-					if querySpec != nil { // Load and Query
-						blockQuery := CopyQuerySpec(querySpec)
-						blockCount := FilterAndAggRecords(blockQuery, &block.RecordList)
-
-						if HOLD_MATCHES {
-							block.Matched = blockQuery.Matched
-						}
-
-						m.Lock()
-						count += blockCount
-						block_specs[block.Name] = blockQuery
-						m.Unlock()
-					} else { // Just doing a regular old block load
+				if len(block.RecordList) > 0 || cachedSpec != nil {
+					if querySpec == nil {
 						m.Lock()
 						count += len(block.RecordList)
 						m.Unlock()
+					} else { // Load and Query
+						blockQuery := cachedSpec
+						if blockQuery == nil {
+							blockQuery = CopyQuerySpec(querySpec)
+							blockQuery.MatchedCount = FilterAndAggRecords(blockQuery, &block.RecordList)
+
+							if HOLD_MATCHES {
+								block.Matched = blockQuery.Matched
+							}
+
+						}
+
+						if blockQuery != nil {
+							m.Lock()
+							if cachedSpec != nil {
+								cached_count += blockQuery.MatchedCount
+								cached_blocks += 1
+
+							} else {
+								count += blockQuery.MatchedCount
+								loaded_count += 1
+								if block.Info.NumRecords == int32(CHUNK_SIZE) {
+									to_cache_specs[block.Name] = blockQuery
+								}
+							}
+							block_specs[block.Name] = blockQuery
+							m.Unlock()
+						}
 					}
 
 				}
@@ -524,7 +594,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 		// Entrust AfterLoadQueryCB to call Done on wg
 		rowStoreQuery.wg = &wg
+		m.Lock()
 		block_specs[INGEST_DIR] = rowStoreQuery.querySpec
+		m.Unlock()
+
 		wg.Add(1)
 		go func() {
 			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
@@ -567,6 +640,18 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	Debug("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
+	Debug("SKIPPED", cached_blocks, "BLOCKS &", cached_count, "RECORDS BASED ON QUERY CACHE")
+	end := time.Now()
+	if loadSpec != nil {
+		Debug("LOADED", count, "RECORDS FROM", loaded_count, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
+	} else {
+		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
+	}
+
+	// NOTE: we have to write the query cache before we combine our results,
+	// bc combining results is not idempotent
+	t.WriteQueryCache(to_cache_specs)
+
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
@@ -581,14 +666,6 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.TimeResults = resultSpec.TimeResults
 
 		SortResults(querySpec)
-	}
-
-	end := time.Now()
-
-	if loadSpec != nil {
-		Debug("LOADED", count, "RECORDS FROM BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
-	} else {
-		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
 	t.WriteBlockCache()

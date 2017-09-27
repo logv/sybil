@@ -6,24 +6,29 @@ import "sort"
 import "strconv"
 
 // {{{ BASIC HIST
-type BasicHist struct {
+
+type BasicHistCachedInfo struct {
+	NumBuckets     int
+	BucketSize     int
+	Values         []int64
+	Averages       []float64
+	PercentileMode bool
+
+	Outliers   []int64
+	Underliers []int64
+
 	Max     int64
 	Min     int64
 	Samples int
 	Count   int64
 	Avg     float64
+	Info    IntInfo
+}
 
-	num_buckets       int
-	bucket_size       int
-	values            []int64
-	avgs              []float64
-	track_percentiles bool
-
-	outliers   []int64
-	underliers []int64
+type BasicHist struct {
+	BasicHistCachedInfo
 
 	table *Table
-	info  *IntInfo
 }
 
 func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
@@ -34,43 +39,42 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	h.Min = min
 	h.Max = max
 
-	if h.track_percentiles {
+	if h.PercentileMode {
 
-		h.outliers = make([]int64, 0)
-		h.underliers = make([]int64, 0)
+		h.Outliers = make([]int64, 0)
+		h.Underliers = make([]int64, 0)
 
 		size := int64(max - min)
-		h.num_buckets = buckets
-		h.bucket_size = int(size / int64(buckets))
+		h.NumBuckets = buckets
+		h.BucketSize = int(size / int64(buckets))
 
 		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-			h.bucket_size = *FLAGS.HIST_BUCKET
+			h.BucketSize = *FLAGS.HIST_BUCKET
 		}
 
-		if h.bucket_size == 0 {
+		if h.BucketSize == 0 {
 			if size < 100 {
-				h.bucket_size = 1
-				h.num_buckets = int(size)
+				h.BucketSize = 1
+				h.NumBuckets = int(size)
 			} else {
-				h.bucket_size = int(size / int64(100))
-				h.num_buckets = int(size / int64(h.bucket_size))
+				h.BucketSize = int(size / int64(100))
+				h.NumBuckets = int(size / int64(h.BucketSize))
 			}
 		}
 
-		h.num_buckets += 1
+		h.NumBuckets += 1
 
-		h.values = make([]int64, h.num_buckets+1)
-		h.avgs = make([]float64, h.num_buckets+1)
+		h.Values = make([]int64, h.NumBuckets+1)
+		h.Averages = make([]float64, h.NumBuckets+1)
 	}
 }
 
 func (t *Table) NewHist(info *IntInfo) *HistCompat {
 
 	basic_hist := BasicHist{}
-	compat_hist := HistCompat{&basic_hist, &basic_hist}
+	compat_hist := HistCompat{&basic_hist}
 	compat_hist.table = t
-	compat_hist.info = info
-	compat_hist.Histogram = &basic_hist
+	compat_hist.Info = *info
 
 	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
 		compat_hist.TrackPercentiles()
@@ -81,9 +85,9 @@ func (t *Table) NewHist(info *IntInfo) *HistCompat {
 }
 
 func (h *BasicHist) TrackPercentiles() {
-	h.track_percentiles = true
+	h.PercentileMode = true
 
-	h.SetupBuckets(NUM_BUCKETS, h.info.Min, h.info.Max)
+	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
 }
 
 func (h *BasicHist) addValue(value int64) {
@@ -97,9 +101,9 @@ func (h *BasicHist) Sum() int64 {
 func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
-	if value > h.info.Max*10 || value < h.info.Min {
+	if value > h.Info.Max*10 || value < h.Info.Min {
 		if DEBUG_OUTLIERS {
-			log.Println("IGNORING OUTLIER VALUE", value, "MIN IS", h.info.Min, "MAX IS", h.info.Max)
+			log.Println("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
 		}
 		return
 	}
@@ -121,29 +125,29 @@ func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 		h.Min = value
 	}
 
-	if !h.track_percentiles {
+	if !h.PercentileMode {
 		return
 	}
 
-	bucket_value := (value - h.Min) / int64(h.bucket_size)
+	bucket_value := (value - h.Min) / int64(h.BucketSize)
 
-	if bucket_value >= int64(len(h.values)) {
-		h.outliers = append(h.outliers, value)
-		bucket_value = int64(len(h.values) - 1)
+	if bucket_value >= int64(len(h.Values)) {
+		h.Outliers = append(h.Outliers, value)
+		bucket_value = int64(len(h.Values) - 1)
 	}
 
 	if bucket_value < 0 {
-		h.underliers = append(h.underliers, value)
+		h.Underliers = append(h.Underliers, value)
 		bucket_value = 0
 	}
 
-	partial := h.avgs[bucket_value]
+	partial := h.Averages[bucket_value]
 
 	// update counts
-	h.values[bucket_value] += weight
+	h.Values[bucket_value] += weight
 
 	// update bucket averages
-	h.avgs[bucket_value] = partial + ((float64(value) - partial) / float64(h.values[bucket_value]) * float64(weight))
+	h.Averages[bucket_value] = partial + ((float64(value) - partial) / float64(h.Values[bucket_value]) * float64(weight))
 }
 
 func (h *BasicHist) GetPercentiles() []int64 {
@@ -155,7 +159,7 @@ func (h *BasicHist) GetPercentiles() []int64 {
 	keys := make([]int, 0)
 
 	// unpack the bucket values!
-	for k := range h.values {
+	for k := range h.Values {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
@@ -164,11 +168,11 @@ func (h *BasicHist) GetPercentiles() []int64 {
 	count := int64(0)
 	prev_p := int64(0)
 	for _, k := range keys {
-		key_count := h.values[k]
+		key_count := h.Values[k]
 		count = count + key_count
 		p := (100 * count) / h.Count
 		for ip := prev_p; ip <= p; ip++ {
-			percentiles[ip] = (int64(k) * int64(h.bucket_size)) + h.Min
+			percentiles[ip] = (int64(k) * int64(h.BucketSize)) + h.Min
 
 		}
 		percentiles[p] = int64(k)
@@ -189,8 +193,8 @@ func (h *BasicHist) GetStdDev() float64 {
 	// TOTAL VALUES
 
 	sum_variance := float64(0)
-	for bucket, count := range h.values {
-		val := int64(bucket)*int64(h.bucket_size) + h.Min
+	for bucket, count := range h.Values {
+		val := int64(bucket)*int64(h.BucketSize) + h.Min
 		delta := float64(val) - h.Avg
 
 		ratio := float64(count) / float64(h.Count)
@@ -199,13 +203,13 @@ func (h *BasicHist) GetStdDev() float64 {
 		sum_variance += (float64(delta*delta) * ratio)
 	}
 
-	for _, val := range h.outliers {
+	for _, val := range h.Outliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
 		sum_variance += (float64(delta) * ratio)
 	}
 
-	for _, val := range h.underliers {
+	for _, val := range h.Underliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
 		sum_variance += (float64(delta) * ratio)
@@ -217,17 +221,17 @@ func (h *BasicHist) GetStdDev() float64 {
 func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 	ret := make(map[int64]int64, 0)
 
-	for k, v := range h.values {
+	for k, v := range h.Values {
 		if v > 0 {
-			ret[int64(k)*int64(h.bucket_size)+h.Min] = v
+			ret[int64(k)*int64(h.BucketSize)+h.Min] = v
 		}
 	}
 
-	for _, v := range h.outliers {
+	for _, v := range h.Outliers {
 		ret[int64(v)] += 1
 	}
 
-	for _, v := range h.underliers {
+	for _, v := range h.Underliers {
 		ret[int64(v)] += 1
 	}
 
@@ -237,15 +241,15 @@ func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 func (h *BasicHist) GetBuckets() map[string]int64 {
 	ret := make(map[string]int64, 0)
 
-	for k, v := range h.values {
-		ret[strconv.FormatInt(int64(k)*int64(h.bucket_size)+h.Min, 10)] = v
+	for k, v := range h.Values {
+		ret[strconv.FormatInt(int64(k)*int64(h.BucketSize)+h.Min, 10)] = v
 	}
 
-	for _, v := range h.outliers {
+	for _, v := range h.Outliers {
 		ret[strconv.FormatInt(int64(v), 10)] += 1
 	}
 
-	for _, v := range h.underliers {
+	for _, v := range h.Underliers {
 		ret[strconv.FormatInt(int64(v), 10)] += 1
 	}
 
@@ -255,8 +259,8 @@ func (h *BasicHist) GetBuckets() map[string]int64 {
 func (h *BasicHist) Combine(oh interface{}) {
 	next_hist := oh.(*HistCompat)
 
-	for k, v := range next_hist.values {
-		h.values[k] += v
+	for k, v := range next_hist.Values {
+		h.Values[k] += v
 	}
 
 	total := h.Count + next_hist.Count
@@ -277,9 +281,9 @@ func (h *BasicHist) Combine(oh interface{}) {
 func (h *BasicHist) Print() {
 	vals := make(map[int64]int64)
 
-	for val_index, count := range h.values {
+	for val_index, count := range h.Values {
 		if count > 0 {
-			val := int64(val_index)*int64(h.bucket_size) + h.Min
+			val := int64(val_index)*int64(h.BucketSize) + h.Min
 			vals[val] = count
 		}
 	}

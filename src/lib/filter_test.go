@@ -49,7 +49,7 @@ func testIntLt(test *testing.T) {
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -75,7 +75,7 @@ func testIntGt(test *testing.T) {
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -104,7 +104,7 @@ func testIntNeq(test *testing.T) {
 	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -135,7 +135,7 @@ func testIntEq(test *testing.T) {
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -164,7 +164,7 @@ func testStrEq(test *testing.T) {
 	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
 	Debug("QUERY SPEC", querySpec.Results)
 
@@ -195,7 +195,7 @@ func testStrNeq(test *testing.T) {
 	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -224,7 +224,7 @@ func testStrRe(test *testing.T) {
 	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -255,7 +255,7 @@ func testSetIn(test *testing.T) {
 	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -278,7 +278,7 @@ func testSetIn(test *testing.T) {
 	// TODO: MULTIPLE SET VALUE FILTER
 	//	filters = []sybil.Filter{}
 	//	filters = append(filters, nt.SetFilter("age_set", "in", "20,21,22"))
-	//	querySpec = sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	//	querySpec = sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 	//
 	//	if len(querySpec.Results) != 3 {
 	//		test.Error("Set Filter for nin returned more (or less) than three results", len(querySpec.Results), querySpec.Results)
@@ -297,7 +297,7 @@ func testSetNin(test *testing.T) {
 	groupings := []sybil.Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
-	querySpec := sybil.QuerySpec{Filters: filters, Aggregations: aggs, Groups: groupings}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
 	nt.MatchAndAggregate(&querySpec)
 

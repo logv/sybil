@@ -113,29 +113,29 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 	for _, agg := range querySpec.Aggregations {
 		if *FLAGS.OP == "hist" {
 			inner := make(ResultJSON)
-			res[agg.name] = inner
-			h := r.Hists[agg.name]
+			res[agg.Name] = inner
+			h := r.Hists[agg.Name]
 			if h != nil {
-				inner["percentiles"] = r.Hists[agg.name].GetPercentiles()
-				inner["buckets"] = getSparseBuckets(r.Hists[agg.name].GetBuckets())
-				inner["stddev"] = r.Hists[agg.name].StdDev()
-				inner["samples"] = r.Hists[agg.name].TotalCount()
+				inner["percentiles"] = r.Hists[agg.Name].GetPercentiles()
+				inner["buckets"] = getSparseBuckets(r.Hists[agg.Name].GetBuckets())
+				inner["stddev"] = r.Hists[agg.Name].StdDev()
+				inner["samples"] = r.Hists[agg.Name].TotalCount()
 			}
 		}
 
 		if *FLAGS.OP == "avg" {
-			result, ok := r.Hists[agg.name]
+			result, ok := r.Hists[agg.Name]
 			if ok {
-				res[agg.name] = result.Mean()
+				res[agg.Name] = result.Mean()
 			} else {
-				res[agg.name] = nil
+				res[agg.Name] = nil
 			}
 		}
 	}
 
 	var group_key = strings.Split(r.GroupByKey, GROUP_DELIMITER)
 	for i, g := range querySpec.Groups {
-		res[g.name] = group_key[i]
+		res[g.Name] = group_key[i]
 	}
 
 	res["Count"] = r.Count
@@ -197,11 +197,11 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Printf("\n")
 
 	for _, agg := range querySpec.Aggregations {
-		col_name := fmt.Sprintf("  %5s", agg.name)
+		col_name := fmt.Sprintf("  %5s", agg.Name)
 		if *FLAGS.OP == "hist" {
-			h, ok := v.Hists[agg.name]
+			h, ok := v.Hists[agg.Name]
 			if !ok {
-				Debug("NO HIST AROUND FOR KEY", agg.name, v.GroupByKey)
+				Debug("NO HIST AROUND FOR KEY", agg.Name, v.GroupByKey)
 				continue
 			}
 			p := h.GetPercentiles()
@@ -214,7 +214,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 				fmt.Println(col_name, "No Data")
 			}
 		} else if *FLAGS.OP == "avg" {
-			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.name].Mean()))
+			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}
 }

@@ -23,7 +23,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 	iccs := make(map[string]float64)
 	t := GetTable(*FLAGS.TABLE)
 	for _, agg := range querySpec.Aggregations {
-		cumulative, ok := querySpec.Cumulative.Hists[agg.name]
+		cumulative, ok := querySpec.Cumulative.Hists[agg.Name]
 		if !ok {
 			continue
 		}
@@ -37,7 +37,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		min_avg := total_variance
 		max_avg := 0.0
 		for _, res := range querySpec.Results {
-			hist, ok := res.Hists[agg.name]
+			hist, ok := res.Hists[agg.Name]
 			if !ok {
 				// TODO: count the missing values, so we can subtract them from the degrees of freedom later
 				continue
@@ -64,7 +64,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 
 		sum_of_squares_within := float64(0.0)
 		for _, res := range querySpec.Results {
-			hist, ok := res.Hists[agg.name]
+			hist, ok := res.Hists[agg.Name]
 			if !ok {
 				continue
 			}
@@ -90,9 +90,9 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 
 		}
 
-		iccs[agg.name] = icc
+		iccs[agg.Name] = icc
 
-		Debug(agg.name, "ICC", int(icc*100))
+		Debug(agg.Name, "ICC", int(icc*100))
 	}
 
 	return iccs

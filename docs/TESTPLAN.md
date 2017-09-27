@@ -29,6 +29,12 @@ Test Plan:
     * [ ] Open Partial Blocks and re-fill them
     * [ ] Auto Digest during ingestion
     * [ ] Digestion can fail gracefully
+  * [ ] Per Block Query Cache
+    * [x] Gets built
+    * [x] Is used when supposed to
+    * [x] Is ignored properly
+    * [x] Gives consistent results
+    * [x] Works with Basic Hist
 
 Failure Plans
 -------------

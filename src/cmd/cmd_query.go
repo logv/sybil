@@ -63,6 +63,8 @@ func addQueryFlags() {
 	TIME_FORMAT = flag.String("time-format", "", "time format to use")
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
+	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
+
 }
 
 func RunQueryCmdLine() {
@@ -166,7 +168,8 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: query_params}
 
 	for _, v := range groups {
 		switch t.GetColumnType(v) {

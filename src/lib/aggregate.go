@@ -186,7 +186,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			case INT_VAL:
 				val := int64(r.Ints[a.name_id])
 
-				hist, ok := added_record.Hists[a.name]
+				hist, ok := added_record.Hists[a.Name]
 
 				if !ok {
 					if *FLAGS.HDR_HIST && ENABLE_HDR {
@@ -196,7 +196,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 					} else {
 						hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
 					}
-					added_record.Hists[a.name] = hist
+					added_record.Hists[a.Name] = hist
 				}
 
 				hist.RecordValues(val, weight)

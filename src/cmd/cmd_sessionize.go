@@ -84,7 +84,8 @@ func RunSessionizeCmdLine() {
 	filters := []sybil.Filter{}
 	groupings := []sybil.Grouping{}
 	aggs := []sybil.Aggregation{}
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: query_params}
 
 	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
 

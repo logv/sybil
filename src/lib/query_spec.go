@@ -4,7 +4,19 @@ import "C"
 
 type ResultMap map[string]*Result
 
-type QuerySpec struct {
+// This info gets cached when we use
+// the query cache. anything in the main
+// QuerySpec will not get cached
+type savedQueryResults struct {
+	Cumulative   *Result
+	Results      ResultMap
+	TimeResults  map[int]ResultMap
+	MatchedCount int
+	Sorted       []*Result
+	Matched      RecordList
+}
+
+type savedQueryParams struct {
 	Filters      []Filter
 	Groups       []Grouping
 	Aggregations []Aggregation
@@ -12,16 +24,20 @@ type QuerySpec struct {
 	OrderBy    string
 	Limit      int16
 	TimeBucket int
+}
 
-	Cumulative  *Result
-	Results     ResultMap
-	TimeResults map[int]ResultMap
-	Sorted      []*Result
-	Matched     RecordList
-	Sessions    SessionList
+// For outside consumption
+type QueryParams savedQueryParams
+type QueryResults savedQueryResults
+
+type QuerySpec struct {
+	QueryParams
+	QueryResults
 
 	BlockList map[string]TableBlock
 	Table     *Table
+
+	Sessions SessionList
 
 	LuaResult LuaTable
 	LuaState  *C.struct_lua_State
@@ -32,15 +48,16 @@ type Filter interface {
 }
 
 type Grouping struct {
-	name    string
+	Name    string
 	name_id int16
 }
 
 type Aggregation struct {
-	op      string
-	op_id   int
-	name    string
-	name_id int16
+	Op       string
+	op_id    int
+	Name     string
+	name_id  int16
+	HistType string
 }
 
 type Result struct {
@@ -126,13 +143,23 @@ func (t *Table) Grouping(name string) Grouping {
 
 func (t *Table) Aggregation(name string, op string) Aggregation {
 	col_id := t.get_key_id(name)
-	agg := Aggregation{name: name, name_id: col_id, op: op}
+
+	agg := Aggregation{Name: name, name_id: col_id, Op: op}
 	if op == "avg" {
 		agg.op_id = OP_AVG
 	}
 
 	if op == "hist" {
 		agg.op_id = OP_HIST
+		agg.HistType = "basic"
+		if *FLAGS.LOG_HIST {
+			agg.HistType = "multi"
+
+		}
+
+		if *FLAGS.HDR_HIST {
+			agg.HistType = "hdr"
+		}
 	}
 
 	if op == "distinct" {

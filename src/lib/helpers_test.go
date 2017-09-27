@@ -23,7 +23,7 @@ func run_tests(m *testing.M) {
 }
 
 func setup_test_vars(chunk_size int) {
-	sybil.SetDefaults()
+	sybil.Startup()
 	sybil.FLAGS.TABLE = &TEST_TABLE_NAME
 
 	sybil.TEST_MODE = true
@@ -82,7 +82,7 @@ func new_query_spec() *sybil.QuerySpec {
 	aggs := []sybil.Aggregation{}
 	groupings := []sybil.Grouping{}
 
-	querySpec := sybil.QuerySpec{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}}
 
 	return &querySpec
 }

@@ -118,7 +118,7 @@ type StrFilter struct {
 	FieldId int16
 	Op      string
 	Value   string
-	Regex   *regexp.Regexp
+	regex   *regexp.Regexp
 
 	table *Table
 }
@@ -185,11 +185,11 @@ func (filter StrFilter) Filter(r *Record) bool {
 			ret, ok = col.RCache[int(val)]
 			if !ok {
 				str_val := col.get_string_for_val(int32(val))
-				ret = filter.Regex.MatchString(str_val)
+				ret = filter.regex.MatchString(str_val)
 			}
 		} else {
 			str_val := col.get_string_for_val(int32(val))
-			ret = filter.Regex.MatchString(str_val)
+			ret = filter.regex.MatchString(str_val)
 		}
 
 		if cardinality < REGEX_CACHE_SIZE && !ok {
@@ -262,7 +262,7 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 
 	var err error
 	if op == "re" || op == "nre" {
-		strFilter.Regex, err = regexp.Compile(value)
+		strFilter.regex, err = regexp.Compile(value)
 		if err != nil {
 			Debug("REGEX ERROR", err, "WITH", value)
 		}
