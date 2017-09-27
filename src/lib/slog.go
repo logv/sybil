@@ -14,7 +14,7 @@ func Print(args ...interface{}) {
 }
 
 func Warn(args ...interface{}) {
-	fmt.Println(append([]interface{}{"Warning:"}, args...)...)
+	fmt.Fprintln(os.Stderr, append([]interface{}{"Warning:"}, args...)...)
 }
 
 func Debug(args ...interface{}) {

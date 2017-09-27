@@ -232,6 +232,8 @@ func file_looks_like_block(v os.FileInfo) bool {
 		return false
 	case strings.HasSuffix(v.Name(), "lock"):
 		return false
+	case strings.HasSuffix(v.Name(), "export"):
+		return false
 	case strings.HasSuffix(v.Name(), "partial"):
 		return false
 	}
