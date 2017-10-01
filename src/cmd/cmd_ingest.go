@@ -196,8 +196,6 @@ func import_json_records() {
 var INT_CAST = make(map[string]bool)
 var EXCLUDES = make(map[string]bool)
 
-// appends records to our record input queue
-// every now and then, we should pack the input queue into a column, though
 func RunIngestCmdLine() {
 	ingestfile := flag.String("file", sybil.INGEST_DIR, "name of dir to ingest into")
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")

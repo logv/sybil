@@ -4,8 +4,6 @@ import "flag"
 
 import sybil "github.com/logv/sybil/src/lib"
 
-// appends records to our record input queue
-// every now and then, we should pack the input queue into a column, though
 func RunRebuildCmdLine() {
 	REPLACE_INFO := flag.Bool("replace", false, "Replace broken info.db if it exists")
 	FORCE_UPDATE := flag.Bool("force", false, "Force re-calculation of info.db, even if it exists")

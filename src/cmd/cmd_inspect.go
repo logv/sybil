@@ -79,8 +79,7 @@ func decodeStrCol(digest_file *string) bool {
 
 }
 
-// appends records to our record input queue
-// every now and then, we should pack the input queue into a column, though
+// TODO: make a list of potential types that can be decoded into
 func RunInspectCmdLine() {
 	digest_file := flag.String("file", "", "Name of file to inspect")
 	flag.Parse()
