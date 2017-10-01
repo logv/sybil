@@ -168,8 +168,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 	istart := time.Now()
 	filename := fmt.Sprintf("%s/info.db", dirname)
 
-	dec := GetFileDecoder(filename)
-	err := dec.Decode(&info)
+	err := decodeInto(filename, &info)
 
 	if err != nil {
 		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
@@ -250,6 +249,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		case strings.HasPrefix(fname, "int"):
 			tb.unpackIntCol(dec, *info)
 		}
+
+		dec.File.Close()
 
 	}
 

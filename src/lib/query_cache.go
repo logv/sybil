@@ -155,9 +155,8 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 	cache_name := fmt.Sprintf("%s.db", cache_key)
 	filename := path.Join(cache_dir, cache_name)
 
-	dec := GetFileDecoder(filename)
 	cachedSpec := QueryResults{}
-	err := dec.Decode(&cachedSpec)
+	err := decodeInto(filename, &cachedSpec)
 
 	if err != nil {
 		return false
@@ -188,7 +187,11 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	cachedInfo := qs.QueryResults
 
 	cache_dir := path.Join(blockname, "cache")
-	os.MkdirAll(cache_dir, 0777)
+	err := os.MkdirAll(cache_dir, 0777)
+	if err != nil {
+		Debug("COULDNT CREATE CACHE DIR", err, "NOT CACHING QUERY")
+		return
+	}
 
 	cache_name := fmt.Sprintf("%s.db.gz", cache_key)
 	filename := path.Join(cache_dir, cache_name)

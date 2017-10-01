@@ -155,8 +155,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 	start := time.Now()
 
 	Debug("OPENING TABLE INFO FROM FILENAME", filename)
-	dec := GetFileDecoder(filename)
-	err := dec.Decode(&saved_table)
+	err := decodeInto(filename, &saved_table)
 	end := time.Now()
 	if err != nil {
 		Debug("TABLE INFO DECODE:", err)
@@ -261,8 +260,7 @@ func (t *Table) LoadBlockCache() {
 			continue
 		}
 
-		dec := GetFileDecoder(filename)
-		err = dec.Decode(&block_cache)
+		err = decodeInto(filename, &block_cache)
 		if err != nil {
 			continue
 		}
@@ -568,11 +566,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					m.Unlock()
 				}
 
-				end := time.Now()
 				if *FLAGS.DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
-				end = time.Now()
+				end := time.Now()
 				block_gc_time += end.Sub(start)
 			}
 		}

@@ -494,7 +494,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
@@ -604,7 +604,7 @@ func (tb *TableBlock) unpackStrCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList
 
 	saved_col := NewSavedSetColumn()
@@ -661,7 +661,7 @@ func (tb *TableBlock) unpackSetCol(dec *gob.Decoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackIntCol(dec *gob.Decoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}

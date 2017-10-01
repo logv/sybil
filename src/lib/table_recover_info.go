@@ -20,8 +20,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 	info := SavedColumnInfo{}
 	filename := fmt.Sprintf("%s/info.db", dirname)
 
-	dec := GetFileDecoder(filename)
-	err := dec.Decode(&info)
+	err := decodeInto(filename, &info)
 
 	if err != nil {
 		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)

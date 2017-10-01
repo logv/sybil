@@ -122,8 +122,7 @@ func (l *CacheLock) Recover() bool {
 		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
 		block_cache := SavedBlockCache{}
 
-		dec := GetFileDecoder(filename)
-		err := dec.Decode(&block_cache)
+		err := decodeInto(filename, &block_cache)
 		if err != nil {
 			os.RemoveAll(filename)
 			continue

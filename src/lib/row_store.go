@@ -108,8 +108,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	var marshalled_records []*SavedRecord
 
 	// Create an encoder and send a value.
-	dec := GetFileDecoder(filename)
-	err := dec.Decode(&marshalled_records)
+	err := decodeInto(filename, &marshalled_records)
 
 	if err != nil {
 		Debug("ERROR LOADING INGESTION LOG", err)
@@ -122,8 +121,7 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	var marshalled_records []*SavedRecord
 
 	// Create an encoder and send a value.
-	dec := GetFileDecoder(filename)
-	err := dec.Decode(&marshalled_records)
+	err := decodeInto(filename, &marshalled_records)
 	if err != nil {
 		Debug("ERROR LOADING INGESTION LOG", err)
 	}
