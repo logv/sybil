@@ -1,6 +1,5 @@
 package sybil
 
-
 import "sync"
 
 type LoadSpec struct {
@@ -60,15 +59,18 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 func (l *LoadSpec) Str(name string) {
 	l.assert_col_type(name, STR_VAL)
 	l.columns[name] = true
+	l.files["str_"+name+".pb"] = true
 	l.files["str_"+name+".db"] = true
 }
 func (l *LoadSpec) Int(name string) {
 	l.assert_col_type(name, INT_VAL)
 	l.columns[name] = true
 	l.files["int_"+name+".db"] = true
+	l.files["int_"+name+".pb"] = true
 }
 func (l *LoadSpec) Set(name string) {
 	l.assert_col_type(name, SET_VAL)
 	l.columns[name] = true
 	l.files["set_"+name+".db"] = true
+	l.files["set_"+name+".pb"] = true
 }

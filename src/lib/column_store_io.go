@@ -9,10 +9,13 @@ import "runtime/debug"
 import "time"
 import "regexp"
 
+import "github.com/DeDiS/protobuf"
+
 type ValueMap map[int64][]uint32
 
 var CARDINALITY_THRESHOLD = 4
 var DEBUG_RECORD_CONSISTENCY = false
+var PROTOBUF_ENABLED = true
 
 func delta_encode_col(col ValueMap) {
 	for _, records := range col {
@@ -113,16 +116,24 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			}
 		}
 
+		var network bytes.Buffer
 		col_fname := fmt.Sprintf("%s/int_%s.db", dirname, tb.get_string_for_key(k))
+		if PROTOBUF_ENABLED {
+			col_fname = fmt.Sprintf("%s/int_%s.pb", dirname, tb.get_string_for_key(k))
 
-		var network bytes.Buffer // Stand-in for the network.
+			buf, err := protobuf.Encode(&intCol)
+			if err != nil {
+				Error("encode:", err)
+			}
 
-		// Create an encoder and send a value.
-		enc := gob.NewEncoder(&network)
-		err := enc.Encode(intCol)
-
-		if err != nil {
-			Error("encode:", err)
+			network = *bytes.NewBuffer(buf)
+		} else {
+			// Create an encoder and send a value.
+			enc := gob.NewEncoder(&network)
+			err := enc.Encode(intCol)
+			if err != nil {
+				Error("encode:", err)
+			}
 		}
 
 		action := "SERIALIZED"
@@ -494,7 +505,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
@@ -604,7 +615,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList
 
 	saved_col := NewSavedSetColumn()
@@ -661,7 +672,7 @@ func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}
