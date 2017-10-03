@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	sybil "github.com/logv/sybil/src/lib"
+	. "github.com/logv/sybil/src/lib/column_store"
 	"github.com/logv/sybil/src/lib/common"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/specs"
+	. "github.com/logv/sybil/src/lib/structs"
+	. "github.com/logv/sybil/src/lib/table_trim"
 )
 
 func askConfirmation() bool {
@@ -50,22 +54,22 @@ func RunTrimCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
-	if t.LoadTableInfo() == false {
+	t := GetTable(*config.FLAGS.TABLE)
+	if LoadTableInfo(t) == false {
 		common.Warn("Couldn't read table info, exiting early")
 		return
 	}
 
-	loadSpec := t.NewLoadSpec()
+	loadSpec := NewTableLoadSpec(t)
 	loadSpec.Int(*config.FLAGS.TIME_COL)
 
-	trimSpec := sybil.TrimSpec{}
+	trimSpec := TrimSpec{}
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
 	trimSpec.MBLimit = int64(*MB_LIMIT)
 
-	to_trim := t.TrimTable(&trimSpec)
+	to_trim := TrimTable(t, &trimSpec)
 
 	common.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
 	if len(to_trim) > 0 {

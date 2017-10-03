@@ -3,9 +3,12 @@ package cmd
 import (
 	"flag"
 
-	sybil "github.com/logv/sybil/src/lib"
+	. "github.com/logv/sybil/src/lib/column_store"
 	"github.com/logv/sybil/src/lib/common"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/ingest"
+	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/structs"
 )
 
 func RunDigestCmdLine() {
@@ -21,12 +24,12 @@ func RunDigestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
-	if t.LoadTableInfo() == false {
+	t := GetTable(*config.FLAGS.TABLE)
+	if LoadTableInfo(t) == false {
 		common.Warn("Couldn't read table info, exiting early")
 		return
 	}
-	t.DigestRecords()
+	DigestRecords(t)
 }

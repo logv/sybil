@@ -8,9 +8,18 @@ import (
 	"strings"
 	"time"
 
-	sybil "github.com/logv/sybil/src/lib"
+	. "github.com/logv/sybil/src/lib/aggregate"
+	. "github.com/logv/sybil/src/lib/column_store"
 	"github.com/logv/sybil/src/lib/common"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/filters"
+	. "github.com/logv/sybil/src/lib/hists"
+	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/metadata"
+	. "github.com/logv/sybil/src/lib/printer"
+	. "github.com/logv/sybil/src/lib/specs"
+	. "github.com/logv/sybil/src/lib/stats"
+	. "github.com/logv/sybil/src/lib/structs"
 )
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -32,7 +41,7 @@ func addQueryFlags() {
 
 	config.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	config.FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
-	if sybil.ENABLE_HDR {
+	if ENABLE_HDR {
 		config.FLAGS.HDR_HIST = flag.Bool("hdr", false, "Use HDR Histograms (can be slow)")
 	}
 
@@ -76,12 +85,12 @@ func RunQueryCmdLine() {
 	flag.Parse()
 
 	if *LIST_TABLES {
-		sybil.PrintTables()
+		PrintTables()
 		return
 	}
 
 	if *TIME_FORMAT != "" {
-		config.OPTS.TIME_FORMAT = sybil.GetTimeFormat(*TIME_FORMAT)
+		config.OPTS.TIME_FORMAT = common.GetTimeFormat(*TIME_FORMAT)
 	}
 
 	table := *config.FLAGS.TABLE
@@ -90,8 +99,8 @@ func RunQueryCmdLine() {
 		return
 	}
 
-	t := sybil.GetTable(table)
-	if t.IsNotExist() {
+	t := GetTable(table)
+	if IsNotExist(t) {
 		common.Error(t.Name, "table can not be loaded or does not exist in", *config.FLAGS.DIR)
 	}
 
@@ -106,7 +115,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *config.FLAGS.LUAFILE != "" {
-		sybil.SetLuaScript(*config.FLAGS.LUAFILE)
+		SetLuaScript(*config.FLAGS.LUAFILE)
 	}
 
 	if *NO_RECYCLE_MEM == true {
@@ -135,8 +144,8 @@ func RunQueryCmdLine() {
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
-	t.LoadTableInfo()
-	t.LoadRecords(nil)
+	LoadTableInfo(t)
+	LoadRecords(t, nil)
 
 	count := 0
 	for _, block := range t.BlockList {
@@ -145,14 +154,14 @@ func RunQueryCmdLine() {
 
 	common.Debug("WILL INSPECT", count, "RECORDS")
 
-	groupings := []sybil.Grouping{}
+	groupings := []Grouping{}
 	for _, g := range groups {
-		groupings = append(groupings, t.Grouping(g))
+		groupings = append(groupings, GroupingForTable(t, g))
 	}
 
-	aggs := []sybil.Aggregation{}
+	aggs := []Aggregation{}
 	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(agg, *config.FLAGS.OP))
+		aggs = append(aggs, AggregationForTable(t, agg, *config.FLAGS.OP))
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
@@ -168,23 +177,23 @@ func RunQueryCmdLine() {
 		}
 	}
 
-	loadSpec := t.NewLoadSpec()
-	filterSpec := sybil.FilterSpec{Int: *config.FLAGS.INT_FILTERS, Str: *config.FLAGS.STR_FILTERS, Set: *config.FLAGS.SET_FILTERS}
-	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
+	loadSpec := NewTableLoadSpec(t)
+	filterSpec := FilterSpec{Int: *config.FLAGS.INT_FILTERS, Str: *config.FLAGS.STR_FILTERS, Set: *config.FLAGS.SET_FILTERS}
+	filters := BuildFilters(t, &loadSpec, filterSpec)
 
-	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec := sybil.QuerySpec{QueryParams: query_params}
+	query_params := QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := QuerySpec{QueryParams: query_params}
 
 	for _, v := range groups {
-		switch t.GetColumnType(v) {
-		case sybil.STR_VAL:
+		switch GetColumnType(t, v) {
+		case STR_VAL:
 			loadSpec.Str(v)
-		case sybil.INT_VAL:
+		case INT_VAL:
 			loadSpec.Int(v)
 		default:
-			t.PrintColInfo()
+			PrintColInfo(t)
 			fmt.Println("")
-			common.Error("Unknown column type for column: ", v, t.GetColumnType(v))
+			common.Error("Unknown column type for column: ", v, GetColumnType(t, v))
 		}
 
 	}
@@ -224,15 +233,15 @@ func RunQueryCmdLine() {
 	querySpec.Limit = int16(*config.FLAGS.LIMIT)
 
 	if *config.FLAGS.SAMPLES {
-		sybil.HOLD_MATCHES = true
-		sybil.DELETE_BLOCKS_AFTER_QUERY = false
+		config.OPTS.HOLD_MATCHES = true
+		DELETE_BLOCKS_AFTER_QUERY = false
 
-		loadSpec := t.NewLoadSpec()
+		loadSpec := NewTableLoadSpec(t)
 		loadSpec.LoadAllColumns = true
 
-		t.LoadAndQueryRecords(&loadSpec, &querySpec)
+		LoadAndQueryRecords(t, &loadSpec, &querySpec)
 
-		t.PrintSamples()
+		PrintSamples(t)
 
 		return
 	}
@@ -253,14 +262,14 @@ func RunQueryCmdLine() {
 		start := time.Now()
 		// We can load and query at the same time
 		if *config.FLAGS.LOAD_AND_QUERY {
-			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
+			count = LoadAndQueryRecords(t, &loadSpec, &querySpec)
 
 			end := time.Now()
 			common.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
-			querySpec.PrintResults()
+			PrintFinalResults(&querySpec)
 
 			if config.FLAGS.ANOVA_ICC != nil && *config.FLAGS.ANOVA_ICC {
-				querySpec.CalculateICC()
+				CalculateICC(&querySpec)
 			}
 		}
 
@@ -271,11 +280,11 @@ func RunQueryCmdLine() {
 	}
 
 	if *config.FLAGS.PRINT_INFO {
-		t := sybil.GetTable(table)
+		t := GetTable(table)
 		config.FLAGS.LOAD_AND_QUERY = &FALSE
 
-		t.LoadRecords(nil)
-		t.PrintColInfo()
+		LoadRecords(t, nil)
+		PrintColInfo(t)
 	}
 
 }

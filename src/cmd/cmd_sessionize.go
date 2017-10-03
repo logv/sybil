@@ -6,9 +6,13 @@ import (
 	"strings"
 	"time"
 
-	sybil "github.com/logv/sybil/src/lib"
+	. "github.com/logv/sybil/src/lib/column_store"
 	"github.com/logv/sybil/src/lib/common"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/sessions"
+	. "github.com/logv/sybil/src/lib/specs"
+	. "github.com/logv/sybil/src/lib/structs"
 )
 
 func addSessionFlags() {
@@ -46,14 +50,14 @@ func RunSessionizeCmdLine() {
 	table_names := strings.Split(table, *config.FLAGS.FIELD_SEPARATOR)
 	common.Debug("LOADING TABLES", table_names)
 
-	tables := make([]*sybil.Table, 0)
+	tables := make([]*Table, 0)
 
 	for _, tablename := range table_names {
-		t := sybil.GetTable(tablename)
+		t := GetTable(tablename)
 		// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 		// THE RIGHT COLUMN ID
-		t.LoadTableInfo()
-		t.LoadRecords(nil)
+		LoadTableInfo(t)
+		LoadRecords(t, nil)
 
 		count := 0
 		for _, block := range t.BlockList {
@@ -85,17 +89,17 @@ func RunSessionizeCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	filters := []sybil.Filter{}
-	groupings := []sybil.Grouping{}
-	aggs := []sybil.Aggregation{}
-	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec := sybil.QuerySpec{QueryParams: query_params}
+	filters := []Filter{}
+	groupings := []Grouping{}
+	aggs := []Aggregation{}
+	query_params := QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := QuerySpec{QueryParams: query_params}
 
 	querySpec.Limit = int16(*config.FLAGS.LIMIT)
 
 	if *config.FLAGS.SESSION_COL != "" {
-		sessionSpec := sybil.NewSessionSpec()
-		sybil.LoadAndSessionize(tables, &querySpec, &sessionSpec)
+		sessionSpec := NewSessionSpec()
+		LoadAndSessionize(tables, &querySpec, &sessionSpec)
 	}
 
 	end := time.Now()

@@ -12,9 +12,13 @@ import (
 	"syscall"
 	"time"
 
-	sybil "github.com/logv/sybil/src/lib"
+	. "github.com/logv/sybil/src/lib/column_store"
 	"github.com/logv/sybil/src/lib/common"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/ingest"
+	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/record"
+	. "github.com/logv/sybil/src/lib/structs"
 )
 
 type Dictionary map[string]interface{}
@@ -24,7 +28,7 @@ var JSON_PATH string
 // how many times we try to grab table info when ingesting
 var TABLE_INFO_GRABS = 10
 
-func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
+func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 	for k, v := range *recordmap {
 		key_name := fmt.Sprint(prefix, k)
 		_, ok := EXCLUDES[key_name]
@@ -38,16 +42,16 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 			if INT_CAST[key_name] == true {
 				val, err := strconv.ParseInt(iv, 10, 64)
 				if err == nil {
-					r.AddIntField(key_name, int64(val))
+					AddIntField(r, key_name, int64(val))
 				}
 			} else {
-				r.AddStrField(key_name, iv)
+				AddStrField(r, key_name, iv)
 
 			}
 		case int64:
-			r.AddIntField(key_name, int64(iv))
+			AddIntField(r, key_name, int64(iv))
 		case float64:
-			r.AddIntField(key_name, int64(iv))
+			AddIntField(r, key_name, int64(iv))
 		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
@@ -66,7 +70,7 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 				}
 			}
 
-			r.AddSetField(key_name, key_strs)
+			AddSetField(r, key_name, key_strs)
 		case nil:
 		default:
 			common.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
@@ -85,11 +89,11 @@ func import_csv_records() {
 	header_fields := strings.Split(header, ",")
 	common.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*config.FLAGS.TABLE)
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		r := t.NewRecord()
+		r := NewRecord(t)
 		fields := strings.Split(line, ",")
 		for i, v := range fields {
 			field_name := header_fields[i]
@@ -100,14 +104,14 @@ func import_csv_records() {
 
 			val, err := strconv.ParseFloat(v, 64)
 			if err == nil {
-				r.AddIntField(field_name, int64(val))
+				AddIntField(r, field_name, int64(val))
 			} else {
-				r.AddStrField(field_name, v)
+				AddStrField(r, field_name, v)
 			}
 
 		}
 
-		t.ChunkAndSave()
+		ChunkAndSave(t)
 	}
 
 }
@@ -156,7 +160,7 @@ func json_query(obj *interface{}, path []string) []interface{} {
 }
 
 func import_json_records() {
-	t := sybil.GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*config.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
 	common.Debug("PATH IS", path)
@@ -179,7 +183,7 @@ func import_json_records() {
 		decoded = nil
 
 		for _, ing := range records {
-			r := t.NewRecord()
+			r := NewRecord(t)
 			switch dict := ing.(type) {
 			case map[string]interface{}:
 				ndict := Dictionary(dict)
@@ -188,7 +192,7 @@ func import_json_records() {
 				ingest_dictionary(r, &dict, "")
 
 			}
-			t.ChunkAndSave()
+			ChunkAndSave(t)
 		}
 
 	}
@@ -199,7 +203,7 @@ var INT_CAST = make(map[string]bool)
 var EXCLUDES = make(map[string]bool)
 
 func RunIngestCmdLine() {
-	ingestfile := flag.String("file", sybil.INGEST_DIR, "name of dir to ingest into")
+	ingestfile := flag.String("file", INGEST_DIR, "name of dir to ingest into")
 	f_INTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	f_CSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
@@ -246,14 +250,14 @@ func RunIngestCmdLine() {
 		common.Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*config.FLAGS.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else
 	var loaded_table = false
 	for i := 0; i < TABLE_INFO_GRABS; i++ {
-		loaded := t.LoadTableInfo()
-		if loaded == true || t.HasFlagFile() == false {
+		loaded := LoadTableInfo(t)
+		if loaded == true || HasFlagFile(t) == false {
 			loaded_table = true
 			break
 		}
@@ -261,7 +265,7 @@ func RunIngestCmdLine() {
 	}
 
 	if loaded_table == false {
-		if t.HasFlagFile() {
+		if HasFlagFile(t) {
 			common.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
@@ -273,5 +277,5 @@ func RunIngestCmdLine() {
 		import_csv_records()
 	}
 
-	t.IngestRecords(digestfile)
+	IngestRecords(t, digestfile)
 }

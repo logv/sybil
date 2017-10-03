@@ -3,9 +3,12 @@ package cmd
 import (
 	"flag"
 
-	sybil "github.com/logv/sybil/src/lib"
 	"github.com/logv/sybil/src/lib/common"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/structs"
+	. "github.com/logv/sybil/src/lib/table_info"
+	. "github.com/logv/sybil/src/lib/table_recover_info"
 )
 
 func RunRebuildCmdLine() {
@@ -23,25 +26,25 @@ func RunRebuildCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*config.FLAGS.TABLE)
 
-	loaded := t.LoadTableInfo() && *FORCE_UPDATE == false
+	loaded := LoadTableInfo(t) && *FORCE_UPDATE == false
 	if loaded {
 		common.Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
 		return
 	}
 
-	t.DeduceTableInfoFromBlocks()
+	DeduceTableInfoFromBlocks(t)
 
 	// TODO: prompt to see if this table info looks good and then write it to
 	// original info.db
 	if *REPLACE_INFO == true {
 		common.Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
-		lock := sybil.Lock{Table: t, Name: "info"}
+		lock := Lock{Table: t, Name: "info"}
 		lock.ForceDeleteFile()
-		t.SaveTableInfo("info")
+		SaveTableInfo(t, "info")
 	} else {
 		common.Print("SAVING TO temp_info.db")
-		t.SaveTableInfo("temp_info")
+		SaveTableInfo(t, "temp_info")
 	}
 }

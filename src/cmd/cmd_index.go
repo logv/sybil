@@ -4,8 +4,11 @@ import (
 	"flag"
 	"strings"
 
-	sybil "github.com/logv/sybil/src/lib"
+	. "github.com/logv/sybil/src/lib/column_store"
 	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/specs"
+	. "github.com/logv/sybil/src/lib/structs"
+	. "github.com/logv/sybil/src/lib/table_info"
 )
 
 func RunIndexCmdLine() {
@@ -23,17 +26,17 @@ func RunIndexCmdLine() {
 
 	config.FLAGS.UPDATE_TABLE_INFO = &config.TRUE
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*config.FLAGS.TABLE)
 
-	t.LoadRecords(nil)
-	t.SaveTableInfo("info")
-	sybil.DELETE_BLOCKS_AFTER_QUERY = true
+	LoadRecords(t, nil)
+	SaveTableInfo(t, "info")
+	DELETE_BLOCKS_AFTER_QUERY = true
 	config.OPTS.WRITE_BLOCK_INFO = true
 
-	loadSpec := t.NewLoadSpec()
+	loadSpec := NewTableLoadSpec(t)
 	for _, v := range ints {
 		loadSpec.Int(v)
 	}
-	t.LoadRecords(&loadSpec)
-	t.SaveTableInfo("info")
+	LoadRecords(t, &loadSpec)
+	SaveTableInfo(t, "info")
 }

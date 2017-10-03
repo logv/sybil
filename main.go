@@ -1,6 +1,6 @@
 package main
 
-import sybil "github.com/logv/sybil/src/lib"
+import startup "github.com/logv/sybil/src/lib/startup"
 import cmd "github.com/logv/sybil/src/cmd"
 
 import "fmt"
@@ -93,7 +93,7 @@ func main() {
 	first_arg := os.Args[1]
 	os.Args = os.Args[1:]
 
-	sybil.Startup()
+	startup.Startup()
 
 	handler, ok := CMD_FUNCS[first_arg]
 	if !ok {
