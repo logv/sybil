@@ -142,11 +142,13 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	add := true
 	for _, f := range querySpec.Filters {
 		// make the minima record and the maxima records...
-		switch f.(type) {
+		switch fil := f.(type) {
 		case IntFilter:
-			if f.Filter(&min_record) != true && f.Filter(&max_record) != true {
-				add = false
-				break
+			if fil.Op == "gt" || fil.Op == "lt" {
+				if f.Filter(&min_record) != true && f.Filter(&max_record) != true {
+					add = false
+					break
+				}
 			}
 		}
 	}

@@ -96,8 +96,14 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 
 	for _, f := range querySpec.Filters {
 		// make the minima record and the maxima records...
-		switch f.(type) {
+		switch fil := f.(type) {
 		case IntFilter:
+			// we only use block extents for skipping gt and lt filters
+			if fil.Op != "lt" && fil.Op != "gt" {
+				filters = append(filters, f)
+				continue
+			}
+
 			if f.Filter(&min_record) && f.Filter(&max_record) {
 			} else {
 				filters = append(filters, f)
