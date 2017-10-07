@@ -20,4 +20,4 @@ references
 
 * http://db.csail.mit.edu/pubs/abadi-column-stores.pdf
 * https://research.facebook.com/publications/scuba-diving-into-data-at-facebook/
-* http://arxiv.org/pdf/1605.01435v2.pdf
+* https://research.fb.com/wp-content/uploads/2016/11/fast-database-restarts-at-facebook.pdf
