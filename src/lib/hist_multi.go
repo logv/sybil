@@ -242,7 +242,7 @@ func (h *MultiHist) TrackPercentiles() {
 		info.Max = right_edge
 
 		right_edge = info.Min
-		h.Subhists[i] = h.table.NewHist(&info)
+		h.Subhists[i] = h.table.NewBasicHist(&info)
 		h.Subhists[i].TrackPercentiles()
 	}
 
@@ -251,7 +251,7 @@ func (h *MultiHist) TrackPercentiles() {
 	info.Min = h.Min
 	info.Max = right_edge
 
-	h.Subhists[num_hists] = h.table.NewHist(&info)
+	h.Subhists[num_hists] = h.table.NewBasicHist(&info)
 	h.Subhists[num_hists].TrackPercentiles()
 
 }

@@ -69,7 +69,7 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	}
 }
 
-func (t *Table) NewHist(info *IntInfo) *HistCompat {
+func (t *Table) NewBasicHist(info *IntInfo) *HistCompat {
 
 	basic_hist := BasicHist{}
 	compat_hist := HistCompat{&basic_hist}

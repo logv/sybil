@@ -21,3 +21,16 @@ type Histogram interface {
 
 	Combine(interface{})
 }
+
+func (t *Table) NewHist(info *IntInfo) Histogram {
+	var hist Histogram
+	if *FLAGS.HDR_HIST && ENABLE_HDR {
+		hist = newHDRHist(t, info)
+	} else if *FLAGS.LOG_HIST {
+		hist = t.NewMultiHist(info)
+	} else {
+		hist = t.NewBasicHist(info)
+	}
+
+	return hist
+}
