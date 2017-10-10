@@ -1,5 +1,4 @@
-profiling
----------
+## Profiling with go pprof
 
     make profile
 
@@ -14,3 +13,10 @@ profiling
     ./bin/sybil query -profile -table test0 -group age -int age -mem
     go tool pprof ./bin/sybil mem.pprof
 
+
+## Profiling with `perf` tool
+
+    make
+
+    perf record -g ./bin/sybil query -table test0
+    perf report -n
