@@ -2,8 +2,8 @@
 
 package sybil
 
-var PROFILER_ENABLED bool
-var PROFILE *bool = &PROFILER_ENABLED
+var ProfilerEnabled bool
+var PROFILE *bool = &ProfilerEnabled
 
 type NoProfile struct{}
 
@@ -14,8 +14,8 @@ func (p NoProfile) Stop() {
 
 }
 
-var STOP_PROFILER = func() {
+var StopProfiler = func() {
 }
-var RUN_PROFILER = func() ProfilerStop {
+var RunProfiler = func() ProfilerStop {
 	return NoProfile{}
 }

@@ -5,7 +5,7 @@ package sybil
 import "strconv"
 import "github.com/codahale/hdrhistogram"
 
-var ENABLE_HDR = true
+var EnableHdr = true
 
 func newHDRHist(table *Table, info *IntInfo) Histogram {
 	return table.NewHDRHist(info)
@@ -26,10 +26,10 @@ func (th *HDRHist) NewHist() Histogram {
 }
 
 func (t *Table) NewHDRHist(info *IntInfo) *HDRHist {
-	hdr_hist := hdrhistogram.New(info.Min, info.Max*2, 5)
-	outer_hist := HDRHist{hdr_hist, t, info, true}
+	hdrHist := hdrhistogram.New(info.Min, info.Max*2, 5)
+	outerHist := HDRHist{hdrHist, t, info, true}
 
-	return &outer_hist
+	return &outerHist
 
 }
 

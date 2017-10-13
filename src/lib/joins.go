@@ -1,13 +1,12 @@
 package sybil
 
-
 import "strconv"
 
 func (t *Table) BuildJoinMap() {
-	joinkey := *FLAGS.JOIN_KEY
-	joinid := t.get_key_id(joinkey)
+	joinkey := *FLAGS.JoinKey
+	joinid := t.getKeyID(joinkey)
 
-	t.join_lookup = make(map[string]*Record)
+	t.joinLookup = make(map[string]*Record)
 
 	Debug("BUILDING JOIN TABLE MAPPING")
 
@@ -15,13 +14,13 @@ func (t *Table) BuildJoinMap() {
 	for _, b := range t.BlockList {
 		for _, r := range b.RecordList {
 			switch r.Populated[joinid] {
-			case INT_VAL:
+			case IntVal:
 				val := strconv.FormatInt(int64(r.Ints[joinid]), 10)
-				t.join_lookup[val] = r
+				t.joinLookup[val] = r
 
-			case STR_VAL:
+			case StrVal:
 				col := r.block.GetColumnInfo(joinid)
-				t.join_lookup[col.get_string_for_val(int32(r.Strs[joinid]))] = r
+				t.joinLookup[col.getStringForVal(int32(r.Strs[joinid]))] = r
 			}
 
 		}
@@ -30,20 +29,20 @@ func (t *Table) BuildJoinMap() {
 	Debug("ROWS", len(t.RowBlock.RecordList))
 	for _, r := range t.RowBlock.RecordList {
 		switch r.Populated[joinid] {
-		case INT_VAL:
+		case IntVal:
 			val := strconv.FormatInt(int64(r.Ints[joinid]), 10)
-			t.join_lookup[val] = r
+			t.joinLookup[val] = r
 
-		case STR_VAL:
+		case StrVal:
 			col := r.block.GetColumnInfo(joinid)
-			t.join_lookup[col.get_string_for_val(int32(r.Strs[joinid]))] = r
+			t.joinLookup[col.getStringForVal(int32(r.Strs[joinid]))] = r
 		}
 
 	}
 
 }
 
-func (t *Table) GetRecordById(id string) *Record {
+func (t *Table) GetRecordByID(id string) *Record {
 
-	return t.join_lookup[id]
+	return t.joinLookup[id]
 }

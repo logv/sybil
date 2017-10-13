@@ -3,7 +3,7 @@
 package sybil
 
 func initLua() {
-	ENABLE_LUA = false
+	EnableLua = false
 }
 
 type LuaKey interface{}

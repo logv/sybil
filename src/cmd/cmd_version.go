@@ -1,4 +1,4 @@
-package sybil_cmd
+package sybilCmd
 
 import sybil "github.com/logv/sybil/src/lib"
 import "flag"

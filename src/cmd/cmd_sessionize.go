@@ -1,4 +1,4 @@
-package sybil_cmd
+package sybilCmd
 
 import sybil "github.com/logv/sybil/src/lib"
 
@@ -9,22 +9,22 @@ import "strings"
 
 func addSessionFlags() {
 	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	sybil.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
-	sybil.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
-	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
-	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
-	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
-	sybil.FLAGS.PATH_KEY = flag.String("path-key", "", "Field to use for pathing")
-	sybil.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
+	sybil.FLAGS.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	sybil.FLAGS.SessionCol = flag.String("session", "", "Column to use for sessionizing")
+	sybil.FLAGS.SessionCutoff = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
+	sybil.FLAGS.JoinTable = flag.String("join-table", "", "dataset to join against for session summaries")
+	sybil.FLAGS.JoinKey = flag.String("join-key", "", "Field to join sessionid against in join-table")
+	sybil.FLAGS.JoinGroup = flag.String("join-group", "", "Group by columns to pull from join record")
+	sybil.FLAGS.PathKey = flag.String("path-key", "", "Field to use for pathing")
+	sybil.FLAGS.PathLength = flag.Int("path-length", 3, "Size of paths to histogram")
 	sybil.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
 	sybil.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
 
-	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
-	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
+	sybil.FLAGS.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	sybil.FLAGS.StrFilters = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	sybil.FLAGS.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
 
-	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	sybil.FLAGS.StrReplace = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 }
 
@@ -33,18 +33,18 @@ func RunSessionizeCmdLine() {
 	flag.Parse()
 	start := time.Now()
 
-	table := *sybil.FLAGS.TABLE
+	table := *sybil.FLAGS.Table
 	if table == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	table_names := strings.Split(table, *sybil.FLAGS.FIELD_SEPARATOR)
-	sybil.Debug("LOADING TABLES", table_names)
+	tableNames := strings.Split(table, *sybil.FLAGS.FieldSeparator)
+	sybil.Debug("LOADING TABLES", tableNames)
 
 	tables := make([]*sybil.Table, 0)
 
-	for _, tablename := range table_names {
+	for _, tablename := range tableNames {
 		t := sybil.GetTable(tablename)
 		// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 		// THE RIGHT COLUMN ID
@@ -76,20 +76,20 @@ func RunSessionizeCmdLine() {
 	}
 
 	debug.SetGCPercent(-1)
-	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
-		profile := sybil.RUN_PROFILER()
+	if *sybil.FLAGS.Profile && sybil.ProfilerEnabled {
+		profile := sybil.RunProfiler()
 		defer profile.Start().Stop()
 	}
 
 	filters := []sybil.Filter{}
 	groupings := []sybil.Grouping{}
 	aggs := []sybil.Aggregation{}
-	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec := sybil.QuerySpec{QueryParams: query_params}
+	queryParams := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := sybil.QuerySpec{QueryParams: queryParams}
 
 	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
 
-	if *sybil.FLAGS.SESSION_COL != "" {
+	if *sybil.FLAGS.SessionCol != "" {
 		sessionSpec := sybil.NewSessionSpec()
 		sybil.LoadAndSessionize(tables, &querySpec, &sessionSpec)
 	}

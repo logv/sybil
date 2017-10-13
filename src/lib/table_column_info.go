@@ -3,9 +3,8 @@ package sybil
 import "sort"
 import "math"
 
-
 // THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
-// it adds update_int_info and update_str_info to Table/TableBlock
+// it adds updateIntInfo and updateStrInfo to Table/TableBlock
 
 // TODO: collapse the IntInfo and StrInfo into fields on tableColumn
 
@@ -27,7 +26,7 @@ type IntInfo struct {
 type IntInfoTable map[int16]*IntInfo
 type StrInfoTable map[int16]*StrInfo
 
-var TOP_STRING_COUNT = 20
+var TopStringCount = 20
 
 type StrInfoCol struct {
 	Name  int32
@@ -43,7 +42,7 @@ func (a SortStrsByCount) Less(i, j int) bool { return a[i].Value < a[j].Value }
 func (si *StrInfo) prune() {
 	si.Cardinality = len(si.TopStringCount)
 
-	if si.Cardinality > TOP_STRING_COUNT {
+	if si.Cardinality > TopStringCount {
 		interim := make([]StrInfoCol, 0)
 
 		for s, c := range si.TopStringCount {
@@ -52,32 +51,32 @@ func (si *StrInfo) prune() {
 
 		sort.Sort(SortStrsByCount(interim))
 
-		for _, x := range interim[:len(si.TopStringCount)-TOP_STRING_COUNT-1] {
+		for _, x := range interim[:len(si.TopStringCount)-TopStringCount-1] {
 			delete(si.TopStringCount, x.Name)
 		}
 	}
 
 }
 
-func update_str_info(str_info_table map[int16]*StrInfo, name int16, val, increment int) {
-	info, ok := str_info_table[name]
+func updateStrInfo(strInfoTable map[int16]*StrInfo, name int16, val, increment int) {
+	info, ok := strInfoTable[name]
 	if !ok {
 		info = &StrInfo{}
 		info.TopStringCount = make(map[int32]int)
-		str_info_table[name] = info
+		strInfoTable[name] = info
 	}
 
 	info.TopStringCount[int32(val)] += increment
 }
 
-var STD_CUTOFF = 1000.0 // if value is 1000 SDs away, we ignore it
-var MIN_CUTOFF = 5      // need at least this many elements before we determine min/max
+var StdCutoff = 1000.0 // if value is 1000 SDs away, we ignore it
+var MinCutoff = 5      // need at least this many elements before we determine min/max
 
-func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
-	info, ok := int_info_table[name]
+func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
+	info, ok := intInfoTable[name]
 	if !ok {
 		info = &IntInfo{}
-		int_info_table[name] = info
+		intInfoTable[name] = info
 		info.Max = val
 		info.Min = val
 		info.Avg = float64(val)
@@ -95,33 +94,33 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 	if info.Max < val {
 		// calculate how off the current value is from mean in terms of our
 		// standard deviation and decide whether it is an extreme outlier or not
-		delta_in_stddev := math.Abs(delta) / stddev
+		deltaInStddev := math.Abs(delta) / stddev
 
-		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *FLAGS.SKIP_OUTLIERS == false {
+		if (deltaInStddev < StdCutoff && info.Count > MinCutoff) || *FLAGS.SkipOutliers == false {
 			info.Max = val
 		} else {
 			ignored = true
 
-			if info.Count > MIN_CUTOFF {
-				Debug("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+			if info.Count > MinCutoff {
+				Debug("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", deltaInStddev)
 			}
 		}
 	}
 
 	if info.Min > val {
-		delta_in_stddev := math.Abs(delta) / stddev
+		deltaInStddev := math.Abs(delta) / stddev
 
-		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *FLAGS.SKIP_OUTLIERS == false {
+		if (deltaInStddev < StdCutoff && info.Count > MinCutoff) || *FLAGS.SkipOutliers == false {
 			info.Min = val
 		} else {
 			ignored = true
-			if info.Count > MIN_CUTOFF {
-				Debug("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+			if info.Count > MinCutoff {
+				Debug("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", deltaInStddev)
 			}
 		}
 	}
 
-	if ignored == false || info.Count < MIN_CUTOFF {
+	if ignored == false || info.Count < MinCutoff {
 		info.Avg = info.Avg + delta/float64(info.Count)
 
 		// for online variance calculation
@@ -131,35 +130,35 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 	info.Count++
 }
 
-func (t *Table) update_int_info(name int16, val int64) {
-	update_int_info(t.IntInfo, name, val)
+func (t *Table) updateIntInfo(name int16, val int64) {
+	updateIntInfo(t.IntInfo, name, val)
 }
 
-func (tb *TableBlock) update_str_info(name int16, val int, increment int) {
+func (tb *TableBlock) updateStrInfo(name int16, val int, increment int) {
 	if tb.StrInfo == nil {
 		tb.StrInfo = make(map[int16]*StrInfo)
 	}
 
-	update_str_info(tb.StrInfo, name, val, increment)
+	updateStrInfo(tb.StrInfo, name, val, increment)
 }
 
-func (tb *TableBlock) update_int_info(name int16, val int64) {
+func (tb *TableBlock) updateIntInfo(name int16, val int64) {
 	if tb.IntInfo == nil {
 		tb.IntInfo = make(map[int16]*IntInfo)
 	}
 
-	update_int_info(tb.IntInfo, name, val)
+	updateIntInfo(tb.IntInfo, name, val)
 }
 
-func (t *Table) get_int_info(name int16) *IntInfo {
+func (t *Table) getIntInfo(name int16) *IntInfo {
 	return t.IntInfo[name]
 
 }
 
-func (tb *TableBlock) get_int_info(name int16) *IntInfo {
+func (tb *TableBlock) getIntInfo(name int16) *IntInfo {
 	return tb.IntInfo[name]
 }
 
-func (tb *TableBlock) get_str_info(name int16) *StrInfo {
+func (tb *TableBlock) getStrInfo(name int16) *StrInfo {
 	return tb.StrInfo[name]
 }

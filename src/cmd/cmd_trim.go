@@ -1,4 +1,4 @@
-package sybil_cmd
+package sybilCmd
 
 import "flag"
 
@@ -29,44 +29,44 @@ func askConfirmation() bool {
 }
 
 func RunTrimCmdLine() {
-	MB_LIMIT := flag.Int("mb", 0, "max table size in MB")
-	DELETE_BEFORE := flag.Int("before", 0, "delete blocks with data older than TIMESTAMP")
+	MbLimit := flag.Int("mb", 0, "max table size in MB")
+	DeleteBefore := flag.Int("before", 0, "delete blocks with data older than TIMESTAMP")
 	DELETE := flag.Bool("delete", false, "delete blocks? be careful! will actually delete your data!")
 	REALLY := flag.Bool("really", false, "don't prompt before deletion")
 
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
+	sybil.FLAGS.TimeCol = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" || *sybil.FLAGS.TIME_COL == "" {
+	if *sybil.FLAGS.Table == "" || *sybil.FLAGS.TimeCol == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
-		profile := sybil.RUN_PROFILER()
+	if *sybil.FLAGS.Profile {
+		profile := sybil.RunProfiler()
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	sybil.DeleteBlocksAfterQuery = false
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*sybil.FLAGS.Table)
 	if t.LoadTableInfo() == false {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}
 
 	loadSpec := t.NewLoadSpec()
-	loadSpec.Int(*sybil.FLAGS.TIME_COL)
+	loadSpec.Int(*sybil.FLAGS.TimeCol)
 
 	trimSpec := sybil.TrimSpec{}
-	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
-	trimSpec.MBLimit = int64(*MB_LIMIT)
+	trimSpec.DeleteBefore = int64(*DeleteBefore)
+	trimSpec.MBLimit = int64(*MbLimit)
 
-	to_trim := t.TrimTable(&trimSpec)
+	toTrim := t.TrimTable(&trimSpec)
 
-	sybil.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
-	if len(to_trim) > 0 {
-		for _, b := range to_trim {
+	sybil.Debug("FOUND", len(toTrim), "CANDIDATE BLOCKS FOR TRIMMING")
+	if len(toTrim) > 0 {
+		for _, b := range toTrim {
 			fmt.Println(b.Name)
 		}
 	}
@@ -83,7 +83,7 @@ func RunTrimCmdLine() {
 		}
 
 		sybil.Debug("DELETING CANDIDATE BLOCKS")
-		for _, b := range to_trim {
+		for _, b := range toTrim {
 			sybil.Debug("DELETING", b.Name)
 			if len(b.Name) > 5 {
 				os.RemoveAll(b.Name)

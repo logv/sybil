@@ -5,7 +5,7 @@ import "os"
 import "fmt"
 import "testing"
 
-var TEST_TABLE_NAME = "__TEST0__"
+var TestTableName = "_Test0_"
 
 // we copy over Debug from sybil package for usage
 var Debug = sybil.Debug
@@ -13,30 +13,30 @@ var Debug = sybil.Debug
 type RecordSetupCB func(*sybil.Record, int)
 
 func TestMain(m *testing.M) {
-	run_tests(m)
-	delete_test_db()
+	runTests(m)
+	deleteTestDb()
 }
 
-func run_tests(m *testing.M) {
-	setup_test_vars(100)
+func runTests(m *testing.M) {
+	setupTestVars(100)
 	m.Run()
 }
 
-func setup_test_vars(chunk_size int) {
+func setupTestVars(chunkSize int) {
 	sybil.Startup()
-	sybil.FLAGS.TABLE = &TEST_TABLE_NAME
+	sybil.FLAGS.Table = &TestTableName
 
-	sybil.TEST_MODE = true
-	sybil.CHUNK_SIZE = chunk_size
-	sybil.LOCK_US = 1
-	sybil.LOCK_TRIES = 3
+	sybil.TestMode = true
+	sybil.ChunkSize = chunkSize
+	sybil.LockUs = 1
+	sybil.LockTries = 3
 }
 
-func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {
-	count := sybil.CHUNK_SIZE * block_count
+func addRecords(cb RecordSetupCB, blockCount int) []*sybil.Record {
+	count := sybil.ChunkSize * blockCount
 
 	ret := make([]*sybil.Record, 0)
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	t := sybil.GetTable(TestTableName)
 
 	for i := 0; i < count; i++ {
 		r := t.NewRecord()
@@ -47,36 +47,36 @@ func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {
 	return ret
 }
 
-func save_and_reload_table(test *testing.T, expected_blocks int) *sybil.Table {
+func saveAndReloadTable(test *testing.T, expectedBlocks int) *sybil.Table {
 
-	expected_count := sybil.CHUNK_SIZE * expected_blocks
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	expectedCount := sybil.ChunkSize * expectedBlocks
+	t := sybil.GetTable(TestTableName)
 
 	t.SaveRecordsToColumns()
 
-	unload_test_table()
+	unloadTestTable()
 
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	nt.LoadTableInfo()
 
 	loadSpec := sybil.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	count := nt.LoadRecords(&loadSpec)
 
-	if count != expected_count {
-		test.Error("Wrote", expected_count, "records, but read back", count)
+	if count != expectedCount {
+		test.Error("Wrote", expectedCount, "records, but read back", count)
 	}
 
 	// +1 is the Row Store Block...
-	if len(nt.BlockList) != expected_blocks {
-		test.Error("Wrote", expected_blocks, "blocks, but came back with", len(nt.BlockList))
+	if len(nt.BlockList) != expectedBlocks {
+		test.Error("Wrote", expectedBlocks, "blocks, but came back with", len(nt.BlockList))
 	}
 
 	return nt
 
 }
 
-func new_query_spec() *sybil.QuerySpec {
+func newQuerySpec() *sybil.QuerySpec {
 
 	filters := []sybil.Filter{}
 	aggs := []sybil.Aggregation{}
@@ -87,11 +87,11 @@ func new_query_spec() *sybil.QuerySpec {
 	return &querySpec
 }
 
-func unload_test_table() {
-	delete(sybil.LOADED_TABLES, TEST_TABLE_NAME)
+func unloadTestTable() {
+	delete(sybil.LoadedTables, TestTableName)
 }
 
-func delete_test_db() {
-	os.RemoveAll(fmt.Sprintf("db/%s", TEST_TABLE_NAME))
-	unload_test_table()
+func deleteTestDb() {
+	os.RemoveAll(fmt.Sprintf("db/%s", TestTableName))
+	unloadTestTable()
 }
