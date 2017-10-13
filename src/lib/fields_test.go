@@ -6,46 +6,45 @@ import "testing"
 import "math/rand"
 import "strconv"
 
-
 func TestSets(test *testing.T) {
-	delete_test_db()
-	total_age := int64(0)
+	deleteTestDb()
+	totalAge := int64(0)
 
-	add_records(func(r *sybil.Record, i int) {}, 0)
-	block_count := 3
-	min_count := sybil.CHUNK_SIZE * block_count
-	records := add_records(func(r *sybil.Record, i int) {
-		set_id := []string{strconv.FormatInt(int64(i), 10)}
-		r.AddIntField("id_int", int64(i))
-		r.AddSetField("id_set", set_id)
-		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
-		age := int64(rand.Intn(20)) + int64(min_count)
-		total_age += age
+	addRecords(func(r *sybil.Record, i int) {}, 0)
+	blockCount := 3
+	minCount := sybil.ChunkSize * blockCount
+	records := addRecords(func(r *sybil.Record, i int) {
+		setID := []string{strconv.FormatInt(int64(i), 10)}
+		r.AddIntField("idInt", int64(i))
+		r.AddSetField("idSet", setID)
+		r.AddStrField("idStr", strconv.FormatInt(int64(i), 10))
+		age := int64(rand.Intn(20)) + int64(minCount)
+		totalAge += age
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	avg_age := float64(total_age) / float64(len(records))
-	Debug("AVG AGE", avg_age-float64(min_count))
+	avgAge := float64(totalAge) / float64(len(records))
+	Debug("AVG AGE", avgAge-float64(minCount))
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTable(test, blockCount)
 
 	for _, b := range nt.BlockList {
 		for _, r := range b.RecordList {
-			ival, ok := r.GetIntVal("id_int")
+			ival, ok := r.GetIntVal("idInt")
 			if !ok {
 				test.Error("MISSING INT ID")
 			}
-			setval, ok := r.GetSetVal("id_set")
+			setval, ok := r.GetSetVal("idSet")
 			if !ok {
 				test.Error("MISSING SET ID")
 			}
-			strval, ok := r.GetStrVal("id_str")
+			strval, ok := r.GetStrVal("idStr")
 			if !ok {
 				test.Error("MISSING STR ID")
 			}
 
-			ageval, _ := r.GetStrVal("age_str")
+			ageval, _ := r.GetStrVal("ageStr")
 			pval, err := strconv.ParseInt(strval, 10, 64)
 
 			if ageval == strval {
@@ -63,7 +62,7 @@ func TestSets(test *testing.T) {
 		}
 	}
 
-	delete_test_db()
+	deleteTestDb()
 
 	// Load Some Samples?
 

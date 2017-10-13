@@ -8,9 +8,9 @@ import "strconv"
 import "io/ioutil"
 import "time"
 
-var LOCK_US = time.Millisecond * 3
-var LOCK_TRIES = 50
-var MAX_LOCK_BREAKS = 5
+var LockUs = time.Millisecond * 3
+var LockTries = 50
+var MaxLockBreaks = 5
 
 // Every LockFile should have a recovery plan
 type RecoverableLock interface {
@@ -19,7 +19,7 @@ type RecoverableLock interface {
 	Recover() bool
 }
 
-var BREAK_MAP = make(map[string]int, 0)
+var BreakMap = make(map[string]int, 0)
 
 type Lock struct {
 	Name   string
@@ -51,7 +51,7 @@ func RecoverLock(lock RecoverableLock) bool {
 func (l *InfoLock) Recover() bool {
 	t := l.Lock.Table
 	Debug("INFO LOCK RECOVERY")
-	dirname := path.Join(*FLAGS.DIR, t.Name)
+	dirname := path.Join(*FLAGS.Dir, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
@@ -78,7 +78,7 @@ func (l *InfoLock) Recover() bool {
 func (l *DigestLock) Recover() bool {
 	Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*FLAGS.Dir, t.Name, IngestDir)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
@@ -111,18 +111,18 @@ func (l *BlockLock) Recover() bool {
 func (l *CacheLock) Recover() bool {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
+	files, err := ioutil.ReadDir(path.Join(*FLAGS.Dir, t.Name, CacheDir))
 
 	if err != nil {
 		l.ForceDeleteFile()
 		return true
 	}
 
-	for _, block_file := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
-		block_cache := SavedBlockCache{}
+	for _, blockFile := range files {
+		filename := path.Join(*FLAGS.Dir, t.Name, CacheDir, blockFile.Name())
+		blockCache := SavedBlockCache{}
 
-		err := decodeInto(filename, &block_cache)
+		err := decodeInto(filename, &blockCache)
 		if err != nil {
 			os.RemoveAll(filename)
 			continue
@@ -153,7 +153,7 @@ func (l *Lock) ForceDeleteFile() {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*FLAGS.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	Debug("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
@@ -165,7 +165,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*FLAGS.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
@@ -180,17 +180,17 @@ func (l *Lock) ForceMakeFile(pid int64) {
 
 }
 
-func is_active_pid(val []byte) bool {
+func isActivePid(val []byte) bool {
 	// Check if its our PID or not...
-	pid_str := strconv.FormatInt(int64(os.Getpid()), 10)
-	if pid_str == string(val) {
+	pidStr := strconv.FormatInt(int64(os.Getpid()), 10)
+	if pidStr == string(val) {
 		return true
 	}
 
 	return false
 }
 
-func check_if_broken(lockfile string, l *Lock) bool {
+func checkIfBroken(lockfile string, l *Lock) bool {
 	var val []byte
 	var err error
 	// To check if a PID is active, we... first parse the PID in the file, then
@@ -199,22 +199,22 @@ func check_if_broken(lockfile string, l *Lock) bool {
 	// EPERM error
 	val, err = ioutil.ReadFile(lockfile)
 
-	var pid_int = int64(0)
+	var pidInt = int64(0)
 	if err == nil {
-		pid_int, err = strconv.ParseInt(string(val), 10, 32)
+		pidInt, err = strconv.ParseInt(string(val), 10, 32)
 
 		if err != nil {
-			breaks, ok := BREAK_MAP[lockfile]
+			breaks, ok := BreakMap[lockfile]
 			if ok {
 				breaks = breaks + 1
 			} else {
 				breaks = 1
 			}
 
-			BREAK_MAP[lockfile] = breaks
+			BreakMap[lockfile] = breaks
 
 			Debug("CANT READ PID FROM LOCK:", lockfile, string(val), err, breaks)
-			if breaks > MAX_LOCK_BREAKS {
+			if breaks > MaxLockBreaks {
 				l.broken = true
 				Debug("PUTTING LOCK INTO RECOVERY", lockfile)
 			}
@@ -222,8 +222,8 @@ func check_if_broken(lockfile string, l *Lock) bool {
 		}
 	}
 
-	if err == nil && pid_int != 0 {
-		process, err := os.FindProcess(int(pid_int))
+	if err == nil && pidInt != 0 {
+		process, err := os.FindProcess(int(pidInt))
 		// err is Always nil on *nix
 		if err == nil {
 			err := process.Signal(syscall.Signal(0))
@@ -252,7 +252,7 @@ func check_if_broken(lockfile string, l *Lock) bool {
 	return false
 }
 
-func check_pid(lockfile string, l *Lock) bool {
+func checkPid(lockfile string, l *Lock) bool {
 	cangrab := false
 
 	var val []byte
@@ -260,20 +260,20 @@ func check_pid(lockfile string, l *Lock) bool {
 
 	// check if the PID is active or not. If the PID isn't active, we enter
 	// recovery mode for this Lock() and say it's grabbable
-	if check_if_broken(lockfile, l) {
+	if checkIfBroken(lockfile, l) {
 		return true
 	}
 
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < LockTries; i++ {
 		val, err = ioutil.ReadFile(lockfile)
 
 		if err == nil {
 			// Check if its our PID or not...
-			if is_active_pid(val) {
+			if isActivePid(val) {
 				return true
 			}
 
-			time.Sleep(LOCK_US)
+			time.Sleep(LockUs)
 			continue
 		} else {
 			cangrab = true
@@ -290,12 +290,12 @@ func (l *Lock) Grab() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*FLAGS.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	var err error
-	for i := 0; i < LOCK_TRIES; i++ {
-		time.Sleep(LOCK_US)
-		if check_pid(lockfile, l) == false {
+	for i := 0; i < LockTries; i++ {
+		time.Sleep(LockUs)
+		if checkPid(lockfile, l) == false {
 			if l.broken {
 				Debug("MARKING BROKEN LOCKFILE", lockfile)
 				return false
@@ -317,7 +317,7 @@ func (l *Lock) Grab() bool {
 		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
 
-		if check_pid(lockfile, l) == false {
+		if checkPid(lockfile, l) == false {
 			continue
 		}
 
@@ -337,15 +337,15 @@ func (l *Lock) Release() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
-	for i := 0; i < LOCK_TRIES; i++ {
+	lockfile := path.Join(*FLAGS.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
+	for i := 0; i < LockTries; i++ {
 		val, err := ioutil.ReadFile(lockfile)
 
 		if err != nil {
 			continue
 		}
 
-		if is_active_pid(val) {
+		if isActivePid(val) {
 			Debug("UNLOCKING", lockfile)
 			os.RemoveAll(lockfile)
 			break
@@ -375,7 +375,7 @@ func (t *Table) ReleaseInfoLock() bool {
 }
 
 func (t *Table) GrabDigestLock() bool {
-	lock := Lock{Table: t, Name: STOMACHE_DIR}
+	lock := Lock{Table: t, Name: StomacheDir}
 	info := &DigestLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
@@ -385,7 +385,7 @@ func (t *Table) GrabDigestLock() bool {
 }
 
 func (t *Table) ReleaseDigestLock() bool {
-	lock := Lock{Table: t, Name: STOMACHE_DIR}
+	lock := Lock{Table: t, Name: StomacheDir}
 	info := &DigestLock{lock}
 	ret := info.Release()
 	return ret
@@ -412,7 +412,7 @@ func (t *Table) ReleaseBlockLock(name string) bool {
 }
 
 func (t *Table) GrabCacheLock() bool {
-	lock := Lock{Table: t, Name: CACHE_DIR}
+	lock := Lock{Table: t, Name: CacheDir}
 	info := &CacheLock{lock}
 	ret := info.Grab()
 	if !ret && info.broken {
@@ -422,7 +422,7 @@ func (t *Table) GrabCacheLock() bool {
 }
 
 func (t *Table) ReleaseCacheLock() bool {
-	lock := Lock{Table: t, Name: CACHE_DIR}
+	lock := Lock{Table: t, Name: CacheDir}
 	info := &CacheLock{lock}
 	ret := info.Release()
 	return ret

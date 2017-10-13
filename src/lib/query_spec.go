@@ -48,15 +48,15 @@ type Filter interface {
 }
 
 type Grouping struct {
-	Name    string
-	name_id int16
+	Name   string
+	nameID int16
 }
 
 type Aggregation struct {
 	Op       string
-	op_id    int
+	opID     int
 	Name     string
-	name_id  int16
+	nameID   int16
 	HistType string
 }
 
@@ -70,38 +70,38 @@ type Result struct {
 }
 
 func NewResult() *Result {
-	added_record := &Result{}
-	added_record.Hists = make(map[string]Histogram)
-	added_record.Count = 0
-	return added_record
+	addedRecord := &Result{}
+	addedRecord.Hists = make(map[string]Histogram)
+	addedRecord.Count = 0
+	return addedRecord
 }
 
-func (master_result *ResultMap) Combine(results *ResultMap) {
+func (masterResult *ResultMap) Combine(results *ResultMap) {
 	for k, v := range *results {
-		mval, ok := (*master_result)[k]
+		mval, ok := (*masterResult)[k]
 		if !ok {
-			(*master_result)[k] = v
+			(*masterResult)[k] = v
 		} else {
 			mval.Combine(v)
 		}
 	}
 }
 
-// This does an in place combine of the next_result into this one...
-func (rs *Result) Combine(next_result *Result) {
-	if next_result == nil {
+// This does an in place combine of the nextResult into this one...
+func (rs *Result) Combine(nextResult *Result) {
+	if nextResult == nil {
 		return
 	}
 
-	if next_result.Count == 0 {
+	if nextResult.Count == 0 {
 		return
 	}
 
-	total_samples := rs.Samples + next_result.Samples
-	total_count := rs.Count + next_result.Count
+	totalSamples := rs.Samples + nextResult.Samples
+	totalCount := rs.Count + nextResult.Count
 
 	// combine histograms...
-	for k, h := range next_result.Hists {
+	for k, h := range nextResult.Hists {
 		_, ok := rs.Hists[k]
 		if !ok {
 			nh := h.NewHist()
@@ -113,8 +113,8 @@ func (rs *Result) Combine(next_result *Result) {
 		}
 	}
 
-	rs.Samples = total_samples
-	rs.Count = total_count
+	rs.Samples = totalSamples
+	rs.Count = totalCount
 }
 
 func (querySpec *QuerySpec) Punctuate() {
@@ -137,36 +137,36 @@ func (querySpec *QuerySpec) ResetResults() {
 	}
 }
 func (t *Table) Grouping(name string) Grouping {
-	col_id := t.get_key_id(name)
-	return Grouping{name, col_id}
+	colID := t.getKeyID(name)
+	return Grouping{name, colID}
 }
 
 func (t *Table) Aggregation(name string, op string) Aggregation {
-	col_id := t.get_key_id(name)
+	colID := t.getKeyID(name)
 
-	agg := Aggregation{Name: name, name_id: col_id, Op: op}
+	agg := Aggregation{Name: name, nameID: colID, Op: op}
 	if op == "avg" {
-		agg.op_id = OP_AVG
+		agg.opID = OpAvg
 	}
 
 	if op == "hist" {
-		agg.op_id = OP_HIST
+		agg.opID = OpHist
 		agg.HistType = "basic"
-		if *FLAGS.LOG_HIST {
+		if *FLAGS.LogHist {
 			agg.HistType = "multi"
 
 		}
 
-		if *FLAGS.HDR_HIST {
+		if *FLAGS.HdrHist {
 			agg.HistType = "hdr"
 		}
 	}
 
 	if op == "distinct" {
-		agg.op_id = OP_DISTINCT
+		agg.opID = OpDistinct
 	}
 
-	_, ok := t.IntInfo[col_id]
+	_, ok := t.IntInfo[colID]
 	if !ok {
 		// TODO: tell our table we need to load all records!
 		Debug("MISSING CACHED INFO FOR", agg)

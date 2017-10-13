@@ -4,15 +4,14 @@ package sybil
 
 import "github.com/pkg/profile"
 
-
-var PROFILER_ENABLED = true
+var ProfilerEnabled = true
 var PROFILE ProfilerStart
 
 type PkgProfile struct {
 }
 
 func (p PkgProfile) Start() ProfilerStart {
-	if *FLAGS.PROFILE_MEM {
+	if *FLAGS.ProfileMem {
 		PROFILE = profile.Start(profile.MemProfile, profile.ProfilePath("."))
 	} else {
 		PROFILE = profile.Start(profile.CPUProfile, profile.ProfilePath("."))
@@ -23,11 +22,11 @@ func (p PkgProfile) Stop() {
 	p.Stop()
 }
 
-func STOP_PROFILER() {
+func StopProfiler() {
 	PROFILE.Stop()
 }
 
-var RUN_PROFILER = func() ProfilerStop {
+var RunProfiler = func() ProfilerStop {
 	Debug("RUNNING ENABLED PROFILER")
 	return PkgProfile{}
 }

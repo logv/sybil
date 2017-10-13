@@ -1,6 +1,5 @@
 package sybil
 
-
 import "strings"
 import "time"
 
@@ -22,14 +21,14 @@ var FORMATS = map[string]string{
 	"stampnano":   time.StampNano,
 }
 
-func GetTimeFormat(time_fmt string) string {
-	const_fmt := strings.ToLower(time_fmt)
-	time_format, ok := FORMATS[const_fmt]
+func GetTimeFormat(timeFmt string) string {
+	constFmt := strings.ToLower(timeFmt)
+	timeFormat, ok := FORMATS[constFmt]
 	if ok {
-		Debug("USING TIME FORMAT", time_format, "FOR", time_fmt)
-		return time_format
+		Debug("USING TIME FORMAT", timeFormat, "FOR", timeFmt)
+		return timeFormat
 	}
 
-	Debug("USING TIME FORMAT", time_format)
-	return time_format
+	Debug("USING TIME FORMAT", timeFormat)
+	return timeFormat
 }

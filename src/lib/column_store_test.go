@@ -6,30 +6,29 @@ import "strconv"
 import "math/rand"
 import "testing"
 
-
 func TestTableDigestRowRecords(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	add_records(func(r *sybil.Record, index int) {
+	blockCount := 3
+	addRecords(func(r *sybil.Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	t := sybil.GetTable(TestTableName)
 	t.IngestRecords("ingest")
 
-	unload_test_table()
-	nt := sybil.GetTable(TEST_TABLE_NAME)
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
-	sybil.FLAGS.READ_INGESTION_LOG = &sybil.TRUE
+	unloadTestTable()
+	nt := sybil.GetTable(TestTableName)
+	sybil.DeleteBlocksAfterQuery = false
+	sybil.FLAGS.ReadIngestionLog = &sybil.TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
 
-	if len(nt.RowBlock.RecordList) != sybil.CHUNK_SIZE*block_count {
+	if len(nt.RowBlock.RecordList) != sybil.ChunkSize*blockCount {
 		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
@@ -39,10 +38,10 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	nt.DigestRecords()
 
-	unload_test_table()
+	unloadTestTable()
 
-	sybil.READ_ROWS_ONLY = false
-	nt = sybil.GetTable(TEST_TABLE_NAME)
+	sybil.ReadRowsOnly = false
+	nt = sybil.GetTable(TestTableName)
 	nt.LoadRecords(nil)
 
 	count := int32(0)
@@ -51,7 +50,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 		count += b.Info.NumRecords
 	}
 
-	if count != int32(block_count*sybil.CHUNK_SIZE) {
+	if count != int32(blockCount*sybil.ChunkSize) {
 		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}

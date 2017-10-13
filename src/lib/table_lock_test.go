@@ -7,7 +7,7 @@ import "testing"
 // Try out the different situations for lock recovery and see if they behave
 // appropriately
 func TestGrabInfoLock(test *testing.T) {
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	t := sybil.GetTable(TestTableName)
 
 	t.MakeDir()
 
@@ -18,7 +18,7 @@ func TestGrabInfoLock(test *testing.T) {
 }
 
 func TestRecoverInfoLock(test *testing.T) {
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	t := sybil.GetTable(TestTableName)
 	lock := sybil.Lock{Table: t, Name: "info"}
 	lock.ForceMakeFile(int64(0))
 	infolock := sybil.InfoLock{lock}
@@ -35,7 +35,7 @@ func TestRecoverInfoLock(test *testing.T) {
 }
 
 func TestGrabDigestLock(test *testing.T) {
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	t := sybil.GetTable(TestTableName)
 
 	t.MakeDir()
 	grabbed := t.GrabDigestLock()
@@ -45,8 +45,8 @@ func TestGrabDigestLock(test *testing.T) {
 }
 
 func TestRecoverDigestLock(test *testing.T) {
-	t := sybil.GetTable(TEST_TABLE_NAME)
-	lock := sybil.Lock{Table: t, Name: sybil.STOMACHE_DIR}
+	t := sybil.GetTable(TestTableName)
+	lock := sybil.Lock{Table: t, Name: sybil.StomacheDir}
 	lock.ForceMakeFile(int64(0))
 
 	t.MakeDir()

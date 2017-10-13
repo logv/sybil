@@ -1,4 +1,4 @@
-package sybil_cmd
+package sybilCmd
 
 import "flag"
 
@@ -7,19 +7,19 @@ import sybil "github.com/logv/sybil/src/lib"
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" {
+	if *sybil.FLAGS.Table == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
-		profile := sybil.RUN_PROFILER()
+	if *sybil.FLAGS.Profile {
+		profile := sybil.RunProfiler()
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	sybil.DeleteBlocksAfterQuery = false
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*sybil.FLAGS.Table)
 	if t.LoadTableInfo() == false {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return

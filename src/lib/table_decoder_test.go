@@ -15,25 +15,25 @@ import "time"
 import "strings"
 
 func TestOpenCompressedInfoDB(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	created := add_records(func(r *sybil.Record, index int) {
+	blockCount := 3
+	created := addRecords(func(r *sybil.Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddIntField("time", int64(time.Now().Unix()))
 		r.AddStrField("name", fmt.Sprint("user", index))
-	}, block_count)
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTable(test, blockCount)
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != TestTableName {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
 
-	filename := fmt.Sprintf("db/%s/info.db", TEST_TABLE_NAME)
+	filename := fmt.Sprintf("db/%s/info.db", TestTableName)
 	dat, err := ioutil.ReadFile(filename)
 
 	if err != nil {
@@ -42,7 +42,7 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 	}
 
 	// NOW WE COMPRESS INFO.DB.GZ
-	zfilename := fmt.Sprintf("db/%s/info.db.gz", TEST_TABLE_NAME)
+	zfilename := fmt.Sprintf("db/%s/info.db.gz", TestTableName)
 	file, err := os.Create(zfilename)
 	if err != nil {
 		test.Error("COULDNT LOAD ZIPPED TABLE FILE FOR WRITING!")
@@ -74,30 +74,30 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 		test.Error("More records were created than expected", len(records))
 	}
 
-	delete_test_db()
+	deleteTestDb()
 
 }
 
 func TestOpenCompressedColumn(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	created := add_records(func(r *sybil.Record, index int) {
+	blockCount := 3
+	created := addRecords(func(r *sybil.Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddIntField("time", int64(time.Now().Unix()))
 		r.AddStrField("name", fmt.Sprint("user", index))
-	}, block_count)
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTable(test, blockCount)
 	nt.DigestRecords()
 	nt.LoadRecords(nil)
 
 	blocks := nt.BlockList
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != TestTableName {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
 
@@ -132,7 +132,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 
 	// END COMPRESSING BLOCK FILES
 
-	bt := save_and_reload_table(test, block_count)
+	bt := saveAndReloadTable(test, blockCount)
 
 	loadSpec := bt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
@@ -153,6 +153,6 @@ func TestOpenCompressedColumn(test *testing.T) {
 		test.Error("More records were created than expected", len(records))
 	}
 
-	delete_test_db()
+	deleteTestDb()
 
 }

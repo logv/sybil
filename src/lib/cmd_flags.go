@@ -5,80 +5,80 @@ import "flag"
 var FALSE = false
 var TRUE = true
 
-var TEST_MODE = false
-var ENABLE_LUA = false
+var TestMode = false
+var EnableLua = false
 
 type FlagDefs struct {
-	OP          *string
-	PRINT       *bool
-	EXPORT      *bool
-	INT_FILTERS *string
-	STR_FILTERS *string
-	STR_REPLACE *string // regex replacement for strings
-	SET_FILTERS *string
+	Op         *string
+	Print      *bool
+	Export     *bool
+	IntFilters *string
+	StrFilters *string
+	StrReplace *string // regex replacement for strings
+	SetFilters *string
 
-	SESSION_COL *string
-	INTS        *string
-	STRS        *string
-	GROUPS      *string
+	SessionCol *string
+	Ints       *string
+	Strs       *string
+	Groups     *string
 
-	ADD_RECORDS *int
+	AddRecords *int
 
-	TIME        *bool
-	TIME_COL    *string
-	TIME_BUCKET *int
-	HIST_BUCKET *int
-	HDR_HIST    *bool
-	LOG_HIST    *bool
+	Time       *bool
+	TimeCol    *string
+	TimeBucket *int
+	HistBucket *int
+	HdrHist    *bool
+	LogHist    *bool
 
-	FIELD_SEPARATOR    *string
-	FILTER_SEPARATOR   *string
-	PRINT_KEYS         *bool
-	LOAD_AND_QUERY     *bool
-	LOAD_THEN_QUERY    *bool
-	READ_INGESTION_LOG *bool
-	READ_ROWSTORE      *bool
-	SKIP_COMPACT       *bool
+	FieldSeparator   *string
+	FilterSeparator  *string
+	PrintKeys        *bool
+	LoadAndQuery     *bool
+	LoadThenQuery    *bool
+	ReadIngestionLog *bool
+	ReadRowstore     *bool
+	SkipCompact      *bool
 
-	PROFILE     *bool
-	PROFILE_MEM *bool
+	Profile    *bool
+	ProfileMem *bool
 
-	RECYCLE_MEM    *bool
-	CACHED_QUERIES *bool
+	RecycleMem    *bool
+	CachedQueries *bool
 
-	WEIGHT_COL *string
+	WeightCol *string
 
-	LIMIT *int
+	Limit *int
 
-	DEBUG *bool
+	Debug *bool
 	JSON  *bool
 	GC    *bool
 
-	DIR        *string
-	SORT       *string
-	TABLE      *string
-	PRINT_INFO *bool
-	SAMPLES    *bool
+	Dir       *string
+	Sort      *string
+	Table     *string
+	PrintInfo *bool
+	Samples   *bool
 
 	LUA     *bool
-	LUAFILE *string
+	LuaFile *string
 
-	UPDATE_TABLE_INFO *bool
-	SKIP_OUTLIERS     *bool
+	UpdateTableInfo *bool
+	SkipOutliers    *bool
 
 	// Join keys
-	JOIN_TABLE *string
-	JOIN_KEY   *string
-	JOIN_GROUP *string
+	JoinTable *string
+	JoinKey   *string
+	JoinGroup *string
 
 	// Sessionization stuff
-	SESSION_CUTOFF *int
-	RETENTION      *bool
-	PATH_KEY       *string
-	PATH_LENGTH    *int
+	SessionCutoff *int
+	Retention     *bool
+	PathKey       *string
+	PathLength    *int
 
 	// STATS
-	ANOVA_ICC *bool
+	AnovaIcc *bool
 }
 
 type StrReplace struct {
@@ -87,18 +87,18 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	SORT_COUNT              string
-	SAMPLES                 bool
-	STR_REPLACEMENTS        map[string]StrReplace
-	WEIGHT_COL              bool
-	WEIGHT_COL_ID           int16
-	DELTA_ENCODE_INT_VALUES bool
-	DELTA_ENCODE_RECORD_IDS bool
-	WRITE_BLOCK_INFO        bool
-	TIMESERIES              bool
-	TIME_COL_ID             int16
-	TIME_FORMAT             string
-	GROUP_BY                []string
+	SortCount            string
+	Samples              bool
+	StrReplacements      map[string]StrReplace
+	WeightCol            bool
+	WeightColID          int16
+	DeltaEncodeIntValues bool
+	DeltaEncodeRecordIDs bool
+	WriteBlockInfo       bool
+	TimeSeries           bool
+	TimeColID            int16
+	TimeFormat           string
+	GroupBy              []string
 }
 
 // TODO: merge these two into one thing
@@ -108,56 +108,56 @@ var OPTS = OptionDefs{}
 var EMPTY = ""
 
 func setDefaults() {
-	OPTS.SORT_COUNT = "$COUNT"
-	OPTS.SAMPLES = false
-	OPTS.WEIGHT_COL = false
-	OPTS.WEIGHT_COL_ID = int16(0)
-	OPTS.DELTA_ENCODE_INT_VALUES = true
-	OPTS.DELTA_ENCODE_RECORD_IDS = true
-	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TIMESERIES = false
-	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
+	OPTS.SortCount = "$COUNT"
+	OPTS.Samples = false
+	OPTS.WeightCol = false
+	OPTS.WeightColID = int16(0)
+	OPTS.DeltaEncodeIntValues = true
+	OPTS.DeltaEncodeRecordIDs = true
+	OPTS.WriteBlockInfo = false
+	OPTS.TimeSeries = false
+	OPTS.TimeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 	FLAGS.GC = &TRUE
 	FLAGS.JSON = &FALSE
-	FLAGS.PRINT = &TRUE
-	FLAGS.EXPORT = &FALSE
+	FLAGS.Print = &TRUE
+	FLAGS.Export = &FALSE
 
-	FLAGS.SKIP_COMPACT = &FALSE
+	FLAGS.SkipCompact = &FALSE
 
-	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
-	FLAGS.LOAD_AND_QUERY = &TRUE
-	FLAGS.LOAD_THEN_QUERY = &FALSE
-	FLAGS.READ_INGESTION_LOG = &FALSE
-	FLAGS.READ_ROWSTORE = &FALSE
-	FLAGS.ANOVA_ICC = &FALSE
-	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
-	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
+	FLAGS.PrintKeys = &OPTS.TimeSeries
+	FLAGS.LoadAndQuery = &TRUE
+	FLAGS.LoadThenQuery = &FALSE
+	FLAGS.ReadIngestionLog = &FALSE
+	FLAGS.ReadRowstore = &FALSE
+	FLAGS.AnovaIcc = &FALSE
+	FLAGS.Dir = flag.String("dir", "./db/", "Directory to store DB files")
+	FLAGS.Table = flag.String("table", "", "Table to operate on [REQUIRED]")
 
-	FLAGS.DEBUG = flag.Bool("debug", false, "enable debug logging")
-	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
-	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
+	FLAGS.Debug = flag.Bool("debug", false, "enable debug logging")
+	FLAGS.FieldSeparator = flag.String("field-separator", ",", "Field separator used in command line params")
+	FLAGS.FilterSeparator = flag.String("filter-separator", ":", "Filter separator used in filters")
 
-	FLAGS.UPDATE_TABLE_INFO = &FALSE
-	FLAGS.SKIP_OUTLIERS = &TRUE
-	FLAGS.SAMPLES = &FALSE
+	FLAGS.UpdateTableInfo = &FALSE
+	FLAGS.SkipOutliers = &TRUE
+	FLAGS.Samples = &FALSE
 	FLAGS.LUA = &FALSE
-	FLAGS.LUAFILE = &EMPTY
+	FLAGS.LuaFile = &EMPTY
 
-	FLAGS.RECYCLE_MEM = &TRUE
-	FLAGS.CACHED_QUERIES = &FALSE
+	FLAGS.RecycleMem = &TRUE
+	FLAGS.CachedQueries = &FALSE
 
-	FLAGS.HDR_HIST = &FALSE
-	FLAGS.LOG_HIST = &FALSE
+	FLAGS.HdrHist = &FALSE
+	FLAGS.LogHist = &FALSE
 
-	DEFAULT_LIMIT := 100
-	FLAGS.LIMIT = &DEFAULT_LIMIT
+	DefaultLimit := 100
+	FLAGS.Limit = &DefaultLimit
 
-	FLAGS.PROFILE = &FALSE
-	FLAGS.PROFILE_MEM = &FALSE
-	if PROFILER_ENABLED {
-		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
-		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
+	FLAGS.Profile = &FALSE
+	FLAGS.ProfileMem = &FALSE
+	if ProfilerEnabled {
+		FLAGS.Profile = flag.Bool("profile", false, "turn profiling on?")
+		FLAGS.ProfileMem = flag.Bool("mem", false, "turn memory profiling on")
 	}
 
 	initLua()
