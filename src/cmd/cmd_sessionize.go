@@ -8,7 +8,7 @@ import "runtime/debug"
 import "strings"
 
 func addSessionFlags() {
-	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
+	sybil.FLAGS.Print = flag.Bool("print", false, "Print some records")
 	sybil.FLAGS.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	sybil.FLAGS.SessionCol = flag.String("session", "", "Column to use for sessionizing")
 	sybil.FLAGS.SessionCutoff = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
@@ -17,7 +17,7 @@ func addSessionFlags() {
 	sybil.FLAGS.JoinGroup = flag.String("join-group", "", "Group by columns to pull from join record")
 	sybil.FLAGS.PathKey = flag.String("path-key", "", "Field to use for pathing")
 	sybil.FLAGS.PathLength = flag.Int("path-length", 3, "Size of paths to histogram")
-	sybil.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
+	sybil.FLAGS.Retention = flag.Bool("calendar", false, "calculate retention calendars")
 	sybil.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
 
 	sybil.FLAGS.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
@@ -25,7 +25,7 @@ func addSessionFlags() {
 	sybil.FLAGS.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
 
 	sybil.FLAGS.StrReplace = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
-	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	sybil.FLAGS.Limit = flag.Int("limit", 100, "Number of results to return")
 }
 
 func RunSessionizeCmdLine() {
@@ -87,7 +87,7 @@ func RunSessionizeCmdLine() {
 	queryParams := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
 	querySpec := sybil.QuerySpec{QueryParams: queryParams}
 
-	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = int16(*sybil.FLAGS.Limit)
 
 	if *sybil.FLAGS.SessionCol != "" {
 		sessionSpec := sybil.NewSessionSpec()

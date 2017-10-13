@@ -18,22 +18,22 @@ var NoRecycleMem *bool
 func addQueryFlags() {
 
 	sybil.FLAGS.PrintInfo = flag.Bool("info", false, "Print table info")
-	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SortCount, "Int Column to sort by")
-	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	sybil.FLAGS.Sort = flag.String("sort", sybil.OPTS.SortCount, "Int Column to sort by")
+	sybil.FLAGS.Limit = flag.Int("limit", 100, "Number of results to return")
 
-	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
+	sybil.FLAGS.Time = flag.Bool("time", false, "make a time rollup")
 	sybil.FLAGS.TimeCol = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	sybil.FLAGS.TimeBucket = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
 	sybil.FLAGS.WeightCol = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
-	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
+	sybil.FLAGS.Op = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	sybil.FLAGS.LogHist = flag.Bool("loghist", false, "Use nested logarithmic histograms")
 	if sybil.EnableHdr {
 		sybil.FLAGS.HdrHist = flag.Bool("hdr", false, "Use HDR Histograms (can be slow)")
 	}
 
-	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
-	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
+	sybil.FLAGS.Print = flag.Bool("print", true, "Print some records")
+	sybil.FLAGS.Samples = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.IntFilters = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
 	sybil.FLAGS.HistBucket = flag.Int("int-bucket", 0, "Int hist bucket size")
@@ -43,11 +43,11 @@ func addQueryFlags() {
 	sybil.FLAGS.SetFilters = flag.String("set-filter", "", "Set filters, format: col:op:val")
 	sybil.FLAGS.UpdateTableInfo = flag.Bool("update-info", false, "Re-compute cached column data")
 
-	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
-	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
-	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
+	sybil.FLAGS.Ints = flag.String("int", "", "Integer values to aggregate")
+	sybil.FLAGS.Strs = flag.String("str", "", "String values to load")
+	sybil.FLAGS.Groups = flag.String("group", "", "values group by")
 
-	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
+	sybil.FLAGS.Export = flag.Bool("export", false, "export data to TSV")
 
 	sybil.FLAGS.ReadRowstore = flag.Bool("read-log", false, "read the ingestion log (can take longer!)")
 
@@ -55,7 +55,7 @@ func addQueryFlags() {
 	sybil.FLAGS.AnovaIcc = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
 	if sybil.EnableLua {
-		sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
+		sybil.FLAGS.Luafile = flag.String("lua", "", "Script to execute with lua map reduce")
 	}
 
 	ListTables = flag.Bool("tables", false, "List tables")
@@ -88,21 +88,21 @@ func RunQueryCmdLine() {
 
 	t := sybil.GetTable(table)
 	if t.IsNotExist() {
-		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.DIR)
+		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.Dir)
 	}
 
 	ints := make([]string, 0)
 	groups := make([]string, 0)
 	strs := make([]string, 0)
 
-	if *sybil.FLAGS.GROUPS != "" {
-		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FieldSeparator)
+	if *sybil.FLAGS.Groups != "" {
+		groups = strings.Split(*sybil.FLAGS.Groups, *sybil.FLAGS.FieldSeparator)
 		sybil.OPTS.GroupBy = groups
 
 	}
 
-	if *sybil.FLAGS.LUAFILE != "" {
-		sybil.SetLuaScript(*sybil.FLAGS.LUAFILE)
+	if *sybil.FLAGS.Luafile != "" {
+		sybil.SetLuaScript(*sybil.FLAGS.Luafile)
 	}
 
 	if *NoRecycleMem == true {
@@ -110,11 +110,11 @@ func RunQueryCmdLine() {
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
-	if *sybil.FLAGS.STRS != "" {
-		strs = strings.Split(*sybil.FLAGS.STRS, *sybil.FLAGS.FieldSeparator)
+	if *sybil.FLAGS.Strs != "" {
+		strs = strings.Split(*sybil.FLAGS.Strs, *sybil.FLAGS.FieldSeparator)
 	}
-	if *sybil.FLAGS.INTS != "" {
-		ints = strings.Split(*sybil.FLAGS.INTS, *sybil.FLAGS.FieldSeparator)
+	if *sybil.FLAGS.Ints != "" {
+		ints = strings.Split(*sybil.FLAGS.Ints, *sybil.FLAGS.FieldSeparator)
 	}
 	if *sybil.FLAGS.Profile && sybil.ProfilerEnabled {
 		profile := sybil.RunProfiler()
@@ -148,7 +148,7 @@ func RunQueryCmdLine() {
 
 	aggs := []sybil.Aggregation{}
 	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(agg, *sybil.FLAGS.OP))
+		aggs = append(aggs, t.Aggregation(agg, *sybil.FLAGS.Op))
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
@@ -191,35 +191,35 @@ func RunQueryCmdLine() {
 		loadSpec.Int(v)
 	}
 
-	if *sybil.FLAGS.SORT != "" {
-		if *sybil.FLAGS.SORT != sybil.OPTS.SortCount {
-			loadSpec.Int(*sybil.FLAGS.SORT)
+	if *sybil.FLAGS.Sort != "" {
+		if *sybil.FLAGS.Sort != sybil.OPTS.SortCount {
+			loadSpec.Int(*sybil.FLAGS.Sort)
 		}
-		querySpec.OrderBy = *sybil.FLAGS.SORT
+		querySpec.OrderBy = *sybil.FLAGS.Sort
 	} else {
 		querySpec.OrderBy = ""
 	}
 
-	if *sybil.FLAGS.TIME {
+	if *sybil.FLAGS.Time {
 		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = *sybil.FLAGS.TimeBucket
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*sybil.FLAGS.TimeCol)
 		timeColId, ok := t.KeyTable[*sybil.FLAGS.TimeCol]
 		if ok {
-			sybil.OPTS.TimeColId = timeColId
+			sybil.OPTS.TimeColID = timeColId
 		}
 	}
 
 	if *sybil.FLAGS.WeightCol != "" {
 		sybil.OPTS.WeightCol = true
 		loadSpec.Int(*sybil.FLAGS.WeightCol)
-		sybil.OPTS.WeightColId = t.KeyTable[*sybil.FLAGS.WeightCol]
+		sybil.OPTS.WeightColID = t.KeyTable[*sybil.FLAGS.WeightCol]
 	}
 
-	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = int16(*sybil.FLAGS.Limit)
 
-	if *sybil.FLAGS.SAMPLES {
+	if *sybil.FLAGS.Samples {
 		sybil.HoldMatches = true
 		sybil.DeleteBlocksAfterQuery = false
 
@@ -233,7 +233,7 @@ func RunQueryCmdLine() {
 		return
 	}
 
-	if *sybil.FLAGS.EXPORT {
+	if *sybil.FLAGS.Export {
 		loadSpec.LoadAllColumns = true
 	}
 
@@ -262,7 +262,7 @@ func RunQueryCmdLine() {
 
 	}
 
-	if *sybil.FLAGS.EXPORT {
+	if *sybil.FLAGS.Export {
 		sybil.Print("EXPORTED RECORDS TO", path.Join(t.Name, "export"))
 	}
 

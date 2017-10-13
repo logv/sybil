@@ -61,7 +61,7 @@ type FlagDefs struct {
 	Samples   *bool
 
 	LUA     *bool
-	LuaFile *string
+	Luafile *string
 
 	UpdateTableInfo *bool
 	SkipOutliers    *bool
@@ -142,7 +142,7 @@ func setDefaults() {
 	FLAGS.SkipOutliers = &TRUE
 	FLAGS.Samples = &FALSE
 	FLAGS.LUA = &FALSE
-	FLAGS.LuaFile = &EMPTY
+	FLAGS.Luafile = &EMPTY
 
 	FLAGS.RecycleMem = &TRUE
 	FLAGS.CachedQueries = &FALSE

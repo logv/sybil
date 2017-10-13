@@ -30,7 +30,7 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 			continue
 		}
 
-		prefixName := fmt.Sprint(keyName, "")
+		prefixName := fmt.Sprint(keyName, "_")
 		switch iv := v.(type) {
 		case string:
 			if IntCast[keyName] == true {
