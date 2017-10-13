@@ -13,7 +13,7 @@ all: sybil
 sybil: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
 
-fake-data: fake-uptime fake-people
+fake-data: fake-uptime
 
 fake-people:
 	python scripts/fakedata/people_generator.py 50000 | ./bin/sybil ingest -table people
