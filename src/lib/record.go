@@ -5,8 +5,8 @@ package sybil
 type Record struct {
 	Strs      []StrField
 	Ints      []IntField
-	SetMap    map[int16]SetField
 	Populated []int8
+	SetMap    map[int16]SetField
 
 	Timestamp int64
 	Path      string
