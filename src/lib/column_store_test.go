@@ -134,3 +134,70 @@ func TestColumnStoreFileNames(test *testing.T) {
 	}
 
 }
+
+func TestBigIntColumns(test *testing.T) {
+	deleteTestDb()
+
+	var minVal = int64(1 << 50)
+	blockCount := 3
+	addRecords(func(r *sybil.Record, index int) {
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(1 << 20))
+		r.AddIntField("time", minVal+age)
+	}, blockCount)
+
+	t := sybil.GetTable(TestTableName)
+	t.IngestRecords("ingest")
+
+	unloadTestTable()
+	nt := sybil.GetTable(TestTableName)
+	sybil.DeleteBlocksAfterQuery = false
+	sybil.FLAGS.ReadIngestionLog = &sybil.TRUE
+
+	nt.LoadTableInfo()
+	nt.LoadRecords(nil)
+
+	if len(nt.RowBlock.RecordList) != sybil.ChunkSize*blockCount {
+		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
+	}
+
+	if len(nt.BlockList) != 1 {
+		test.Error("Found other records than rowblock")
+	}
+
+	nt.DigestRecords()
+
+	unloadTestTable()
+
+	sybil.ReadRowsOnly = false
+	sybil.FLAGS.Samples = &sybil.TRUE
+	limit := 1000
+	sybil.FLAGS.Limit = &limit
+	nt = sybil.GetTable(TestTableName)
+
+	loadSpec := nt.NewLoadSpec()
+	loadSpec.LoadAllColumns = true
+	nt.LoadRecords(&loadSpec)
+
+	count := int32(0)
+	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
+	Debug("MIN VAL IS BIGGER?", minVal > 1<<32)
+	for _, b := range nt.BlockList {
+		Debug("VERIFYING BIG INTS IN", b.Name)
+		for _, r := range b.RecordList {
+			v, ok := r.GetIntVal("time")
+			if int64(v) < minVal || !ok {
+				test.Error("BIG INT UNPACKED INCORRECTLY! VAL:", v, "OK?", ok)
+			}
+
+		}
+		count += b.Info.NumRecords
+	}
+
+	if count != int32(blockCount*sybil.ChunkSize) {
+		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+
+	}
+	sybil.FLAGS.Samples = &sybil.FALSE
+
+}

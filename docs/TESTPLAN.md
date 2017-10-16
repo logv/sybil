@@ -53,7 +53,7 @@ Integration / E2E Tests
 
   * [x] stress test for multiple ingesters / digesters
   * [ ] test blocks are properly skipped when aggregating with int filters
-  * [ ] int64 bit integers stay from ingestion -> query
+  * [x] int64 bit integers stay from ingestion -> query
   * [ ] time queries work: test each bucket looks reasonable
   *  [ ] sets exist and can be queried
   * [ ] different types of columns can be packed and unpacked
