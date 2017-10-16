@@ -50,7 +50,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		// we align the Time Filter to the Time Bucket iff we are doing a time series query
 		if col == *FLAGS.TimeCol && *FLAGS.Time {
 			bucket := int64(*FLAGS.TimeBucket)
-			newVal := int64(val/bucket) * bucket
+			newVal := val / bucket * bucket
 
 			if val != newVal {
 				Debug("ALIGNING TIME FILTER TO BUCKET", val, newVal)
@@ -140,16 +140,16 @@ func (filter IntFilter) Filter(r *Record) bool {
 	field := r.Ints[filter.FieldID]
 	switch filter.Op {
 	case "gt":
-		return int(field) > int(filter.Value)
+		return int(field) > filter.Value
 
 	case "lt":
-		return int(field) < int(filter.Value)
+		return int(field) < filter.Value
 
 	case "eq":
-		return int(field) == int(filter.Value)
+		return int(field) == filter.Value
 
 	case "neq":
-		return int(field) != int(filter.Value)
+		return int(field) != filter.Value
 
 	default:
 

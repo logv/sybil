@@ -44,7 +44,7 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 		h.Outliers = make([]int64, 0)
 		h.Underliers = make([]int64, 0)
 
-		size := int64(max - min)
+		size := max - min
 		h.NumBuckets = buckets
 		h.BucketSize = int(size / int64(buckets))
 
@@ -200,19 +200,19 @@ func (h *BasicHist) GetStdDev() float64 {
 		ratio := float64(count) / float64(h.Count)
 
 		// unbiased variance. probably unstable
-		sumVariance += (float64(delta*delta) * ratio)
+		sumVariance += (delta * delta * ratio)
 	}
 
 	for _, val := range h.Outliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
-		sumVariance += (float64(delta) * ratio)
+		sumVariance += (delta * ratio)
 	}
 
 	for _, val := range h.Underliers {
 		delta := math.Pow(float64(val)-h.Avg, 2)
 		ratio := 1 / float64(h.Count)
-		sumVariance += (float64(delta) * ratio)
+		sumVariance += (delta * ratio)
 	}
 
 	return math.Sqrt(sumVariance)
@@ -228,11 +228,11 @@ func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 	}
 
 	for _, v := range h.Outliers {
-		ret[int64(v)] += 1
+		ret[v] += 1
 	}
 
 	for _, v := range h.Underliers {
-		ret[int64(v)] += 1
+		ret[v] += 1
 	}
 
 	return ret
@@ -246,11 +246,11 @@ func (h *BasicHist) GetBuckets() map[string]int64 {
 	}
 
 	for _, v := range h.Outliers {
-		ret[strconv.FormatInt(int64(v), 10)] += 1
+		ret[strconv.FormatInt(v, 10)] += 1
 	}
 
 	for _, v := range h.Underliers {
-		ret[strconv.FormatInt(int64(v), 10)] += 1
+		ret[strconv.FormatInt(v, 10)] += 1
 	}
 
 	return ret

@@ -32,8 +32,8 @@ type Table struct {
 	joinLookup map[string]*Record
 
 	stringIDMutex *sync.RWMutex
-	recordMutex       *sync.Mutex
-	blockMutex        *sync.Mutex
+	recordMutex   *sync.Mutex
+	blockMutex    *sync.Mutex
 }
 
 var LoadedTables = make(map[string]*Table)
@@ -122,7 +122,7 @@ func (t *Table) getKeyID(name string) int16 {
 	id, ok := t.KeyTable[name]
 	t.stringIDMutex.RUnlock()
 	if ok {
-		return int16(id)
+		return id
 	}
 
 	t.stringIDMutex.Lock()
@@ -135,7 +135,7 @@ func (t *Table) getKeyID(name string) int16 {
 	t.KeyTable[name] = int16(len(t.KeyTable))
 	t.keyStringIDLookup[t.KeyTable[name]] = name
 
-	return int16(t.KeyTable[name])
+	return t.KeyTable[name]
 }
 
 func (t *Table) setKeyType(nameID int16, colType int8) bool {
@@ -185,9 +185,9 @@ func (t *Table) PrintRecord(r *Record) {
 	}
 	for name, vals := range r.SetMap {
 		if r.Populated[name] == SetVal {
-			col := r.block.GetColumnInfo(int16(name))
+			col := r.block.GetColumnInfo(name)
 			for _, val := range vals {
-				Print("  ", name, col.getStringForKey(int(name)), val, col.getStringForVal(int32(val)))
+				Print("  ", name, col.getStringForKey(int(name)), val, col.getStringForVal(val))
 
 			}
 

@@ -103,7 +103,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 
 	// NOW WE COMPRESS ALL THE BLOCK FILES BY ITERATING THROUGH THE DIR AND
 	// DOING SO
-	for blockname, _ := range blocks {
+	for blockname := range blocks {
 		files, _ := ioutil.ReadDir(blockname)
 		Debug("READING BLOCKNAME", blockname)
 		for _, f := range files {

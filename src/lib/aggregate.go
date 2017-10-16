@@ -85,7 +85,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		// FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
 			// returns True if the record matches!
-			ret := querySpec.Filters[j].Filter(r) != true
+			ret := !querySpec.Filters[j].Filter(r)
 			if ret {
 				add = false
 				break
@@ -294,7 +294,7 @@ func CombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 	astart := time.Now()
 	resultSpec := QuerySpec{}
 	resultSpec.Table = querySpec.Table
-	resultSpec.LuaResult = make(LuaTable, 0)
+	resultSpec.LuaResult = make(LuaTable)
 
 	if *FLAGS.LUA {
 		resultSpec.luaInit()
@@ -306,7 +306,7 @@ func CombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 	cumulativeResult := NewResult()
 	cumulativeResult.GroupByKey = "TOTAL"
 	if len(querySpec.Groups) > 1 {
-		for _, _ = range querySpec.Groups[1:] {
+		for range querySpec.Groups[1:] {
 			cumulativeResult.GroupByKey += "\t"
 		}
 	}

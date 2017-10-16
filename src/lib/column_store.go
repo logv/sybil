@@ -45,22 +45,22 @@ type SavedColumnInfo struct {
 
 type SavedIntColumn struct {
 	Name            string
-	DeltaEncodedIDs bool
-	ValueEncoded    bool
-	BucketEncoded   bool
 	Bins            []SavedIntBucket
 	Values          []int64
 	VERSION         int32
+	DeltaEncodedIDs bool
+	ValueEncoded    bool
+	BucketEncoded   bool
 }
 
 type SavedStrColumn struct {
 	Name            string
-	DeltaEncodedIDs bool
-	BucketEncoded   bool
 	Bins            []SavedStrBucket
 	Values          []int32
 	StringTable     []string
 	VERSION         int32
+	DeltaEncodedIDs bool
+	BucketEncoded   bool
 }
 
 type SavedSetColumn struct {

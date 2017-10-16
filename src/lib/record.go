@@ -50,7 +50,7 @@ func (r *Record) GetSetVal(name string) ([]string, bool) {
 
 	if ok {
 		for _, v := range is {
-			val := col.getStringForVal(int32(v))
+			val := col.getStringForVal(v)
 			rets = append(rets, val)
 		}
 	}
@@ -177,7 +177,7 @@ func (r *Record) CopyRecord() *Record {
 		nr.Populated = r.Populated
 	} else {
 		nr.Populated = make([]int8, len(r.Populated))
-		for i, _ := range r.Populated {
+		for i := range r.Populated {
 			nr.Strs[i] = r.Strs[i]
 			nr.Ints[i] = r.Ints[i]
 			nr.Populated[i] = r.Populated[i]

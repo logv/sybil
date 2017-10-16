@@ -161,7 +161,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 			// migrating string definitions from column definitions
 			strVal := tbCol.getStringForVal(int32(bucket))
 			strID := tempCol.getValID(strVal)
-			si := SavedSetBucket{Value: int32(strID), Records: records}
+			si := SavedSetBucket{Value: strID, Records: records}
 			setCol.Bins = append(setCol.Bins, si)
 			for _, r := range records {
 				_, ok := recordToValue[r]
@@ -397,13 +397,13 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 			}
 		}
 		for k, v := range r.SetMap {
-			col := r.block.GetColumnInfo(int16(k))
-			newCol := tb.GetColumnInfo(int16(k))
+			col := r.block.GetColumnInfo(k)
+			newCol := tb.GetColumnInfo(k)
 			if r.Populated[k] == SetVal {
 				for _, iv := range v {
-					vName := col.getStringForVal(int32(iv))
+					vName := col.getStringForVal(iv)
 					vID := newCol.getValID(vName)
-					recordValue(sameSets, int32(i), int16(k), int64(vID))
+					recordValue(sameSets, int32(i), k, int64(vID))
 				}
 			}
 		}

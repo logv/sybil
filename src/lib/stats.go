@@ -72,7 +72,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 			// for calculating ss within groups
 			stdDev := cumulative.StdDev()
 			variance := stdDev * stdDev
-			sumOfSquaresWithin += float64(variance)
+			sumOfSquaresWithin += variance
 
 			// for calculating ss between groups
 			betweenGroups.addWeightedValue(int64(hist.Mean()), hist.TotalCount())

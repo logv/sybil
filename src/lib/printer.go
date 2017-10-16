@@ -30,7 +30,7 @@ func printTimeResults(querySpec *QuerySpec) {
 
 	keys := make([]int, 0)
 
-	for k, _ := range querySpec.TimeResults {
+	for k := range querySpec.TimeResults {
 		keys = append(keys, k)
 	}
 
@@ -300,13 +300,13 @@ func (r *Record) sampleHeader() []string {
 	}
 
 	header := make([]string, 0)
-	for name, _ := range r.Ints {
+	for name := range r.Ints {
 		if r.Populated[name] == IntVal {
 			col := r.block.GetColumnInfo(int16(name))
 			header = append(header, col.getStringForKey(name))
 		}
 	}
-	for name, _ := range r.Strs {
+	for name := range r.Strs {
 		if r.Populated[name] == StrVal {
 			col := r.block.GetColumnInfo(int16(name))
 			header = append(header, col.getStringForKey(name))
@@ -422,7 +422,7 @@ func (t *Table) getColsOfType(wantedType int8) []string {
 	printKeys := make([]string, 0)
 	for name, nameID := range t.KeyTable {
 		colType := t.KeyTypes[nameID]
-		if int8(colType) != wantedType {
+		if colType != wantedType {
 			continue
 		}
 

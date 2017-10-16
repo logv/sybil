@@ -29,7 +29,7 @@ func (tc *TableColumn) getValID(name string) int32 {
 	id, ok := tc.StringTable[name]
 
 	if ok {
-		return int32(id)
+		return id
 	}
 
 	tc.stringIDMutex.Lock()

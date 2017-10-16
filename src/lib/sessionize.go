@@ -158,7 +158,7 @@ func (ss *SessionStats) SummarizeSession(records RecordList) {
 	ss.NumSessions.addValue(int64(1))
 
 	if ss.LastSessionEnd > 0 {
-		ss.SessionDelta.addValue(int64(records[0].Timestamp - ss.LastSessionEnd))
+		ss.SessionDelta.addValue(records[0].Timestamp - ss.LastSessionEnd)
 	}
 
 	for _, r := range records {
@@ -172,7 +172,7 @@ func (ss *SessionStats) SummarizeSession(records RecordList) {
 
 	lastIndex := len(records) - 1
 	delta := records[lastIndex].Timestamp - records[0].Timestamp
-	ss.SessionDuration.addValue(int64(delta))
+	ss.SessionDuration.addValue(delta)
 	ss.LastSessionEnd = records[lastIndex].Timestamp
 
 }
@@ -189,7 +189,7 @@ func (ss *SessionStats) PrintStats(key string) {
 		fmt.Printf("  bounce rate: %v%%\n", bounceRate/10.0)
 	}
 
-	fmt.Printf("  avg events per session: %0.2f\n", float64(ss.NumEvents.Avg))
+	fmt.Printf("  avg events per session: %0.2f\n", ss.NumEvents.Avg)
 	if duration > 0 {
 		fmt.Printf("  avg duration: %d minutes\n", duration/60)
 	}
@@ -371,7 +371,7 @@ func (ss *SessionSpec) Finalize() {
 		duration := as.Stats.Calendar.Max - as.Stats.Calendar.Min
 
 		retention := duration / int64(time.Hour.Seconds()*24)
-		stats.Retention.addValue(int64(retention))
+		stats.Retention.addValue(retention)
 
 	}
 
@@ -508,7 +508,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		}
 	}
 
-	sort.Sort(SortBlocksByTime(blocks))
+	sort.Sort(blocks)
 	Debug("SORTED BLOCKS", len(blocks))
 
 	masterSession := NewSessionSpec()

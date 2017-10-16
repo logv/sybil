@@ -151,7 +151,7 @@ func (h *MultiHist) GetStdDev() float64 {
 		ratio := float64(count) / float64(h.Count)
 
 		// unbiased variance. probably unstable
-		sumVariance += (float64(delta*delta) * ratio)
+		sumVariance += (delta * delta * ratio)
 	}
 
 	return math.Sqrt(sumVariance)

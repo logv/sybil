@@ -86,12 +86,12 @@ func (r Record) toSavedRecord() *SavedRecord {
 
 	for k, v := range r.SetMap {
 		if r.Populated[k] == SetVal {
-			col := r.block.GetColumnInfo(int16(k))
+			col := r.block.GetColumnInfo(k)
 			setVals := make([]string, len(v))
 			for i, val := range v {
-				setVals[i] = col.getStringForVal(int32(val))
+				setVals[i] = col.getStringForVal(val)
 			}
-			s.Sets = append(s.Sets, RowSavedSet{int16(k), setVals})
+			s.Sets = append(s.Sets, RowSavedSet{k, setVals})
 		}
 	}
 

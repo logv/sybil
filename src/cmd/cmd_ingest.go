@@ -240,7 +240,7 @@ func RunIngestCmdLine() {
 		EXCLUDES[v] = true
 	}
 
-	for k, _ := range EXCLUDES {
+	for k := range EXCLUDES {
 		sybil.Debug("EXCLUDING COLUMN", k)
 	}
 
