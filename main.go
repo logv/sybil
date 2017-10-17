@@ -8,22 +8,22 @@ import "os"
 import "log"
 import "sort"
 
-var CMD_FUNCS = make(map[string]func())
-var CMD_KEYS = make([]string, 0)
+var cmdFuncs = make(map[string]func())
+var cmdKeys = make([]string, 0)
 
 func setupCommands() {
-	CMD_FUNCS["ingest"] = cmd.RunIngestCmdLine
-	CMD_FUNCS["digest"] = cmd.RunDigestCmdLine
-	CMD_FUNCS["session"] = cmd.RunSessionizeCmdLine
-	CMD_FUNCS["trim"] = cmd.RunTrimCmdLine
-	CMD_FUNCS["query"] = cmd.RunQueryCmdLine
-	CMD_FUNCS["index"] = cmd.RunIndexCmdLine
-	CMD_FUNCS["rebuild"] = cmd.RunRebuildCmdLine
-	CMD_FUNCS["inspect"] = cmd.RunInspectCmdLine
-	CMD_FUNCS["version"] = cmd.RunVersionCmdLine
+	cmdFuncs["ingest"] = cmd.RunIngestCmdLine
+	cmdFuncs["digest"] = cmd.RunDigestCmdLine
+	cmdFuncs["session"] = cmd.RunSessionizeCmdLine
+	cmdFuncs["trim"] = cmd.RunTrimCmdLine
+	cmdFuncs["query"] = cmd.RunQueryCmdLine
+	cmdFuncs["index"] = cmd.RunIndexCmdLine
+	cmdFuncs["rebuild"] = cmd.RunRebuildCmdLine
+	cmdFuncs["inspect"] = cmd.RunInspectCmdLine
+	cmdFuncs["version"] = cmd.RunVersionCmdLine
 
-	for k, _ := range CMD_FUNCS {
-		CMD_KEYS = append(CMD_KEYS, k)
+	for k := range cmdFuncs {
+		cmdKeys = append(cmdKeys, k)
 	}
 }
 
@@ -77,7 +77,7 @@ Emergency Maintenance Commands:
 `
 
 func printCommandHelp() {
-	sort.Strings(CMD_KEYS)
+	sort.Strings(cmdKeys)
 
 	fmt.Print(USAGE)
 	log.Fatal()
@@ -90,12 +90,12 @@ func main() {
 		printCommandHelp()
 	}
 
-	first_arg := os.Args[1]
+	firstArg := os.Args[1]
 	os.Args = os.Args[1:]
 
 	sybil.Startup()
 
-	handler, ok := CMD_FUNCS[first_arg]
+	handler, ok := cmdFuncs[firstArg]
 	if !ok {
 		printCommandHelp()
 	}

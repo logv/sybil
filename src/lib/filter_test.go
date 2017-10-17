@@ -9,23 +9,23 @@ import "math"
 import "strings"
 
 func TestFilters(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	add_records(func(r *sybil.Record, i int) {
+	blockCount := 3
+	addRecords(func(r *sybil.Record, i int) {
 		age := int64(rand.Intn(20)) + 10
 
-		age_str := strconv.FormatInt(int64(age), 10)
+		ageStr := strconv.FormatInt(int64(age), 10)
 		r.AddIntField("id", int64(i))
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", age_str)
-		r.AddSetField("age_set", []string{age_str})
+		r.AddStrField("ageStr", ageStr)
+		r.AddSetField("ageSet", []string{ageStr})
 
-	}, block_count)
+	}, blockCount)
 
-	save_and_reload_table(test, block_count)
+	saveAndReloadTable(test, blockCount)
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	sybil.DeleteBlocksAfterQuery = false
 
 	testIntEq(test)
 	testIntNeq(test)
@@ -37,12 +37,12 @@ func TestFilters(test *testing.T) {
 	testSetIn(test)
 	testSetNin(test)
 
-	delete_test_db()
+	deleteTestDb()
 
 }
 
 func testIntLt(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -59,7 +59,7 @@ func testIntLt(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if math.Abs(float64(v.Hists["age"].Mean())) > 20 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -68,7 +68,7 @@ func testIntLt(test *testing.T) {
 }
 
 func testIntGt(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
 	filters = append(filters, nt.IntFilter("age", "gt", 20))
 
@@ -85,7 +85,7 @@ func testIntGt(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if math.Abs(float64(v.Hists["age"].Mean())) < 20 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -94,7 +94,7 @@ func testIntGt(test *testing.T) {
 }
 
 func testIntNeq(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
 	filters = append(filters, nt.IntFilter("age", "neq", 20))
 
@@ -118,7 +118,7 @@ func testIntNeq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		Debug("TEST INT NEQ", k, v.Hists["age"].Mean())
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
@@ -128,7 +128,7 @@ func testIntNeq(test *testing.T) {
 }
 
 func testIntEq(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
 	filters = append(filters, nt.IntFilter("age", "eq", 20))
 
@@ -145,7 +145,7 @@ func testIntEq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -154,9 +154,9 @@ func testIntEq(test *testing.T) {
 }
 
 func testStrEq(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "re", "20"))
+	filters = append(filters, nt.StrFilter("ageStr", "re", "20"))
 
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -176,7 +176,7 @@ func testStrEq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -185,9 +185,9 @@ func testStrEq(test *testing.T) {
 }
 
 func testStrNeq(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "nre", "20"))
+	filters = append(filters, nt.StrFilter("ageStr", "nre", "20"))
 
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -204,7 +204,7 @@ func testStrNeq(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -214,9 +214,9 @@ func testStrNeq(test *testing.T) {
 }
 
 func testStrRe(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "re", "^2"))
+	filters = append(filters, nt.StrFilter("ageStr", "re", "^2"))
 
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -236,7 +236,7 @@ func testStrRe(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if v.Hists["age"].Mean()-20 < 0 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -245,9 +245,9 @@ func testStrRe(test *testing.T) {
 }
 
 func testSetIn(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
-	filters = append(filters, nt.SetFilter("age_set", "in", "20"))
+	filters = append(filters, nt.SetFilter("ageSet", "in", "20"))
 
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -268,7 +268,7 @@ func testSetIn(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, sybil.GroupDelimiter, "", 1)
 
 		if v.Hists["age"].Mean()-20 < 0 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
@@ -277,7 +277,7 @@ func testSetIn(test *testing.T) {
 
 	// TODO: MULTIPLE SET VALUE FILTER
 	//	filters = []sybil.Filter{}
-	//	filters = append(filters, nt.SetFilter("age_set", "in", "20,21,22"))
+	//	filters = append(filters, nt.SetFilter("ageSet", "in", "20,21,22"))
 	//	querySpec = sybil.QuerySpec{QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 	//
 	//	if len(querySpec.Results) != 3 {
@@ -287,9 +287,9 @@ func testSetIn(test *testing.T) {
 }
 
 func testSetNin(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := sybil.GetTable(TestTableName)
 	filters := []sybil.Filter{}
-	filters = append(filters, nt.SetFilter("age_set", "nin", "20"))
+	filters = append(filters, nt.SetFilter("ageSet", "nin", "20"))
 
 	aggs := []sybil.Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))

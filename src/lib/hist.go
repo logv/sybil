@@ -1,7 +1,7 @@
 package sybil
 
-var NUM_BUCKETS = 1000
-var DEBUG_OUTLIERS = false
+var NumBuckets = 1000
+var DebugOutliers = false
 
 // histogram types:
 // HDRHist (wrapper around github.com/codahale/hdrhistogram which implements Histogram interface)
@@ -24,9 +24,9 @@ type Histogram interface {
 
 func (t *Table) NewHist(info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.HDR_HIST && ENABLE_HDR {
+	if *FLAGS.HdrHist && EnableHdr {
 		hist = newHDRHist(t, info)
-	} else if *FLAGS.LOG_HIST {
+	} else if *FLAGS.LogHist {
 		hist = t.NewMultiHist(info)
 	} else {
 		hist = t.NewBasicHist(info)

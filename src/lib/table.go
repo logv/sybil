@@ -4,7 +4,7 @@ import "sync"
 import "os"
 import "path"
 
-var ROW_STORE_BLOCK = "ROW_STORE"
+var RowStoreBlock = "RowStore"
 
 type Table struct {
 	Name      string
@@ -25,44 +25,44 @@ type Table struct {
 	// List of new records that haven't been saved to file yet
 	newRecords RecordList
 
-	key_string_id_lookup map[int16]string
-	val_string_id_lookup map[int32]string
+	keyStringIDLookup map[int16]string
+	valStringIDLookup map[int32]string
 
 	// This is used for join tables
-	join_lookup map[string]*Record
+	joinLookup map[string]*Record
 
-	string_id_m *sync.RWMutex
-	record_m    *sync.Mutex
-	block_m     *sync.Mutex
+	stringIDMutex *sync.RWMutex
+	recordMutex   *sync.Mutex
+	blockMutex    *sync.Mutex
 }
 
-var LOADED_TABLES = make(map[string]*Table)
-var CHUNK_SIZE = 1024 * 8 * 8
-var CHUNK_THRESHOLD = CHUNK_SIZE / 8
+var LoadedTables = make(map[string]*Table)
+var ChunkSize = 1024 * 8 * 8
+var ChunkThreshold = ChunkSize / 8
 
-var table_m sync.Mutex
+var tableM sync.Mutex
 
 // This is a singleton constructor for Tables
 func GetTable(name string) *Table {
-	table_m.Lock()
-	defer table_m.Unlock()
+	tableM.Lock()
+	defer tableM.Unlock()
 
-	t, ok := LOADED_TABLES[name]
+	t, ok := LoadedTables[name]
 	if ok {
 		return t
 	}
 
 	t = &Table{Name: name}
-	LOADED_TABLES[name] = t
+	LoadedTables[name] = t
 
-	t.init_data_structures()
+	t.initDataStructures()
 
 	return t
 }
 
-func (t *Table) init_data_structures() {
-	t.key_string_id_lookup = make(map[int16]string)
-	t.val_string_id_lookup = make(map[int32]string)
+func (t *Table) initDataStructures() {
+	t.keyStringIDLookup = make(map[int16]string)
+	t.valStringIDLookup = make(map[int32]string)
 
 	t.KeyTable = make(map[string]int16)
 	t.KeyTypes = make(map[int16]int8)
@@ -78,75 +78,75 @@ func (t *Table) init_data_structures() {
 	t.LastBlock = newTableBlock()
 	t.LastBlock.RecordList = t.newRecords
 
-	t.string_id_m = &sync.RWMutex{}
-	t.record_m = &sync.Mutex{}
-	t.block_m = &sync.Mutex{}
+	t.stringIDMutex = &sync.RWMutex{}
+	t.recordMutex = &sync.Mutex{}
+	t.blockMutex = &sync.Mutex{}
 
 }
 
-func (t *Table) get_string_for_key(id int) string {
-	val, _ := t.key_string_id_lookup[int16(id)]
+func (t *Table) getStringForKey(id int) string {
+	val, _ := t.keyStringIDLookup[int16(id)]
 	return val
 }
 
-func (t *Table) populate_string_id_lookup() {
-	t.string_id_m.Lock()
-	defer t.string_id_m.Unlock()
+func (t *Table) populateStringIDLookup() {
+	t.stringIDMutex.Lock()
+	defer t.stringIDMutex.Unlock()
 
-	t.key_string_id_lookup = make(map[int16]string)
-	t.val_string_id_lookup = make(map[int32]string)
+	t.keyStringIDLookup = make(map[int16]string)
+	t.valStringIDLookup = make(map[int32]string)
 
 	for k, v := range t.KeyTable {
-		t.key_string_id_lookup[v] = k
+		t.keyStringIDLookup[v] = k
 	}
 
 	for _, b := range t.BlockList {
-		if b.columns == nil && b.Name != ROW_STORE_BLOCK {
+		if b.columns == nil && b.Name != RowStoreBlock {
 			Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
-			t.block_m.Lock()
+			t.blockMutex.Lock()
 			delete(t.BlockList, b.Name)
-			t.block_m.Unlock()
+			t.blockMutex.Unlock()
 			continue
 		}
 		for _, c := range b.columns {
 			for k, v := range c.StringTable {
-				c.val_string_id_lookup[v] = k
+				c.valStringIDLookup[v] = k
 			}
 		}
 
 	}
 }
 
-func (t *Table) get_key_id(name string) int16 {
-	t.string_id_m.RLock()
+func (t *Table) getKeyID(name string) int16 {
+	t.stringIDMutex.RLock()
 	id, ok := t.KeyTable[name]
-	t.string_id_m.RUnlock()
+	t.stringIDMutex.RUnlock()
 	if ok {
-		return int16(id)
+		return id
 	}
 
-	t.string_id_m.Lock()
-	defer t.string_id_m.Unlock()
+	t.stringIDMutex.Lock()
+	defer t.stringIDMutex.Unlock()
 	existing, ok := t.KeyTable[name]
 	if ok {
 		return existing
 	}
 
 	t.KeyTable[name] = int16(len(t.KeyTable))
-	t.key_string_id_lookup[t.KeyTable[name]] = name
+	t.keyStringIDLookup[t.KeyTable[name]] = name
 
-	return int16(t.KeyTable[name])
+	return t.KeyTable[name]
 }
 
-func (t *Table) set_key_type(name_id int16, col_type int8) bool {
-	cur_type, ok := t.KeyTypes[name_id]
+func (t *Table) setKeyType(nameID int16, colType int8) bool {
+	curType, ok := t.KeyTypes[nameID]
 	if !ok {
-		t.KeyTypes[name_id] = col_type
+		t.KeyTypes[nameID] = colType
 	} else {
-		if cur_type != col_type {
+		if curType != colType {
 			Debug("TABLE", t.KeyTable)
 			Debug("TYPES", t.KeyTypes)
-			Warn("trying to over-write column type for key ", name_id, t.get_string_for_key(int(name_id)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
+			Warn("trying to over-write column type for key ", nameID, t.getStringForKey(int(nameID)), " OLD TYPE", curType, " NEW TYPE", colType)
 			return false
 		}
 	}
@@ -162,9 +162,9 @@ func (t *Table) NewRecord() *Record {
 	b.table = t
 	r.block = &b
 
-	t.record_m.Lock()
+	t.recordMutex.Lock()
 	t.newRecords = append(t.newRecords, &r)
-	t.record_m.Unlock()
+	t.recordMutex.Unlock()
 	return &r
 }
 
@@ -172,22 +172,22 @@ func (t *Table) PrintRecord(r *Record) {
 	Print("RECORD", r)
 
 	for name, val := range r.Ints {
-		if r.Populated[name] == INT_VAL {
+		if r.Populated[name] == IntVal {
 			col := r.block.GetColumnInfo(int16(name))
-			Print("  ", name, col.get_string_for_key(name), val)
+			Print("  ", name, col.getStringForKey(name), val)
 		}
 	}
 	for name, val := range r.Strs {
-		if r.Populated[name] == STR_VAL {
+		if r.Populated[name] == StrVal {
 			col := r.block.GetColumnInfo(int16(name))
-			Print("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
+			Print("  ", name, col.getStringForKey(name), col.getStringForVal(int32(val)))
 		}
 	}
 	for name, vals := range r.SetMap {
-		if r.Populated[name] == SET_VAL {
-			col := r.block.GetColumnInfo(int16(name))
+		if r.Populated[name] == SetVal {
+			col := r.block.GetColumnInfo(name)
 			for _, val := range vals {
-				Print("  ", name, col.get_string_for_key(int(name)), val, col.get_string_for_val(int32(val)))
+				Print("  ", name, col.getStringForKey(int(name)), val, col.getStringForVal(val))
 
 			}
 
@@ -196,7 +196,7 @@ func (t *Table) PrintRecord(r *Record) {
 }
 
 func (t *Table) MakeDir() {
-	tabledir := path.Join(*FLAGS.DIR, t.Name)
+	tabledir := path.Join(*FLAGS.Dir, t.Name)
 	os.MkdirAll(tabledir, 0755)
 }
 
@@ -207,6 +207,6 @@ func (t *Table) PrintRecords(records RecordList) {
 }
 
 func (t *Table) GetColumnType(v string) int8 {
-	col_id := t.get_key_id(v)
-	return t.KeyTypes[col_id]
+	colID := t.getKeyID(v)
+	return t.KeyTypes[colID]
 }

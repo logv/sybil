@@ -3,18 +3,18 @@ package sybil
 var VERSION_STRING = "0.2.0"
 
 func GetVersionInfo() map[string]interface{} {
-	version_info := make(map[string]interface{})
+	versionInfo := make(map[string]interface{})
 
-	version_info["version"] = VERSION_STRING
-	version_info["field_separator"] = true
-	version_info["log_hist"] = true
-	version_info["query_cache"] = true
+	versionInfo["version"] = VERSION_STRING
+	versionInfo["field_separator"] = true
+	versionInfo["log_hist"] = true
+	versionInfo["query_cache"] = true
 
-	if ENABLE_HDR {
-		version_info["hdr_hist"] = true
+	if EnableHdr {
+		versionInfo["hdr_hist"] = true
 
 	}
 
-	return version_info
+	return versionInfo
 
 }

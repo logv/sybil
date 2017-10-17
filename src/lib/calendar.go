@@ -31,7 +31,7 @@ func NewCalendar() *Calendar {
 	return &c
 }
 
-func punch_calendar(am *ActivityMap, timestamp int) {
+func punchCalendar(am *ActivityMap, timestamp int) {
 	is, ok := (*am)[timestamp]
 
 	if !ok {
@@ -40,7 +40,7 @@ func punch_calendar(am *ActivityMap, timestamp int) {
 	}
 }
 
-func copy_calendar(am1, am2 ActivityMap) {
+func copyCalendar(am1, am2 ActivityMap) {
 	for k, v := range am2 {
 		is, ok := am1[k]
 		if ok {
@@ -52,10 +52,10 @@ func copy_calendar(am1, am2 ActivityMap) {
 }
 
 func (c *Calendar) AddActivity(timestamp int) {
-	if *FLAGS.RETENTION != false {
-		punch_calendar(&c.Daily, timestamp/(int(time.Hour.Seconds())*24))
-		punch_calendar(&c.Weekly, timestamp/(int(time.Hour.Seconds())*24*7))
-		punch_calendar(&c.Monthly, timestamp/(int(time.Hour.Seconds())*24*7*30))
+	if *FLAGS.Retention != false {
+		punchCalendar(&c.Daily, timestamp/(int(time.Hour.Seconds())*24))
+		punchCalendar(&c.Weekly, timestamp/(int(time.Hour.Seconds())*24*7))
+		punchCalendar(&c.Monthly, timestamp/(int(time.Hour.Seconds())*24*7*30))
 	}
 
 	c.Min = int64(math.Min(float64(timestamp), float64(c.Min)))
@@ -63,9 +63,9 @@ func (c *Calendar) AddActivity(timestamp int) {
 }
 
 func (c *Calendar) CombineCalendar(cc *Calendar) {
-	copy_calendar(c.Daily, cc.Daily)
-	copy_calendar(c.Weekly, cc.Weekly)
-	copy_calendar(c.Monthly, cc.Monthly)
+	copyCalendar(c.Daily, cc.Daily)
+	copyCalendar(c.Weekly, cc.Weekly)
+	copyCalendar(c.Monthly, cc.Monthly)
 
 	c.Min = int64(math.Min(float64(cc.Min), float64(c.Min)))
 	c.Max = int64(math.Max(float64(cc.Max), float64(c.Max)))

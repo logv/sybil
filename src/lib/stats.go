@@ -21,7 +21,7 @@ import "math"
 // variance against the overall average.
 func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 	iccs := make(map[string]float64)
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(*FLAGS.Table)
 	for _, agg := range querySpec.Aggregations {
 		cumulative, ok := querySpec.Cumulative.Hists[agg.Name]
 		if !ok {
@@ -29,13 +29,13 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		}
 
 		// start by assuming the overall population mean and variance are already calculated
-		std_dev := cumulative.StdDev()
-		total_variance := std_dev * std_dev
+		stdDev := cumulative.StdDev()
+		totalVariance := stdDev * stdDev
 
 		// find out the min and max avg of each group by row so we can use a
 		// Histogram for calculating variance between groups
-		min_avg := total_variance
-		max_avg := 0.0
+		minAvg := totalVariance
+		maxAvg := 0.0
 		for _, res := range querySpec.Results {
 			hist, ok := res.Hists[agg.Name]
 			if !ok {
@@ -43,8 +43,8 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 				continue
 			}
 
-			min_avg = math.Min(hist.Mean(), min_avg)
-			max_avg = math.Max(hist.Mean(), max_avg)
+			minAvg = math.Min(hist.Mean(), minAvg)
+			maxAvg = math.Max(hist.Mean(), maxAvg)
 		}
 
 		// CALCULATE THE VARIANCE BETWEEN GROUPS AND WITHIN GROUPS
@@ -56,13 +56,13 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		// each group's average into the histogram (+ it's count as a weight) and
 		// then take the variance of that
 		info := IntInfo{}
-		info.Min = int64(min_avg)
-		info.Max = int64(max_avg)
+		info.Min = int64(minAvg)
+		info.Max = int64(maxAvg)
 
-		between_groups := t.NewBasicHist(&info)
-		between_groups.TrackPercentiles()
+		betweenGroups := t.NewBasicHist(&info)
+		betweenGroups.TrackPercentiles()
 
-		sum_of_squares_within := float64(0.0)
+		sumOfSquaresWithin := float64(0.0)
 		for _, res := range querySpec.Results {
 			hist, ok := res.Hists[agg.Name]
 			if !ok {
@@ -70,23 +70,23 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 			}
 
 			// for calculating ss within groups
-			std_dev := cumulative.StdDev()
-			variance := std_dev * std_dev
-			sum_of_squares_within += float64(variance)
+			stdDev := cumulative.StdDev()
+			variance := stdDev * stdDev
+			sumOfSquaresWithin += variance
 
 			// for calculating ss between groups
-			between_groups.addWeightedValue(int64(hist.Mean()), hist.TotalCount())
+			betweenGroups.addWeightedValue(int64(hist.Mean()), hist.TotalCount())
 		}
 
 		icc := 1.0
 		K := len(querySpec.Results)
 		if K > 1 {
-			mean_between_variance := between_groups.GetVariance() / float64(K-1)
+			meanBetweenVariance := betweenGroups.GetVariance() / float64(K-1)
 
-			ss_within_count := float64(cumulative.TotalCount() - int64(K))
-			mean_within_variance := sum_of_squares_within / ss_within_count
+			ssWithinCount := float64(cumulative.TotalCount() - int64(K))
+			meanWithinVariance := sumOfSquaresWithin / ssWithinCount
 
-			icc = (mean_between_variance) / (mean_between_variance + mean_within_variance)
+			icc = (meanBetweenVariance) / (meanBetweenVariance + meanWithinVariance)
 
 		}
 

@@ -7,7 +7,7 @@ import "os"
 // extracted from and influenced by
 // https://groups.google.com/forum/#!topic/golang-nuts/ct99dtK2Jo4
 // use env variable DEBUG=1 to turn on debug output
-var ENV_FLAG = os.Getenv("DEBUG")
+var EnvFlag = os.Getenv("DEBUG")
 
 func Print(args ...interface{}) {
 	fmt.Println(args...)
@@ -18,7 +18,7 @@ func Warn(args ...interface{}) {
 }
 
 func Debug(args ...interface{}) {
-	if *FLAGS.DEBUG || ENV_FLAG != "" {
+	if *FLAGS.Debug || EnvFlag != "" {
 		log.Println(args...)
 	}
 }

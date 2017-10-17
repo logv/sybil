@@ -1,6 +1,6 @@
-package sybil_cmd
+package sybilCmd
 
-var FALSE = false
-var TRUE = true
+var falseFlag = false
+var trueFlag = true
 
-var TEST_MODE = false
+var TestMode = false

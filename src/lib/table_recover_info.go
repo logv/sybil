@@ -43,39 +43,39 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 		fname := f.Name()
 		fsize := f.Size()
 		size += fsize
-		col_name := fname
-		col_type := _NO_VAL
+		colName := fname
+		colType := _NoVal
 
-		col_name = strings.TrimRight(col_name, ".gz")
-		col_name = strings.TrimRight(col_name, ".db")
+		colName = strings.TrimRight(colName, ".gz")
+		colName = strings.TrimRight(colName, ".db")
 
 		switch {
-		case strings.HasPrefix(fname, "str"):
-			col_name = strings.Replace(col_name, "str_", "", 1)
-			col_type = STR_VAL
-		case strings.HasPrefix(col_name, "set"):
-			col_name = strings.Replace(col_name, "set_", "", 1)
-			col_type = SET_VAL
-		case strings.HasPrefix(col_name, "int"):
-			col_name = strings.Replace(col_name, "int_", "", 1)
-			col_type = INT_VAL
+		case strings.HasPrefix(fname, "str_"):
+			colName = strings.Replace(colName, "str_", "", 1)
+			colType = StrVal
+		case strings.HasPrefix(colName, "set_"):
+			colName = strings.Replace(colName, "set_", "", 1)
+			colType = SetVal
+		case strings.HasPrefix(colName, "int_"):
+			colName = strings.Replace(colName, "int_", "", 1)
+			colType = IntVal
 
-			col_info := info.IntInfoMap[col_name]
-			col_id := t.get_key_id(col_name)
-			int_info, ok := t.IntInfo[col_id]
+			colInfo := info.IntInfoMap[colName]
+			colID := t.getKeyID(colName)
+			intInfo, ok := t.IntInfo[colID]
 			if !ok {
-				t.IntInfo[col_id] = col_info
+				t.IntInfo[colID] = colInfo
 			} else {
-				if col_info.Min < int_info.Min {
-					int_info.Min = col_info.Min
+				if colInfo.Min < intInfo.Min {
+					intInfo.Min = colInfo.Min
 				}
 			}
 		}
 
-		if col_name != "" {
-			col_id := t.get_key_id(col_name)
-			t.set_key_type(col_id, int8(col_type))
-			columns[col_name] = col_type
+		if colName != "" {
+			colID := t.getKeyID(colName)
+			t.setKeyType(colID, int8(colType))
+			columns[colName] = colType
 		}
 
 	}
@@ -90,27 +90,27 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 // I think I go through each block and load the block, verifying the different
 // column types
 func (t *Table) DeduceTableInfoFromBlocks() {
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(*FLAGS.Dir, t.Name))
 
 	var wg sync.WaitGroup
-	t.init_data_structures()
+	t.initDataStructures()
 
-	saved_table := Table{Name: t.Name}
-	saved_table.init_data_structures()
+	savedTable := Table{Name: t.Name}
+	savedTable.initDataStructures()
 
-	this_block := 0
+	thisBlock := 0
 	m := &sync.Mutex{}
 
-	type_counts := make(map[string]map[int]int)
+	typeCounts := make(map[string]map[int]int)
 
-	broken_mutex := sync.Mutex{}
-	broken_blocks := make([]string, 0)
+	brokenMutex := sync.Mutex{}
+	brokenBlocks := make([]string, 0)
 	for f := range files {
 
 		v := files[f]
-		if v.IsDir() && file_looks_like_block(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
-			this_block++
+		if v.IsDir() && fileLooksLikeBlock(v) {
+			filename := path.Join(*FLAGS.Dir, t.Name, v.Name())
+			thisBlock++
 
 			wg.Add(1)
 			go func() {
@@ -118,26 +118,26 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 
 				info := t.ReadBlockInfoFromDir(filename)
 				if info == nil {
-					broken_mutex.Lock()
-					broken_blocks = append(broken_blocks, filename)
-					broken_mutex.Unlock()
+					brokenMutex.Lock()
+					brokenBlocks = append(brokenBlocks, filename)
+					brokenMutex.Unlock()
 					return
 				}
 
 				m.Lock()
 				for col := range info.IntInfoMap {
-					_, ok := type_counts[col]
+					_, ok := typeCounts[col]
 					if !ok {
-						type_counts[col] = make(map[int]int)
+						typeCounts[col] = make(map[int]int)
 					}
-					type_counts[col][INT_VAL]++
+					typeCounts[col][IntVal]++
 				}
 				for col := range info.StrInfoMap {
-					_, ok := type_counts[col]
+					_, ok := typeCounts[col]
 					if !ok {
-						type_counts[col] = make(map[int]int)
+						typeCounts[col] = make(map[int]int)
 					}
-					type_counts[col][STR_VAL]++
+					typeCounts[col][StrVal]++
 				}
 				m.Unlock()
 
@@ -148,7 +148,7 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 	wg.Wait()
 
 	// TODO: verify that the KEY TABLE and KEY TYPES
-	Debug("TYPE COUNTS", this_block, type_counts)
+	Debug("TYPE COUNTS", thisBlock, typeCounts)
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 

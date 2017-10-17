@@ -9,41 +9,41 @@ type TableColumn struct {
 
 	block *TableBlock
 
-	string_id_m          *sync.Mutex
-	val_string_id_lookup map[int32]string
+	stringIDMutex     *sync.Mutex
+	valStringIDLookup map[int32]string
 }
 
 func (tb *TableBlock) newTableColumn() *TableColumn {
 	tc := TableColumn{}
 	tc.StringTable = make(map[string]int32)
-	tc.val_string_id_lookup = make(map[int32]string)
-	tc.string_id_m = &sync.Mutex{}
+	tc.valStringIDLookup = make(map[int32]string)
+	tc.stringIDMutex = &sync.Mutex{}
 	tc.block = tb
 	tc.RCache = make(map[int]bool)
 
 	return &tc
 }
 
-func (tc *TableColumn) get_val_id(name string) int32 {
+func (tc *TableColumn) getValID(name string) int32 {
 
 	id, ok := tc.StringTable[name]
 
 	if ok {
-		return int32(id)
+		return id
 	}
 
-	tc.string_id_m.Lock()
+	tc.stringIDMutex.Lock()
 	tc.StringTable[name] = int32(len(tc.StringTable))
-	tc.val_string_id_lookup[tc.StringTable[name]] = name
-	tc.string_id_m.Unlock()
+	tc.valStringIDLookup[tc.StringTable[name]] = name
+	tc.stringIDMutex.Unlock()
 	return tc.StringTable[name]
 }
 
-func (tc *TableColumn) get_string_for_val(id int32) string {
-	val, _ := tc.val_string_id_lookup[id]
+func (tc *TableColumn) getStringForVal(id int32) string {
+	val, _ := tc.valStringIDLookup[id]
 	return val
 }
 
-func (tc *TableColumn) get_string_for_key(id int) string {
-	return tc.block.get_string_for_key(int16(id))
+func (tc *TableColumn) getStringForKey(id int) string {
+	return tc.block.getStringForKey(int16(id))
 }

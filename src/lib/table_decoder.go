@@ -42,7 +42,7 @@ func getCompressedDecoder(filename string) FileDecoder {
 
 func GetFileDecoder(filename string) *FileDecoder {
 	// if the file ends with GZ ext, we use compressed decoder
-	if strings.HasSuffix(filename, GZIP_EXT) {
+	if strings.HasSuffix(filename, GzipExt) {
 		dec := getCompressedDecoder(filename)
 		return &dec
 	}
@@ -50,7 +50,7 @@ func GetFileDecoder(filename string) *FileDecoder {
 	file, err := os.Open(filename)
 	// if we try to open the file and its missing, maybe there is a .gz version of it
 	if err != nil {
-		zfilename := fmt.Sprintf("%s%s", filename, GZIP_EXT)
+		zfilename := fmt.Sprintf("%s%s", filename, GzipExt)
 		_, err = os.Open(zfilename)
 
 		// if we can open this file, we return compressed file decoder

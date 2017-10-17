@@ -9,17 +9,17 @@ import "math"
 
 import "encoding/binary"
 
-var INTERNAL_RESULT_LIMIT = 100000
-var GROUP_BY_WIDTH = 8 // bytes
+var InternalResultLimit = 100000
+var GroupByWidth = 8 // bytes
 
 const (
-	NO_OP       = iota
-	OP_AVG      = iota
-	OP_HIST     = iota
-	OP_DISTINCT = iota
+	NoOp       = iota
+	OpAvg      = iota
+	OpHist     = iota
+	OpDistinct = iota
 )
 
-var GROUP_DELIMITER = "\t"
+var GroupDelimiter = "\t"
 
 type SortResultsByCol struct {
 	Results []*Result
@@ -32,14 +32,14 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
-	if a.Col == OPTS.SORT_COUNT {
+	if a.Col == OPTS.SortCount {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 
 		return t1 > t2
 	}
 
-	if *FLAGS.OP == "hist" {
+	if *FLAGS.Op == "hist" {
 		t1 := a.Results[i].Hists[a.Col].Mean()
 		t2 := a.Results[j].Hists[a.Col].Mean()
 		return t1 > t2
@@ -53,39 +53,39 @@ func (a SortResultsByCol) Less(i, j int) bool {
 
 func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	var ok bool
-	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
+	var binarybuffer []byte = make([]byte, GroupByWidth*len(querySpec.Groups))
 
-	bs := make([]byte, GROUP_BY_WIDTH)
-	zero := make([]byte, GROUP_BY_WIDTH)
+	bs := make([]byte, GroupByWidth)
+	zero := make([]byte, GroupByWidth)
 	records := *recordsPtr
 
 	var weight = int64(1)
 
-	matched_records := 0
-	if HOLD_MATCHES {
+	matchedRecords := 0
+	if HoldMatches {
 		querySpec.Matched = make(RecordList, 0)
 	}
 
-	var result_map ResultMap
+	var resultMap ResultMap
 	length := len(querySpec.Table.KeyTable)
 	columns := make([]*TableColumn, length)
 
 	if querySpec.TimeBucket <= 0 {
-		result_map = querySpec.Results
+		resultMap = querySpec.Results
 	}
 
 	for i := 0; i < len(records); i++ {
 		add := true
 		r := records[i]
 
-		if OPTS.WEIGHT_COL && r.Populated[OPTS.WEIGHT_COL_ID] == INT_VAL {
-			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
+		if OPTS.WeightCol && r.Populated[OPTS.WeightColID] == IntVal {
+			weight = int64(r.Ints[OPTS.WeightColID])
 		}
 
 		// FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
 			// returns True if the record matches!
-			ret := querySpec.Filters[j].Filter(r) != true
+			ret := !querySpec.Filters[j].Filter(r)
 			if ret {
 				add = false
 				break
@@ -96,8 +96,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			continue
 		}
 
-		matched_records++
-		if HOLD_MATCHES {
+		matchedRecords++
+		if HoldMatches {
 			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
@@ -108,89 +108,89 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		for i, g := range querySpec.Groups {
 			copy(bs, zero)
 
-			if columns[g.name_id] == nil && r.Populated[g.name_id] != _NO_VAL {
-				columns[g.name_id] = r.block.GetColumnInfo(g.name_id)
-				columns[g.name_id].Type = r.Populated[g.name_id]
+			if columns[g.nameID] == nil && r.Populated[g.nameID] != _NoVal {
+				columns[g.nameID] = r.block.GetColumnInfo(g.nameID)
+				columns[g.nameID].Type = r.Populated[g.nameID]
 			}
 
-			switch r.Populated[g.name_id] {
-			case INT_VAL:
-				binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.name_id]))
-			case STR_VAL:
-				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.name_id]))
-			case _NO_VAL:
+			switch r.Populated[g.nameID] {
+			case IntVal:
+				binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.nameID]))
+			case StrVal:
+				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.nameID]))
+			case _NoVal:
 				binary.LittleEndian.PutUint64(bs, math.MaxUint64)
 			}
 
-			copy(binarybuffer[i*GROUP_BY_WIDTH:], bs)
+			copy(binarybuffer[i*GroupByWidth:], bs)
 		}
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			if len(r.Populated) <= int(OPTS.TIME_COL_ID) {
+			if len(r.Populated) <= int(OPTS.TimeColID) {
 				continue
 			}
 
-			if r.Populated[OPTS.TIME_COL_ID] != INT_VAL {
+			if r.Populated[OPTS.TimeColID] != IntVal {
 				continue
 			}
-			val := int64(r.Ints[OPTS.TIME_COL_ID])
+			val := int64(r.Ints[OPTS.TimeColID])
 
-			big_record, b_ok := querySpec.Results[string(binarybuffer)]
-			if !b_ok {
-				if len(querySpec.Results) < INTERNAL_RESULT_LIMIT {
-					big_record = NewResult()
-					big_record.BinaryByKey = string(binarybuffer)
-					querySpec.Results[string(binarybuffer)] = big_record
-					b_ok = true
+			bigRecord, bOk := querySpec.Results[string(binarybuffer)]
+			if !bOk {
+				if len(querySpec.Results) < InternalResultLimit {
+					bigRecord = NewResult()
+					bigRecord.BinaryByKey = string(binarybuffer)
+					querySpec.Results[string(binarybuffer)] = bigRecord
+					bOk = true
 				}
 			}
 
-			if b_ok {
-				big_record.Samples++
-				big_record.Count += weight
+			if bOk {
+				bigRecord.Samples++
+				bigRecord.Count += weight
 			}
 
 			val = int64(int(val) / querySpec.TimeBucket * querySpec.TimeBucket)
-			result_map, ok = querySpec.TimeResults[int(val)]
+			resultMap, ok = querySpec.TimeResults[int(val)]
 
 			if !ok {
 				// TODO: this make call is kind of slow...
-				result_map = make(ResultMap)
-				querySpec.TimeResults[int(val)] = result_map
+				resultMap = make(ResultMap)
+				querySpec.TimeResults[int(val)] = resultMap
 			}
 
 		}
 
-		added_record, ok := result_map[string(binarybuffer)]
+		addedRecord, ok := resultMap[string(binarybuffer)]
 
 		// BUILD GROUPING RECORD
 		if !ok {
 			// TODO: take into account whether we are doint time series or not...
-			if len(result_map) >= INTERNAL_RESULT_LIMIT {
+			if len(resultMap) >= InternalResultLimit {
 				continue
 			}
 
-			added_record = NewResult()
-			added_record.BinaryByKey = string(binarybuffer)
+			addedRecord = NewResult()
+			addedRecord.BinaryByKey = string(binarybuffer)
 
-			result_map[string(binarybuffer)] = added_record
+			resultMap[string(binarybuffer)] = addedRecord
 		}
 
-		added_record.Samples++
-		added_record.Count += weight
+		addedRecord.Samples++
+		addedRecord.Count += weight
 
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 		for _, a := range querySpec.Aggregations {
-			switch r.Populated[a.name_id] {
-			case INT_VAL:
-				val := int64(r.Ints[a.name_id])
+			switch r.Populated[a.nameID] {
+			case IntVal:
+				val := int64(r.Ints[a.nameID])
 
-				hist, ok := added_record.Hists[a.Name]
+				hist, ok := addedRecord.Hists[a.Name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
-					added_record.Hists[a.Name] = hist
+					hist = r.block.table.NewHist(r.block.table.getIntInfo(a.nameID))
+					addedRecord.Hists[a.Name] = hist
 				}
 
 				hist.RecordValues(val, weight)
@@ -203,14 +203,14 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	// Now to unpack the byte buffers we oh so stupidly used in the group by...
 
 	if len(querySpec.TimeResults) > 0 {
-		for k, result_map := range querySpec.TimeResults {
-			querySpec.TimeResults[k] = *translate_group_by(result_map, querySpec.Groups, columns)
+		for k, resultMap := range querySpec.TimeResults {
+			querySpec.TimeResults[k] = *translateGroupBy(resultMap, querySpec.Groups, columns)
 		}
 
 	}
 
 	if len(querySpec.Results) > 0 {
-		querySpec.Results = *translate_group_by(querySpec.Results, querySpec.Groups, columns)
+		querySpec.Results = *translateGroupBy(querySpec.Results, querySpec.Groups, columns)
 	}
 
 	if *FLAGS.LUA {
@@ -218,11 +218,11 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		querySpec.luaMap(&querySpec.Matched)
 	}
 
-	return matched_records
+	return matchedRecords
 
 }
 
-func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableColumn) *ResultMap {
+func translateGroupBy(Results ResultMap, Groups []Grouping, columns []*TableColumn) *ResultMap {
 
 	var buffer bytes.Buffer
 
@@ -235,25 +235,25 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 			buffer.WriteString("total")
 		}
 		for i, g := range Groups {
-			bs = []byte(r.BinaryByKey[i*GROUP_BY_WIDTH : (i+1)*GROUP_BY_WIDTH])
+			bs = []byte(r.BinaryByKey[i*GroupByWidth : (i+1)*GroupByWidth])
 
-			col := columns[g.name_id]
+			col := columns[g.nameID]
 
 			if col == nil {
-				buffer.WriteString(GROUP_DELIMITER)
+				buffer.WriteString(GroupDelimiter)
 				continue
 			}
 
 			val := binary.LittleEndian.Uint64(bs)
 			switch col.Type {
-			case INT_VAL:
+			case IntVal:
 				buffer.WriteString(strconv.FormatInt(int64(val), 10))
-			case STR_VAL:
-				buffer.WriteString(col.get_string_for_val(int32(val)))
+			case StrVal:
+				buffer.WriteString(col.getStringForVal(int32(val)))
 
 			}
 
-			buffer.WriteString(GROUP_DELIMITER)
+			buffer.WriteString(GroupDelimiter)
 
 		}
 
@@ -276,10 +276,10 @@ func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
 	return &blockQuery
 }
 
-func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
+func CombineMatches(blockSpecs map[string]*QuerySpec) RecordList {
 	start := time.Now()
 	matched := make(RecordList, 0)
-	for _, spec := range block_specs {
+	for _, spec := range blockSpecs {
 		matched = append(matched, spec.Matched...)
 	}
 	end := time.Now()
@@ -289,44 +289,44 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 
 }
 
-func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
+func CombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
 
 	astart := time.Now()
 	resultSpec := QuerySpec{}
 	resultSpec.Table = querySpec.Table
-	resultSpec.LuaResult = make(LuaTable, 0)
+	resultSpec.LuaResult = make(LuaTable)
 
 	if *FLAGS.LUA {
 		resultSpec.luaInit()
 	}
 
-	master_result := make(ResultMap)
-	master_time_result := make(map[int]ResultMap)
+	masterResult := make(ResultMap)
+	masterTimeResult := make(map[int]ResultMap)
 
-	cumulative_result := NewResult()
-	cumulative_result.GroupByKey = "TOTAL"
+	cumulativeResult := NewResult()
+	cumulativeResult.GroupByKey = "TOTAL"
 	if len(querySpec.Groups) > 1 {
-		for _, _ = range querySpec.Groups[1:] {
-			cumulative_result.GroupByKey += "\t"
+		for range querySpec.Groups[1:] {
+			cumulativeResult.GroupByKey += "\t"
 		}
 	}
 
-	for _, spec := range block_specs {
-		master_result.Combine(&spec.Results)
+	for _, spec := range blockSpecs {
+		masterResult.Combine(&spec.Results)
 
 		if *FLAGS.LUA {
 			resultSpec.luaCombine(spec)
 		}
 
 		for _, result := range spec.Results {
-			cumulative_result.Combine(result)
+			cumulativeResult.Combine(result)
 		}
 
 		for i, v := range spec.TimeResults {
-			mval, ok := master_time_result[i]
+			mval, ok := masterTimeResult[i]
 
 			if !ok {
-				master_time_result[i] = v
+				masterTimeResult[i] = v
 			} else {
 				for k, r := range v {
 					mh, ok := mval[k]
@@ -340,17 +340,17 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 		}
 	}
 
-	resultSpec.Cumulative = cumulative_result
+	resultSpec.Cumulative = cumulativeResult
 	resultSpec.TimeBucket = querySpec.TimeBucket
-	resultSpec.TimeResults = master_time_result
-	resultSpec.Results = master_result
+	resultSpec.TimeResults = masterTimeResult
+	resultSpec.Results = masterResult
 
 	if *FLAGS.LUA {
 		resultSpec.luaFinalize()
 	}
 
 	aend := time.Now()
-	Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
+	Debug("AGGREGATING", len(blockSpecs), "BLOCK RESULTS TOOK", aend.Sub(astart))
 
 	return &resultSpec
 }
@@ -370,12 +370,12 @@ func SortResults(querySpec *QuerySpec) {
 		sort.Sort(sorter)
 
 		end := time.Now()
-		if DEBUG_TIMING {
+		if DebugTiming {
 			Debug("SORTING TOOK", end.Sub(start))
 		}
 
-		if len(sorter.Results) > *FLAGS.LIMIT {
-			sorter.Results = sorter.Results[:*FLAGS.LIMIT]
+		if len(sorter.Results) > *FLAGS.Limit {
+			sorter.Results = sorter.Results[:*FLAGS.Limit]
 		}
 
 		querySpec.Sorted = sorter.Results
@@ -384,47 +384,47 @@ func SortResults(querySpec *QuerySpec) {
 }
 
 // OLD SEARCHING FUNCTIONS BELOW HERE
-func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[string]*QuerySpec {
+func SearchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[string]*QuerySpec {
 	var wg sync.WaitGroup
 	// Each block gets its own querySpec (for locking and combining purposes)
 	// after all queries finish executing, the specs are combined
-	block_specs := make(map[string]*QuerySpec, len(block_list))
+	blockSpecs := make(map[string]*QuerySpec, len(blockList))
 
 	// TODO: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
 	// That would mean pushing the call to 'FilterAndAggRecords' to the loading area
-	spec_lock := sync.Mutex{}
-	for _, block := range block_list {
+	specLock := sync.Mutex{}
+	for _, block := range blockList {
 		wg.Add(1)
-		this_block := block
+		thisBlock := block
 		go func() {
 			defer wg.Done()
 
 			blockQuery := CopyQuerySpec(querySpec)
 
-			FilterAndAggRecords(blockQuery, &this_block.RecordList)
+			FilterAndAggRecords(blockQuery, &thisBlock.RecordList)
 
-			spec_lock.Lock()
-			block_specs[this_block.Name] = blockQuery
-			spec_lock.Unlock()
+			specLock.Lock()
+			blockSpecs[thisBlock.Name] = blockQuery
+			specLock.Unlock()
 
 		}()
 	}
 
 	wg.Wait()
 
-	return block_specs
+	return blockSpecs
 }
 
 func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	start := time.Now()
 
 	querySpec.Table = t
-	block_specs := SearchBlocks(querySpec, t.BlockList)
+	blockSpecs := SearchBlocks(querySpec, t.BlockList)
 	querySpec.ResetResults()
 
 	// COMBINE THE PER BLOCK RESULTS
-	resultSpec := CombineResults(querySpec, block_specs)
+	resultSpec := CombineResults(querySpec, blockSpecs)
 
 	aend := time.Now()
 	Debug("AGGREGATING TOOK", aend.Sub(start))
@@ -433,8 +433,8 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	querySpec.TimeResults = resultSpec.TimeResults
 
 	// Aggregating Matched Records
-	matched := CombineMatches(block_specs)
-	if HOLD_MATCHES {
+	matched := CombineMatches(blockSpecs)
+	if HoldMatches {
 		querySpec.Matched = matched
 	}
 

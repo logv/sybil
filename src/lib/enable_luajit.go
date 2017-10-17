@@ -72,7 +72,7 @@ end
 var SRC = ` `
 
 func initLua() {
-	ENABLE_LUA = true
+	EnableLua = true
 }
 
 var LUA_BLOCK_ID = 0
@@ -81,7 +81,7 @@ var LUA_LOCK = sync.Mutex{}
 
 //export go_get_int
 func go_get_int(block_id, record_id, col_id int) int {
-	if LUA_BLOCKS[block_id-1].Matched[record_id-1].Populated[col_id] == INT_VAL {
+	if LUA_BLOCKS[block_id-1].Matched[record_id-1].Populated[col_id] == IntVal {
 		return int(LUA_BLOCKS[block_id-1].Matched[record_id-1].Ints[col_id])
 	}
 
@@ -90,7 +90,7 @@ func go_get_int(block_id, record_id, col_id int) int {
 
 //export go_get_str_id
 func go_get_str_id(block_id, record_id int, col_id int) int {
-	if LUA_BLOCKS[block_id-1].Matched[record_id-1].Populated[col_id] == STR_VAL {
+	if LUA_BLOCKS[block_id-1].Matched[record_id-1].Populated[col_id] == StrVal {
 		return int(LUA_BLOCKS[block_id-1].Matched[record_id-1].Strs[col_id])
 
 	}
@@ -102,7 +102,7 @@ func go_get_str_id(block_id, record_id int, col_id int) int {
 // TODO: this should be cached so we don't keep adding new memory
 func go_get_str_val(block_id, str_id int, col_id int) *C.char {
 	col := LUA_BLOCKS[block_id-1].Matched[0].block.GetColumnInfo(int16(col_id))
-	val := col.get_string_for_val(int32(str_id))
+	val := col.getStringForVal(int32(str_id))
 	return C.CString(val)
 
 }
@@ -113,8 +113,8 @@ func SetLuaScript(filename string) {
 		Error("Couldn't open Lua script", filename, err)
 	}
 
-	FLAGS.LUA = &TRUE
-	HOLD_MATCHES = true
+	FLAGS.LUA = &trueFlag
+	HoldMatches = true
 	SRC = string(dat)
 }
 
@@ -222,7 +222,7 @@ func (qs *QuerySpec) luaInit() {
 	C.lua_setfield(state, C.LUA_GLOBALSINDEX, C.CString("block_id"))
 
 	col_mapping := make(LuaTable, 0)
-	for id, name := range qs.Table.key_string_id_lookup {
+	for id, name := range qs.Table.keyStringIDLookup {
 		col_mapping[name] = int(id)
 	}
 	setLuaTable(state, col_mapping)
