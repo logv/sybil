@@ -1,13 +1,16 @@
 package sybil
 
-import "time"
-import "bytes"
-import "sort"
-import "strconv"
-import "sync"
-import "math"
+import (
+	"bytes"
+	"encoding/binary"
+	"math"
+	"sort"
+	"strconv"
+	"sync"
+	"time"
 
-import "encoding/binary"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
@@ -32,14 +35,14 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
-	if a.Col == OPTS.SORT_COUNT {
+	if a.Col == common.OPTS.SORT_COUNT {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 
 		return t1 > t2
 	}
 
-	if *FLAGS.OP == "hist" {
+	if *common.FLAGS.OP == "hist" {
 		t1 := a.Results[i].Hists[a.Col].Mean()
 		t2 := a.Results[j].Hists[a.Col].Mean()
 		return t1 > t2
@@ -78,8 +81,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		add := true
 		r := records[i]
 
-		if OPTS.WEIGHT_COL && r.Populated[OPTS.WEIGHT_COL_ID] == INT_VAL {
-			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
+		if common.OPTS.WEIGHT_COL && r.Populated[common.OPTS.WEIGHT_COL_ID] == INT_VAL {
+			weight = int64(r.Ints[common.OPTS.WEIGHT_COL_ID])
 		}
 
 		// FILTERING
@@ -101,7 +104,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
-		if *FLAGS.LUA {
+		if *common.FLAGS.LUA {
 			continue
 		}
 
@@ -127,14 +130,14 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
 		if querySpec.TimeBucket > 0 {
-			if len(r.Populated) <= int(OPTS.TIME_COL_ID) {
+			if len(r.Populated) <= int(common.OPTS.TIME_COL_ID) {
 				continue
 			}
 
-			if r.Populated[OPTS.TIME_COL_ID] != INT_VAL {
+			if r.Populated[common.OPTS.TIME_COL_ID] != INT_VAL {
 				continue
 			}
-			val := int64(r.Ints[OPTS.TIME_COL_ID])
+			val := int64(r.Ints[common.OPTS.TIME_COL_ID])
 
 			big_record, b_ok := querySpec.Results[string(binarybuffer)]
 			if !b_ok {
@@ -213,7 +216,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		querySpec.Results = *translate_group_by(querySpec.Results, querySpec.Groups, columns)
 	}
 
-	if *FLAGS.LUA {
+	if *common.FLAGS.LUA {
 		querySpec.luaInit()
 		querySpec.luaMap(&querySpec.Matched)
 	}
@@ -284,7 +287,7 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 	}
 	end := time.Now()
 
-	Debug("JOINING", len(matched), "MATCHED RECORDS TOOK", end.Sub(start))
+	common.Debug("JOINING", len(matched), "MATCHED RECORDS TOOK", end.Sub(start))
 	return matched
 
 }
@@ -294,9 +297,10 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	astart := time.Now()
 	resultSpec := QuerySpec{}
 	resultSpec.Table = querySpec.Table
-	resultSpec.LuaResult = make(LuaTable, 0)
+	resultSpec.LuaResult = make(
+		LuaTable, 0)
 
-	if *FLAGS.LUA {
+	if *common.FLAGS.LUA {
 		resultSpec.luaInit()
 	}
 
@@ -314,7 +318,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	for _, spec := range block_specs {
 		master_result.Combine(&spec.Results)
 
-		if *FLAGS.LUA {
+		if *common.FLAGS.LUA {
 			resultSpec.luaCombine(spec)
 		}
 
@@ -345,12 +349,12 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	resultSpec.TimeResults = master_time_result
 	resultSpec.Results = master_result
 
-	if *FLAGS.LUA {
+	if *common.FLAGS.LUA {
 		resultSpec.luaFinalize()
 	}
 
 	aend := time.Now()
-	Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
+	common.Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
 
 	return &resultSpec
 }
@@ -371,11 +375,11 @@ func SortResults(querySpec *QuerySpec) {
 
 		end := time.Now()
 		if DEBUG_TIMING {
-			Debug("SORTING TOOK", end.Sub(start))
+			common.Debug("SORTING TOOK", end.Sub(start))
 		}
 
-		if len(sorter.Results) > *FLAGS.LIMIT {
-			sorter.Results = sorter.Results[:*FLAGS.LIMIT]
+		if len(sorter.Results) > *common.FLAGS.LIMIT {
+			sorter.Results = sorter.Results[:*common.FLAGS.LIMIT]
 		}
 
 		querySpec.Sorted = sorter.Results
@@ -427,7 +431,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	resultSpec := CombineResults(querySpec, block_specs)
 
 	aend := time.Now()
-	Debug("AGGREGATING TOOK", aend.Sub(start))
+	common.Debug("AGGREGATING TOOK", aend.Sub(start))
 
 	querySpec.Results = resultSpec.Results
 	querySpec.TimeResults = resultSpec.TimeResults
@@ -442,6 +446,6 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	SortResults(querySpec)
 
-	Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
+	common.Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }

@@ -1,7 +1,11 @@
 package sybil
 
-import "math"
-import "time"
+import (
+	"math"
+	"time"
+
+	"github.com/logv/sybil/src/lib/common"
+)
 
 type Activity struct {
 	Count int
@@ -52,7 +56,7 @@ func copy_calendar(am1, am2 ActivityMap) {
 }
 
 func (c *Calendar) AddActivity(timestamp int) {
-	if *FLAGS.RETENTION != false {
+	if *common.FLAGS.RETENTION != false {
 		punch_calendar(&c.Daily, timestamp/(int(time.Hour.Seconds())*24))
 		punch_calendar(&c.Weekly, timestamp/(int(time.Hour.Seconds())*24*7))
 		punch_calendar(&c.Monthly, timestamp/(int(time.Hour.Seconds())*24*7*30))

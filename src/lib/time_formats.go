@@ -1,8 +1,11 @@
 package sybil
 
+import (
+	"strings"
+	"time"
 
-import "strings"
-import "time"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 var FORMATS = map[string]string{
 	"ansic":       time.ANSIC,
@@ -26,10 +29,10 @@ func GetTimeFormat(time_fmt string) string {
 	const_fmt := strings.ToLower(time_fmt)
 	time_format, ok := FORMATS[const_fmt]
 	if ok {
-		Debug("USING TIME FORMAT", time_format, "FOR", time_fmt)
+		common.Debug("USING TIME FORMAT", time_format, "FOR", time_fmt)
 		return time_format
 	}
 
-	Debug("USING TIME FORMAT", time_format)
+	common.Debug("USING TIME FORMAT", time_format)
 	return time_format
 }

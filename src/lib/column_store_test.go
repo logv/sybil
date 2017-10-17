@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"strconv"
 	"testing"
+
+	"github.com/logv/sybil/src/lib/common"
 )
 
 func TestTableDigestRowRecords(test *testing.T) {
@@ -24,7 +26,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 	nt := GetTable(testTableName)
 
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = &TRUE
+	common.FLAGS.READ_INGESTION_LOG = &common.TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -47,7 +49,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	count := int32(0)
 	for _, b := range nt.BlockList {
-		Debug("COUNTING RECORDS IN", b.Name)
+		common.Debug("COUNTING RECORDS IN", b.Name)
 		count += b.Info.NumRecords
 	}
 

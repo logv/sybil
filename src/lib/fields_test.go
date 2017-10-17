@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"strconv"
 	"testing"
+
+	"github.com/logv/sybil/src/lib/common"
 )
 
 func TestSets(test *testing.T) {
@@ -25,7 +27,7 @@ func TestSets(test *testing.T) {
 	}, blockCount)
 
 	avgAge := float64(totalAge) / float64(len(records))
-	Debug("AVG AGE", avgAge-float64(minCount))
+	common.Debug("AVG AGE", avgAge-float64(minCount))
 
 	nt := saveAndReloadTestTable(test, blockCount)
 
@@ -56,7 +58,7 @@ func TestSets(test *testing.T) {
 			}
 
 			if strval != setval[0] {
-				Debug("SET AND STR vals misaligned", setval, strval)
+				common.Debug("SET AND STR vals misaligned", setval, strval)
 			}
 
 		}

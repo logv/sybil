@@ -1,6 +1,10 @@
 package sybil
 
-import "math"
+import (
+	"math"
+
+	"github.com/logv/sybil/src/lib/common"
+)
 
 // Using an analysis of variance, calculate the intra class correlation co-efficient
 // The ICC is defined as: (mean square between) / (mean square between + mean square within)
@@ -21,7 +25,7 @@ import "math"
 // variance against the overall average.
 func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 	iccs := make(map[string]float64)
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(*common.FLAGS.TABLE)
 	for _, agg := range querySpec.Aggregations {
 		cumulative, ok := querySpec.Cumulative.Hists[agg.Name]
 		if !ok {
@@ -92,7 +96,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 
 		iccs[agg.Name] = icc
 
-		Debug(agg.Name, "ICC", int(icc*100))
+		common.Debug(agg.Name, "ICC", int(icc*100))
 	}
 
 	return iccs

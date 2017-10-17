@@ -1,4 +1,4 @@
-package sybil
+package common
 
 type ProfilerStart interface {
 	Stop()

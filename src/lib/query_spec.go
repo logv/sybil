@@ -1,6 +1,9 @@
 package sybil
 
 import "C"
+import (
+	"github.com/logv/sybil/src/lib/common"
+)
 
 type ResultMap map[string]*Result
 
@@ -152,12 +155,12 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	if op == "hist" {
 		agg.op_id = OP_HIST
 		agg.HistType = "basic"
-		if *FLAGS.LOG_HIST {
+		if *common.FLAGS.LOG_HIST {
 			agg.HistType = "multi"
 
 		}
 
-		if *FLAGS.HDR_HIST {
+		if *common.FLAGS.HDR_HIST {
 			agg.HistType = "hdr"
 		}
 	}
@@ -169,7 +172,7 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	_, ok := t.IntInfo[col_id]
 	if !ok {
 		// TODO: tell our table we need to load all records!
-		Debug("MISSING CACHED INFO FOR", agg)
+		common.Debug("MISSING CACHED INFO FOR", agg)
 	}
 	return agg
 }

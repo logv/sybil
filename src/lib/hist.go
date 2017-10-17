@@ -1,5 +1,7 @@
 package sybil
 
+import "github.com/logv/sybil/src/lib/common"
+
 var NUM_BUCKETS = 1000
 var DEBUG_OUTLIERS = false
 
@@ -24,9 +26,9 @@ type Histogram interface {
 
 func (t *Table) NewHist(info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.HDR_HIST && ENABLE_HDR {
+	if *common.FLAGS.HDR_HIST && ENABLE_HDR {
 		hist = newHDRHist(t, info)
-	} else if *FLAGS.LOG_HIST {
+	} else if *common.FLAGS.LOG_HIST {
 		hist = t.NewMultiHist(info)
 	} else {
 		hist = t.NewBasicHist(info)

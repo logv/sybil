@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/logv/sybil/src/lib/common"
 )
 
 func TestFilters(test *testing.T) {
@@ -120,7 +122,7 @@ func testIntNeq(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
-		Debug("TEST INT NEQ", k, v.Hists["age"].Mean())
+		common.Debug("TEST INT NEQ", k, v.Hists["age"].Mean())
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
@@ -166,10 +168,10 @@ func testStrEq(test *testing.T) {
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	Debug("QUERY SPEC", querySpec.Results)
+	common.Debug("QUERY SPEC", querySpec.Results)
 
 	nt.MatchAndAggregate(&querySpec)
-	Debug("QUERY SPEC RESULTS", querySpec.Results)
+	common.Debug("QUERY SPEC RESULTS", querySpec.Results)
 
 	if len(querySpec.Results) <= 0 {
 		test.Error("Str Filter for age 20 returned no results")

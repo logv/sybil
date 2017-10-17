@@ -18,7 +18,7 @@ var NO_RECYCLE_MEM *bool
 func addQueryFlags() {
 
 	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
+	sybil.FLAGS.SORT = flag.String("sort", sybil.common.OPTS.SORT_COUNT, "Int Column to sort by")
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
 	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
@@ -77,7 +77,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *TIME_FORMAT != "" {
-		sybil.OPTS.TIME_FORMAT = sybil.GetTimeFormat(*TIME_FORMAT)
+		sybil.common.OPTS.TIME_FORMAT = sybil.GetTimeFormat(*TIME_FORMAT)
 	}
 
 	table := *sybil.FLAGS.TABLE
@@ -88,7 +88,7 @@ func RunQueryCmdLine() {
 
 	t := sybil.GetTable(table)
 	if t.IsNotExist() {
-		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.DIR)
+		sybil.common.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.DIR)
 	}
 
 	ints := make([]string, 0)
@@ -97,7 +97,7 @@ func RunQueryCmdLine() {
 
 	if *sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.GROUP_BY = groups
+		sybil.common.OPTS.GROUP_BY = groups
 
 	}
 
@@ -139,7 +139,7 @@ func RunQueryCmdLine() {
 		count += int(block.Info.NumRecords)
 	}
 
-	sybil.Debug("WILL INSPECT", count, "RECORDS")
+	sybil.common.Debug("WILL INSPECT", count, "RECORDS")
 
 	groupings := []sybil.Grouping{}
 	for _, g := range groups {
@@ -152,14 +152,14 @@ func RunQueryCmdLine() {
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-	sybil.Debug("KEY TABLE", t.KeyTable)
-	sybil.Debug("KEY TYPES", t.KeyTypes)
+	sybil.common.Debug("KEY TABLE", t.KeyTable)
+	sybil.common.Debug("KEY TYPES", t.KeyTypes)
 
 	used := make(map[int16]int)
 	for _, v := range t.KeyTable {
 		used[v]++
 		if used[v] > 1 {
-			sybil.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+			sybil.common.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
 			return
 		}
 	}
@@ -180,7 +180,7 @@ func RunQueryCmdLine() {
 		default:
 			t.PrintColInfo()
 			fmt.Println("")
-			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
+			sybil.common.Error("Unknown column type for column: ", v, t.GetColumnType(v))
 		}
 
 	}
@@ -192,7 +192,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.SORT != "" {
-		if *sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
+		if *sybil.FLAGS.SORT != sybil.common.OPTS.SORT_COUNT {
 			loadSpec.Int(*sybil.FLAGS.SORT)
 		}
 		querySpec.OrderBy = *sybil.FLAGS.SORT
@@ -203,18 +203,18 @@ func RunQueryCmdLine() {
 	if *sybil.FLAGS.TIME {
 		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = *sybil.FLAGS.TIME_BUCKET
-		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
+		sybil.common.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*sybil.FLAGS.TIME_COL)
 		time_col_id, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
 		if ok {
-			sybil.OPTS.TIME_COL_ID = time_col_id
+			sybil.common.OPTS.TIME_COL_ID = time_col_id
 		}
 	}
 
 	if *sybil.FLAGS.WEIGHT_COL != "" {
-		sybil.OPTS.WEIGHT_COL = true
+		sybil.common.OPTS.WEIGHT_COL = true
 		loadSpec.Int(*sybil.FLAGS.WEIGHT_COL)
-		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[*sybil.FLAGS.WEIGHT_COL]
+		sybil.common.OPTS.WEIGHT_COL_ID = t.KeyTable[*sybil.FLAGS.WEIGHT_COL]
 	}
 
 	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
@@ -239,12 +239,12 @@ func RunQueryCmdLine() {
 
 	if !*sybil.FLAGS.PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
-		sybil.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
+		sybil.common.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		debug.SetGCPercent(-1)
 
-		sybil.Debug("USING LOAD SPEC", loadSpec)
+		sybil.common.Debug("USING LOAD SPEC", loadSpec)
 
-		sybil.Debug("USING QUERY SPEC", querySpec)
+		sybil.common.Debug("USING QUERY SPEC", querySpec)
 
 		start := time.Now()
 		// We can load and query at the same time
@@ -252,7 +252,7 @@ func RunQueryCmdLine() {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
-			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+			sybil.common.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.PrintResults()
 
 			if sybil.FLAGS.ANOVA_ICC != nil && *sybil.FLAGS.ANOVA_ICC {

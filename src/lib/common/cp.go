@@ -1,11 +1,11 @@
-package sybil
+package common
 
 import "os"
 import "io"
 
 // FOUND AT
 // https://gist.github.com/elazarl/5507969
-func cp(dst, src string) error {
+func Copy(dst, src string) error {
 	s, err := os.Open(src)
 	if err != nil {
 		return err
