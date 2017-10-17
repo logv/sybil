@@ -1,9 +1,12 @@
 package sybil
 
-import "regexp"
+import (
+	"regexp"
+	"strconv"
+	"strings"
 
-import "strings"
-import "strconv"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 // This is the passed in flags
 type FilterSpec struct {
@@ -25,20 +28,20 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)
 	if filterSpec.Int != "" {
-		intfilters = strings.Split(filterSpec.Int, *FLAGS.FIELD_SEPARATOR)
+		intfilters = strings.Split(filterSpec.Int, *common.FLAGS.FIELD_SEPARATOR)
 	}
 	if filterSpec.Str != "" {
-		strfilters = strings.Split(filterSpec.Str, *FLAGS.FIELD_SEPARATOR)
+		strfilters = strings.Split(filterSpec.Str, *common.FLAGS.FIELD_SEPARATOR)
 	}
 
 	if filterSpec.Set != "" {
-		setfilters = strings.Split(filterSpec.Set, *FLAGS.FIELD_SEPARATOR)
+		setfilters = strings.Split(filterSpec.Set, *common.FLAGS.FIELD_SEPARATOR)
 	}
 
 	filters := []Filter{}
 
 	for _, filt := range intfilters {
-		tokens := strings.Split(filt, *FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filt, *common.FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val, _ := strconv.ParseInt(tokens[2], 10, 64)
@@ -48,12 +51,12 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		}
 
 		// we align the Time Filter to the Time Bucket iff we are doing a time series query
-		if col == *FLAGS.TIME_COL && *FLAGS.TIME {
-			bucket := int64(*FLAGS.TIME_BUCKET)
+		if col == *common.FLAGS.TIME_COL && *common.FLAGS.TIME {
+			bucket := int64(*common.FLAGS.TIME_BUCKET)
 			new_val := int64(val/bucket) * bucket
 
 			if val != new_val {
-				Debug("ALIGNING TIME FILTER TO BUCKET", val, new_val)
+				common.Debug("ALIGNING TIME FILTER TO BUCKET", val, new_val)
 				val = new_val
 			}
 		}
@@ -63,7 +66,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range setfilters {
-		tokens := strings.Split(filter, *FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filter, *common.FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]
@@ -78,7 +81,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range strfilters {
-		tokens := strings.Split(filter, *FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filter, *common.FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]
@@ -264,7 +267,7 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 	if op == "re" || op == "nre" {
 		strFilter.regex, err = regexp.Compile(value)
 		if err != nil {
-			Debug("REGEX ERROR", err, "WITH", value)
+			common.Debug("REGEX ERROR", err, "WITH", value)
 		}
 	}
 

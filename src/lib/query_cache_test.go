@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"strconv"
 	"testing"
+
+	"github.com/logv/sybil/src/lib/common"
 )
 
 func TestCachedQueries(test *testing.T) {
@@ -13,7 +15,7 @@ func TestCachedQueries(test *testing.T) {
 	blockCount := 5
 
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.CACHED_QUERIES = &TRUE
+	common.FLAGS.CACHED_QUERIES = &common.TRUE
 
 	addRecords := func(blockCount int) {
 		addRecordsToTestDB(func(r *Record, i int) {
@@ -42,7 +44,7 @@ func TestCachedQueries(test *testing.T) {
 	testCachedBasicHist(test)
 	deleteTestDB()
 
-	FLAGS.CACHED_QUERIES = &FALSE
+	common.FLAGS.CACHED_QUERIES = &common.FALSE
 
 }
 
@@ -77,14 +79,14 @@ func testCachedQueryFiles(test *testing.T) {
 		}
 	}
 
-	FLAGS.CACHED_QUERIES = &FALSE
+	common.FLAGS.CACHED_QUERIES = &common.FALSE
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
 			test.Error("Used query cache when flag was not provided")
 		}
 	}
-	FLAGS.CACHED_QUERIES = &TRUE
+	common.FLAGS.CACHED_QUERIES = &common.TRUE
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -137,7 +139,7 @@ func testCachedQueryConsistency(test *testing.T) {
 		}
 
 		if v.Samples != v2.Samples {
-			Debug(v, v2)
+			common.Debug(v, v2)
 			test.Error("Samples Mismatch", v, v2, v.Samples, v2.Samples)
 		}
 
@@ -158,13 +160,13 @@ func testCachedBasicHist(test *testing.T) {
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
 		if histType == "loghist" {
-			FLAGS.LOG_HIST = &TRUE
+			common.FLAGS.LOG_HIST = &common.TRUE
 		} else {
-			FLAGS.LOG_HIST = &FALSE
+			common.FLAGS.LOG_HIST = &common.FALSE
 		}
 
 		HIST := "hist"
-		FLAGS.OP = &HIST
+		common.FLAGS.OP = &HIST
 
 		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))
@@ -203,7 +205,7 @@ func testCachedBasicHist(test *testing.T) {
 			}
 
 			if v.Samples != v2.Samples {
-				Debug(v, v2)
+				common.Debug(v, v2)
 				test.Error("Samples Mismatch", histType, v, v2, v.Samples, v2.Samples)
 			}
 

@@ -12,7 +12,7 @@ func askConfirmation() bool {
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		sybil.Error(err)
+		sybil.common.Error(err)
 	}
 
 	if response == "Y" {
@@ -51,7 +51,7 @@ func RunTrimCmdLine() {
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
-		sybil.Warn("Couldn't read table info, exiting early")
+		sybil.common.Warn("Couldn't read table info, exiting early")
 		return
 	}
 
@@ -64,7 +64,7 @@ func RunTrimCmdLine() {
 
 	to_trim := t.TrimTable(&trimSpec)
 
-	sybil.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
+	sybil.common.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
 	if len(to_trim) > 0 {
 		for _, b := range to_trim {
 			fmt.Println(b.Name)
@@ -76,19 +76,19 @@ func RunTrimCmdLine() {
 			// TODO: prompt for deletion
 			fmt.Println("DELETE THE ABOVE BLOCKS? (Y/N)")
 			if askConfirmation() == false {
-				sybil.Debug("ABORTING")
+				sybil.common.Debug("ABORTING")
 				return
 			}
 
 		}
 
-		sybil.Debug("DELETING CANDIDATE BLOCKS")
+		sybil.common.Debug("DELETING CANDIDATE BLOCKS")
 		for _, b := range to_trim {
-			sybil.Debug("DELETING", b.Name)
+			sybil.common.Debug("DELETING", b.Name)
 			if len(b.Name) > 5 {
 				os.RemoveAll(b.Name)
 			} else {
-				sybil.Debug("REFUSING TO DELETE", b.Name)
+				sybil.common.Debug("REFUSING TO DELETE", b.Name)
 			}
 		}
 

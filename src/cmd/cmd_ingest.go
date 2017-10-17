@@ -67,7 +67,7 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 			r.AddSetField(key_name, key_strs)
 		case nil:
 		default:
-			sybil.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
+			sybil.common.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
 		}
 	}
 }
@@ -81,7 +81,7 @@ func import_csv_records() {
 	scanner.Scan()
 	header := scanner.Text()
 	header_fields := strings.Split(header, ",")
-	sybil.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
+	sybil.common.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
@@ -127,14 +127,14 @@ func json_query(obj *interface{}, path []string) []interface{} {
 			// the key should be an integer key...
 			intkey, err := strconv.ParseInt(key, 10, 32)
 			if err != nil {
-				sybil.Debug("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
+				sybil.common.Debug("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
 			} else {
 				ret = ing[intkey]
 			}
 		case nil:
 			continue
 		default:
-			sybil.Debug(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
+			sybil.common.Debug(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
 		}
 
 	}
@@ -147,7 +147,7 @@ func json_query(obj *interface{}, path []string) []interface{} {
 		ret = append(ret, r)
 		return ret
 	default:
-		sybil.Debug(fmt.Sprintf("RET TYPE %T", r))
+		sybil.common.Debug(fmt.Sprintf("RET TYPE %T", r))
 	}
 
 	return nil
@@ -157,7 +157,7 @@ func import_json_records() {
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
-	sybil.Debug("PATH IS", path)
+	sybil.common.Debug("PATH IS", path)
 
 	dec := json.NewDecoder(os.Stdin)
 
@@ -169,7 +169,7 @@ func import_json_records() {
 				break
 			}
 			if err != nil {
-				sybil.Debug("ERR", err)
+				sybil.common.Debug("ERR", err)
 			}
 		}
 
@@ -221,7 +221,7 @@ func RunIngestCmdLine() {
 
 		infile, err := os.OpenFile(*f_REOPEN, syscall.O_RDONLY|syscall.O_CREAT, 0666)
 		if err != nil {
-			sybil.Error("ERROR OPENING INFILE", err)
+			sybil.common.Error("ERROR OPENING INFILE", err)
 		}
 
 		os.Stdin = infile
@@ -241,7 +241,7 @@ func RunIngestCmdLine() {
 	}
 
 	for k, _ := range EXCLUDES {
-		sybil.Debug("EXCLUDING COLUMN", k)
+		sybil.common.Debug("EXCLUDING COLUMN", k)
 	}
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
@@ -260,7 +260,7 @@ func RunIngestCmdLine() {
 
 	if loaded_table == false {
 		if t.HasFlagFile() {
-			sybil.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
+			sybil.common.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
 	}

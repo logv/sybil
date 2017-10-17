@@ -1,8 +1,10 @@
-package sybil
+package common
 
-import "log"
-import "fmt"
-import "os"
+import (
+	"fmt"
+	"log"
+	"os"
+)
 
 // extracted from and influenced by
 // https://groups.google.com/forum/#!topic/golang-nuts/ct99dtK2Jo4

@@ -1,13 +1,17 @@
 package sybil
 
-import "bytes"
-import "fmt"
-import "time"
-import "os"
-import "path"
-import "strings"
-import "sync"
-import "compress/gzip"
+import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"os"
+	"path"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/logv/sybil/src/lib/common"
+)
 
 var GZIP_EXT = ".gz"
 
@@ -52,7 +56,7 @@ func (t *Table) FillPartialBlock() bool {
 
 	open_blocks := t.FindPartialBlocks()
 
-	Debug("OPEN BLOCKS", open_blocks)
+	common.Debug("OPEN BLOCKS", open_blocks)
 	var filename string
 
 	if len(open_blocks) == 0 {
@@ -63,10 +67,10 @@ func (t *Table) FillPartialBlock() bool {
 		filename = b.Name
 	}
 
-	Debug("OPENING PARTIAL BLOCK", filename)
+	common.Debug("OPENING PARTIAL BLOCK", filename)
 
 	if t.GrabBlockLock(filename) == false {
-		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
+		common.Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
 
@@ -81,7 +85,7 @@ func (t *Table) FillPartialBlock() bool {
 	}
 
 	partialRecords := block.RecordList
-	Debug("LAST BLOCK HAS", len(partialRecords), "RECORDS")
+	common.Debug("LAST BLOCK HAS", len(partialRecords), "RECORDS")
 
 	if len(partialRecords) < CHUNK_SIZE {
 		delta := CHUNK_SIZE - len(partialRecords)
@@ -89,10 +93,10 @@ func (t *Table) FillPartialBlock() bool {
 			delta = len(t.newRecords)
 		}
 
-		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
+		common.Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
 		if t.SaveRecordsToBlock(partialRecords, filename) == false {
-			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
+			common.Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
 			return false
 		}
 
@@ -173,13 +177,13 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 	err := decodeInto(filename, &info)
 
 	if err != nil {
-		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
+		common.Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
 		return &info
 	}
 	iend := time.Now()
 
 	if DEBUG_TIMING {
-		Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
+		common.Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
 	t.block_m.Lock()
@@ -301,7 +305,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, r)
 	}
 
-	if *FLAGS.DEBUG {
+	if *common.FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "+")
 	}
 }
@@ -327,7 +331,7 @@ func (b *TableBlock) ExportBlockData() {
 
 	tsv_header := strings.Join(b.RecordList[0].sampleHeader(), "\t")
 	tsv_str := strings.Join(tsv_data, "\n")
-	Debug("SAVING TSV ", len(tsv_str), "RECORDS", len(tsv_data), fName)
+	common.Debug("SAVING TSV ", len(tsv_str), "RECORDS", len(tsv_data), fName)
 
 	all_data := strings.Join([]string{tsv_header, tsv_str}, "\n")
 	// Need to save these to a file.
@@ -345,7 +349,7 @@ func (b *TableBlock) ExportBlockData() {
 	f.Close()
 
 	if err != nil {
-		Warn("COULDNT SAVE TSV FOR", fName, err)
+		common.Warn("COULDNT SAVE TSV FOR", fName, err)
 	}
 
 }

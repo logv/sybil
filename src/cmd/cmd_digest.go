@@ -21,7 +21,7 @@ func RunDigestCmdLine() {
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
-		sybil.Warn("Couldn't read table info, exiting early")
+		sybil.common.Warn("Couldn't read table info, exiting early")
 		return
 	}
 	t.DigestRecords()

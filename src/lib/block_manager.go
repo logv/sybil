@@ -1,11 +1,14 @@
 package sybil
 
+import (
+	"time"
 
-import "time"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
 
-	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && load_records == false {
+	if *common.FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && load_records == false {
 		loadSpec.slab_m.Lock()
 		defer loadSpec.slab_m.Unlock()
 		if len(loadSpec.slabs) > 0 {
@@ -57,7 +60,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 			case STR_VAL:
 				has_strs = true
 			default:
-				Error("MISSING KEY TYPE FOR COL", v)
+				common.Error("MISSING KEY TYPE FOR COL", v)
 			}
 		}
 	} else {
@@ -80,7 +83,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		mend := time.Now()
 
 		if DEBUG_TIMING {
-			Debug("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
+			common.Debug("MALLOCED RECORDS", info.NumRecords, "TOOK", mend.Sub(mstart))
 		}
 
 		start := time.Now()
@@ -107,7 +110,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		end := time.Now()
 
 		if DEBUG_TIMING {
-			Debug("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
+			common.Debug("INITIALIZED RECORDS", info.NumRecords, "TOOK", end.Sub(start))
 		}
 	}
 
@@ -158,7 +161,7 @@ func (rl RecordList) ResetRecords(tb *TableBlock) {
 }
 
 func (tb *TableBlock) RecycleSlab(loadSpec *LoadSpec) {
-	if *FLAGS.RECYCLE_MEM {
+	if *common.FLAGS.RECYCLE_MEM {
 		rl := tb.RecordList
 
 		if len(rl) == CHUNK_SIZE {

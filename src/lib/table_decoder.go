@@ -1,11 +1,14 @@
 package sybil
 
-import "fmt"
+import (
+	"compress/gzip"
+	"encoding/gob"
+	"fmt"
+	"os"
+	"strings"
 
-import "os"
-import "strings"
-import "encoding/gob"
-import "compress/gzip"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 type FileDecoder struct {
 	*gob.Decoder
@@ -26,13 +29,13 @@ func getCompressedDecoder(filename string) FileDecoder {
 
 	file, err := os.Open(filename)
 	if err != nil {
-		Debug("COULDNT OPEN GZ", filename)
+		common.Debug("COULDNT OPEN GZ", filename)
 		return FileDecoder{gob.NewDecoder(file), file}
 	}
 
 	reader, err := gzip.NewReader(file)
 	if err != nil {
-		Debug("COULDNT DECOMPRESS GZ", filename)
+		common.Debug("COULDNT DECOMPRESS GZ", filename)
 		return FileDecoder{gob.NewDecoder(reader), file}
 	}
 
