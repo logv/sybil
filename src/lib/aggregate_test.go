@@ -1,16 +1,15 @@
-package sybil_test
+package sybil
 
-import sybil "./"
-
-import "fmt"
-
-import "sort"
-import "strconv"
-import "math"
-import "math/rand"
-import "testing"
-import "strings"
-import "time"
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"sort"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
 
 func TestTableLoadRecords(test *testing.T) {
 	delete_test_db()
@@ -22,7 +21,7 @@ func TestTableLoadRecords(test *testing.T) {
 
 	block_count := 3
 
-	add_records(func(r *sybil.Record, index int) {
+	add_records(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
@@ -45,7 +44,7 @@ func TestTableLoadRecords(test *testing.T) {
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		val, err := strconv.ParseInt(k, 10, 64)
 		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Mean())) > 0.1 {
@@ -68,7 +67,7 @@ func TestAveraging(test *testing.T) {
 
 	total_age := int64(0)
 	count := 0
-	add_records(func(r *sybil.Record, index int) {
+	add_records(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
@@ -87,7 +86,7 @@ func TestAveraging(test *testing.T) {
 	nt.MatchAndAggregate(querySpec)
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Mean())) > 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Mean())
@@ -112,7 +111,7 @@ func TestHistograms(test *testing.T) {
 	count := 0
 	ages := make([]int, 0)
 
-	add_records(func(r *sybil.Record, index int) {
+	add_records(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
@@ -126,7 +125,7 @@ func TestHistograms(test *testing.T) {
 
 	nt := save_and_reload_table(test, block_count)
 	var HIST = "hist"
-	sybil.FLAGS.OP = &HIST
+	FLAGS.OP = &HIST
 
 	querySpec := new_query_spec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
@@ -135,7 +134,7 @@ func TestHistograms(test *testing.T) {
 	nt.MatchAndAggregate(querySpec)
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		kval, _ := strconv.ParseInt(k, 10, 64)
 		percentiles := v.Hists["age"].GetPercentiles()
@@ -160,7 +159,7 @@ func TestHistograms(test *testing.T) {
 	prev_count := int64(math.MaxInt64)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		percentiles := v.Hists["age"].GetPercentiles()
 
 		if v.Count > prev_count {
@@ -192,7 +191,7 @@ func TestHistograms(test *testing.T) {
 	prev_avg := float64(0)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		avg := v.Hists["age"].Mean()
 
 		if avg < prev_avg {
@@ -222,7 +221,7 @@ func TestTimeSeries(test *testing.T) {
 	count := 0
 	ages := make([]int, 0)
 
-	add_records(func(r *sybil.Record, index int) {
+	add_records(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		random := rand.Intn(50) * -1
@@ -241,7 +240,7 @@ func TestTimeSeries(test *testing.T) {
 	nt := save_and_reload_table(test, block_count)
 
 	hist := "hist"
-	sybil.FLAGS.OP = &hist
+	FLAGS.OP = &hist
 	querySpec := new_query_spec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
@@ -259,7 +258,7 @@ func TestTimeSeries(test *testing.T) {
 		}
 
 		for k, v := range b {
-			k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+			k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 			kval, _ := strconv.ParseInt(k, 10, 64)
 			percentiles := v.Hists["age"].GetPercentiles()
@@ -288,7 +287,7 @@ func TestOrderBy(test *testing.T) {
 
 	total_age := int64(0)
 	count := 0
-	add_records(func(r *sybil.Record, index int) {
+	add_records(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
@@ -307,7 +306,7 @@ func TestOrderBy(test *testing.T) {
 	nt.MatchAndAggregate(querySpec)
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Mean())) > 0.1 {
 			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Mean())
@@ -325,7 +324,7 @@ func TestOrderBy(test *testing.T) {
 	}
 
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		avg := v.Hists["age"].Mean()
 
 		if avg < prev_avg {

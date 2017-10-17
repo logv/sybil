@@ -1,19 +1,19 @@
-package sybil_test
+package sybil
 
-import sybil "./"
-
-import "testing"
-import "fmt"
-import "time"
-import "os"
-import "math/rand"
-import "strconv"
+import (
+	"fmt"
+	"math/rand"
+	"os"
+	"strconv"
+	"testing"
+	"time"
+)
 
 func TestTableCreate(test *testing.T) {
 	delete_test_db()
 
 	block_count := 3
-	created := add_records(func(r *sybil.Record, index int) {
+	created := add_records(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
@@ -41,7 +41,7 @@ func TestTableCreate(test *testing.T) {
 
 	nt.LoadRecords(&loadSpec)
 
-	var records = make([]*sybil.Record, 0)
+	var records = make([]*Record, 0)
 	for _, b := range nt.BlockList {
 		records = append(records, b.RecordList...)
 	}

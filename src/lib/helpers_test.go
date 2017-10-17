@@ -1,16 +1,14 @@
-package sybil_test
+package sybil
 
-import sybil "./"
-import "os"
-import "fmt"
-import "testing"
+import (
+	"fmt"
+	"os"
+	"testing"
+)
 
 var TEST_TABLE_NAME = "__TEST0__"
 
-// we copy over Debug from sybil package for usage
-var Debug = sybil.Debug
-
-type RecordSetupCB func(*sybil.Record, int)
+type RecordSetupCB func(*Record, int)
 
 func TestMain(m *testing.M) {
 	run_tests(m)
@@ -23,20 +21,20 @@ func run_tests(m *testing.M) {
 }
 
 func setup_test_vars(chunk_size int) {
-	sybil.Startup()
-	sybil.FLAGS.TABLE = &TEST_TABLE_NAME
+	Startup()
+	FLAGS.TABLE = &TEST_TABLE_NAME
 
-	sybil.TEST_MODE = true
-	sybil.CHUNK_SIZE = chunk_size
-	sybil.LOCK_US = 1
-	sybil.LOCK_TRIES = 3
+	TEST_MODE = true
+	CHUNK_SIZE = chunk_size
+	LOCK_US = 1
+	LOCK_TRIES = 3
 }
 
-func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {
-	count := sybil.CHUNK_SIZE * block_count
+func add_records(cb RecordSetupCB, block_count int) []*Record {
+	count := CHUNK_SIZE * block_count
 
-	ret := make([]*sybil.Record, 0)
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	ret := make([]*Record, 0)
+	t := GetTable(TEST_TABLE_NAME)
 
 	for i := 0; i < count; i++ {
 		r := t.NewRecord()
@@ -47,19 +45,19 @@ func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {
 	return ret
 }
 
-func save_and_reload_table(test *testing.T, expected_blocks int) *sybil.Table {
+func save_and_reload_table(test *testing.T, expected_blocks int) *Table {
 
-	expected_count := sybil.CHUNK_SIZE * expected_blocks
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	expected_count := CHUNK_SIZE * expected_blocks
+	t := GetTable(TEST_TABLE_NAME)
 
 	t.SaveRecordsToColumns()
 
 	unload_test_table()
 
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := GetTable(TEST_TABLE_NAME)
 	nt.LoadTableInfo()
 
-	loadSpec := sybil.NewLoadSpec()
+	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	count := nt.LoadRecords(&loadSpec)
 
@@ -76,19 +74,19 @@ func save_and_reload_table(test *testing.T, expected_blocks int) *sybil.Table {
 
 }
 
-func new_query_spec() *sybil.QuerySpec {
+func new_query_spec() *QuerySpec {
 
-	filters := []sybil.Filter{}
-	aggs := []sybil.Aggregation{}
-	groupings := []sybil.Grouping{}
+	filters := []Filter{}
+	aggs := []Aggregation{}
+	groupings := []Grouping{}
 
-	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}}
+	querySpec := QuerySpec{QueryParams: QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}}
 
 	return &querySpec
 }
 
 func unload_test_table() {
-	delete(sybil.LOADED_TABLES, TEST_TABLE_NAME)
+	delete(LOADED_TABLES, TEST_TABLE_NAME)
 }
 
 func delete_test_db() {
