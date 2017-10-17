@@ -10,7 +10,7 @@ import "io/ioutil"
 import "text/tabwriter"
 import "time"
 
-func printJson(data interface{}) {
+func printJSON(data interface{}) {
 	b, err := json.Marshal(data)
 	if err == nil {
 		os.Stdout.Write(b)
@@ -59,7 +59,7 @@ func printTimeResults(querySpec *QuerySpec) {
 
 		}
 
-		printJson(marshalledResults)
+		printJSON(marshalledResults)
 		return
 	}
 
@@ -165,7 +165,7 @@ func printSortedResults(querySpec *QuerySpec) {
 			}
 		}
 
-		printJson(results)
+		printJSON(results)
 		return
 	}
 
@@ -237,7 +237,7 @@ func PrintResults(querySpec *QuerySpec) {
 			results = append(results, res)
 		}
 
-		printJson(results)
+		printJSON(results)
 		return
 	}
 
@@ -373,7 +373,7 @@ func (t *Table) PrintSamples() {
 			samples = append(samples, s)
 		}
 
-		printJson(samples)
+		printJSON(samples)
 	} else {
 		for _, r := range records {
 			if r == nil {
@@ -480,7 +480,7 @@ func (t *Table) PrintColInfo() {
 		tableInfo["avgObjSize"] = float64(size) / float64(count)
 		tableInfo["storageSize"] = size
 
-		printJson(tableInfo)
+		printJSON(tableInfo)
 	} else {
 		fmt.Println("\nString Columns\n")
 		t.printColsOfType(StrVal)
@@ -502,7 +502,7 @@ func PrintVersionInfo() {
 	versionInfo := GetVersionInfo()
 
 	if *FLAGS.JSON {
-		printJson(versionInfo)
+		printJSON(versionInfo)
 
 	} else {
 		for k, v := range versionInfo {

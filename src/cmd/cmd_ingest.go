@@ -17,7 +17,7 @@ import (
 
 type Dictionary map[string]interface{}
 
-var JsonPath string
+var JSONPath string
 
 // how many times we try to grab table info when ingesting
 var TableInfoGrabs = 10
@@ -74,7 +74,7 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 
 var ImportedCount = 0
 
-func importCsvRecords() {
+func importCSVRecords() {
 	// For importing CSV records, we need to validate the headers, then we just
 	// read in and fill out record fields!
 	scanner := bufio.NewScanner(os.Stdin)
@@ -153,10 +153,10 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 	return nil
 }
 
-func importJsonRecords() {
+func importJSONRecords() {
 	t := sybil.GetTable(*sybil.FLAGS.Table)
 
-	path := strings.Split(JsonPath, ".")
+	path := strings.Split(JSONPath, ".")
 	sybil.Debug("PATH IS", path)
 
 	dec := json.NewDecoder(os.Stdin)
@@ -201,7 +201,7 @@ func RunIngestCmdLine() {
 	fINTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	fCSV := flag.Bool("csv", false, "expect incoming data in CSV format")
 	fEXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
-	fJsonPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
+	fJSONPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	fSkipCompact := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
 	fREOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
 	sybil.FLAGS.SkipCompact = fSkipCompact
@@ -215,7 +215,7 @@ func RunIngestCmdLine() {
 		return
 	}
 
-	JsonPath = *fJsonPath
+	JSONPath = *fJSONPath
 
 	if *fREOPEN != "" {
 
@@ -266,9 +266,9 @@ func RunIngestCmdLine() {
 	}
 
 	if *fCSV == false {
-		importJsonRecords()
+		importJSONRecords()
 	} else {
-		importCsvRecords()
+		importCSVRecords()
 	}
 
 	t.IngestRecords(digestfile)

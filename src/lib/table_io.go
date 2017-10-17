@@ -14,7 +14,7 @@ import "encoding/gob"
 import "runtime/debug"
 
 var DebugTiming = false
-var ChunksBeforeGc = 16
+var ChunksBeforeGC = 16
 var IngestDir = "ingest"
 var TempIngestDir = ".ingest.temp"
 var CacheDir = "cache"
@@ -555,7 +555,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if DeleteBlocksAfterQuery && thisBlock%ChunksBeforeGc == 0 && *FLAGS.GC {
+			if DeleteBlocksAfterQuery && thisBlock%ChunksBeforeGC == 0 && *FLAGS.GC {
 				wg.Wait()
 				start := time.Now()
 

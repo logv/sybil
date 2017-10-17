@@ -398,7 +398,7 @@ func (ss *SessionSpec) PrintResults() {
 			ret := make(map[string]interface{})
 			ret["uniques"] = ss.Sessions.PathUniques
 			ret["counts"] = ss.Sessions.PathCounts
-			printJson(ret)
+			printJSON(ret)
 			fmt.Println("")
 		} else {
 			Debug("PATHS", len(ss.Sessions.PathCounts))

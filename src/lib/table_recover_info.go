@@ -50,14 +50,14 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 		colName = strings.TrimRight(colName, ".db")
 
 		switch {
-		case strings.HasPrefix(fname, "str"):
-			colName = strings.Replace(colName, "str", "", 1)
+		case strings.HasPrefix(fname, "str_"):
+			colName = strings.Replace(colName, "str_", "", 1)
 			colType = StrVal
-		case strings.HasPrefix(colName, "set"):
-			colName = strings.Replace(colName, "set", "", 1)
+		case strings.HasPrefix(colName, "set_"):
+			colName = strings.Replace(colName, "set_", "", 1)
 			colType = SetVal
-		case strings.HasPrefix(colName, "int"):
-			colName = strings.Replace(colName, "int", "", 1)
+		case strings.HasPrefix(colName, "int_"):
+			colName = strings.Replace(colName, "int_", "", 1)
 			colType = IntVal
 
 			colInfo := info.IntInfoMap[colName]
