@@ -2,8 +2,8 @@ package sybil
 
 import "flag"
 
-var FALSE = false
-var TRUE = true
+var falseFlag = false
+var trueFlag = true
 
 var TestMode = false
 var EnableLua = false
@@ -118,19 +118,19 @@ func setDefaults() {
 	OPTS.TimeSeries = false
 	OPTS.TimeFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
-	FLAGS.GC = &TRUE
-	FLAGS.JSON = &FALSE
-	FLAGS.Print = &TRUE
-	FLAGS.Export = &FALSE
+	FLAGS.GC = &trueFlag
+	FLAGS.JSON = &falseFlag
+	FLAGS.Print = &trueFlag
+	FLAGS.Export = &falseFlag
 
-	FLAGS.SkipCompact = &FALSE
+	FLAGS.SkipCompact = &falseFlag
 
 	FLAGS.PrintKeys = &OPTS.TimeSeries
-	FLAGS.LoadAndQuery = &TRUE
-	FLAGS.LoadThenQuery = &FALSE
-	FLAGS.ReadIngestionLog = &FALSE
-	FLAGS.ReadRowstore = &FALSE
-	FLAGS.AnovaIcc = &FALSE
+	FLAGS.LoadAndQuery = &trueFlag
+	FLAGS.LoadThenQuery = &falseFlag
+	FLAGS.ReadIngestionLog = &falseFlag
+	FLAGS.ReadRowstore = &falseFlag
+	FLAGS.AnovaIcc = &falseFlag
 	FLAGS.Dir = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.Table = flag.String("table", "", "Table to operate on [REQUIRED]")
 
@@ -138,23 +138,23 @@ func setDefaults() {
 	FLAGS.FieldSeparator = flag.String("field-separator", ",", "Field separator used in command line params")
 	FLAGS.FilterSeparator = flag.String("filter-separator", ":", "Filter separator used in filters")
 
-	FLAGS.UpdateTableInfo = &FALSE
-	FLAGS.SkipOutliers = &TRUE
-	FLAGS.Samples = &FALSE
-	FLAGS.LUA = &FALSE
+	FLAGS.UpdateTableInfo = &falseFlag
+	FLAGS.SkipOutliers = &trueFlag
+	FLAGS.Samples = &falseFlag
+	FLAGS.LUA = &falseFlag
 	FLAGS.Luafile = &EMPTY
 
-	FLAGS.RecycleMem = &TRUE
-	FLAGS.CachedQueries = &FALSE
+	FLAGS.RecycleMem = &trueFlag
+	FLAGS.CachedQueries = &falseFlag
 
-	FLAGS.HdrHist = &FALSE
-	FLAGS.LogHist = &FALSE
+	FLAGS.HdrHist = &falseFlag
+	FLAGS.LogHist = &falseFlag
 
 	DefaultLimit := 100
 	FLAGS.Limit = &DefaultLimit
 
-	FLAGS.Profile = &FALSE
-	FLAGS.ProfileMem = &FALSE
+	FLAGS.Profile = &falseFlag
+	FLAGS.ProfileMem = &falseFlag
 	if ProfilerEnabled {
 		FLAGS.Profile = flag.Bool("profile", false, "turn profiling on?")
 		FLAGS.ProfileMem = flag.Bool("mem", false, "turn memory profiling on")

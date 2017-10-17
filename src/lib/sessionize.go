@@ -523,7 +523,7 @@ func LoadAndSessionize(tables []*Table, querySpec *QuerySpec, sessionSpec *Sessi
 		joinLoadSpec.LoadAllColumns = true
 
 		DeleteBlocksAfterQuery = false
-		FLAGS.ReadIngestionLog = &TRUE
+		FLAGS.ReadIngestionLog = &trueFlag
 		jt.LoadRecords(&joinLoadSpec)
 		end := time.Now()
 

@@ -37,7 +37,7 @@ func RunRebuildCmdLine() {
 		lock.ForceDeleteFile()
 		t.SaveTableInfo("info")
 	} else {
-		sybil.Print("SAVING TO tempInfo.db")
-		t.SaveTableInfo("tempInfo")
+		sybil.Print("SAVING TO temp_info.db")
+		t.SaveTableInfo("temp_info")
 	}
 }

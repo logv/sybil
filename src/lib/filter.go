@@ -97,7 +97,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 
 }
 
-// FILTERS RETURN TRUE ON MATCH SUCCESS
+// FILTERS RETURN trueFlag ON MATCH SUCCESS
 type NoFilter struct{}
 
 func (f NoFilter) Filter(r *Record) bool {

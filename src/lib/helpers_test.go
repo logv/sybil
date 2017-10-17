@@ -7,6 +7,9 @@ import "testing"
 
 var TestTableName = "_Test0_"
 
+var falseFlag = false
+var trueFlag = true
+
 // we copy over Debug from sybil package for usage
 var Debug = sybil.Debug
 

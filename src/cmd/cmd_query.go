@@ -106,7 +106,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *NoRecycleMem == true {
-		sybil.FLAGS.RecycleMem = &sybil.FALSE
+		sybil.FLAGS.RecycleMem = &falseFlag
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
@@ -122,11 +122,11 @@ func RunQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.LoadThenQuery {
-		sybil.FLAGS.LoadAndQuery = &FALSE
+		sybil.FLAGS.LoadAndQuery = &falseFlag
 	}
 
 	if *sybil.FLAGS.ReadRowstore {
-		sybil.FLAGS.ReadIngestionLog = &TRUE
+		sybil.FLAGS.ReadIngestionLog = &trueFlag
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -268,7 +268,7 @@ func RunQueryCmdLine() {
 
 	if *sybil.FLAGS.PrintInfo {
 		t := sybil.GetTable(table)
-		sybil.FLAGS.LoadAndQuery = &FALSE
+		sybil.FLAGS.LoadAndQuery = &falseFlag
 
 		t.LoadRecords(nil)
 		t.PrintColInfo()

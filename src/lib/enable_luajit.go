@@ -113,7 +113,7 @@ func SetLuaScript(filename string) {
 		Error("Couldn't open Lua script", filename, err)
 	}
 
-	FLAGS.LUA = &TRUE
+	FLAGS.LUA = &trueFlag
 	HoldMatches = true
 	SRC = string(dat)
 }

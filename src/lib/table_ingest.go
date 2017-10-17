@@ -45,7 +45,7 @@ func (t *Table) IngestRecords(blockname string) {
 // TODO: figure out how often we actually do a collation check by storing last
 // collation inside a file somewhere
 func (t *Table) CompactRecords() {
-	FLAGS.ReadIngestionLog = &TRUE
+	FLAGS.ReadIngestionLog = &trueFlag
 	ReadRowsOnly = true
 	DeleteBlocksAfterQuery = false
 	HoldMatches = true

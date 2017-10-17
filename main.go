@@ -27,7 +27,6 @@ func setupCommands() {
 	}
 }
 
-// USAGE Explain sybil's usage
 var USAGE = `sybil: a fast and simple NoSQL column store
 
 Commands: ingest, digest, trim, query, session, rebuild, inspect

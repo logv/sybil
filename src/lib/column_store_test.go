@@ -24,7 +24,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 	unloadTestTable()
 	nt := sybil.GetTable(TestTableName)
 	sybil.DeleteBlocksAfterQuery = false
-	sybil.FLAGS.ReadIngestionLog = &sybil.TRUE
+	sybil.FLAGS.ReadIngestionLog = &trueFlag
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -77,7 +77,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 	unloadTestTable()
 	nt := sybil.GetTable(TestTableName)
 	sybil.DeleteBlocksAfterQuery = false
-	sybil.FLAGS.ReadIngestionLog = &sybil.TRUE
+	sybil.FLAGS.ReadIngestionLog = &trueFlag
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -152,7 +152,7 @@ func TestBigIntColumns(test *testing.T) {
 	unloadTestTable()
 	nt := sybil.GetTable(TestTableName)
 	sybil.DeleteBlocksAfterQuery = false
-	sybil.FLAGS.ReadIngestionLog = &sybil.TRUE
+	sybil.FLAGS.ReadIngestionLog = &trueFlag
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -170,7 +170,7 @@ func TestBigIntColumns(test *testing.T) {
 	unloadTestTable()
 
 	sybil.ReadRowsOnly = false
-	sybil.FLAGS.Samples = &sybil.TRUE
+	sybil.FLAGS.Samples = &trueFlag
 	limit := 1000
 	sybil.FLAGS.Limit = &limit
 	nt = sybil.GetTable(TestTableName)
@@ -198,6 +198,6 @@ func TestBigIntColumns(test *testing.T) {
 		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	sybil.FLAGS.Samples = &sybil.FALSE
+	sybil.FLAGS.Samples = &falseFlag
 
 }

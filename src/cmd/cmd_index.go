@@ -17,7 +17,7 @@ func RunIndexCmdLine() {
 		ints = strings.Split(*fINTS, *sybil.FLAGS.FieldSeparator)
 	}
 
-	sybil.FLAGS.UpdateTableInfo = &TRUE
+	sybil.FLAGS.UpdateTableInfo = &trueFlag
 
 	t := sybil.GetTable(*sybil.FLAGS.Table)
 

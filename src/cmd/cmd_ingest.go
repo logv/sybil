@@ -72,8 +72,6 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 	}
 }
 
-var ImportedCount = 0
-
 func importCSVRecords() {
 	// For importing CSV records, we need to validate the headers, then we just
 	// read in and fill out record fields!
@@ -200,10 +198,10 @@ func RunIngestCmdLine() {
 	ingestfile := flag.String("file", sybil.IngestDir, "name of dir to ingest into")
 	fINTS := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	fCSV := flag.Bool("csv", false, "expect incoming data in CSV format")
-	fEXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
+	fExcludes := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 	fJSONPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	fSkipCompact := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
-	fREOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
+	fReopen := flag.String("infile", "", "input file to use (instead of stdin)")
 	sybil.FLAGS.SkipCompact = fSkipCompact
 
 	flag.Parse()
@@ -217,9 +215,9 @@ func RunIngestCmdLine() {
 
 	JSONPath = *fJSONPath
 
-	if *fREOPEN != "" {
+	if *fReopen != "" {
 
-		infile, err := os.OpenFile(*fREOPEN, syscall.O_RDONLY|syscall.O_CREAT, 0666)
+		infile, err := os.OpenFile(*fReopen, syscall.O_RDONLY|syscall.O_CREAT, 0666)
 		if err != nil {
 			sybil.Error("ERROR OPENING INFILE", err)
 		}
@@ -236,7 +234,7 @@ func RunIngestCmdLine() {
 	for _, v := range strings.Split(*fINTS, ",") {
 		IntCast[v] = true
 	}
-	for _, v := range strings.Split(*fEXCLUDES, ",") {
+	for _, v := range strings.Split(*fExcludes, ",") {
 		EXCLUDES[v] = true
 	}
 

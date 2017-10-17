@@ -1,6 +1,6 @@
 package sybilCmd
 
-var FALSE = false
-var TRUE = true
+var falseFlag = false
+var trueFlag = true
 
 var TestMode = false

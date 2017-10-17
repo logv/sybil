@@ -13,7 +13,7 @@ func TestCachedQueries(test *testing.T) {
 	blockCount := 5
 
 	sybil.DeleteBlocksAfterQuery = false
-	sybil.FLAGS.CachedQueries = &sybil.TRUE
+	sybil.FLAGS.CachedQueries = &trueFlag
 
 	var thisAddRecords = func(blockCount int) {
 		addRecords(func(r *sybil.Record, i int) {
@@ -42,7 +42,7 @@ func TestCachedQueries(test *testing.T) {
 	testCachedBasicHist(test)
 	deleteTestDb()
 
-	sybil.FLAGS.CachedQueries = &sybil.FALSE
+	sybil.FLAGS.CachedQueries = &falseFlag
 
 }
 
@@ -77,14 +77,14 @@ func testCachedQueryFiles(test *testing.T) {
 		}
 	}
 
-	sybil.FLAGS.CachedQueries = &sybil.FALSE
+	sybil.FLAGS.CachedQueries = &falseFlag
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
 			test.Error("Used query cache when flag was not provided")
 		}
 	}
-	sybil.FLAGS.CachedQueries = &sybil.TRUE
+	sybil.FLAGS.CachedQueries = &trueFlag
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -158,9 +158,9 @@ func testCachedBasicHist(test *testing.T) {
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
 		if histType == "loghist" {
-			sybil.FLAGS.LogHist = &sybil.TRUE
+			sybil.FLAGS.LogHist = &trueFlag
 		} else {
-			sybil.FLAGS.LogHist = &sybil.FALSE
+			sybil.FLAGS.LogHist = &falseFlag
 		}
 
 		HIST := "hist"
