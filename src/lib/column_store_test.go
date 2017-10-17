@@ -7,28 +7,28 @@ import (
 )
 
 func TestTableDigestRowRecords(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
-	block_count := 3
-	add_records(func(r *Record, index int) {
+	blockCount := 3
+	addRecordsToTestDB(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	t := GetTable(TEST_TABLE_NAME)
+	t := GetTable(testTableName)
 	t.IngestRecords("ingest")
 
-	unload_test_table()
-	nt := GetTable(TEST_TABLE_NAME)
+	unloadTestTable()
+	nt := GetTable(testTableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = &TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
 
-	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*block_count {
+	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
@@ -38,10 +38,10 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	nt.DigestRecords()
 
-	unload_test_table()
+	unloadTestTable()
 
 	READ_ROWS_ONLY = false
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(testTableName)
 	nt.LoadRecords(nil)
 
 	count := int32(0)
@@ -50,7 +50,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 		count += b.Info.NumRecords
 	}
 
-	if count != int32(block_count*CHUNK_SIZE) {
+	if count != int32(blockCount*CHUNK_SIZE) {
 		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}

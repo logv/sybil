@@ -12,27 +12,27 @@ import (
 )
 
 func TestTableLoadRecords(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	block_count := 3
+	blockCount := 3
 
-	add_records(func(r *Record, index int) {
+	addRecordsToTestDB(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 
-	querySpec := new_query_spec()
+	querySpec := newTestQuerySpec()
 
-	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
 
 	nt.MatchAndAggregate(querySpec)
@@ -56,31 +56,31 @@ func TestTableLoadRecords(test *testing.T) {
 
 // Tests that the average histogram works
 func TestAveraging(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	block_count := 3
+	blockCount := 3
 
-	total_age := int64(0)
+	totalAge := int64(0)
 	count := 0
-	add_records(func(r *Record, index int) {
+	addRecordsToTestDB(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
-		total_age += age
+		totalAge += age
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	avg_age := float64(total_age) / float64(count)
+	avgAge := float64(totalAge) / float64(count)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 
-	querySpec := new_query_spec()
+	querySpec := newTestQuerySpec()
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
 
 	nt.MatchAndAggregate(querySpec)
@@ -88,47 +88,47 @@ func TestAveraging(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Mean())) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Mean())
+		if math.Abs(float64(avgAge)-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avgAge, v.Hists["age"].Mean())
 		}
 	}
-	delete_test_db()
+	deleteTestDB()
 
 }
 
 // Tests that the histogram works
 func TestHistograms(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	block_count := 3
+	blockCount := 3
 
-	total_age := int64(0)
+	totalAge := int64(0)
 	count := 0
 	ages := make([]int, 0)
 
-	add_records(func(r *Record, index int) {
+	addRecordsToTestDB(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		ages = append(ages, int(age))
-		total_age += age
+		totalAge += age
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	avg_age := float64(total_age) / float64(count)
+	avgAge := float64(totalAge) / float64(count)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 	var HIST = "hist"
 	FLAGS.OP = &HIST
 
-	querySpec := new_query_spec()
-	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+	querySpec := newTestQuerySpec()
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 
 	nt.MatchAndAggregate(querySpec)
@@ -139,34 +139,34 @@ func TestHistograms(test *testing.T) {
 		kval, _ := strconv.ParseInt(k, 10, 64)
 		percentiles := v.Hists["age"].GetPercentiles()
 		if int64(percentiles[25]) != kval {
-			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[25])
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[25])
 		}
 		if int64(percentiles[50]) != kval {
-			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[50])
 		}
 		if int64(percentiles[75]) != kval {
-			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[75])
+			test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[75])
 		}
 	}
 
-	querySpec = new_query_spec()
+	querySpec = newTestQuerySpec()
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 
 	nt.MatchAndAggregate(querySpec)
 
 	sort.Ints(ages)
 
-	prev_count := int64(math.MaxInt64)
+	prevCount := int64(math.MaxInt64)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		percentiles := v.Hists["age"].GetPercentiles()
 
-		if v.Count > prev_count {
+		if v.Count > prevCount {
 			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
 		}
 
-		prev_count = v.Count
+		prevCount = v.Count
 
 		for k, v := range percentiles {
 			index := int(float64(k) / 100 * float64(len(ages)))
@@ -188,40 +188,40 @@ func TestHistograms(test *testing.T) {
 
 	sort.Ints(ages)
 
-	prev_avg := float64(0)
+	prevAvg := float64(0)
 	// testing that a histogram with single value looks uniform
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		avg := v.Hists["age"].Mean()
 
-		if avg < prev_avg {
+		if avg < prevAvg {
 			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
 		}
 
-		prev_count = v.Count
+		prevCount = v.Count
 
 	}
 
-	delete_test_db()
+	deleteTestDB()
 
 }
 
 // Tests that the histogram works
 func TestTimeSeries(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
 	if testing.Short() {
 		test.Skip("Skipping test in short mode")
 		return
 	}
 
-	block_count := 3
+	blockCount := 3
 
-	total_age := int64(0)
+	totalAge := int64(0)
 	count := 0
 	ages := make([]int, 0)
 
-	add_records(func(r *Record, index int) {
+	addRecordsToTestDB(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		random := rand.Intn(50) * -1
@@ -230,19 +230,19 @@ func TestTimeSeries(test *testing.T) {
 		r.AddIntField("time", int64(td))
 		age := int64(rand.Intn(20)) + 10
 		ages = append(ages, int(age))
-		total_age += age
+		totalAge += age
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	avg_age := float64(total_age) / float64(count)
+	avgAge := float64(totalAge) / float64(count)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 
 	hist := "hist"
 	FLAGS.OP = &hist
-	querySpec := new_query_spec()
-	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+	querySpec := newTestQuerySpec()
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 	querySpec.TimeBucket = int(time.Duration(60) * time.Minute)
 
@@ -263,18 +263,18 @@ func TestTimeSeries(test *testing.T) {
 			kval, _ := strconv.ParseInt(k, 10, 64)
 			percentiles := v.Hists["age"].GetPercentiles()
 			if int64(percentiles[25]) != kval {
-				test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[25])
+				test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[25])
 			}
 			if int64(percentiles[50]) != kval {
-				test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[50])
+				test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[50])
 			}
 			if int64(percentiles[75]) != kval {
-				test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avg_age, percentiles[75])
+				test.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[75])
 			}
 		}
 	}
 
-	delete_test_db()
+	deleteTestDB()
 }
 
 func TestOrderBy(test *testing.T) {
@@ -283,24 +283,24 @@ func TestOrderBy(test *testing.T) {
 		return
 	}
 
-	block_count := 3
+	blockCount := 3
 
-	total_age := int64(0)
+	totalAge := int64(0)
 	count := 0
-	add_records(func(r *Record, index int) {
+	addRecordsToTestDB(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
-		total_age += age
+		totalAge += age
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	avg_age := float64(total_age) / float64(count)
+	avgAge := float64(totalAge) / float64(count)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 
-	querySpec := new_query_spec()
+	querySpec := newTestQuerySpec()
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
 
 	nt.MatchAndAggregate(querySpec)
@@ -308,15 +308,15 @@ func TestOrderBy(test *testing.T) {
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
-		if math.Abs(float64(avg_age)-float64(v.Hists["age"].Mean())) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avg_age, v.Hists["age"].Mean())
+		if math.Abs(float64(avgAge)-float64(v.Hists["age"].Mean())) > 0.1 {
+			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avgAge, v.Hists["age"].Mean())
 		}
 	}
 
 	querySpec.OrderBy = "age"
 	nt.MatchAndAggregate(querySpec)
 
-	prev_avg := float64(0)
+	prevAvg := float64(0)
 	// testing that a histogram with single value looks uniform
 
 	if len(querySpec.Results) <= 0 {
@@ -327,14 +327,14 @@ func TestOrderBy(test *testing.T) {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		avg := v.Hists["age"].Mean()
 
-		if avg < prev_avg {
+		if avg < prevAvg {
 			test.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
 		}
 
-		prev_avg = avg
+		prevAvg = avg
 
 	}
 
-	delete_test_db()
+	deleteTestDB()
 
 }

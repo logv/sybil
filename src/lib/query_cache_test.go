@@ -8,46 +8,46 @@ import (
 )
 
 func TestCachedQueries(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
-	block_count := 5
+	blockCount := 5
 
 	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.CACHED_QUERIES = &TRUE
 
-	var this_add_records = func(block_count int) {
-		add_records(func(r *Record, i int) {
+	addRecords := func(blockCount int) {
+		addRecordsToTestDB(func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
 
-			age_str := strconv.FormatInt(int64(age), 10)
+			ageStr := strconv.FormatInt(int64(age), 10)
 			r.AddIntField("id", int64(i))
 			r.AddIntField("age", age)
-			r.AddStrField("age_str", age_str)
-			r.AddSetField("age_set", []string{age_str})
+			r.AddStrField("ageStr", ageStr)
+			r.AddSetField("age_set", []string{ageStr})
 
-		}, block_count)
-		save_and_reload_table(test, block_count)
+		}, blockCount)
+		saveAndReloadTestTable(test, blockCount)
 
 	}
 
-	this_add_records(block_count)
+	addRecords(blockCount)
 	testCachedQueryFiles(test)
-	delete_test_db()
+	deleteTestDB()
 
-	this_add_records(block_count)
+	addRecords(blockCount)
 	testCachedQueryConsistency(test)
-	delete_test_db()
+	deleteTestDB()
 
-	this_add_records(block_count)
+	addRecords(blockCount)
 	testCachedBasicHist(test)
-	delete_test_db()
+	deleteTestDB()
 
 	FLAGS.CACHED_QUERIES = &FALSE
 
 }
 
 func testCachedQueryFiles(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -99,7 +99,7 @@ func testCachedQueryFiles(test *testing.T) {
 }
 
 func testCachedQueryConsistency(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -114,7 +114,7 @@ func testCachedQueryConsistency(test *testing.T) {
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
 
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(testTableName)
 
 	// clear the copied query spec result map and look
 	// at the cached query results
@@ -153,11 +153,11 @@ func testCachedQueryConsistency(test *testing.T) {
 }
 
 func testCachedBasicHist(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 
-	for _, hist_type := range []string{"basic", "loghist"} {
+	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
-		if hist_type == "loghist" {
+		if histType == "loghist" {
 			FLAGS.LOG_HIST = &TRUE
 		} else {
 			FLAGS.LOG_HIST = &FALSE
@@ -180,7 +180,7 @@ func testCachedBasicHist(test *testing.T) {
 		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)
 
-		nt = GetTable(TEST_TABLE_NAME)
+		nt = GetTable(testTableName)
 
 		// clear the copied query spec result map and look
 		// at the cached query results
@@ -195,30 +195,30 @@ func testCachedBasicHist(test *testing.T) {
 		for k, v := range querySpec.Results {
 			v2, ok := copySpec.Results[k]
 			if !ok {
-				test.Error("Result Mismatch!", hist_type, k, v)
+				test.Error("Result Mismatch!", histType, k, v)
 			}
 
 			if v.Count != v2.Count {
-				test.Error("Count Mismatch", hist_type, v, v2, v.Count, v2.Count)
+				test.Error("Count Mismatch", histType, v, v2, v.Count, v2.Count)
 			}
 
 			if v.Samples != v2.Samples {
 				Debug(v, v2)
-				test.Error("Samples Mismatch", hist_type, v, v2, v.Samples, v2.Samples)
+				test.Error("Samples Mismatch", histType, v, v2, v.Samples, v2.Samples)
 			}
 
 			for k, h := range v.Hists {
 				h2, ok := v2.Hists[k]
 				if !ok {
-					test.Error("Missing Histogram", hist_type, v, v2)
+					test.Error("Missing Histogram", histType, v, v2)
 				}
 
 				if h.StdDev() <= 0 {
-					test.Error("Missing StdDev", hist_type, h, h.StdDev())
+					test.Error("Missing StdDev", histType, h, h.StdDev())
 				}
 
 				if math.Abs(h.StdDev()-h2.StdDev()) > 0.1 {
-					test.Error("StdDev MisMatch", hist_type, h, h2)
+					test.Error("StdDev MisMatch", histType, h, h2)
 				}
 
 			}

@@ -9,21 +9,21 @@ import (
 )
 
 func TestFilters(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
-	block_count := 3
-	add_records(func(r *Record, i int) {
+	blockCount := 3
+	addRecordsToTestDB(func(r *Record, i int) {
 		age := int64(rand.Intn(20)) + 10
 
-		age_str := strconv.FormatInt(int64(age), 10)
+		ageStr := strconv.FormatInt(int64(age), 10)
 		r.AddIntField("id", int64(i))
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", age_str)
-		r.AddSetField("age_set", []string{age_str})
+		r.AddStrField("ageStr", ageStr)
+		r.AddSetField("age_set", []string{ageStr})
 
-	}, block_count)
+	}, blockCount)
 
-	save_and_reload_table(test, block_count)
+	saveAndReloadTestTable(test, blockCount)
 
 	DELETE_BLOCKS_AFTER_QUERY = false
 
@@ -37,12 +37,12 @@ func TestFilters(test *testing.T) {
 	testSetIn(test)
 	testSetNin(test)
 
-	delete_test_db()
+	deleteTestDB()
 
 }
 
 func testIntLt(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -68,7 +68,7 @@ func testIntLt(test *testing.T) {
 }
 
 func testIntGt(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "gt", 20))
 
@@ -94,7 +94,7 @@ func testIntGt(test *testing.T) {
 }
 
 func testIntNeq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "neq", 20))
 
@@ -128,7 +128,7 @@ func testIntNeq(test *testing.T) {
 }
 
 func testIntEq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "eq", 20))
 
@@ -154,9 +154,9 @@ func testIntEq(test *testing.T) {
 }
 
 func testStrEq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "re", "20"))
+	filters = append(filters, nt.StrFilter("ageStr", "re", "20"))
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -185,9 +185,9 @@ func testStrEq(test *testing.T) {
 }
 
 func testStrNeq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "nre", "20"))
+	filters = append(filters, nt.StrFilter("ageStr", "nre", "20"))
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -214,9 +214,9 @@ func testStrNeq(test *testing.T) {
 }
 
 func testStrRe(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "re", "^2"))
+	filters = append(filters, nt.StrFilter("ageStr", "re", "^2"))
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -245,7 +245,7 @@ func testStrRe(test *testing.T) {
 }
 
 func testSetIn(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.SetFilter("age_set", "in", "20"))
 
@@ -287,7 +287,7 @@ func testSetIn(test *testing.T) {
 }
 
 func testSetNin(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	filters := []Filter{}
 	filters = append(filters, nt.SetFilter("age_set", "nin", "20"))
 

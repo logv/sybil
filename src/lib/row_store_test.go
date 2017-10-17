@@ -9,25 +9,25 @@ import (
 )
 
 func TestTableLoadRowRecords(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
-	block_count := 3
-	add_records(func(r *Record, index int) {
+	blockCount := 3
+	addRecordsToTestDB(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	t := GetTable(TEST_TABLE_NAME)
+	t := GetTable(testTableName)
 	t.IngestRecords("ingest")
 
-	unload_test_table()
-	nt := GetTable(TEST_TABLE_NAME)
+	unloadTestTable()
+	nt := GetTable(testTableName)
 
 	nt.LoadRecords(nil)
 
-	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*block_count {
+	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
@@ -35,9 +35,9 @@ func TestTableLoadRowRecords(test *testing.T) {
 		test.Error("Found other records than rowblock")
 	}
 
-	querySpec := new_query_spec()
+	querySpec := newTestQuerySpec()
 
-	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
 
 	nt.MatchAndAggregate(querySpec)
