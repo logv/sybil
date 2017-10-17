@@ -22,6 +22,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	unloadTestTable()
 	nt := GetTable(testTableName)
+
 	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = &TRUE
 
@@ -52,7 +53,6 @@ func TestTableDigestRowRecords(test *testing.T) {
 
 	if count != int32(blockCount*CHUNK_SIZE) {
 		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
-
 	}
 
 }

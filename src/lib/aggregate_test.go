@@ -287,6 +287,7 @@ func TestOrderBy(test *testing.T) {
 
 	totalAge := int64(0)
 	count := 0
+
 	addRecordsToTestDB(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
