@@ -1,34 +1,33 @@
-package sybil_test
+package sybil
 
-import sybil "./"
-
-import "testing"
-import "math/rand"
-import "strconv"
-
+import (
+	"math/rand"
+	"strconv"
+	"testing"
+)
 
 func TestSets(test *testing.T) {
-	delete_test_db()
-	total_age := int64(0)
+	deleteTestDB()
+	totalAge := int64(0)
 
-	add_records(func(r *sybil.Record, i int) {}, 0)
-	block_count := 3
-	min_count := sybil.CHUNK_SIZE * block_count
-	records := add_records(func(r *sybil.Record, i int) {
-		set_id := []string{strconv.FormatInt(int64(i), 10)}
+	addRecordsToTestDB(func(r *Record, i int) {}, 0)
+	blockCount := 3
+	minCount := CHUNK_SIZE * blockCount
+	records := addRecordsToTestDB(func(r *Record, i int) {
+		setID := []string{strconv.FormatInt(int64(i), 10)}
 		r.AddIntField("id_int", int64(i))
-		r.AddSetField("id_set", set_id)
+		r.AddSetField("id_set", setID)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
-		age := int64(rand.Intn(20)) + int64(min_count)
-		total_age += age
+		age := int64(rand.Intn(20)) + int64(minCount)
+		totalAge += age
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
 
-	avg_age := float64(total_age) / float64(len(records))
-	Debug("AVG AGE", avg_age-float64(min_count))
+	avgAge := float64(totalAge) / float64(len(records))
+	Debug("AVG AGE", avgAge-float64(minCount))
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 
 	for _, b := range nt.BlockList {
 		for _, r := range b.RecordList {
@@ -45,7 +44,7 @@ func TestSets(test *testing.T) {
 				test.Error("MISSING STR ID")
 			}
 
-			ageval, _ := r.GetStrVal("age_str")
+			ageval, _ := r.GetStrVal("ageStr")
 			pval, err := strconv.ParseInt(strval, 10, 64)
 
 			if ageval == strval {
@@ -63,7 +62,7 @@ func TestSets(test *testing.T) {
 		}
 	}
 
-	delete_test_db()
+	deleteTestDB()
 
 	// Load Some Samples?
 

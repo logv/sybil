@@ -1,39 +1,38 @@
-package sybil_test
+package sybil
 
-import sybil "./"
-
-import "compress/gzip"
-import "fmt"
-import "path"
-
-import "io/ioutil"
-import "math/rand"
-import "os"
-import "strconv"
-import "testing"
-import "time"
-import "strings"
+import (
+	"compress/gzip"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
 
 func TestOpenCompressedInfoDB(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
-	block_count := 3
-	created := add_records(func(r *sybil.Record, index int) {
+	blockCount := 3
+	created := addRecordsToTestDB(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddIntField("time", int64(time.Now().Unix()))
 		r.AddStrField("name", fmt.Sprint("user", index))
-	}, block_count)
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != testTableName {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
 
-	filename := fmt.Sprintf("db/%s/info.db", TEST_TABLE_NAME)
+	filename := fmt.Sprintf("db/%s/info.db", testTableName)
 	dat, err := ioutil.ReadFile(filename)
 
 	if err != nil {
@@ -42,7 +41,7 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 	}
 
 	// NOW WE COMPRESS INFO.DB.GZ
-	zfilename := fmt.Sprintf("db/%s/info.db.gz", TEST_TABLE_NAME)
+	zfilename := fmt.Sprintf("db/%s/info.db.gz", testTableName)
 	file, err := os.Create(zfilename)
 	if err != nil {
 		test.Error("COULDNT LOAD ZIPPED TABLE FILE FOR WRITING!")
@@ -65,7 +64,7 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 
 	nt.LoadRecords(&loadSpec)
 
-	var records = make([]*sybil.Record, 0)
+	var records = make([]*Record, 0)
 	for _, b := range nt.BlockList {
 		records = append(records, b.RecordList...)
 	}
@@ -74,36 +73,36 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 		test.Error("More records were created than expected", len(records))
 	}
 
-	delete_test_db()
+	deleteTestDB()
 
 }
 
 func TestOpenCompressedColumn(test *testing.T) {
-	delete_test_db()
+	deleteTestDB()
 
-	block_count := 3
-	created := add_records(func(r *sybil.Record, index int) {
+	blockCount := 3
+	created := addRecordsToTestDB(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddIntField("time", int64(time.Now().Unix()))
 		r.AddStrField("name", fmt.Sprint("user", index))
-	}, block_count)
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTestTable(test, blockCount)
 	nt.DigestRecords()
 	nt.LoadRecords(nil)
 
 	blocks := nt.BlockList
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != testTableName {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
 
 	// NOW WE COMPRESS ALL THE BLOCK FILES BY ITERATING THROUGH THE DIR AND
 	// DOING SO
-	for blockname, _ := range blocks {
+	for blockname := range blocks {
 		files, _ := ioutil.ReadDir(blockname)
 		Debug("READING BLOCKNAME", blockname)
 		for _, f := range files {
@@ -132,7 +131,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 
 	// END COMPRESSING BLOCK FILES
 
-	bt := save_and_reload_table(test, block_count)
+	bt := saveAndReloadTestTable(test, blockCount)
 
 	loadSpec := bt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
@@ -144,7 +143,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 
 	bt.LoadRecords(&loadSpec)
 
-	var records = make([]*sybil.Record, 0)
+	var records = make([]*Record, 0)
 	for _, b := range bt.BlockList {
 		records = append(records, b.RecordList...)
 	}
@@ -153,6 +152,6 @@ func TestOpenCompressedColumn(test *testing.T) {
 		test.Error("More records were created than expected", len(records))
 	}
 
-	delete_test_db()
+	deleteTestDB()
 
 }

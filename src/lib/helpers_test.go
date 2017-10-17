@@ -1,42 +1,40 @@
-package sybil_test
+package sybil
 
-import sybil "./"
-import "os"
-import "fmt"
-import "testing"
+import (
+	"fmt"
+	"os"
+	"testing"
+)
 
-var TEST_TABLE_NAME = "__TEST0__"
+var testTableName = "__TEST0__"
 
-// we copy over Debug from sybil package for usage
-var Debug = sybil.Debug
-
-type RecordSetupCB func(*sybil.Record, int)
+type RecordSetupCB func(*Record, int)
 
 func TestMain(m *testing.M) {
-	run_tests(m)
-	delete_test_db()
+	runTests(m)
+	deleteTestDB()
 }
 
-func run_tests(m *testing.M) {
-	setup_test_vars(100)
+func runTests(m *testing.M) {
+	setupTestVars(100)
 	m.Run()
 }
 
-func setup_test_vars(chunk_size int) {
-	sybil.Startup()
-	sybil.FLAGS.TABLE = &TEST_TABLE_NAME
+func setupTestVars(chunkSize int) {
+	Startup()
+	FLAGS.TABLE = &testTableName
 
-	sybil.TEST_MODE = true
-	sybil.CHUNK_SIZE = chunk_size
-	sybil.LOCK_US = 1
-	sybil.LOCK_TRIES = 3
+	TEST_MODE = true
+	CHUNK_SIZE = chunkSize
+	LOCK_US = 1
+	LOCK_TRIES = 3
 }
 
-func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {
-	count := sybil.CHUNK_SIZE * block_count
+func addRecordsToTestDB(cb RecordSetupCB, blockCount int) []*Record {
+	count := CHUNK_SIZE * blockCount
 
-	ret := make([]*sybil.Record, 0)
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	ret := make([]*Record, 0)
+	t := GetTable(testTableName)
 
 	for i := 0; i < count; i++ {
 		r := t.NewRecord()
@@ -47,51 +45,51 @@ func add_records(cb RecordSetupCB, block_count int) []*sybil.Record {
 	return ret
 }
 
-func save_and_reload_table(test *testing.T, expected_blocks int) *sybil.Table {
+func saveAndReloadTestTable(test *testing.T, expectedBlocks int) *Table {
 
-	expected_count := sybil.CHUNK_SIZE * expected_blocks
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	expectedCount := CHUNK_SIZE * expectedBlocks
+	t := GetTable(testTableName)
 
 	t.SaveRecordsToColumns()
 
-	unload_test_table()
+	unloadTestTable()
 
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := GetTable(testTableName)
 	nt.LoadTableInfo()
 
-	loadSpec := sybil.NewLoadSpec()
+	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	count := nt.LoadRecords(&loadSpec)
 
-	if count != expected_count {
-		test.Error("Wrote", expected_count, "records, but read back", count)
+	if count != expectedCount {
+		test.Error("Wrote", expectedCount, "records, but read back", count)
 	}
 
 	// +1 is the Row Store Block...
-	if len(nt.BlockList) != expected_blocks {
-		test.Error("Wrote", expected_blocks, "blocks, but came back with", len(nt.BlockList))
+	if len(nt.BlockList) != expectedBlocks {
+		test.Error("Wrote", expectedBlocks, "blocks, but came back with", len(nt.BlockList))
 	}
 
 	return nt
 
 }
 
-func new_query_spec() *sybil.QuerySpec {
+func newTestQuerySpec() *QuerySpec {
 
-	filters := []sybil.Filter{}
-	aggs := []sybil.Aggregation{}
-	groupings := []sybil.Grouping{}
+	filters := []Filter{}
+	aggs := []Aggregation{}
+	groupings := []Grouping{}
 
-	querySpec := sybil.QuerySpec{QueryParams: sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}}
+	querySpec := QuerySpec{QueryParams: QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}}
 
 	return &querySpec
 }
 
-func unload_test_table() {
-	delete(sybil.LOADED_TABLES, TEST_TABLE_NAME)
+func unloadTestTable() {
+	delete(LOADED_TABLES, testTableName)
 }
 
-func delete_test_db() {
-	os.RemoveAll(fmt.Sprintf("db/%s", TEST_TABLE_NAME))
-	unload_test_table()
+func deleteTestDB() {
+	os.RemoveAll(fmt.Sprintf("db/%s", testTableName))
+	unloadTestTable()
 }
