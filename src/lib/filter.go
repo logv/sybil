@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 // This is the passed in flags
@@ -28,20 +29,20 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)
 	if filterSpec.Int != "" {
-		intfilters = strings.Split(filterSpec.Int, *common.FLAGS.FIELD_SEPARATOR)
+		intfilters = strings.Split(filterSpec.Int, *config.FLAGS.FIELD_SEPARATOR)
 	}
 	if filterSpec.Str != "" {
-		strfilters = strings.Split(filterSpec.Str, *common.FLAGS.FIELD_SEPARATOR)
+		strfilters = strings.Split(filterSpec.Str, *config.FLAGS.FIELD_SEPARATOR)
 	}
 
 	if filterSpec.Set != "" {
-		setfilters = strings.Split(filterSpec.Set, *common.FLAGS.FIELD_SEPARATOR)
+		setfilters = strings.Split(filterSpec.Set, *config.FLAGS.FIELD_SEPARATOR)
 	}
 
 	filters := []Filter{}
 
 	for _, filt := range intfilters {
-		tokens := strings.Split(filt, *common.FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filt, *config.FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val, _ := strconv.ParseInt(tokens[2], 10, 64)
@@ -51,8 +52,8 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		}
 
 		// we align the Time Filter to the Time Bucket iff we are doing a time series query
-		if col == *common.FLAGS.TIME_COL && *common.FLAGS.TIME {
-			bucket := int64(*common.FLAGS.TIME_BUCKET)
+		if col == *config.FLAGS.TIME_COL && *config.FLAGS.TIME {
+			bucket := int64(*config.FLAGS.TIME_BUCKET)
 			new_val := int64(val/bucket) * bucket
 
 			if val != new_val {
@@ -66,7 +67,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range setfilters {
-		tokens := strings.Split(filter, *common.FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filter, *config.FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]
@@ -81,7 +82,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 	}
 
 	for _, filter := range strfilters {
-		tokens := strings.Split(filter, *common.FLAGS.FILTER_SEPARATOR)
+		tokens := strings.Split(filter, *config.FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		op := tokens[1]
 		val := tokens[2]

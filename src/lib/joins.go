@@ -4,10 +4,11 @@ import (
 	"strconv"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func (t *Table) BuildJoinMap() {
-	joinkey := *common.FLAGS.JOIN_KEY
+	joinkey := *config.FLAGS.JOIN_KEY
 	joinid := t.get_key_id(joinkey)
 
 	t.join_lookup = make(map[string]*Record)

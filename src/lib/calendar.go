@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 type Activity struct {
@@ -56,7 +56,7 @@ func copy_calendar(am1, am2 ActivityMap) {
 }
 
 func (c *Calendar) AddActivity(timestamp int) {
-	if *common.FLAGS.RETENTION != false {
+	if *config.FLAGS.RETENTION != false {
 		punch_calendar(&c.Daily, timestamp/(int(time.Hour.Seconds())*24))
 		punch_calendar(&c.Weekly, timestamp/(int(time.Hour.Seconds())*24*7))
 		punch_calendar(&c.Monthly, timestamp/(int(time.Hour.Seconds())*24*7*30))

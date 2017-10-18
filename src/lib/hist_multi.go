@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 type MultiHist struct {
@@ -33,7 +34,7 @@ func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 	h.Count = 0
 	h.Min = info.Min
 	h.Max = info.Max
-	if common.FLAGS.OP != nil && *common.FLAGS.OP == "hist" {
+	if config.FLAGS.OP != nil && *config.FLAGS.OP == "hist" {
 		h.TrackPercentiles()
 	}
 
@@ -61,7 +62,7 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 		}
 	}
 
-	if common.OPTS.WEIGHT_COL && weight > 1 {
+	if config.OPTS.WEIGHT_COL && weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {

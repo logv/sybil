@@ -1,4 +1,4 @@
-package common
+package config
 
 type ProfilerStart interface {
 	Stop()

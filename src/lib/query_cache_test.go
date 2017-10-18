@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func TestCachedQueries(test *testing.T) {
@@ -15,7 +16,7 @@ func TestCachedQueries(test *testing.T) {
 	blockCount := 5
 
 	DELETE_BLOCKS_AFTER_QUERY = false
-	common.FLAGS.CACHED_QUERIES = &common.TRUE
+	config.FLAGS.CACHED_QUERIES = &config.TRUE
 
 	addRecords := func(blockCount int) {
 		addRecordsToTestDB(func(r *Record, i int) {
@@ -44,7 +45,7 @@ func TestCachedQueries(test *testing.T) {
 	testCachedBasicHist(test)
 	deleteTestDB()
 
-	common.FLAGS.CACHED_QUERIES = &common.FALSE
+	config.FLAGS.CACHED_QUERIES = &config.FALSE
 
 }
 
@@ -79,14 +80,14 @@ func testCachedQueryFiles(test *testing.T) {
 		}
 	}
 
-	common.FLAGS.CACHED_QUERIES = &common.FALSE
+	config.FLAGS.CACHED_QUERIES = &config.FALSE
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
 			test.Error("Used query cache when flag was not provided")
 		}
 	}
-	common.FLAGS.CACHED_QUERIES = &common.TRUE
+	config.FLAGS.CACHED_QUERIES = &config.TRUE
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -160,13 +161,13 @@ func testCachedBasicHist(test *testing.T) {
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
 		if histType == "loghist" {
-			common.FLAGS.LOG_HIST = &common.TRUE
+			config.FLAGS.LOG_HIST = &config.TRUE
 		} else {
-			common.FLAGS.LOG_HIST = &common.FALSE
+			config.FLAGS.LOG_HIST = &config.FALSE
 		}
 
 		HIST := "hist"
-		common.FLAGS.OP = &HIST
+		config.FLAGS.OP = &HIST
 
 		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))

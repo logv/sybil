@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 var GZIP_EXT = ".gz"
@@ -305,7 +306,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, r)
 	}
 
-	if *common.FLAGS.DEBUG {
+	if *config.FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "+")
 	}
 }

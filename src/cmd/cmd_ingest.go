@@ -14,6 +14,7 @@ import (
 
 	sybil "github.com/logv/sybil/src/lib"
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 type Dictionary map[string]interface{}
@@ -84,7 +85,7 @@ func import_csv_records() {
 	header_fields := strings.Split(header, ",")
 	common.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
 
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -155,7 +156,7 @@ func json_query(obj *interface{}, path []string) []interface{} {
 }
 
 func import_json_records() {
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
 	common.Debug("PATH IS", path)
@@ -205,13 +206,13 @@ func RunIngestCmdLine() {
 	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	f_SKIP_COMPACT := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
 	f_REOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
-	common.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
+	config.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
 
 	flag.Parse()
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
 
-	if *common.FLAGS.TABLE == "" {
+	if *config.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
@@ -229,8 +230,8 @@ func RunIngestCmdLine() {
 
 	}
 
-	if *common.FLAGS.PROFILE {
-		profile := common.RUN_PROFILER()
+	if *config.FLAGS.PROFILE {
+		profile := config.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
@@ -245,7 +246,7 @@ func RunIngestCmdLine() {
 		common.Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else

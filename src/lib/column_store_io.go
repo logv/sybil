@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 type ValueMap map[int64][]uint32
@@ -74,7 +75,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol := NewSavedIntColumn()
 
 		intCol.Name = col_name
-		intCol.DeltaEncodedIDs = common.OPTS.DELTA_ENCODE_RECORD_IDS
+		intCol.DeltaEncodedIDs = config.OPTS.DELTA_ENCODE_RECORD_IDS
 
 		max_r := 0
 		record_to_value := make(map[uint32]int64)
@@ -99,7 +100,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, max_r)
-			intCol.ValueEncoded = common.OPTS.DELTA_ENCODE_INT_VALUES
+			intCol.ValueEncoded = config.OPTS.DELTA_ENCODE_INT_VALUES
 
 			for r, val := range record_to_value {
 				intCol.Values[r] = val
@@ -107,7 +108,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 			prev := int64(0)
 			for r, val := range intCol.Values {
-				if common.OPTS.DELTA_ENCODE_INT_VALUES {
+				if config.OPTS.DELTA_ENCODE_INT_VALUES {
 					intCol.Values[r] = val - prev
 					prev = val
 				} else {
@@ -153,7 +154,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = col_name
-		setCol.DeltaEncodedIDs = common.OPTS.DELTA_ENCODE_RECORD_IDS
+		setCol.DeltaEncodedIDs = config.OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
 		tb_col := tb.GetColumnInfo(k)
@@ -233,7 +234,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		}
 		strCol := NewSavedStrColumn()
 		strCol.Name = col_name
-		strCol.DeltaEncodedIDs = common.OPTS.DELTA_ENCODE_RECORD_IDS
+		strCol.DeltaEncodedIDs = config.OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := newTableBlock()
 
 		temp_col := temp_block.GetColumnInfo(k)
@@ -412,7 +413,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		}
 	}
 
-	if common.OPTS.DELTA_ENCODE_RECORD_IDS {
+	if config.OPTS.DELTA_ENCODE_RECORD_IDS {
 		delta_encode(same_ints)
 		delta_encode(same_strs)
 		delta_encode(same_sets)
@@ -520,7 +521,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	// unpack the string table
 
 	// Run our replacements!
-	str_replace, ok := common.OPTS.STR_REPLACEMENTS[into.Name]
+	str_replace, ok := config.OPTS.STR_REPLACEMENTS[into.Name]
 	bucket_replace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
@@ -550,8 +551,8 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	col.val_string_id_lookup = string_lookup
 
 	is_path_col := false
-	if common.FLAGS.PATH_KEY != nil {
-		is_path_col = into.Name == *common.FLAGS.PATH_KEY
+	if config.FLAGS.PATH_KEY != nil {
+		is_path_col = into.Name == *config.FLAGS.PATH_KEY
 	}
 	var record *Record
 	var r uint32
@@ -676,13 +677,13 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 	col_id := tb.table.get_key_id(into.Name)
 
 	is_time_col := false
-	if common.FLAGS.TIME_COL != nil {
-		is_time_col = into.Name == *common.FLAGS.TIME_COL
+	if config.FLAGS.TIME_COL != nil {
+		is_time_col = into.Name == *config.FLAGS.TIME_COL
 	}
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			if *common.FLAGS.UPDATE_TABLE_INFO {
+			if *config.FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, bucket.Value)
 				tb.table.update_int_info(col_id, bucket.Value)
 			}
@@ -715,7 +716,7 @@ func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
 
 		prev := int64(0)
 		for r, v := range into.Values {
-			if *common.FLAGS.UPDATE_TABLE_INFO {
+			if *config.FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, v)
 				tb.table.update_int_info(col_id, v)
 			}

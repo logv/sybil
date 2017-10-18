@@ -1,6 +1,6 @@
 // +build !profile
 
-package common
+package config
 
 var (
 	PROFILER_ENABLED bool

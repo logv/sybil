@@ -5,24 +5,25 @@ import (
 
 	sybil "github.com/logv/sybil/src/lib"
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if *common.FLAGS.TABLE == "" {
+	if *config.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *common.FLAGS.PROFILE {
-		profile := common.RUN_PROFILER()
+	if *config.FLAGS.PROFILE {
+		profile := config.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
 	sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
 		common.Warn("Couldn't read table info, exiting early")
 		return

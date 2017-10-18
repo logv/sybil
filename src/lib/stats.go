@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 // Using an analysis of variance, calculate the intra class correlation co-efficient
@@ -25,7 +26,7 @@ import (
 // variance against the overall average.
 func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 	iccs := make(map[string]float64)
-	t := GetTable(*common.FLAGS.TABLE)
+	t := GetTable(*config.FLAGS.TABLE)
 	for _, agg := range querySpec.Aggregations {
 		cumulative, ok := querySpec.Cumulative.Hists[agg.Name]
 		if !ok {

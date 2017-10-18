@@ -1,9 +1,9 @@
 //+build profile
 
-package sybil
+package config
 
 import (
-	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 	"github.com/pkg/profile"
 )
 
@@ -14,7 +14,7 @@ type PkgProfile struct {
 }
 
 func (p PkgProfile) Start() ProfilerStart {
-	if *common.FLAGS.PROFILE_MEM {
+	if *config.FLAGS.PROFILE_MEM {
 		PROFILE = profile.Start(profile.MemProfile, profile.ProfilePath("."))
 	} else {
 		PROFILE = profile.Start(profile.CPUProfile, profile.ProfilePath("."))

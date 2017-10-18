@@ -5,6 +5,7 @@ import (
 
 	sybil "github.com/logv/sybil/src/lib"
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func RunRebuildCmdLine() {
@@ -12,17 +13,17 @@ func RunRebuildCmdLine() {
 	FORCE_UPDATE := flag.Bool("force", false, "Force re-calculation of info.db, even if it exists")
 	flag.Parse()
 
-	if *common.FLAGS.TABLE == "" {
+	if *config.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *common.FLAGS.PROFILE {
-		profile := common.RUN_PROFILER()
+	if *config.FLAGS.PROFILE {
+		profile := config.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 
 	loaded := t.LoadTableInfo() && *FORCE_UPDATE == false
 	if loaded {

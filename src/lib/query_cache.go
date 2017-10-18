@@ -11,6 +11,7 @@ import (
 	"path"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 // this registration is used for saving and decoding cached per block query
@@ -25,7 +26,7 @@ func registerTypesForQueryCache() {
 
 func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
-	if *common.FLAGS.CACHED_QUERIES == false {
+	if *config.FLAGS.CACHED_QUERIES == false {
 		return nil, nil
 	}
 
@@ -150,11 +151,11 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 }
 
 func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
-	if *common.FLAGS.CACHED_QUERIES == false {
+	if *config.FLAGS.CACHED_QUERIES == false {
 		return false
 	}
 
-	if *common.FLAGS.SAMPLES {
+	if *config.FLAGS.SAMPLES {
 		return false
 
 	}
@@ -178,11 +179,11 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 }
 
 func (qs *QuerySpec) SaveCachedResults(blockname string) {
-	if *common.FLAGS.CACHED_QUERIES == false {
+	if *config.FLAGS.CACHED_QUERIES == false {
 		return
 	}
 
-	if *common.FLAGS.SAMPLES {
+	if *config.FLAGS.SAMPLES {
 		return
 	}
 

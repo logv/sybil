@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 var LOCK_US = time.Millisecond * 3
@@ -55,7 +56,7 @@ func RecoverLock(lock RecoverableLock) bool {
 func (l *InfoLock) Recover() bool {
 	t := l.Lock.Table
 	common.Debug("INFO LOCK RECOVERY")
-	dirname := path.Join(*common.FLAGS.DIR, t.Name)
+	dirname := path.Join(*config.FLAGS.DIR, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
@@ -82,7 +83,7 @@ func (l *InfoLock) Recover() bool {
 func (l *DigestLock) Recover() bool {
 	common.Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
-	ingestdir := path.Join(*common.FLAGS.DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*config.FLAGS.DIR, t.Name, INGEST_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
@@ -115,7 +116,7 @@ func (l *BlockLock) Recover() bool {
 func (l *CacheLock) Recover() bool {
 	common.Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	files, err := ioutil.ReadDir(path.Join(*common.FLAGS.DIR, t.Name, CACHE_DIR))
+	files, err := ioutil.ReadDir(path.Join(*config.FLAGS.DIR, t.Name, CACHE_DIR))
 
 	if err != nil {
 		l.ForceDeleteFile()
@@ -123,7 +124,7 @@ func (l *CacheLock) Recover() bool {
 	}
 
 	for _, block_file := range files {
-		filename := path.Join(*common.FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
+		filename := path.Join(*config.FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
 		block_cache := SavedBlockCache{}
 
 		err := decodeInto(filename, &block_cache)
@@ -157,7 +158,7 @@ func (l *Lock) ForceDeleteFile() {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*common.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*config.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	common.Debug("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
@@ -169,7 +170,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*common.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*config.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	common.Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
@@ -294,7 +295,7 @@ func (l *Lock) Grab() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*common.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*config.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
@@ -341,7 +342,7 @@ func (l *Lock) Release() bool {
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*common.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(*config.FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 	for i := 0; i < LOCK_TRIES; i++ {
 		val, err := ioutil.ReadFile(lockfile)
 
