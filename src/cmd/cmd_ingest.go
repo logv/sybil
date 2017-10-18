@@ -1,6 +1,4 @@
-package sybil_cmd
-
-import sybil "github.com/logv/sybil/src/lib"
+package cmd
 
 import (
 	"bufio"
@@ -13,6 +11,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/lib/common"
 )
 
 type Dictionary map[string]interface{}
@@ -67,7 +68,7 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 			r.AddSetField(key_name, key_strs)
 		case nil:
 		default:
-			sybil.common.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
+			common.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
 		}
 	}
 }
@@ -81,9 +82,9 @@ func import_csv_records() {
 	scanner.Scan()
 	header := scanner.Text()
 	header_fields := strings.Split(header, ",")
-	sybil.common.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
+	common.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*common.FLAGS.TABLE)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -127,14 +128,14 @@ func json_query(obj *interface{}, path []string) []interface{} {
 			// the key should be an integer key...
 			intkey, err := strconv.ParseInt(key, 10, 32)
 			if err != nil {
-				sybil.common.Debug("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
+				common.Debug("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
 			} else {
 				ret = ing[intkey]
 			}
 		case nil:
 			continue
 		default:
-			sybil.common.Debug(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
+			common.Debug(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
 		}
 
 	}
@@ -147,17 +148,17 @@ func json_query(obj *interface{}, path []string) []interface{} {
 		ret = append(ret, r)
 		return ret
 	default:
-		sybil.common.Debug(fmt.Sprintf("RET TYPE %T", r))
+		common.Debug(fmt.Sprintf("RET TYPE %T", r))
 	}
 
 	return nil
 }
 
 func import_json_records() {
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*common.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
-	sybil.common.Debug("PATH IS", path)
+	common.Debug("PATH IS", path)
 
 	dec := json.NewDecoder(os.Stdin)
 
@@ -169,7 +170,7 @@ func import_json_records() {
 				break
 			}
 			if err != nil {
-				sybil.common.Debug("ERR", err)
+				common.Debug("ERR", err)
 			}
 		}
 
@@ -204,13 +205,13 @@ func RunIngestCmdLine() {
 	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	f_SKIP_COMPACT := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
 	f_REOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
-	sybil.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
+	common.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
 
 	flag.Parse()
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
 
-	if *sybil.FLAGS.TABLE == "" {
+	if *common.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
@@ -221,15 +222,15 @@ func RunIngestCmdLine() {
 
 		infile, err := os.OpenFile(*f_REOPEN, syscall.O_RDONLY|syscall.O_CREAT, 0666)
 		if err != nil {
-			sybil.common.Error("ERROR OPENING INFILE", err)
+			common.Error("ERROR OPENING INFILE", err)
 		}
 
 		os.Stdin = infile
 
 	}
 
-	if *sybil.FLAGS.PROFILE {
-		profile := sybil.RUN_PROFILER()
+	if *common.FLAGS.PROFILE {
+		profile := common.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
@@ -241,10 +242,10 @@ func RunIngestCmdLine() {
 	}
 
 	for k, _ := range EXCLUDES {
-		sybil.common.Debug("EXCLUDING COLUMN", k)
+		common.Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*common.FLAGS.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else
@@ -260,7 +261,7 @@ func RunIngestCmdLine() {
 
 	if loaded_table == false {
 		if t.HasFlagFile() {
-			sybil.common.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
+			common.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
 	}

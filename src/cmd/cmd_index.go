@@ -1,30 +1,34 @@
-package sybil_cmd
+package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
-import "flag"
-import "strings"
+import (
+	"flag"
+	"strings"
+
+	sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 func RunIndexCmdLine() {
 	var f_INTS = flag.String("int", "", "Integer values to index")
 	flag.Parse()
-	if *sybil.FLAGS.TABLE == "" {
+	if *common.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
 	var ints []string
 	if *f_INTS != "" {
-		ints = strings.Split(*f_INTS, *sybil.FLAGS.FIELD_SEPARATOR)
+		ints = strings.Split(*f_INTS, *common.FLAGS.FIELD_SEPARATOR)
 	}
 
-	sybil.FLAGS.UPDATE_TABLE_INFO = &TRUE
+	common.FLAGS.UPDATE_TABLE_INFO = &TRUE
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*common.FLAGS.TABLE)
 
 	t.LoadRecords(nil)
 	t.SaveTableInfo("info")
 	sybil.DELETE_BLOCKS_AFTER_QUERY = true
-	sybil.common.OPTS.WRITE_BLOCK_INFO = true
+	common.OPTS.WRITE_BLOCK_INFO = true
 
 	loadSpec := t.NewLoadSpec()
 	for _, v := range ints {
