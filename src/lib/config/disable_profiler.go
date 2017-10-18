@@ -1,9 +1,11 @@
 // +build !profile
 
-package sybil
+package config
 
-var PROFILER_ENABLED bool
-var PROFILE *bool = &PROFILER_ENABLED
+var (
+	PROFILER_ENABLED bool
+	PROFILE          *bool = &PROFILER_ENABLED
+)
 
 type NoProfile struct{}
 

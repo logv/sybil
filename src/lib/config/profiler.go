@@ -1,4 +1,4 @@
-package sybil
+package config
 
 type ProfilerStart interface {
 	Stop()

@@ -1,9 +1,13 @@
 package sybil
 
-import "log"
-import "math"
-import "sort"
-import "strconv"
+import (
+	"log"
+	"math"
+	"sort"
+	"strconv"
+
+	"github.com/logv/sybil/src/lib/config"
+)
 
 // {{{ BASIC HIST
 
@@ -48,8 +52,8 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 		h.NumBuckets = buckets
 		h.BucketSize = int(size / int64(buckets))
 
-		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-			h.BucketSize = *FLAGS.HIST_BUCKET
+		if config.FLAGS.HIST_BUCKET != nil && *config.FLAGS.HIST_BUCKET > 0 {
+			h.BucketSize = *config.FLAGS.HIST_BUCKET
 		}
 
 		if h.BucketSize == 0 {
@@ -76,7 +80,7 @@ func (t *Table) NewBasicHist(info *IntInfo) *HistCompat {
 	compat_hist.table = t
 	compat_hist.Info = *info
 
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if config.FLAGS.OP != nil && *config.FLAGS.OP == "hist" {
 		compat_hist.TrackPercentiles()
 	}
 
@@ -108,7 +112,7 @@ func (h *BasicHist) addWeightedValue(value int64, weight int64) {
 		return
 	}
 
-	if OPTS.WEIGHT_COL || weight > 1 {
+	if config.OPTS.WEIGHT_COL || weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {

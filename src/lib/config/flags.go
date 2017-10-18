@@ -1,12 +1,15 @@
-package sybil
+package config
 
-import "flag"
+import (
+	"flag"
+)
 
-var FALSE = false
-var TRUE = true
-
-var TEST_MODE = false
-var ENABLE_LUA = false
+var (
+	FALSE      = false
+	TRUE       = true
+	TEST_MODE  = false
+	ENABLE_LUA = false
+)
 
 type FlagDefs struct {
 	OP          *string
@@ -82,8 +85,8 @@ type FlagDefs struct {
 }
 
 type StrReplace struct {
-	pattern string
-	replace string
+	Pattern string
+	Replace string
 }
 
 type OptionDefs struct {
@@ -107,7 +110,8 @@ var FLAGS = FlagDefs{}
 var OPTS = OptionDefs{}
 var EMPTY = ""
 
-func setDefaults() {
+// SetDefaults ...
+func SetDefaults() {
 	OPTS.SORT_COUNT = "$COUNT"
 	OPTS.SAMPLES = false
 	OPTS.WEIGHT_COL = false
@@ -160,6 +164,6 @@ func setDefaults() {
 		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 	}
 
-	initLua()
-
+	// TODO: enable again
+	//luajit.InitLua(&ENABLE_LUA)
 }

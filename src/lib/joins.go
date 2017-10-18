@@ -1,17 +1,21 @@
 package sybil
 
+import (
+	"strconv"
 
-import "strconv"
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
+)
 
 func (t *Table) BuildJoinMap() {
-	joinkey := *FLAGS.JOIN_KEY
+	joinkey := *config.FLAGS.JOIN_KEY
 	joinid := t.get_key_id(joinkey)
 
 	t.join_lookup = make(map[string]*Record)
 
-	Debug("BUILDING JOIN TABLE MAPPING")
+	common.Debug("BUILDING JOIN TABLE MAPPING")
 
-	Debug("BLOCKS", len(t.BlockList))
+	common.Debug("BLOCKS", len(t.BlockList))
 	for _, b := range t.BlockList {
 		for _, r := range b.RecordList {
 			switch r.Populated[joinid] {
@@ -27,7 +31,7 @@ func (t *Table) BuildJoinMap() {
 		}
 	}
 
-	Debug("ROWS", len(t.RowBlock.RecordList))
+	common.Debug("ROWS", len(t.RowBlock.RecordList))
 	for _, r := range t.RowBlock.RecordList {
 		switch r.Populated[joinid] {
 		case INT_VAL:

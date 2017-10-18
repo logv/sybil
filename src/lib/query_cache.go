@@ -1,13 +1,18 @@
 package sybil
 
-import "encoding/gob"
-import "crypto/md5"
-import "bytes"
-import "fmt"
-import "path"
-import "io/ioutil"
-import "os"
-import "compress/gzip"
+import (
+	"bytes"
+	"compress/gzip"
+	"crypto/md5"
+	"encoding/gob"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
+)
 
 // this registration is used for saving and decoding cached per block query
 // results
@@ -21,7 +26,7 @@ func registerTypesForQueryCache() {
 
 func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
-	if *FLAGS.CACHED_QUERIES == false {
+	if *config.FLAGS.CACHED_QUERIES == false {
 		return nil, nil
 	}
 
@@ -31,12 +36,12 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 	info := t.LoadBlockInfo(dirname)
 
 	if info == nil {
-		Debug("NO INFO FOR", dirname)
+		common.Debug("NO INFO FOR", dirname)
 		return nil, nil
 	}
 
 	if info.NumRecords <= 0 {
-		Debug("NO RECORDS FOR", dirname)
+		common.Debug("NO RECORDS FOR", dirname)
 		return nil, nil
 	}
 
@@ -134,7 +139,7 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(cache_spec)
 	if err != nil {
-		Warn("encode:", err)
+		common.Warn("encode:", err)
 		return ""
 	}
 
@@ -146,11 +151,11 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 }
 
 func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
-	if *FLAGS.CACHED_QUERIES == false {
+	if *config.FLAGS.CACHED_QUERIES == false {
 		return false
 	}
 
-	if *FLAGS.SAMPLES {
+	if *config.FLAGS.SAMPLES {
 		return false
 
 	}
@@ -174,11 +179,11 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 }
 
 func (qs *QuerySpec) SaveCachedResults(blockname string) {
-	if *FLAGS.CACHED_QUERIES == false {
+	if *config.FLAGS.CACHED_QUERIES == false {
 		return
 	}
 
-	if *FLAGS.SAMPLES {
+	if *config.FLAGS.SAMPLES {
 		return
 	}
 
@@ -195,7 +200,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	cache_dir := path.Join(blockname, "cache")
 	err := os.MkdirAll(cache_dir, 0777)
 	if err != nil {
-		Debug("COULDNT CREATE CACHE DIR", err, "NOT CACHING QUERY")
+		common.Debug("COULDNT CREATE CACHE DIR", err, "NOT CACHING QUERY")
 		return
 	}
 
@@ -203,7 +208,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	filename := path.Join(cache_dir, cache_name)
 	tempfile, err := ioutil.TempFile(cache_dir, cache_name)
 	if err != nil {
-		Debug("TEMPFILE ERROR", err)
+		common.Debug("TEMPFILE ERROR", err)
 	}
 
 	var buf bytes.Buffer
@@ -216,25 +221,25 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 	w.Close() // You must close this first to flush the bytes to the buffer.
 
 	if err != nil {
-		Warn("cached query encoding error:", err)
+		common.Warn("cached query encoding error:", err)
 		return
 	}
 
 	if err != nil {
-		Warn("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
+		common.Warn("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
 		return
 	}
 
 	_, err = gbuf.WriteTo(tempfile)
 	if err != nil {
-		Warn("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
+		common.Warn("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
 		return
 	}
 
 	tempfile.Close()
 	err = RenameAndMod(tempfile.Name(), filename)
 	if err != nil {
-		Warn("ERROR RENAMING", tempfile.Name())
+		common.Warn("ERROR RENAMING", tempfile.Name())
 	}
 
 	return

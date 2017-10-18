@@ -1,6 +1,8 @@
 package sybil
 
+import "github.com/logv/sybil/src/lib/config"
+
 func Startup() {
 	registerTypesForQueryCache()
-	setDefaults()
+	config.SetDefaults()
 }

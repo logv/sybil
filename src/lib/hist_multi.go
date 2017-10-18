@@ -1,7 +1,12 @@
 package sybil
 
-import "sort"
-import "math"
+import (
+	"math"
+	"sort"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
+)
 
 type MultiHist struct {
 	Max     int64
@@ -29,7 +34,7 @@ func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
 	h.Count = 0
 	h.Min = info.Min
 	h.Max = info.Max
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if config.FLAGS.OP != nil && *config.FLAGS.OP == "hist" {
 		h.TrackPercentiles()
 	}
 
@@ -51,13 +56,13 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 	if h.Info != nil {
 		if value > h.Info.Max*10 || value < h.Info.Min {
 			if DEBUG_OUTLIERS {
-				Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
+				common.Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
 			}
 			return
 		}
 	}
 
-	if OPTS.WEIGHT_COL && weight > 1 {
+	if config.OPTS.WEIGHT_COL && weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {
@@ -122,7 +127,7 @@ func (h *MultiHist) GetPercentiles() []int64 {
 		if p <= 100 {
 			percentiles[p] = int64(k)
 		} else if DEBUG_OUTLIERS {
-			Print("SETTING P", p, k)
+			common.Print("SETTING P", p, k)
 		}
 		prev_p = p
 	}
@@ -257,5 +262,5 @@ func (h *MultiHist) TrackPercentiles() {
 }
 
 func (h *MultiHist) Print() {
-	Debug("HIST COUNTS ARE", 0)
+	common.Debug("HIST COUNTS ARE", 0)
 }

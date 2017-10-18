@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/logv/sybil/src/lib/common"
 )
 
 func TestOpenCompressedInfoDB(test *testing.T) {
@@ -104,7 +106,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 	// DOING SO
 	for blockname := range blocks {
 		files, _ := ioutil.ReadDir(blockname)
-		Debug("READING BLOCKNAME", blockname)
+		common.Debug("READING BLOCKNAME", blockname)
 		for _, f := range files {
 			filename := path.Join(blockname, f.Name())
 			if !strings.HasSuffix(filename, ".db") {
@@ -116,15 +118,14 @@ func TestOpenCompressedColumn(test *testing.T) {
 			file, err := os.Create(zfilename)
 			if err != nil {
 				test.Error("COULDNT LOAD ZIPPED TABLE FILE FOR WRITING!")
-
 			}
 			zinfo := gzip.NewWriter(file)
 			zinfo.Write(dat)
 			zinfo.Close()
-			Debug("CREATED GZIP FILE", zfilename)
+			common.Debug("CREATED GZIP FILE", zfilename)
 
 			err = os.RemoveAll(filename)
-			Debug("REMOVED", filename, err)
+			common.Debug("REMOVED", filename, err)
 
 		}
 	}

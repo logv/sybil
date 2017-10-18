@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/logv/sybil/src/lib/config"
 )
 
 var testTableName = "__TEST0__"
@@ -22,9 +24,9 @@ func runTests(m *testing.M) {
 
 func setupTestVars(chunkSize int) {
 	Startup()
-	FLAGS.TABLE = &testTableName
+	config.FLAGS.TABLE = &testTableName
 
-	TEST_MODE = true
+	config.TEST_MODE = true
 	CHUNK_SIZE = chunkSize
 	LOCK_US = 1
 	LOCK_TRIES = 3

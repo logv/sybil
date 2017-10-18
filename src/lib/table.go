@@ -1,8 +1,13 @@
 package sybil
 
-import "sync"
-import "os"
-import "path"
+import (
+	"os"
+	"path"
+	"sync"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
+)
 
 var ROW_STORE_BLOCK = "ROW_STORE"
 
@@ -102,7 +107,7 @@ func (t *Table) populate_string_id_lookup() {
 
 	for _, b := range t.BlockList {
 		if b.columns == nil && b.Name != ROW_STORE_BLOCK {
-			Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
+			common.Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
 			t.block_m.Lock()
 			delete(t.BlockList, b.Name)
 			t.block_m.Unlock()
@@ -144,9 +149,9 @@ func (t *Table) set_key_type(name_id int16, col_type int8) bool {
 		t.KeyTypes[name_id] = col_type
 	} else {
 		if cur_type != col_type {
-			Debug("TABLE", t.KeyTable)
-			Debug("TYPES", t.KeyTypes)
-			Warn("trying to over-write column type for key ", name_id, t.get_string_for_key(int(name_id)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
+			common.Debug("TABLE", t.KeyTable)
+			common.Debug("TYPES", t.KeyTypes)
+			common.Warn("trying to over-write column type for key ", name_id, t.get_string_for_key(int(name_id)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
 			return false
 		}
 	}
@@ -169,25 +174,25 @@ func (t *Table) NewRecord() *Record {
 }
 
 func (t *Table) PrintRecord(r *Record) {
-	Print("RECORD", r)
+	common.Print("RECORD", r)
 
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			Print("  ", name, col.get_string_for_key(name), val)
+			common.Print("  ", name, col.get_string_for_key(name), val)
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			Print("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
+			common.Print("  ", name, col.get_string_for_key(name), col.get_string_for_val(int32(val)))
 		}
 	}
 	for name, vals := range r.SetMap {
 		if r.Populated[name] == SET_VAL {
 			col := r.block.GetColumnInfo(int16(name))
 			for _, val := range vals {
-				Print("  ", name, col.get_string_for_key(int(name)), val, col.get_string_for_val(int32(val)))
+				common.Print("  ", name, col.get_string_for_key(int(name)), val, col.get_string_for_val(int32(val)))
 
 			}
 
@@ -196,7 +201,7 @@ func (t *Table) PrintRecord(r *Record) {
 }
 
 func (t *Table) MakeDir() {
-	tabledir := path.Join(*FLAGS.DIR, t.Name)
+	tabledir := path.Join(*config.FLAGS.DIR, t.Name)
 	os.MkdirAll(tabledir, 0755)
 }
 

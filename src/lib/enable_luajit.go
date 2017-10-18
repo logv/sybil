@@ -22,6 +22,9 @@ import (
 	"os"
 	"sync"
 	"unsafe"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 const PREAMBLE = `
@@ -62,17 +65,14 @@ function get_str_val(str_id, col)
   return ffi.C.go_get_str_val(block_id, str_id, col)
 end
 
-
-
-
-
 -- END PREAMBLE
 `
 
 var SRC = ` `
 
-func initLua() {
-	ENABLE_LUA = true
+// InitLua ...
+func InitLua(enable *bool) {
+	*enable = true
 }
 
 var LUA_BLOCK_ID = 0
@@ -110,10 +110,10 @@ func go_get_str_val(block_id, str_id int, col_id int) *C.char {
 func SetLuaScript(filename string) {
 	dat, err := ioutil.ReadFile(filename)
 	if err != nil {
-		Error("Couldn't open Lua script", filename, err)
+		common.Error("Couldn't open Lua script", filename, err)
 	}
 
-	FLAGS.LUA = &TRUE
+	config.FLAGS.LUA = &config.TRUE
 	HOLD_MATCHES = true
 	SRC = string(dat)
 }
@@ -281,7 +281,7 @@ func (qs *QuerySpec) luaFinalize() LuaTable {
 		fmt.Printf("Lua Finalize execution error: %v\n", errstring)
 	} else {
 
-		Debug("FINALIZING", qs.LuaResult)
+		common.Debug("FINALIZING", qs.LuaResult)
 		finalized := getLuaTable(state)
 		qs.LuaResult = finalized
 

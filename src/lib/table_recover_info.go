@@ -1,11 +1,16 @@
 package sybil
 
-import "fmt"
-import "io/ioutil"
-import "path"
-import "os"
-import "sync"
-import "strings"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
+	"sync"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
+)
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
@@ -23,7 +28,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 	err := decodeInto(filename, &info)
 
 	if err != nil {
-		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
+		common.Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
 		return nil
 	}
 
@@ -90,7 +95,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 // I think I go through each block and load the block, verifying the different
 // column types
 func (t *Table) DeduceTableInfoFromBlocks() {
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(*config.FLAGS.DIR, t.Name))
 
 	var wg sync.WaitGroup
 	t.init_data_structures()
@@ -109,7 +114,7 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 
 		v := files[f]
 		if v.IsDir() && file_looks_like_block(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
+			filename := path.Join(*config.FLAGS.DIR, t.Name, v.Name())
 			this_block++
 
 			wg.Add(1)
@@ -148,8 +153,8 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 	wg.Wait()
 
 	// TODO: verify that the KEY TABLE and KEY TYPES
-	Debug("TYPE COUNTS", this_block, type_counts)
-	Debug("KEY TABLE", t.KeyTable)
-	Debug("KEY TYPES", t.KeyTypes)
+	common.Debug("TYPE COUNTS", this_block, type_counts)
+	common.Debug("KEY TABLE", t.KeyTable)
+	common.Debug("KEY TYPES", t.KeyTypes)
 
 }

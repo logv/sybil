@@ -9,6 +9,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func TestTableLoadRecords(test *testing.T) {
@@ -125,7 +128,7 @@ func TestHistograms(test *testing.T) {
 
 	nt := saveAndReloadTestTable(test, blockCount)
 	var HIST = "hist"
-	FLAGS.OP = &HIST
+	config.FLAGS.OP = &HIST
 
 	querySpec := newTestQuerySpec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
@@ -178,9 +181,9 @@ func TestHistograms(test *testing.T) {
 			}
 		}
 
-		Debug("PERCENTILES", percentiles)
-		Debug("AGES", ages)
-		Debug("BUCKETS", v.Hists["age"].GetBuckets())
+		common.Debug("PERCENTILES", percentiles)
+		common.Debug("AGES", ages)
+		common.Debug("BUCKETS", v.Hists["age"].GetBuckets())
 	}
 
 	querySpec.OrderBy = "age"
@@ -240,7 +243,7 @@ func TestTimeSeries(test *testing.T) {
 	nt := saveAndReloadTestTable(test, blockCount)
 
 	hist := "hist"
-	FLAGS.OP = &hist
+	config.FLAGS.OP = &hist
 	querySpec := newTestQuerySpec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
@@ -287,6 +290,7 @@ func TestOrderBy(test *testing.T) {
 
 	totalAge := int64(0)
 	count := 0
+
 	addRecordsToTestDB(func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))

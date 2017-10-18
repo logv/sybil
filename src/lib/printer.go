@@ -1,27 +1,32 @@
 package sybil
 
-import "sort"
-import "strings"
-import "encoding/json"
-import "strconv"
-import "os"
-import "fmt"
-import "io/ioutil"
-import "text/tabwriter"
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"text/tabwriter"
+	"time"
+
+	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
+)
 
 func printJson(data interface{}) {
 	b, err := json.Marshal(data)
 	if err == nil {
 		os.Stdout.Write(b)
 	} else {
-		Error("JSON encoding error", err)
+		common.Error("JSON encoding error", err)
 	}
 }
 
 func printTimeResults(querySpec *QuerySpec) {
-	Debug("PRINTING TIME RESULTS")
-	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
+	common.Debug("PRINTING TIME RESULTS")
+	common.Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
 	is_top_result := make(map[string]bool)
 	for _, result := range querySpec.Sorted {
@@ -36,15 +41,15 @@ func printTimeResults(querySpec *QuerySpec) {
 
 	sort.Ints(keys)
 
-	Debug("RESULT COUNT", len(querySpec.TimeResults))
-	if *FLAGS.JSON {
+	common.Debug("RESULT COUNT", len(querySpec.TimeResults))
+	if *config.FLAGS.JSON {
 
 		marshalled_results := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
 			key := strconv.FormatInt(int64(k), 10)
 			marshalled_results[key] = make([]ResultJSON, 0)
 
-			if *FLAGS.OP == "distinct" {
+			if *config.FLAGS.OP == "distinct" {
 				marshalled_results[key] = append(marshalled_results[key],
 					ResultJSON{"Distinct": len(v), "Count": len(v)})
 			} else {
@@ -73,9 +78,9 @@ func printTimeResults(querySpec *QuerySpec) {
 
 	for _, time_bucket := range keys {
 		results := querySpec.TimeResults[time_bucket]
-		time_str := time.Unix(int64(time_bucket), 0).Format(OPTS.TIME_FORMAT)
+		time_str := time.Unix(int64(time_bucket), 0).Format(config.OPTS.TIME_FORMAT)
 
-		if *FLAGS.OP == "distinct" {
+		if *config.FLAGS.OP == "distinct" {
 			fmt.Fprintln(w, time_str, "\t", len(results), "\t")
 		} else {
 			for _, r := range results {
@@ -111,7 +116,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
-		if *FLAGS.OP == "hist" {
+		if *config.FLAGS.OP == "hist" {
 			inner := make(ResultJSON)
 			res[agg.Name] = inner
 			h := r.Hists[agg.Name]
@@ -123,7 +128,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			}
 		}
 
-		if *FLAGS.OP == "avg" {
+		if *config.FLAGS.OP == "avg" {
 			result, ok := r.Hists[agg.Name]
 			if ok {
 				res[agg.Name] = result.Mean()
@@ -151,10 +156,10 @@ func printSortedResults(querySpec *QuerySpec) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
 
-	if *FLAGS.JSON {
+	if *config.FLAGS.JSON {
 		var results = make([]ResultJSON, 0)
 
-		if *FLAGS.OP == "distinct" {
+		if *config.FLAGS.OP == "distinct" {
 			results = append(results, ResultJSON{"Distinct": len(querySpec.Results)})
 
 		} else {
@@ -169,7 +174,7 @@ func printSortedResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if *FLAGS.OP == "distinct" {
+	if *config.FLAGS.OP == "distinct" {
 		fmt.Println("DISTINCT RESULTS", len(querySpec.Results))
 	} else {
 		if len(sorted) > 1 {
@@ -189,7 +194,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Printf(fmt.Sprintf("%-20s", group_key)[:20])
 
 	fmt.Printf("%.0d", v.Count)
-	if OPTS.WEIGHT_COL {
+	if config.OPTS.WEIGHT_COL {
 		fmt.Print(" (")
 		fmt.Print(v.Samples)
 		fmt.Print(")")
@@ -198,10 +203,10 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.Name)
-		if *FLAGS.OP == "hist" {
+		if *config.FLAGS.OP == "hist" {
 			h, ok := v.Hists[agg.Name]
 			if !ok {
-				Debug("NO HIST AROUND FOR KEY", agg.Name, v.GroupByKey)
+				common.Debug("NO HIST AROUND FOR KEY", agg.Name, v.GroupByKey)
 				continue
 			}
 			p := h.GetPercentiles()
@@ -213,7 +218,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			} else {
 				fmt.Println(col_name, "No Data")
 			}
-		} else if *FLAGS.OP == "avg" {
+		} else if *config.FLAGS.OP == "avg" {
 			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}
@@ -228,7 +233,7 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if *FLAGS.JSON {
+	if *config.FLAGS.JSON {
 		// Need to marshall
 		var results = make([]ResultJSON, 0)
 
@@ -241,12 +246,12 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if FLAGS.OP != nil && *FLAGS.OP == "distinct" {
+	if config.FLAGS.OP != nil && *config.FLAGS.OP == "distinct" {
 		fmt.Println("DISTINCT VALUES:", len(querySpec.Results))
 	} else {
 		count := 0
 
-		Debug("PRINTING CUMULATIVE RESULT")
+		common.Debug("PRINTING CUMULATIVE RESULT")
 		if len(querySpec.Results) > 1 {
 			printResult(querySpec, querySpec.Cumulative)
 		}
@@ -262,7 +267,7 @@ func PrintResults(querySpec *QuerySpec) {
 }
 
 func (qs *QuerySpec) PrintResults() {
-	if *FLAGS.PRINT {
+	if *config.FLAGS.PRINT {
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
 		} else if qs.OrderBy != "" {
@@ -341,7 +346,7 @@ func (r *Record) toSample() *Sample {
 
 func (t *Table) PrintSamples() {
 	count := 0
-	records := make(RecordList, *FLAGS.LIMIT)
+	records := make(RecordList, *config.FLAGS.LIMIT)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
@@ -349,7 +354,7 @@ func (t *Table) PrintSamples() {
 				break
 			}
 
-			if count >= *FLAGS.LIMIT {
+			if count >= *config.FLAGS.LIMIT {
 				break
 			}
 
@@ -357,12 +362,12 @@ func (t *Table) PrintSamples() {
 			count++
 		}
 
-		if count >= *FLAGS.LIMIT {
+		if count >= *config.FLAGS.LIMIT {
 			break
 		}
 	}
 
-	if *FLAGS.JSON {
+	if *config.FLAGS.JSON {
 		samples := make([]*Sample, 0)
 		for _, r := range records {
 			if r == nil {
@@ -387,9 +392,9 @@ func (t *Table) PrintSamples() {
 }
 
 func PrintTables() {
-	files, err := ioutil.ReadDir(*FLAGS.DIR)
+	files, err := ioutil.ReadDir(*config.FLAGS.DIR)
 	if err != nil {
-		Error("No tables found!")
+		common.Error("No tables found!")
 		return
 	}
 
@@ -399,12 +404,12 @@ func PrintTables() {
 		tables = append(tables, t.Name)
 	}
 
-	if *FLAGS.JSON {
+	if *config.FLAGS.JSON {
 		b, err := json.Marshal(tables)
 		if err == nil {
 			os.Stdout.Write(b)
 		} else {
-			Error("JSON encoding error", err)
+			common.Error("JSON encoding error", err)
 		}
 
 		return
@@ -463,7 +468,7 @@ func (t *Table) PrintColInfo() {
 
 	}
 
-	if *FLAGS.JSON {
+	if *config.FLAGS.JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
 
@@ -501,7 +506,7 @@ func PrintVersionInfo() {
 
 	version_info := GetVersionInfo()
 
-	if *FLAGS.JSON {
+	if *config.FLAGS.JSON {
 		printJson(version_info)
 
 	} else {
