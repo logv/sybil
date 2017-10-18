@@ -7,6 +7,7 @@ import (
 
 	sybil "github.com/logv/sybil/src/lib"
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func askConfirmation() bool {
@@ -36,29 +37,29 @@ func RunTrimCmdLine() {
 	DELETE := flag.Bool("delete", false, "delete blocks? be careful! will actually delete your data!")
 	REALLY := flag.Bool("really", false, "don't prompt before deletion")
 
-	common.FLAGS.TIME_COL = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
+	config.FLAGS.TIME_COL = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
 	flag.Parse()
 
-	if *common.FLAGS.TABLE == "" || *common.FLAGS.TIME_COL == "" {
+	if *config.FLAGS.TABLE == "" || *config.FLAGS.TIME_COL == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *common.FLAGS.PROFILE {
-		profile := common.RUN_PROFILER()
+	if *config.FLAGS.PROFILE {
+		profile := config.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
 	sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
 		common.Warn("Couldn't read table info, exiting early")
 		return
 	}
 
 	loadSpec := t.NewLoadSpec()
-	loadSpec.Int(*common.FLAGS.TIME_COL)
+	loadSpec.Int(*config.FLAGS.TIME_COL)
 
 	trimSpec := sybil.TrimSpec{}
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)

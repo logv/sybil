@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func TestTableDigestRowRecords(test *testing.T) {
@@ -27,7 +28,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 	nt := GetTable(testTableName)
 
 	DELETE_BLOCKS_AFTER_QUERY = false
-	common.FLAGS.READ_INGESTION_LOG = &common.TRUE
+	config.FLAGS.READ_INGESTION_LOG = &config.TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -79,7 +80,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 	unloadTestTable()
 	nt := GetTable(testTableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = &TRUE
+	config.FLAGS.READ_INGESTION_LOG = &config.TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -103,7 +104,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 	count := int32(0)
 
 	for _, b := range nt.BlockList {
-		Debug("COUNTING RECORDS IN", b.Name)
+		common.Debug("COUNTING RECORDS IN", b.Name)
 		count += b.Info.NumRecords
 
 		file, _ := os.Open(b.Name)
@@ -114,8 +115,8 @@ func TestColumnStoreFileNames(test *testing.T) {
 			created_files[f.Name()] = true
 		}
 
-		Debug("FILENAMES", created_files)
-		Debug("BLOCK NAME", b.Name)
+		common.Debug("FILENAMES", created_files)
+		common.Debug("BLOCK NAME", b.Name)
 		if b.Name == ROW_STORE_BLOCK {
 			continue
 		}
@@ -154,7 +155,7 @@ func TestBigIntColumns(test *testing.T) {
 	unloadTestTable()
 	nt := GetTable(testTableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = &TRUE
+	config.FLAGS.READ_INGESTION_LOG = &config.TRUE
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -172,9 +173,9 @@ func TestBigIntColumns(test *testing.T) {
 	unloadTestTable()
 
 	READ_ROWS_ONLY = false
-	FLAGS.SAMPLES = &TRUE
+	config.FLAGS.SAMPLES = &config.TRUE
 	limit := 1000
-	FLAGS.LIMIT = &limit
+	config.FLAGS.LIMIT = &limit
 	nt = GetTable(testTableName)
 
 	loadSpec := nt.NewLoadSpec()
@@ -182,10 +183,10 @@ func TestBigIntColumns(test *testing.T) {
 	nt.LoadRecords(&loadSpec)
 
 	count := int32(0)
-	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
-	Debug("MIN VAL IS BIGGER?", minVal > 1<<32)
+	common.Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
+	common.Debug("MIN VAL IS BIGGER?", minVal > 1<<32)
 	for _, b := range nt.BlockList {
-		Debug("VERIFYING BIG INTS IN", b.Name)
+		common.Debug("VERIFYING BIG INTS IN", b.Name)
 		for _, r := range b.RecordList {
 			v, ok := r.GetIntVal("time")
 			if int64(v) < minVal || !ok {
@@ -200,6 +201,6 @@ func TestBigIntColumns(test *testing.T) {
 		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	FLAGS.SAMPLES = &FALSE
+	config.FLAGS.SAMPLES = &config.FALSE
 
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 var ROW_STORE_BLOCK = "ROW_STORE"
@@ -200,7 +201,7 @@ func (t *Table) PrintRecord(r *Record) {
 }
 
 func (t *Table) MakeDir() {
-	tabledir := path.Join(*common.FLAGS.DIR, t.Name)
+	tabledir := path.Join(*config.FLAGS.DIR, t.Name)
 	os.MkdirAll(tabledir, 0755)
 }
 

@@ -8,27 +8,28 @@ import (
 
 	sybil "github.com/logv/sybil/src/lib"
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func addSessionFlags() {
-	common.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
-	common.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	common.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
-	common.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
-	common.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
-	common.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
-	common.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
-	common.FLAGS.PATH_KEY = flag.String("path-key", "", "Field to use for pathing")
-	common.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
-	common.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
-	common.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
+	config.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
+	config.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	config.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
+	config.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
+	config.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
+	config.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
+	config.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
+	config.FLAGS.PATH_KEY = flag.String("path-key", "", "Field to use for pathing")
+	config.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
+	config.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
+	config.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
 
-	common.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
-	common.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	common.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
+	config.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	config.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	config.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
 
-	common.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
-	common.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	config.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	config.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 }
 
 func RunSessionizeCmdLine() {
@@ -36,13 +37,13 @@ func RunSessionizeCmdLine() {
 	flag.Parse()
 	start := time.Now()
 
-	table := *common.FLAGS.TABLE
+	table := *config.FLAGS.TABLE
 	if table == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	table_names := strings.Split(table, *common.FLAGS.FIELD_SEPARATOR)
+	table_names := strings.Split(table, *config.FLAGS.FIELD_SEPARATOR)
 	common.Debug("LOADING TABLES", table_names)
 
 	tables := make([]*sybil.Table, 0)
@@ -79,8 +80,8 @@ func RunSessionizeCmdLine() {
 	}
 
 	debug.SetGCPercent(-1)
-	if *common.FLAGS.PROFILE && common.PROFILER_ENABLED {
-		profile := common.RUN_PROFILER()
+	if *config.FLAGS.PROFILE && config.PROFILER_ENABLED {
+		profile := config.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
@@ -90,9 +91,9 @@ func RunSessionizeCmdLine() {
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
 	querySpec := sybil.QuerySpec{QueryParams: query_params}
 
-	querySpec.Limit = int16(*common.FLAGS.LIMIT)
+	querySpec.Limit = int16(*config.FLAGS.LIMIT)
 
-	if *common.FLAGS.SESSION_COL != "" {
+	if *config.FLAGS.SESSION_COL != "" {
 		sessionSpec := sybil.NewSessionSpec()
 		sybil.LoadAndSessionize(tables, &querySpec, &sessionSpec)
 	}

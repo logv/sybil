@@ -1,7 +1,9 @@
 package common
 
-import "os"
-import "io"
+import (
+	"io"
+	"os"
+)
 
 // FOUND AT
 // https://gist.github.com/elazarl/5507969

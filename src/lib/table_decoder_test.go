@@ -118,7 +118,6 @@ func TestOpenCompressedColumn(test *testing.T) {
 			file, err := os.Create(zfilename)
 			if err != nil {
 				test.Error("COULDNT LOAD ZIPPED TABLE FILE FOR WRITING!")
-
 			}
 			zinfo := gzip.NewWriter(file)
 			zinfo.Write(dat)

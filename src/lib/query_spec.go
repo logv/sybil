@@ -3,6 +3,7 @@ package sybil
 import "C"
 import (
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 type ResultMap map[string]*Result
@@ -155,12 +156,12 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	if op == "hist" {
 		agg.op_id = OP_HIST
 		agg.HistType = "basic"
-		if *common.FLAGS.LOG_HIST {
+		if *config.FLAGS.LOG_HIST {
 			agg.HistType = "multi"
 
 		}
 
-		if *common.FLAGS.HDR_HIST {
+		if *config.FLAGS.HDR_HIST {
 			agg.HistType = "hdr"
 		}
 	}

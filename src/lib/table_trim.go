@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 type TrimSpec struct {
@@ -27,7 +28,7 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 
 		block := t.LoadBlockFromDir(b.Name, nil, false)
 		if block != nil {
-			if block.Info.IntInfoMap[*common.FLAGS.TIME_COL] != nil {
+			if block.Info.IntInfoMap[*config.FLAGS.TIME_COL] != nil {
 				block.table = t
 				blocks = append(blocks, block)
 			}
@@ -41,7 +42,7 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 	bytes_in_megabytes := int64(1024 * 1024)
 	for _, b := range blocks {
 
-		info := b.Info.IntInfoMap[*common.FLAGS.TIME_COL]
+		info := b.Info.IntInfoMap[*config.FLAGS.TIME_COL]
 		trim := false
 		if trimSpec.MBLimit > 0 && size/bytes_in_megabytes >= trimSpec.MBLimit {
 			trim = true

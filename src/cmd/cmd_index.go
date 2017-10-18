@@ -5,30 +5,30 @@ import (
 	"strings"
 
 	sybil "github.com/logv/sybil/src/lib"
-	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func RunIndexCmdLine() {
 	var f_INTS = flag.String("int", "", "Integer values to index")
 	flag.Parse()
-	if *common.FLAGS.TABLE == "" {
+	if *config.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
 	var ints []string
 	if *f_INTS != "" {
-		ints = strings.Split(*f_INTS, *common.FLAGS.FIELD_SEPARATOR)
+		ints = strings.Split(*f_INTS, *config.FLAGS.FIELD_SEPARATOR)
 	}
 
-	common.FLAGS.UPDATE_TABLE_INFO = &TRUE
+	config.FLAGS.UPDATE_TABLE_INFO = &config.TRUE
 
-	t := sybil.GetTable(*common.FLAGS.TABLE)
+	t := sybil.GetTable(*config.FLAGS.TABLE)
 
 	t.LoadRecords(nil)
 	t.SaveTableInfo("info")
 	sybil.DELETE_BLOCKS_AFTER_QUERY = true
-	common.OPTS.WRITE_BLOCK_INFO = true
+	config.OPTS.WRITE_BLOCK_INFO = true
 
 	loadSpec := t.NewLoadSpec()
 	for _, v := range ints {

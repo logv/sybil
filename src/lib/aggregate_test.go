@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/lib/common"
+	"github.com/logv/sybil/src/lib/config"
 )
 
 func TestTableLoadRecords(test *testing.T) {
@@ -127,7 +128,7 @@ func TestHistograms(test *testing.T) {
 
 	nt := saveAndReloadTestTable(test, blockCount)
 	var HIST = "hist"
-	common.FLAGS.OP = &HIST
+	config.FLAGS.OP = &HIST
 
 	querySpec := newTestQuerySpec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
@@ -242,7 +243,7 @@ func TestTimeSeries(test *testing.T) {
 	nt := saveAndReloadTestTable(test, blockCount)
 
 	hist := "hist"
-	common.FLAGS.OP = &hist
+	config.FLAGS.OP = &hist
 	querySpec := newTestQuerySpec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("ageStr"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
