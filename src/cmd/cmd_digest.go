@@ -1,27 +1,30 @@
-package sybil_cmd
+package cmd
 
-import "flag"
+import (
+	"flag"
 
-import sybil "github.com/logv/sybil/src/lib"
+	sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" {
+	if *common.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
-		profile := sybil.RUN_PROFILER()
+	if *common.FLAGS.PROFILE {
+		profile := common.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
 	sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*common.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
-		sybil.common.Warn("Couldn't read table info, exiting early")
+		common.Warn("Couldn't read table info, exiting early")
 		return
 	}
 	t.DigestRecords()

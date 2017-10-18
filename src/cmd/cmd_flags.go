@@ -1,4 +1,4 @@
-package sybil_cmd
+package cmd
 
 var FALSE = false
 var TRUE = true

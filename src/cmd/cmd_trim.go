@@ -1,18 +1,20 @@
-package sybil_cmd
+package cmd
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
 
-import "fmt"
-import "os"
-
-import sybil "github.com/logv/sybil/src/lib"
+	sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 func askConfirmation() bool {
 
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		sybil.common.Error(err)
+		common.Error(err)
 	}
 
 	if response == "Y" {
@@ -34,29 +36,29 @@ func RunTrimCmdLine() {
 	DELETE := flag.Bool("delete", false, "delete blocks? be careful! will actually delete your data!")
 	REALLY := flag.Bool("really", false, "don't prompt before deletion")
 
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
+	common.FLAGS.TIME_COL = flag.String("time-col", "", "which column to treat as a timestamp [REQUIRED]")
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" || *sybil.FLAGS.TIME_COL == "" {
+	if *common.FLAGS.TABLE == "" || *common.FLAGS.TIME_COL == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
-		profile := sybil.RUN_PROFILER()
+	if *common.FLAGS.PROFILE {
+		profile := common.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
 	sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*common.FLAGS.TABLE)
 	if t.LoadTableInfo() == false {
-		sybil.common.Warn("Couldn't read table info, exiting early")
+		common.Warn("Couldn't read table info, exiting early")
 		return
 	}
 
 	loadSpec := t.NewLoadSpec()
-	loadSpec.Int(*sybil.FLAGS.TIME_COL)
+	loadSpec.Int(*common.FLAGS.TIME_COL)
 
 	trimSpec := sybil.TrimSpec{}
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
@@ -64,7 +66,7 @@ func RunTrimCmdLine() {
 
 	to_trim := t.TrimTable(&trimSpec)
 
-	sybil.common.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
+	common.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
 	if len(to_trim) > 0 {
 		for _, b := range to_trim {
 			fmt.Println(b.Name)
@@ -76,19 +78,19 @@ func RunTrimCmdLine() {
 			// TODO: prompt for deletion
 			fmt.Println("DELETE THE ABOVE BLOCKS? (Y/N)")
 			if askConfirmation() == false {
-				sybil.common.Debug("ABORTING")
+				common.Debug("ABORTING")
 				return
 			}
 
 		}
 
-		sybil.common.Debug("DELETING CANDIDATE BLOCKS")
+		common.Debug("DELETING CANDIDATE BLOCKS")
 		for _, b := range to_trim {
-			sybil.common.Debug("DELETING", b.Name)
+			common.Debug("DELETING", b.Name)
 			if len(b.Name) > 5 {
 				os.RemoveAll(b.Name)
 			} else {
-				sybil.common.Debug("REFUSING TO DELETE", b.Name)
+				common.Debug("REFUSING TO DELETE", b.Name)
 			}
 		}
 

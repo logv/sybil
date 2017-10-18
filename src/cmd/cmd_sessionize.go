@@ -1,31 +1,34 @@
-package sybil_cmd
+package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
+import (
+	"flag"
+	"runtime/debug"
+	"strings"
+	"time"
 
-import "flag"
-import "time"
-import "runtime/debug"
-import "strings"
+	sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/lib/common"
+)
 
 func addSessionFlags() {
-	sybil.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	sybil.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
-	sybil.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
-	sybil.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
-	sybil.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
-	sybil.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
-	sybil.FLAGS.PATH_KEY = flag.String("path-key", "", "Field to use for pathing")
-	sybil.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
-	sybil.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
-	sybil.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
+	common.FLAGS.PRINT = flag.Bool("print", false, "Print some records")
+	common.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	common.FLAGS.SESSION_COL = flag.String("session", "", "Column to use for sessionizing")
+	common.FLAGS.SESSION_CUTOFF = flag.Int("cutoff", 60, "distance between consecutive events before generating a new session")
+	common.FLAGS.JOIN_TABLE = flag.String("join-table", "", "dataset to join against for session summaries")
+	common.FLAGS.JOIN_KEY = flag.String("join-key", "", "Field to join sessionid against in join-table")
+	common.FLAGS.JOIN_GROUP = flag.String("join-group", "", "Group by columns to pull from join record")
+	common.FLAGS.PATH_KEY = flag.String("path-key", "", "Field to use for pathing")
+	common.FLAGS.PATH_LENGTH = flag.Int("path-length", 3, "Size of paths to histogram")
+	common.FLAGS.RETENTION = flag.Bool("calendar", false, "calculate retention calendars")
+	common.FLAGS.JSON = flag.Bool("json", false, "print results in JSON form")
 
-	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
-	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
+	common.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	common.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
+	common.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
 
-	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
-	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	common.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
+	common.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 }
 
 func RunSessionizeCmdLine() {
@@ -33,14 +36,14 @@ func RunSessionizeCmdLine() {
 	flag.Parse()
 	start := time.Now()
 
-	table := *sybil.FLAGS.TABLE
+	table := *common.FLAGS.TABLE
 	if table == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	table_names := strings.Split(table, *sybil.FLAGS.FIELD_SEPARATOR)
-	sybil.common.Debug("LOADING TABLES", table_names)
+	table_names := strings.Split(table, *common.FLAGS.FIELD_SEPARATOR)
+	common.Debug("LOADING TABLES", table_names)
 
 	tables := make([]*sybil.Table, 0)
 
@@ -56,17 +59,17 @@ func RunSessionizeCmdLine() {
 			count += int(block.Info.NumRecords)
 		}
 
-		sybil.common.Debug("WILL INSPECT", count, "RECORDS FROM", tablename)
+		common.Debug("WILL INSPECT", count, "RECORDS FROM", tablename)
 
 		// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
-		sybil.common.Debug("KEY TABLE", t.KeyTable)
-		sybil.common.Debug("KEY TYPES", t.KeyTypes)
+		common.Debug("KEY TABLE", t.KeyTable)
+		common.Debug("KEY TYPES", t.KeyTypes)
 
 		used := make(map[int16]int)
 		for _, v := range t.KeyTable {
 			used[v]++
 			if used[v] > 1 {
-				sybil.common.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
+				common.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
 				return
 			}
 		}
@@ -76,8 +79,8 @@ func RunSessionizeCmdLine() {
 	}
 
 	debug.SetGCPercent(-1)
-	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
-		profile := sybil.RUN_PROFILER()
+	if *common.FLAGS.PROFILE && common.PROFILER_ENABLED {
+		profile := common.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
@@ -87,13 +90,13 @@ func RunSessionizeCmdLine() {
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
 	querySpec := sybil.QuerySpec{QueryParams: query_params}
 
-	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = int16(*common.FLAGS.LIMIT)
 
-	if *sybil.FLAGS.SESSION_COL != "" {
+	if *common.FLAGS.SESSION_COL != "" {
 		sessionSpec := sybil.NewSessionSpec()
 		sybil.LoadAndSessionize(tables, &querySpec, &sessionSpec)
 	}
 
 	end := time.Now()
-	sybil.common.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+	common.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 }

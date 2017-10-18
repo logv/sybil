@@ -22,6 +22,8 @@ import (
 	"os"
 	"sync"
 	"unsafe"
+
+	"github.com/logv/sybil/src/lib/common"
 )
 
 const PREAMBLE = `
@@ -110,7 +112,7 @@ func SetLuaScript(filename string) {
 		common.Error("Couldn't open Lua script", filename, err)
 	}
 
-	FLAGS.LUA = &TRUE
+	common.FLAGS.LUA = &TRUE
 	HOLD_MATCHES = true
 	SRC = string(dat)
 }
