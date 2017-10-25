@@ -1,6 +1,4 @@
-package sybil_test
-
-import sybil "./"
+package sybil
 
 import "strconv"
 import "strings"
@@ -12,22 +10,22 @@ func TestTableLoadRowRecords(test *testing.T) {
 	delete_test_db()
 
 	block_count := 3
-	add_records(func(r *sybil.Record, index int) {
+	add_records(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, block_count)
 
-	t := sybil.GetTable(TEST_TABLE_NAME)
+	t := GetTable(TEST_TABLE_NAME)
 	t.IngestRecords("ingest")
 
 	unload_test_table()
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := GetTable(TEST_TABLE_NAME)
 
 	nt.LoadRecords(nil)
 
-	if len(nt.RowBlock.RecordList) != sybil.CHUNK_SIZE*block_count {
+	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*block_count {
 		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
@@ -44,7 +42,7 @@ func TestTableLoadRowRecords(test *testing.T) {
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {
-		k = strings.Replace(k, sybil.GROUP_DELIMITER, "", 1)
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		val, err := strconv.ParseInt(k, 10, 64)
 		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Mean())) > 0.1 {

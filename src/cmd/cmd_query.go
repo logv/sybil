@@ -12,7 +12,6 @@ import "runtime/debug"
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var LIST_TABLES *bool
-var TIME_FORMAT *string
 var NO_RECYCLE_MEM *bool
 
 func addQueryFlags() {
@@ -54,13 +53,8 @@ func addQueryFlags() {
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
-	if sybil.ENABLE_LUA {
-		sybil.FLAGS.LUAFILE = flag.String("lua", "", "Script to execute with lua map reduce")
-	}
-
 	LIST_TABLES = flag.Bool("tables", false, "List tables")
 
-	TIME_FORMAT = flag.String("time-format", "", "time format to use")
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
 	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
@@ -74,10 +68,6 @@ func RunQueryCmdLine() {
 	if *LIST_TABLES {
 		sybil.PrintTables()
 		return
-	}
-
-	if *TIME_FORMAT != "" {
-		sybil.OPTS.TIME_FORMAT = sybil.GetTimeFormat(*TIME_FORMAT)
 	}
 
 	table := *sybil.FLAGS.TABLE
@@ -99,10 +89,6 @@ func RunQueryCmdLine() {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
 		sybil.OPTS.GROUP_BY = groups
 
-	}
-
-	if *sybil.FLAGS.LUAFILE != "" {
-		sybil.SetLuaScript(*sybil.FLAGS.LUAFILE)
 	}
 
 	if *NO_RECYCLE_MEM == true {
@@ -254,10 +240,6 @@ func RunQueryCmdLine() {
 			end := time.Now()
 			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
 			querySpec.PrintResults()
-
-			if sybil.FLAGS.ANOVA_ICC != nil && *sybil.FLAGS.ANOVA_ICC {
-				querySpec.CalculateICC()
-			}
 		}
 
 	}

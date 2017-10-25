@@ -1,6 +1,5 @@
 package sybil
 
-
 import "sync"
 
 type LoadSpec struct {

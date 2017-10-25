@@ -1,6 +1,5 @@
 package main
 
-import sybil "github.com/logv/sybil/src/lib"
 import cmd "github.com/logv/sybil/src/cmd"
 
 import "fmt"
@@ -14,7 +13,6 @@ var CMD_KEYS = make([]string, 0)
 func setupCommands() {
 	CMD_FUNCS["ingest"] = cmd.RunIngestCmdLine
 	CMD_FUNCS["digest"] = cmd.RunDigestCmdLine
-	CMD_FUNCS["session"] = cmd.RunSessionizeCmdLine
 	CMD_FUNCS["trim"] = cmd.RunTrimCmdLine
 	CMD_FUNCS["query"] = cmd.RunQueryCmdLine
 	CMD_FUNCS["index"] = cmd.RunIndexCmdLine
@@ -92,8 +90,6 @@ func main() {
 
 	first_arg := os.Args[1]
 	os.Args = os.Args[1:]
-
-	sybil.Startup()
 
 	handler, ok := CMD_FUNCS[first_arg]
 	if !ok {

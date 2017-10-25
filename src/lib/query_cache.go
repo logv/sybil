@@ -9,6 +9,10 @@ import "io/ioutil"
 import "os"
 import "compress/gzip"
 
+func init() {
+	registerTypesForQueryCache()
+}
+
 // this registration is used for saving and decoding cached per block query
 // results
 func registerTypesForQueryCache() {

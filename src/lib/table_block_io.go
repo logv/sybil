@@ -232,6 +232,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		if loadSpec != nil {
 			// we cut off extensions to check our loadSpec
 			cname := strings.TrimRight(fname, GZIP_EXT)
+
 			if loadSpec.files[cname] != true && load_records == false {
 				continue
 			}
@@ -252,7 +253,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 			tb.unpackIntCol(dec, *info)
 		}
 
-		dec.File.Close()
+		dec.CloseFile()
 
 	}
 

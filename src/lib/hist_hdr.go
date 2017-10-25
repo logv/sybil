@@ -8,7 +8,7 @@ import "github.com/codahale/hdrhistogram"
 var ENABLE_HDR = true
 
 func newHDRHist(table *Table, info *IntInfo) Histogram {
-	return table.NewHDRHist(info)
+	return NewHDRHist(table, info)
 }
 
 // {{{ HDR HIST
@@ -25,7 +25,7 @@ func (th *HDRHist) NewHist() Histogram {
 	return th.table.NewHDRHist(th.info)
 }
 
-func (t *Table) NewHDRHist(info *IntInfo) *HDRHist {
+func NewHDRHist(t *Table, info *IntInfo) *HDRHist {
 	hdr_hist := hdrhistogram.New(info.Min, info.Max*2, 5)
 	outer_hist := HDRHist{hdr_hist, t, info, true}
 

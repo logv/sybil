@@ -1,4 +1,5 @@
-BUILD_CMD = /usr/bin/go install
+GOBIN=$(shell which go)
+BUILD_CMD = ${GOBIN} install
 BINDIR = ./bin
 GOBINDIR = `readlink -f ./bin`
 PROFILE = -tags profile
@@ -20,7 +21,7 @@ fake-people:
 	./bin/sybil digest -table people
 
 fake-uptime:
-	python scripts/fakedata/host_generator.py 100000 | ./bin/sybil ingest -table uptime
+	python scripts/fakedata/host_generator.py 1000000 | ./bin/sybil ingest -table uptime
 	./bin/sybil digest -table uptime
 
 testquery:
@@ -31,15 +32,15 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	go test ./src/lib/ -v
+	${GOBIN} test ./src/lib/ -v
 
 testv:
-	go test ./src/lib/ -v -debug
+	${GOBIN} test ./src/lib/ -v -debug
 
 coverage:
-	go test -covermode atomic -coverprofile cover.out ./src/lib
+	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/lib
 	sed -i "s|_${ROOT_DIR}|.|"	cover.out
-	go tool cover -html=cover.out -o cover.html
+	${GOBIN} tool cover -html=cover.out -o cover.html
 
 
 hdrhist: export BUILD_FLAGS += -tags hdrhist

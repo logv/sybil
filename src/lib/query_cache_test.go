@@ -1,6 +1,4 @@
-package sybil_test
-
-import sybil "./"
+package sybil
 
 import "testing"
 import "math/rand"
@@ -12,11 +10,11 @@ func TestCachedQueries(test *testing.T) {
 
 	block_count := 5
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
-	sybil.FLAGS.CACHED_QUERIES = &sybil.TRUE
+	DELETE_BLOCKS_AFTER_QUERY = false
+	FLAGS.CACHED_QUERIES = &TRUE
 
 	var this_add_records = func(block_count int) {
-		add_records(func(r *sybil.Record, i int) {
+		add_records(func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
 
 			age_str := strconv.FormatInt(int64(age), 10)
@@ -42,21 +40,21 @@ func TestCachedQueries(test *testing.T) {
 	testCachedBasicHist(test)
 	delete_test_db()
 
-	sybil.FLAGS.CACHED_QUERIES = &sybil.FALSE
+	FLAGS.CACHED_QUERIES = &FALSE
 
 }
 
 func testCachedQueryFiles(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
-	filters := []sybil.Filter{}
+	nt := GetTable(TEST_TABLE_NAME)
+	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
-	aggs := []sybil.Aggregation{}
+	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
-	querySpec := sybil.QuerySpec{Table: nt,
-		QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
-	loadSpec := sybil.NewLoadSpec()
+	querySpec := QuerySpec{Table: nt,
+		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
 	// test that the cached query doesnt already exist
@@ -77,14 +75,14 @@ func testCachedQueryFiles(test *testing.T) {
 		}
 	}
 
-	sybil.FLAGS.CACHED_QUERIES = &sybil.FALSE
+	FLAGS.CACHED_QUERIES = &FALSE
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
 			test.Error("Used query cache when flag was not provided")
 		}
 	}
-	sybil.FLAGS.CACHED_QUERIES = &sybil.TRUE
+	FLAGS.CACHED_QUERIES = &TRUE
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -99,27 +97,27 @@ func testCachedQueryFiles(test *testing.T) {
 }
 
 func testCachedQueryConsistency(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
-	filters := []sybil.Filter{}
+	nt := GetTable(TEST_TABLE_NAME)
+	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
-	aggs := []sybil.Aggregation{}
+	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
-	querySpec := sybil.QuerySpec{Table: nt,
-		QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
-	loadSpec := sybil.NewLoadSpec()
+	querySpec := QuerySpec{Table: nt,
+		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
-	copySpec := sybil.CopyQuerySpec(&querySpec)
+	copySpec := CopyQuerySpec(&querySpec)
 
-	nt = sybil.GetTable(TEST_TABLE_NAME)
+	nt = GetTable(TEST_TABLE_NAME)
 
 	// clear the copied query spec result map and look
 	// at the cached query results
 
-	copySpec.Results = make(sybil.ResultMap, 0)
+	copySpec.Results = make(ResultMap, 0)
 	nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 	if len(querySpec.Results) == 0 {
@@ -153,39 +151,39 @@ func testCachedQueryConsistency(test *testing.T) {
 }
 
 func testCachedBasicHist(test *testing.T) {
-	nt := sybil.GetTable(TEST_TABLE_NAME)
+	nt := GetTable(TEST_TABLE_NAME)
 
 	for _, hist_type := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
 		if hist_type == "loghist" {
-			sybil.FLAGS.LOG_HIST = &sybil.TRUE
+			FLAGS.LOG_HIST = &TRUE
 		} else {
-			sybil.FLAGS.LOG_HIST = &sybil.FALSE
+			FLAGS.LOG_HIST = &FALSE
 		}
 
 		HIST := "hist"
-		sybil.FLAGS.OP = &HIST
+		FLAGS.OP = &HIST
 
-		filters := []sybil.Filter{}
+		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))
-		aggs := []sybil.Aggregation{}
+		aggs := []Aggregation{}
 		aggs = append(aggs, nt.Aggregation("age", "hist"))
 
-		querySpec := sybil.QuerySpec{Table: nt,
-			QueryParams: sybil.QueryParams{Filters: filters, Aggregations: aggs}}
+		querySpec := QuerySpec{Table: nt,
+			QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-		loadSpec := sybil.NewLoadSpec()
+		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
 
 		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
-		copySpec := sybil.CopyQuerySpec(&querySpec)
+		copySpec := CopyQuerySpec(&querySpec)
 
-		nt = sybil.GetTable(TEST_TABLE_NAME)
+		nt = GetTable(TEST_TABLE_NAME)
 
 		// clear the copied query spec result map and look
 		// at the cached query results
 
-		copySpec.Results = make(sybil.ResultMap, 0)
+		copySpec.Results = make(ResultMap, 0)
 		nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 		if len(querySpec.Results) == 0 {

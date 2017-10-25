@@ -1,20 +1,17 @@
-package sybil_test
-
-import sybil "./"
+package sybil
 
 import "testing"
 import "math/rand"
 import "strconv"
 
-
 func TestSets(test *testing.T) {
 	delete_test_db()
 	total_age := int64(0)
 
-	add_records(func(r *sybil.Record, i int) {}, 0)
+	add_records(func(r *Record, i int) {}, 0)
 	block_count := 3
-	min_count := sybil.CHUNK_SIZE * block_count
-	records := add_records(func(r *sybil.Record, i int) {
+	min_count := CHUNK_SIZE * block_count
+	records := add_records(func(r *Record, i int) {
 		set_id := []string{strconv.FormatInt(int64(i), 10)}
 		r.AddIntField("id_int", int64(i))
 		r.AddSetField("id_set", set_id)

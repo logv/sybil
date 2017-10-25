@@ -113,14 +113,11 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			}
 		}
 
+		var network bytes.Buffer
 		col_fname := fmt.Sprintf("%s/int_%s.db", dirname, tb.get_string_for_key(k))
-
-		var network bytes.Buffer // Stand-in for the network.
-
 		// Create an encoder and send a value.
 		enc := gob.NewEncoder(&network)
 		err := enc.Encode(intCol)
-
 		if err != nil {
 			Error("encode:", err)
 		}
@@ -494,7 +491,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
@@ -604,7 +601,7 @@ func (tb *TableBlock) unpackStrCol(dec *FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList
 
 	saved_col := NewSavedSetColumn()
@@ -661,7 +658,7 @@ func (tb *TableBlock) unpackSetCol(dec *FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackIntCol(dec *FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}

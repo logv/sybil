@@ -1,7 +1,5 @@
 package sybil
 
-
-
 type Record struct {
 	Strs      []StrField
 	Ints      []IntField

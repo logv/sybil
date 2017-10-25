@@ -2,6 +2,10 @@ package sybil
 
 import "flag"
 
+func init() {
+	setDefaults()
+}
+
 var FALSE = false
 var TRUE = true
 
@@ -159,7 +163,5 @@ func setDefaults() {
 		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
 		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 	}
-
-	initLua()
 
 }
