@@ -22,3 +22,14 @@ type TableColumn struct {
 	StringIDMutex     *sync.Mutex
 	ValStringIDLookup map[int32]string
 }
+
+func NewTableColumn(tb *TableBlock) *TableColumn {
+	tc := TableColumn{}
+	tc.StringTable = make(map[string]int32)
+	tc.ValStringIDLookup = make(map[int32]string)
+	tc.StringIDMutex = &sync.Mutex{}
+	tc.Block = tb
+	tc.RCache = make(map[int]bool)
+
+	return &tc
+}

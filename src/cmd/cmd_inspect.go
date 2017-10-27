@@ -4,10 +4,10 @@ import (
 	"flag"
 	"strconv"
 
-	. "github.com/logv/sybil/src/lib/column_store"
-	"github.com/logv/sybil/src/lib/common"
-	. "github.com/logv/sybil/src/lib/encoders"
+	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/structs"
+	. "github.com/logv/sybil/src/storage/column_store"
+	. "github.com/logv/sybil/src/storage/encoders"
 )
 
 func decodeTableInfo(digest_file *string) bool {
@@ -20,7 +20,7 @@ func decodeTableInfo(digest_file *string) bool {
 		return false
 	}
 
-	common.Print("TABLE INFO", saved_table)
+	Print("TABLE INFO", saved_table)
 
 	return true
 
@@ -33,11 +33,11 @@ func decodeInfoCol(digest_file *string) bool {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		common.Print("ERROR", err)
+		Print("ERROR", err)
 		return false
 	}
 
-	common.Print("INFO COL", info)
+	Print("INFO COL", info)
 
 	return true
 
@@ -50,11 +50,11 @@ func decodeIntCol(digest_file *string) bool {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		common.Print("ERROR", err)
+		Print("ERROR", err)
 		return false
 	}
 
-	common.Print("INT COL", info)
+	Print("INT COL", info)
 
 	return true
 
@@ -72,12 +72,12 @@ func decodeStrCol(digest_file *string) bool {
 	}
 
 	if err != nil {
-		common.Print("ERROR", err)
+		Print("ERROR", err)
 		return false
 	}
 
-	common.Print("STR COL", info)
-	common.Print("BINS ARE", bins)
+	Print("STR COL", info)
+	Print("BINS ARE", bins)
 
 	return true
 
@@ -89,7 +89,7 @@ func RunInspectCmdLine() {
 	flag.Parse()
 
 	if *digest_file == "" || digest_file == nil {
-		common.Print("Please specify a file to inspect with the -file flag")
+		Print("Please specify a file to inspect with the -file flag")
 		return
 	}
 

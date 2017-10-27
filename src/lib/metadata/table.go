@@ -1,7 +1,24 @@
 package metadata
 
-import "github.com/logv/sybil/src/lib/common"
+import . "github.com/logv/sybil/src/lib/common"
 import . "github.com/logv/sybil/src/lib/structs"
+
+func SetKeyType(t *Table, NameID int16, col_type int8) bool {
+	cur_type, ok := t.KeyTypes[NameID]
+	if !ok {
+		t.KeyTypes[NameID] = col_type
+	} else {
+		if cur_type != col_type {
+			Debug("TABLE", t.KeyTable)
+			Debug("TYPES", t.KeyTypes)
+			Warn("trying to over-write column type for key ", NameID, GetTableStringForKey(t, int(NameID)), " OLD TYPE", cur_type, " NEW TYPE", col_type)
+			return false
+		}
+	}
+
+	return true
+
+}
 
 func GetTableStringForKey(t *Table, id int) string {
 	val, _ := t.KeyStringIDLookup[int16(id)]
@@ -21,7 +38,7 @@ func PopulateStringIDLookup(t *Table) {
 
 	for _, b := range t.BlockList {
 		if b.Columns == nil && b.Name != ROW_STORE_BLOCK {
-			common.Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
+			Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
 			t.BlockMutex.Lock()
 			delete(t.BlockList, b.Name)
 			t.BlockMutex.Unlock()

@@ -32,10 +32,10 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	${GOBIN} test ./src/lib/... -v
+	${GOBIN} test ./src/test -v
 
 testv:
-	${GOBIN} test ./src/lib/... -v
+	${GOBIN} test ./src/test -v -debug
 
 coverage:
 	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/lib

@@ -2,6 +2,13 @@ package structs
 
 import "sync"
 import "runtime/debug"
+import (
+	"io/ioutil"
+	"os"
+	"path"
+
+	. "github.com/logv/sybil/src/lib/config"
+)
 
 var ROW_STORE_BLOCK = "ROW_STORE"
 
@@ -107,4 +114,15 @@ func GetTable(name string) *Table {
 	InitDataStructures(t)
 
 	return t
+}
+
+func MakeDir(t *Table) {
+	tabledir := path.Join(*FLAGS.DIR, t.Name)
+	os.MkdirAll(tabledir, 0755)
+}
+
+func IsNotExist(t *Table) bool {
+	table_dir := path.Join(*FLAGS.DIR, t.Name)
+	_, err := ioutil.ReadDir(table_dir)
+	return err != nil
 }

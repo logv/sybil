@@ -3,18 +3,10 @@ package metadata
 import (
 	"math"
 
-	"github.com/logv/sybil/src/lib/common"
-	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/common"
+	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
 )
-
-// THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
-// it adds update_int_info and update_str_info to Table/TableBlock
-
-// TODO: collapse the IntInfo and StrInfo into fields on tableColumn
-
-// StrInfo and IntInfo contains interesting tidbits about columns
-// they also get serialized to disk in the block's info.db
 
 func update_str_info(str_info_table map[int16]*StrInfo, name int16, val, increment int) {
 	info, ok := str_info_table[name]
@@ -54,13 +46,13 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 		// standard deviation and decide whether it is an extreme outlier or not
 		delta_in_stddev := math.Abs(delta) / stddev
 
-		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *config.FLAGS.SKIP_OUTLIERS == false {
+		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *FLAGS.SKIP_OUTLIERS == false {
 			info.Max = val
 		} else {
 			ignored = true
 
 			if info.Count > MIN_CUTOFF {
-				common.Debug("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+				Debug("IGNORING MAX VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
 			}
 		}
 	}
@@ -68,12 +60,12 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 	if info.Min > val {
 		delta_in_stddev := math.Abs(delta) / stddev
 
-		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *config.FLAGS.SKIP_OUTLIERS == false {
+		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *FLAGS.SKIP_OUTLIERS == false {
 			info.Min = val
 		} else {
 			ignored = true
 			if info.Count > MIN_CUTOFF {
-				common.Debug("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
+				Debug("IGNORING MIN VALUE", val, "AVG IS", info.Avg, "DELTA / STD", delta_in_stddev)
 			}
 		}
 	}
@@ -92,37 +84,31 @@ func UpdateTableIntInfo(t *Table, name int16, val int64) {
 	update_int_info(t.IntInfo, name, val)
 }
 
-func UpdateBlockStrInfo(tb *TableBlock, name int16, val int, increment int) {
-	if tb.StrInfo == nil {
-		tb.StrInfo = make(map[int16]*StrInfo)
-	}
-
-	update_str_info(tb.StrInfo, name, val, increment)
-}
-
-func UpdateBlockIntInfo(tb *TableBlock, name int16, val int64) {
-	if tb.IntInfo == nil {
-		tb.IntInfo = make(map[int16]*IntInfo)
-	}
-
-	update_int_info(tb.IntInfo, name, val)
-	UpdateTableIntInfo(tb.Table, name, val)
-}
-
 func GetTableIntInfo(t *Table, name int16) *IntInfo {
 	return t.IntInfo[name]
 
 }
 
-func GetBlockIntInfo(tb *TableBlock, name int16) *IntInfo {
-	return tb.IntInfo[name]
+func GetColumnValID(tc *TableColumn, name string) int32 {
+
+	id, ok := tc.StringTable[name]
+
+	if ok {
+		return int32(id)
+	}
+
+	tc.StringIDMutex.Lock()
+	tc.StringTable[name] = int32(len(tc.StringTable))
+	tc.ValStringIDLookup[tc.StringTable[name]] = name
+	tc.StringIDMutex.Unlock()
+	return tc.StringTable[name]
 }
 
-func GetBlockStrInfo(tb *TableBlock, name int16) *StrInfo {
-	return tb.StrInfo[name]
+func GetColumnStringForVal(tc *TableColumn, id int32) string {
+	val, _ := tc.ValStringIDLookup[id]
+	return val
 }
 
-func GetBlockStringForKey(tb *TableBlock, id int16) string {
-	return GetTableStringForKey(tb.Table, int(id))
-
+func GetColumnStringForKey(tc *TableColumn, id int) string {
+	return GetBlockStringForKey(tc.Block, int16(id))
 }

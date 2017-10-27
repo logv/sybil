@@ -90,20 +90,21 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	SORT_COUNT              string
-	SAMPLES                 bool
-	STR_REPLACEMENTS        map[string]StrReplace
-	WEIGHT_COL              bool
-	WEIGHT_COL_ID           int16
-	DELTA_ENCODE_INT_VALUES bool
-	DELTA_ENCODE_RECORD_IDS bool
-	WRITE_BLOCK_INFO        bool
-	TIMESERIES              bool
-	TIME_COL_ID             int16
-	TIME_FORMAT             string
-	HOLD_MATCHES            bool
-	GROUP_BY                []string
-	READ_ROWS_ONLY          bool
+	SORT_COUNT                string
+	SAMPLES                   bool
+	STR_REPLACEMENTS          map[string]StrReplace
+	DELETE_BLOCKS_AFTER_QUERY bool
+	WEIGHT_COL                bool
+	WEIGHT_COL_ID             int16
+	DELTA_ENCODE_INT_VALUES   bool
+	DELTA_ENCODE_RECORD_IDS   bool
+	WRITE_BLOCK_INFO          bool
+	TIMESERIES                bool
+	TIME_COL_ID               int16
+	TIME_FORMAT               string
+	HOLD_MATCHES              bool
+	GROUP_BY                  []string
+	READ_ROWS_ONLY            bool
 }
 
 // TODO: merge these two into one thing
@@ -119,6 +120,7 @@ func SetDefaults() {
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
 	OPTS.HOLD_MATCHES = false
+	OPTS.DELETE_BLOCKS_AFTER_QUERY = true
 	OPTS.DELTA_ENCODE_INT_VALUES = true
 	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
@@ -170,4 +172,8 @@ func SetDefaults() {
 
 	// TODO: enable again
 	//luajit.InitLua(&ENABLE_LUA)
+}
+
+func init() {
+	SetDefaults()
 }

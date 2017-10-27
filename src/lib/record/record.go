@@ -1,11 +1,8 @@
 package sybil
 
-import "github.com/logv/sybil/src/lib/common"
+import . "github.com/logv/sybil/src/lib/common"
 import . "github.com/logv/sybil/src/lib/structs"
-import . "github.com/logv/sybil/src/lib/table_column"
-import . "github.com/logv/sybil/src/lib/table_block"
 import . "github.com/logv/sybil/src/lib/metadata"
-import . "github.com/logv/sybil/src/lib/table_info"
 
 func GetStrVal(r *Record, name string) (string, bool) {
 	id := GetBlockKeyID(r.Block, name)
@@ -57,7 +54,7 @@ func AddStrField(r *Record, name string, val string) {
 	r.Populated[NameID] = STR_VAL
 
 	if SetKeyType(r.Block.Table, NameID, STR_VAL) == false {
-		common.Error("COULDNT SET STR VAL", name, val, NameID)
+		Error("COULDNT SET STR VAL", name, val, NameID)
 	}
 }
 
@@ -69,7 +66,7 @@ func AddIntField(r *Record, name string, val int64) {
 	r.Ints[NameID] = IntField(val)
 	r.Populated[NameID] = INT_VAL
 	if SetKeyType(r.Block.Table, NameID, INT_VAL) == false {
-		common.Error("COULDNT SET INT VAL", name, val, NameID)
+		Error("COULDNT SET INT VAL", name, val, NameID)
 	}
 }
 
@@ -89,7 +86,7 @@ func AddSetField(r *Record, name string, val []string) {
 	r.SetMap[NameID] = SetField(vals)
 	r.Populated[NameID] = SET_VAL
 	if SetKeyType(r.Block.Table, NameID, SET_VAL) == false {
-		common.Error("COULDNT SET SET VAL", name, val, NameID)
+		Error("COULDNT SET SET VAL", name, val, NameID)
 	}
 }
 
@@ -122,7 +119,7 @@ func CopyRecord(r *Record) *Record {
 		nr.Populated = r.Populated
 	} else {
 		nr.Populated = make([]int8, len(r.Populated))
-		for i, _ := range r.Populated {
+		for i := range r.Populated {
 			nr.Strs[i] = r.Strs[i]
 			nr.Ints[i] = r.Ints[i]
 			nr.Populated[i] = r.Populated[i]

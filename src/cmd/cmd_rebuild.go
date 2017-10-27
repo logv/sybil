@@ -3,12 +3,12 @@ package cmd
 import (
 	"flag"
 
-	"github.com/logv/sybil/src/lib/common"
-	"github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/common"
+	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/lib/table_info"
-	. "github.com/logv/sybil/src/lib/table_recover_info"
+	. "github.com/logv/sybil/src/storage/file_locks"
+	. "github.com/logv/sybil/src/storage/metadata_io"
+	. "github.com/logv/sybil/src/utils/table_info_recover"
 )
 
 func RunRebuildCmdLine() {
@@ -16,21 +16,21 @@ func RunRebuildCmdLine() {
 	FORCE_UPDATE := flag.Bool("force", false, "Force re-calculation of info.db, even if it exists")
 	flag.Parse()
 
-	if *config.FLAGS.TABLE == "" {
+	if *FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *config.FLAGS.PROFILE {
-		profile := config.RUN_PROFILER()
+	if *FLAGS.PROFILE {
+		profile := RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	t := GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*FLAGS.TABLE)
 
 	loaded := LoadTableInfo(t) && *FORCE_UPDATE == false
 	if loaded {
-		common.Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
+		Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
 		return
 	}
 
@@ -39,12 +39,12 @@ func RunRebuildCmdLine() {
 	// TODO: prompt to see if this table info looks good and then write it to
 	// original info.db
 	if *REPLACE_INFO == true {
-		common.Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
+		Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
 		lock := Lock{Table: t, Name: "info"}
 		lock.ForceDeleteFile()
 		SaveTableInfo(t, "info")
 	} else {
-		common.Print("SAVING TO temp_info.db")
+		Print("SAVING TO temp_info.db")
 		SaveTableInfo(t, "temp_info")
 	}
 }

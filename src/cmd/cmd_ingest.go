@@ -12,13 +12,14 @@ import (
 	"syscall"
 	"time"
 
-	. "github.com/logv/sybil/src/lib/column_store"
-	"github.com/logv/sybil/src/lib/common"
-	"github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/ingest"
-	. "github.com/logv/sybil/src/lib/locks"
+	. "github.com/logv/sybil/src/lib/common"
+	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/record"
 	. "github.com/logv/sybil/src/lib/structs"
+	. "github.com/logv/sybil/src/storage/column_store"
+	. "github.com/logv/sybil/src/storage/file_locks"
+	. "github.com/logv/sybil/src/storage/metadata_io"
+	. "github.com/logv/sybil/src/storage/row_store"
 )
 
 type Dictionary map[string]interface{}
@@ -73,7 +74,7 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			AddSetField(r, key_name, key_strs)
 		case nil:
 		default:
-			common.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
+			Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
 		}
 	}
 }
@@ -87,9 +88,9 @@ func import_csv_records() {
 	scanner.Scan()
 	header := scanner.Text()
 	header_fields := strings.Split(header, ",")
-	common.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
+	Debug("HEADER FIELDS FOR CSV ARE", header_fields)
 
-	t := GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*FLAGS.TABLE)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -133,14 +134,14 @@ func json_query(obj *interface{}, path []string) []interface{} {
 			// the key should be an integer key...
 			intkey, err := strconv.ParseInt(key, 10, 32)
 			if err != nil {
-				common.Debug("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
+				Debug("USING NON INTEGER KEY TO ACCESS ARRAY!", key, err)
 			} else {
 				ret = ing[intkey]
 			}
 		case nil:
 			continue
 		default:
-			common.Debug(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
+			Debug(fmt.Sprintf("DONT KNOW HOW TO ADDRESS INTO OBJ %T", ing))
 		}
 
 	}
@@ -153,17 +154,17 @@ func json_query(obj *interface{}, path []string) []interface{} {
 		ret = append(ret, r)
 		return ret
 	default:
-		common.Debug(fmt.Sprintf("RET TYPE %T", r))
+		Debug(fmt.Sprintf("RET TYPE %T", r))
 	}
 
 	return nil
 }
 
 func import_json_records() {
-	t := GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
-	common.Debug("PATH IS", path)
+	Debug("PATH IS", path)
 
 	dec := json.NewDecoder(os.Stdin)
 
@@ -175,7 +176,7 @@ func import_json_records() {
 				break
 			}
 			if err != nil {
-				common.Debug("ERR", err)
+				Debug("ERR", err)
 			}
 		}
 
@@ -210,13 +211,13 @@ func RunIngestCmdLine() {
 	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	f_SKIP_COMPACT := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
 	f_REOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
-	config.FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
+	FLAGS.SKIP_COMPACT = f_SKIP_COMPACT
 
 	flag.Parse()
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
 
-	if *config.FLAGS.TABLE == "" {
+	if *FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
@@ -227,15 +228,15 @@ func RunIngestCmdLine() {
 
 		infile, err := os.OpenFile(*f_REOPEN, syscall.O_RDONLY|syscall.O_CREAT, 0666)
 		if err != nil {
-			common.Error("ERROR OPENING INFILE", err)
+			Error("ERROR OPENING INFILE", err)
 		}
 
 		os.Stdin = infile
 
 	}
 
-	if *config.FLAGS.PROFILE {
-		profile := config.RUN_PROFILER()
+	if *FLAGS.PROFILE {
+		profile := RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
@@ -246,11 +247,11 @@ func RunIngestCmdLine() {
 		EXCLUDES[v] = true
 	}
 
-	for k, _ := range EXCLUDES {
-		common.Debug("EXCLUDING COLUMN", k)
+	for k := range EXCLUDES {
+		Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := GetTable(*config.FLAGS.TABLE)
+	t := GetTable(*FLAGS.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else
@@ -266,7 +267,7 @@ func RunIngestCmdLine() {
 
 	if loaded_table == false {
 		if HasFlagFile(t) {
-			common.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
+			Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
 	}
