@@ -25,9 +25,9 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
+	md "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
+	specs "github.com/logv/sybil/src/query/specs"
 )
 
 const PREAMBLE = `
@@ -79,7 +79,7 @@ func InitLua(enable *bool) {
 }
 
 var LUA_BLOCK_ID = 0
-var LUA_BLOCKS = make([]*QuerySpec, 0)
+var LUA_BLOCKS = make([]*specs.QuerySpec, 0)
 var LUA_LOCK = sync.Mutex{}
 
 //export go_get_int
@@ -104,8 +104,8 @@ func go_get_str_id(block_id, record_id int, col_id int) int {
 //export go_get_str_val
 // TODO: this should be cached so we don't keep adding new memory
 func go_get_str_val(block_id, str_id int, col_id int) *C.char {
-	col := GetColumnInfo(LUA_BLOCKS[block_id-1].Matched[0].Block, int16(col_id))
-	val := GetColumnStringForVal(col, int32(str_id))
+	col := md.GetColumnInfo(LUA_BLOCKS[block_id-1].Matched[0].Block, int16(col_id))
+	val := md.GetColumnStringForVal(col, int32(str_id))
 	return C.CString(val)
 
 }
@@ -191,7 +191,7 @@ func getLuaTable(state *C.struct_lua_State) LuaTable {
 
 }
 
-func LuaInit(qs *QuerySpec) {
+func LuaInit(qs *specs.QuerySpec) {
 	// Initialize state.
 	qs.LuaState = C.luaL_newstate()
 	state := qs.LuaState
@@ -232,7 +232,7 @@ func LuaInit(qs *QuerySpec) {
 
 }
 
-func LuaMap(qs *QuerySpec, rl *RecordList) LuaTable {
+func LuaMap(qs *specs.QuerySpec, rl *RecordList) LuaTable {
 	state := qs.LuaState
 	// Execute map function
 	C.lua_getfield(state, C.LUA_GLOBALSINDEX, C.CString("map"))
@@ -250,7 +250,7 @@ func LuaMap(qs *QuerySpec, rl *RecordList) LuaTable {
 
 }
 
-func LuaCombine(qs *QuerySpec, other *QuerySpec) LuaTable {
+func LuaCombine(qs *specs.QuerySpec, other *specs.QuerySpec) LuaTable {
 	// call to reduce
 	state := qs.LuaState
 	C.lua_getfield(state, C.LUA_GLOBALSINDEX, C.CString("reduce"))
@@ -272,7 +272,7 @@ func LuaCombine(qs *QuerySpec, other *QuerySpec) LuaTable {
 
 }
 
-func LuaFinalize(qs *QuerySpec) LuaTable {
+func LuaFinalize(qs *specs.QuerySpec) LuaTable {
 	state := qs.LuaState
 	// call to finalize
 	C.lua_getfield(state, C.LUA_GLOBALSINDEX, C.CString("finalize"))

@@ -4,8 +4,9 @@ import (
 	"sync"
 
 	. "github.com/logv/sybil/src/lib/common"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
+
+	md "github.com/logv/sybil/src/lib/metadata"
 )
 
 type LoadSpec struct {
@@ -41,7 +42,7 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 	if l.Table == nil {
 		return
 	}
-	NameID := GetTableKeyID(l.Table, name)
+	NameID := md.GetTableKeyID(l.Table, name)
 
 	if l.Table.KeyTypes[NameID] == 0 {
 		Error("Query Error! Column ", name, " does not exist")

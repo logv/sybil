@@ -9,20 +9,21 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/logv/sybil/src/exp/luajit"
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/hists"
-	. "github.com/logv/sybil/src/query/specs"
+
+	luajit "github.com/logv/sybil/src/exp/luajit"
+	md "github.com/logv/sybil/src/lib/metadata"
+	hists "github.com/logv/sybil/src/query/hists"
+	specs "github.com/logv/sybil/src/query/specs"
 )
 
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
 
 type SortResultsByCol struct {
-	Results []*Result
+	Results []*specs.Result
 
 	Col string
 }
@@ -51,7 +52,7 @@ func (a SortResultsByCol) Less(i, j int) bool {
 	return t1 > t2
 }
 
-func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
+func FilterAndAggRecords(querySpec *specs.QuerySpec, recordsPtr *RecordList) int {
 	var ok bool
 	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
 
@@ -66,7 +67,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		querySpec.Matched = make(RecordList, 0)
 	}
 
-	var result_map ResultMap
+	var result_map specs.ResultMap
 	length := len(querySpec.Table.KeyTable)
 	columns := make([]*TableColumn, length)
 
@@ -109,7 +110,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			copy(bs, zero)
 
 			if columns[g.NameID] == nil && r.Populated[g.NameID] != NO_VAL {
-				columns[g.NameID] = GetColumnInfo(r.Block, g.NameID)
+				columns[g.NameID] = md.GetColumnInfo(r.Block, g.NameID)
 				columns[g.NameID].Type = r.Populated[g.NameID]
 			}
 
@@ -139,7 +140,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			big_record, b_ok := querySpec.Results[string(binarybuffer)]
 			if !b_ok {
 				if len(querySpec.Results) < INTERNAL_RESULT_LIMIT {
-					big_record = NewResult()
+					big_record = specs.NewResult()
 					big_record.BinaryByKey = string(binarybuffer)
 					querySpec.Results[string(binarybuffer)] = big_record
 					b_ok = true
@@ -156,7 +157,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 			if !ok {
 				// TODO: this make call is kind of slow...
-				result_map = make(ResultMap)
+				result_map = make(specs.ResultMap)
 				querySpec.TimeResults[int(val)] = result_map
 			}
 
@@ -171,7 +172,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				continue
 			}
 
-			added_record = NewResult()
+			added_record = specs.NewResult()
 			added_record.BinaryByKey = string(binarybuffer)
 
 			result_map[string(binarybuffer)] = added_record
@@ -189,7 +190,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist, ok := added_record.Hists[a.Name]
 
 				if !ok {
-					hist = NewHist(r.Block.Table, GetTableIntInfo(r.Block.Table, a.NameID))
+					hist = hists.NewHist(r.Block.Table, md.GetTableIntInfo(r.Block.Table, a.NameID))
 					added_record.Hists[a.Name] = hist
 				}
 
@@ -214,19 +215,19 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	}
 
 	if *FLAGS.LUA {
-		LuaInit(querySpec)
-		LuaMap(querySpec, &querySpec.Matched)
+		luajit.LuaInit(querySpec)
+		luajit.LuaMap(querySpec, &querySpec.Matched)
 	}
 
 	return matched_records
 
 }
 
-func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableColumn) *ResultMap {
+func translate_group_by(Results specs.ResultMap, Groups []specs.Grouping, columns []*TableColumn) *specs.ResultMap {
 
 	var buffer bytes.Buffer
 
-	var newResults = make(ResultMap)
+	var newResults = make(specs.ResultMap)
 	var bs []byte
 
 	for _, r := range Results {
@@ -249,7 +250,7 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 			case INT_VAL:
 				buffer.WriteString(strconv.FormatInt(int64(val), 10))
 			case STR_VAL:
-				buffer.WriteString(GetColumnStringForVal(col, int32(val)))
+				buffer.WriteString(md.GetColumnStringForVal(col, int32(val)))
 
 			}
 
@@ -264,7 +265,7 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 	return &newResults
 }
 
-func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
+func CombineMatches(block_specs map[string]*specs.QuerySpec) RecordList {
 	start := time.Now()
 	matched := make(RecordList, 0)
 	for _, spec := range block_specs {
@@ -277,22 +278,22 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 
 }
 
-func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
+func CombineResults(querySpec *specs.QuerySpec, block_specs map[string]*specs.QuerySpec) *specs.QuerySpec {
 
 	astart := time.Now()
-	resultSpec := QuerySpec{}
+	resultSpec := specs.QuerySpec{}
 	resultSpec.Table = querySpec.Table
 	//	resultSpec.LuaResult = make(
 	//		LuaTable, 0)
 
 	if *FLAGS.LUA {
-		LuaInit(&resultSpec)
+		luajit.LuaInit(&resultSpec)
 	}
 
-	master_result := make(ResultMap)
-	master_time_result := make(map[int]ResultMap)
+	master_result := make(specs.ResultMap)
+	master_time_result := make(map[int]specs.ResultMap)
 
-	cumulative_result := NewResult()
+	cumulative_result := specs.NewResult()
 	cumulative_result.GroupByKey = "TOTAL"
 	if len(querySpec.Groups) > 1 {
 		for range querySpec.Groups[1:] {
@@ -304,7 +305,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 		master_result.Combine(&spec.Results)
 
 		if *FLAGS.LUA {
-			LuaCombine(&resultSpec, spec)
+			luajit.LuaCombine(&resultSpec, spec)
 		}
 
 		for _, result := range spec.Results {
@@ -335,7 +336,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	resultSpec.Results = master_result
 
 	if *FLAGS.LUA {
-		LuaFinalize(&resultSpec)
+		luajit.LuaFinalize(&resultSpec)
 	}
 
 	aend := time.Now()
@@ -344,12 +345,12 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	return &resultSpec
 }
 
-func SortResults(querySpec *QuerySpec) {
+func SortResults(querySpec *specs.QuerySpec) {
 	// SORT THE RESULTS
 	if querySpec.OrderBy != "" {
 		start := time.Now()
 		sorter := SortResultsByCol{}
-		sorter.Results = make([]*Result, 0)
+		sorter.Results = make([]*specs.Result, 0)
 		for _, v := range querySpec.Results {
 			sorter.Results = append(sorter.Results, v)
 		}
@@ -373,11 +374,11 @@ func SortResults(querySpec *QuerySpec) {
 }
 
 // OLD SEARCHING FUNCTIONS BELOW HERE
-func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[string]*QuerySpec {
+func SearchBlocks(querySpec *specs.QuerySpec, block_list map[string]*TableBlock) map[string]*specs.QuerySpec {
 	var wg sync.WaitGroup
 	// Each block gets its own querySpec (for locking and combining purposes)
 	// after all queries finish executing, the specs are combined
-	block_specs := make(map[string]*QuerySpec, len(block_list))
+	block_specs := make(map[string]*specs.QuerySpec, len(block_list))
 
 	// TODO: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
@@ -389,7 +390,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 		go func() {
 			defer wg.Done()
 
-			blockQuery := CopyQuerySpec(querySpec)
+			blockQuery := specs.CopyQuerySpec(querySpec)
 
 			FilterAndAggRecords(blockQuery, &this_block.RecordList)
 
@@ -405,7 +406,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 	return block_specs
 }
 
-func MatchAndAggregate(t *Table, querySpec *QuerySpec) {
+func MatchAndAggregate(t *Table, querySpec *specs.QuerySpec) {
 	start := time.Now()
 
 	querySpec.Table = t

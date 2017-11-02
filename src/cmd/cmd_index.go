@@ -6,9 +6,9 @@ import (
 
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
 	. "github.com/logv/sybil/src/query/load_and_query"
+	specs "github.com/logv/sybil/src/query/specs"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 func RunIndexCmdLine() {
@@ -29,14 +29,14 @@ func RunIndexCmdLine() {
 	t := GetTable(*FLAGS.TABLE)
 
 	LoadRecords(t, nil)
-	SaveTableInfo(t, "info")
+	md_io.SaveTableInfo(t, "info")
 	OPTS.DELETE_BLOCKS_AFTER_QUERY = true
 	OPTS.WRITE_BLOCK_INFO = true
 
-	loadSpec := NewTableLoadSpec(t)
+	loadSpec := specs.NewTableLoadSpec(t)
 	for _, v := range ints {
 		loadSpec.Int(v)
 	}
 	LoadRecords(t, &loadSpec)
-	SaveTableInfo(t, "info")
+	md_io.SaveTableInfo(t, "info")
 }

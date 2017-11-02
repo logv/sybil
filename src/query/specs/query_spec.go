@@ -3,9 +3,10 @@ package sybil
 import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/hists"
+
+	md "github.com/logv/sybil/src/lib/metadata"
+	hists "github.com/logv/sybil/src/query/hists"
 )
 
 const (
@@ -62,10 +63,6 @@ type QuerySpec struct {
 	//	LuaState  *C.struct_lua_State
 }
 
-type Filter interface {
-	Filter(*Record) bool
-}
-
 type Grouping struct {
 	Name   string
 	NameID int16
@@ -80,7 +77,7 @@ type Aggregation struct {
 }
 
 type Result struct {
-	Hists map[string]Histogram
+	Hists map[string]hists.Histogram
 
 	GroupByKey  string
 	BinaryByKey string
@@ -90,7 +87,7 @@ type Result struct {
 
 func NewResult() *Result {
 	added_record := &Result{}
-	added_record.Hists = make(map[string]Histogram)
+	added_record.Hists = make(map[string]hists.Histogram)
 	added_record.Count = 0
 	return added_record
 }
@@ -156,12 +153,12 @@ func (querySpec *QuerySpec) ResetResults() {
 	}
 }
 func GroupingForTable(t *Table, name string) Grouping {
-	col_id := GetTableKeyID(t, name)
+	col_id := md.GetTableKeyID(t, name)
 	return Grouping{name, col_id}
 }
 
 func AggregationForTable(t *Table, name string, op string) Aggregation {
-	col_id := GetTableKeyID(t, name)
+	col_id := md.GetTableKeyID(t, name)
 
 	agg := Aggregation{Name: name, NameID: col_id, Op: op}
 	if op == "avg" {

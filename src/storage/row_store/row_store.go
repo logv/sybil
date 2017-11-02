@@ -10,13 +10,13 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
-	. "github.com/logv/sybil/src/lib/record"
+	md "github.com/logv/sybil/src/lib/metadata"
+	record "github.com/logv/sybil/src/lib/record"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/aggregate"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/encoders"
-	. "github.com/logv/sybil/src/storage/file_locks"
+	aggregate "github.com/logv/sybil/src/query/aggregate"
+	specs "github.com/logv/sybil/src/query/specs"
+	encoders "github.com/logv/sybil/src/storage/encoders"
+	flock "github.com/logv/sybil/src/storage/file_locks"
 )
 
 type RowSavedInt struct {
@@ -57,11 +57,11 @@ func LoadRowStoreRecords(t *Table, digest string, after_block_load_cb AfterRowBl
 	}
 
 	var file *os.File
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < flock.LOCK_TRIES; i++ {
 		file, err = os.Open(dirname)
 		if err != nil {
 			Debug("Can't open the ingestion dir", dirname)
-			time.Sleep(LOCK_US)
+			time.Sleep(flock.LOCK_US)
 			if i > MAX_ROW_STORE_TRIES {
 				return
 			}
@@ -109,7 +109,7 @@ func LoadRecordsFromLog(t *Table, filename string) RecordList {
 	var marshalled_records []*SavedRecord
 
 	// Create an encoder and send a value.
-	err := DecodeInto(filename, &marshalled_records)
+	err := encoders.DecodeInto(filename, &marshalled_records)
 	if err != nil {
 		Debug("ERROR LOADING INGESTION LOG", err)
 	}
@@ -146,15 +146,15 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	for _, v := range s.Ints {
 		r.Populated[v.Name] = INT_VAL
 		r.Ints[v.Name] = IntField(v.Value)
-		UpdateTableIntInfo(t, v.Name, v.Value)
+		md.UpdateTableIntInfo(t, v.Name, v.Value)
 	}
 
 	for _, v := range s.Strs {
-		AddStrField(&r, GetTableStringForKey(t, int(v.Name)), v.Value)
+		record.AddStrField(&r, md.GetTableStringForKey(t, int(v.Name)), v.Value)
 	}
 
 	for _, v := range s.Sets {
-		AddSetField(&r, GetTableStringForKey(t, int(v.Name)), v.Value)
+		record.AddSetField(&r, md.GetTableStringForKey(t, int(v.Name)), v.Value)
 		r.Populated[v.Name] = SET_VAL
 	}
 
@@ -171,18 +171,18 @@ func ToSavedRecord(r *Record) *SavedRecord {
 
 	for k, v := range r.Strs {
 		if r.Populated[k] == STR_VAL {
-			col := GetColumnInfo(r.Block, int16(k))
-			str_val := GetColumnStringForVal(col, int32(v))
+			col := md.GetColumnInfo(r.Block, int16(k))
+			str_val := md.GetColumnStringForVal(col, int32(v))
 			s.Strs = append(s.Strs, RowSavedStr{int16(k), str_val})
 		}
 	}
 
 	for k, v := range r.SetMap {
 		if r.Populated[k] == SET_VAL {
-			col := GetColumnInfo(r.Block, int16(k))
+			col := md.GetColumnInfo(r.Block, int16(k))
 			set_vals := make([]string, len(v))
 			for i, val := range v {
-				set_vals[i] = GetColumnStringForVal(col, int32(val))
+				set_vals[i] = md.GetColumnStringForVal(col, int32(val))
 			}
 			s.Sets = append(s.Sets, RowSavedSet{int16(k), set_vals})
 		}
@@ -197,7 +197,7 @@ type SavedRecords struct {
 }
 
 type AfterLoadQueryCB struct {
-	QuerySpec *QuerySpec
+	QuerySpec *specs.QuerySpec
 	WG        *sync.WaitGroup
 	Records   RecordList
 
@@ -207,7 +207,7 @@ type AfterLoadQueryCB struct {
 func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
 		// TODO: add sessionization call over here, too
-		count := FilterAndAggRecords(cb.QuerySpec, &cb.Records)
+		count := aggregate.FilterAndAggRecords(cb.QuerySpec, &cb.Records)
 		cb.Count += count
 
 		cb.WG.Done()

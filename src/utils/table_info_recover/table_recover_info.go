@@ -10,10 +10,10 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
+	md "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/column_store"
-	. "github.com/logv/sybil/src/storage/encoders"
+	col_store "github.com/logv/sybil/src/storage/column_store"
+	encoders "github.com/logv/sybil/src/storage/encoders"
 )
 
 // TODO: have this only pull the blocks into column format and not materialize
@@ -29,7 +29,7 @@ func ReadBlockInfoFromDir(t *Table, dirname string) *SavedColumnInfo {
 	info := SavedColumnInfo{}
 	filename := fmt.Sprintf("%s/info.db", dirname)
 
-	err := DecodeInto(filename, &info)
+	err := encoders.DecodeInto(filename, &info)
 
 	if err != nil {
 		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)
@@ -70,7 +70,7 @@ func ReadBlockInfoFromDir(t *Table, dirname string) *SavedColumnInfo {
 			col_type = INT_VAL
 
 			col_info := info.IntInfoMap[col_name]
-			col_id := GetTableKeyID(t, col_name)
+			col_id := md.GetTableKeyID(t, col_name)
 			int_info, ok := t.IntInfo[col_id]
 			if !ok {
 				t.IntInfo[col_id] = col_info
@@ -82,8 +82,8 @@ func ReadBlockInfoFromDir(t *Table, dirname string) *SavedColumnInfo {
 		}
 
 		if col_name != "" {
-			col_id := GetTableKeyID(t, col_name)
-			SetKeyType(t, col_id, int8(col_type))
+			col_id := md.GetTableKeyID(t, col_name)
+			md.SetKeyType(t, col_id, int8(col_type))
 			columns[col_name] = int(col_type)
 		}
 
@@ -119,7 +119,7 @@ func DeduceTableInfoFromBlocks(t *Table) {
 	for f := range files {
 
 		v := files[f]
-		if v.IsDir() && FileLooksLikeBlock(v) {
+		if v.IsDir() && col_store.FileLooksLikeBlock(v) {
 			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
 			this_block++
 

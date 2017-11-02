@@ -2,7 +2,7 @@
 
 package sybil
 
-import . "github.com/logv/sybil/src/query/specs"
+import specs "github.com/logv/sybil/src/query/specs"
 import . "github.com/logv/sybil/src/lib/structs"
 
 // InitLua ...
@@ -16,7 +16,7 @@ type LuaKey interface{}
 // SetLuaScript ...
 func SetLuaScript(filename string) {}
 
-func LuaInit(qs *QuerySpec)                      {}
-func LuaMap(qs *QuerySpec, rl *RecordList)       {}
-func LuaCombine(qs *QuerySpec, other *QuerySpec) {}
-func LuaFinalize(qs *QuerySpec)                  {}
+func LuaInit(qs *specs.QuerySpec)                            {}
+func LuaMap(qs *specs.QuerySpec, rl *RecordList)             {}
+func LuaCombine(qs *specs.QuerySpec, other *specs.QuerySpec) {}
+func LuaFinalize(qs *specs.QuerySpec)                        {}

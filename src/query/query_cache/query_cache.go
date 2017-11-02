@@ -13,26 +13,27 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/filters"
-	. "github.com/logv/sybil/src/query/hists"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/encoders"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+
+	md "github.com/logv/sybil/src/lib/metadata"
+	filters "github.com/logv/sybil/src/query/filters"
+	hists "github.com/logv/sybil/src/query/hists"
+	specs "github.com/logv/sybil/src/query/specs"
+	encoders "github.com/logv/sybil/src/storage/encoders"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 // this registration is used for saving and decoding cached per block query
 // results
 func RegisterTypesForQueryCache() {
-	gob.Register(IntFilter{})
-	gob.Register(StrFilter{})
-	gob.Register(SetFilter{})
-	gob.Register(&HistCompat{})
-	gob.Register(&MultiHistCompat{})
+	gob.Register(filters.IntFilter{})
+	gob.Register(filters.StrFilter{})
+	gob.Register(filters.SetFilter{})
+	gob.Register(&hists.HistCompat{})
+	gob.Register(&hists.MultiHistCompat{})
 }
 
-func GetCachedQueryForBlock(t *Table, dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
+func GetCachedQueryForBlock(t *Table, dirname string, querySpec *specs.QuerySpec) (*TableBlock, *specs.QuerySpec) {
 
 	if *FLAGS.CACHED_QUERIES == false {
 		return nil, nil
@@ -41,7 +42,7 @@ func GetCachedQueryForBlock(t *Table, dirname string, querySpec *QuerySpec) (*Ta
 	tb := NewTableBlock()
 	tb.Name = dirname
 	tb.Table = t
-	info := LoadBlockInfo(t, dirname)
+	info := md_io.LoadBlockInfo(t, dirname)
 
 	if info == nil {
 		Debug("NO INFO FOR", dirname)
@@ -55,7 +56,7 @@ func GetCachedQueryForBlock(t *Table, dirname string, querySpec *QuerySpec) (*Ta
 
 	tb.Info = info
 
-	blockQuery := CopyQuerySpec(querySpec)
+	blockQuery := specs.CopyQuerySpec(querySpec)
 	if LoadCachedResults(blockQuery, tb.Name) {
 		t.BlockMutex.Lock()
 		t.BlockList[dirname] = &tb
@@ -71,32 +72,32 @@ func GetCachedQueryForBlock(t *Table, dirname string, querySpec *QuerySpec) (*Ta
 
 // for a per block query cache, we exclude any trivial filters (that are true
 // for all records in the block) when creating our cache key
-func GetCacheRelevantFilters(querySpec *QuerySpec, blockname string) []Filter {
+func GetCacheRelevantFilters(querySpec *specs.QuerySpec, blockname string) []Filter {
 
-	filters := make([]Filter, 0)
+	relevant_filters := make([]Filter, 0)
 	if querySpec == nil {
-		return filters
+		return relevant_filters
 	}
 
 	t := querySpec.Table
 
-	info := LoadBlockInfo(t, blockname)
+	info := md_io.LoadBlockInfo(t, blockname)
 
 	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 
 	if len(info.IntInfoMap) == 0 {
-		return filters
+		return relevant_filters
 	}
 
 	for field_name := range info.StrInfoMap {
-		field_id := GetTableKeyID(t, field_name)
+		field_id := md.GetTableKeyID(t, field_name)
 		ResizeFields(&min_record, field_id)
 		ResizeFields(&max_record, field_id)
 	}
 
 	for field_name, field_info := range info.IntInfoMap {
-		field_id := GetTableKeyID(t, field_name)
+		field_id := md.GetTableKeyID(t, field_name)
 		ResizeFields(&min_record, field_id)
 		ResizeFields(&max_record, field_id)
 
@@ -110,29 +111,29 @@ func GetCacheRelevantFilters(querySpec *QuerySpec, blockname string) []Filter {
 	for _, f := range querySpec.Filters {
 		// make the minima record and the maxima records...
 		switch fil := f.(type) {
-		case IntFilter:
-			// we only use block extents for skipping gt and lt filters
+		case filters.IntFilter:
+			// we only use block extents for skipping gt and lt relevant_filters
 			if fil.Op != "lt" && fil.Op != "gt" {
-				filters = append(filters, f)
+				relevant_filters = append(relevant_filters, f)
 				continue
 			}
 
 			if f.Filter(&min_record) && f.Filter(&max_record) {
 			} else {
-				filters = append(filters, f)
+				relevant_filters = append(relevant_filters, f)
 			}
 
 		default:
-			filters = append(filters, f)
+			relevant_filters = append(relevant_filters, f)
 		}
 	}
 
-	return filters
+	return relevant_filters
 
 }
 
-func GetCacheStruct(qs *QuerySpec, blockname string) QueryParams {
-	cache_spec := QueryParams(qs.QueryParams)
+func GetCacheStruct(qs *specs.QuerySpec, blockname string) specs.QueryParams {
+	cache_spec := specs.QueryParams(qs.QueryParams)
 
 	// kick out trivial filters
 	cache_spec.Filters = GetCacheRelevantFilters(qs, blockname)
@@ -140,7 +141,7 @@ func GetCacheStruct(qs *QuerySpec, blockname string) QueryParams {
 	return cache_spec
 }
 
-func GetCacheKey(qs *QuerySpec, blockname string) string {
+func GetCacheKey(qs *specs.QuerySpec, blockname string) string {
 	cache_spec := GetCacheStruct(qs, blockname)
 
 	var buf bytes.Buffer
@@ -158,7 +159,7 @@ func GetCacheKey(qs *QuerySpec, blockname string) string {
 	return ret
 }
 
-func LoadCachedResults(qs *QuerySpec, blockname string) bool {
+func LoadCachedResults(qs *specs.QuerySpec, blockname string) bool {
 	if *FLAGS.CACHED_QUERIES == false {
 		return false
 	}
@@ -174,8 +175,8 @@ func LoadCachedResults(qs *QuerySpec, blockname string) bool {
 	cache_name := fmt.Sprintf("%s.db", cache_key)
 	filename := path.Join(cache_dir, cache_name)
 
-	cachedSpec := QueryResults{}
-	err := DecodeInto(filename, &cachedSpec)
+	cachedSpec := specs.QueryResults{}
+	err := encoders.DecodeInto(filename, &cachedSpec)
 
 	if err != nil {
 		return false
@@ -186,7 +187,7 @@ func LoadCachedResults(qs *QuerySpec, blockname string) bool {
 	return true
 }
 
-func SaveCachedResults(qs *QuerySpec, blockname string) {
+func SaveCachedResults(qs *specs.QuerySpec, blockname string) {
 	if *FLAGS.CACHED_QUERIES == false {
 		return
 	}
@@ -195,7 +196,7 @@ func SaveCachedResults(qs *QuerySpec, blockname string) {
 		return
 	}
 
-	info := LoadBlockInfo(qs.Table, blockname)
+	info := md_io.LoadBlockInfo(qs.Table, blockname)
 
 	if info.NumRecords < int32(CHUNK_SIZE) {
 		return
@@ -254,7 +255,7 @@ func SaveCachedResults(qs *QuerySpec, blockname string) {
 
 }
 
-func WriteQueryCache(t *Table, to_cache_specs map[string]*QuerySpec) {
+func WriteQueryCache(t *Table, to_cache_specs map[string]*specs.QuerySpec) {
 
 	// NOW WE SAVE OUR QUERY CACHE HERE...
 	savestart := time.Now()

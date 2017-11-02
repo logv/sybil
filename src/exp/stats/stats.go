@@ -6,8 +6,8 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/hists"
-	. "github.com/logv/sybil/src/query/specs"
+	hists "github.com/logv/sybil/src/query/hists"
+	specs "github.com/logv/sybil/src/query/specs"
 )
 
 // Using an analysis of variance, calculate the intra class correlation co-efficient
@@ -27,7 +27,7 @@ import (
 // variance, then add all those variances together
 // SSB = sum of square between groups. Take each group's averages and calculate their
 // variance against the overall average.
-func CalculateICC(querySpec *QuerySpec) map[string]float64 {
+func CalculateICC(querySpec *specs.QuerySpec) map[string]float64 {
 	iccs := make(map[string]float64)
 	t := GetTable(*FLAGS.TABLE)
 	for _, agg := range querySpec.Aggregations {
@@ -67,7 +67,7 @@ func CalculateICC(querySpec *QuerySpec) map[string]float64 {
 		info.Min = int64(min_avg)
 		info.Max = int64(max_avg)
 
-		between_groups := NewBasicHist(t, &info)
+		between_groups := hists.NewBasicHist(t, &info)
 		between_groups.TrackPercentiles()
 
 		sum_of_squares_within := float64(0.0)

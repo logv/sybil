@@ -12,18 +12,19 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/encoders"
-	. "github.com/logv/sybil/src/storage/file_locks"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+
+	specs "github.com/logv/sybil/src/query/specs"
+	encoders "github.com/logv/sybil/src/storage/encoders"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 var CHUNKS_BEFORE_GC = 16
 var BLOCKS_PER_CACHE_FILE = 64
 
-type LoadRecordsFunc func(t *Table, loadSpec *LoadSpec) int
+type LoadRecordsFunc func(t *Table, loadSpec *specs.LoadSpec) int
 
-func BlankLoadRecords(t *Table, loadSpec *LoadSpec) int {
+func BlankLoadRecords(t *Table, loadSpec *specs.LoadSpec) int {
 
 	return 0
 }
@@ -86,7 +87,7 @@ func SaveRecordsToColumns(t *Table) bool {
 	FillPartialBlock(t)
 	ret := saveRecordList(t, t.NewRecords)
 	t.NewRecords = make(RecordList, 0)
-	SaveTableInfo(t, "info")
+	md_io.SaveTableInfo(t, "info")
 
 	return ret
 
@@ -131,11 +132,11 @@ func getNewCacheBlockFile(t *Table) (*os.File, error) {
 }
 
 func LoadBlockCache(t *Table) {
-	if GrabCacheLock(t) == false {
+	if flock.GrabCacheLock(t) == false {
 		return
 	}
 
-	defer ReleaseCacheLock(t)
+	defer flock.ReleaseCacheLock(t)
 	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
 
 	if err != nil {
@@ -149,7 +150,7 @@ func LoadBlockCache(t *Table) {
 			continue
 		}
 
-		err = DecodeInto(filename, &block_cache)
+		err = encoders.DecodeInto(filename, &block_cache)
 		if err != nil {
 			continue
 		}
@@ -167,11 +168,11 @@ func WriteBlockCache(t *Table) {
 		return
 	}
 
-	if GrabCacheLock(t) == false {
+	if flock.GrabCacheLock(t) == false {
 		return
 	}
 
-	defer ReleaseCacheLock(t)
+	defer flock.ReleaseCacheLock(t)
 
 	Debug("WRITING BLOCK CACHE, OUTSTANDING", len(t.NewBlockInfos))
 
@@ -215,7 +216,7 @@ func ChunkAndSave(t *Table) {
 		name, err := GetNewIngestBlockName(t)
 		if err == nil {
 			SaveRecordsToBlock(t, t.NewRecords, name)
-			SaveTableInfo(t, "info")
+			md_io.SaveTableInfo(t, "info")
 			t.NewRecords = make(RecordList, 0)
 			ReleaseRecords(t)
 		} else {

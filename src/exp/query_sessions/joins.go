@@ -5,13 +5,13 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
+	md "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
 )
 
 func BuildJoinMap(t *Table) {
 	joinkey := *FLAGS.JOIN_KEY
-	joinid := GetTableKeyID(t, joinkey)
+	joinid := md.GetTableKeyID(t, joinkey)
 
 	t.JoinLookup = make(map[string]*Record)
 
@@ -26,8 +26,8 @@ func BuildJoinMap(t *Table) {
 				t.JoinLookup[val] = r
 
 			case STR_VAL:
-				col := GetColumnInfo(r.Block, joinid)
-				t.JoinLookup[GetColumnStringForVal(col, int32(r.Strs[joinid]))] = r
+				col := md.GetColumnInfo(r.Block, joinid)
+				t.JoinLookup[md.GetColumnStringForVal(col, int32(r.Strs[joinid]))] = r
 			}
 
 		}
@@ -41,8 +41,8 @@ func BuildJoinMap(t *Table) {
 			t.JoinLookup[val] = r
 
 		case STR_VAL:
-			col := GetColumnInfo(r.Block, joinid)
-			t.JoinLookup[GetColumnStringForVal(col, int32(r.Strs[joinid]))] = r
+			col := md.GetColumnInfo(r.Block, joinid)
+			t.JoinLookup[md.GetColumnStringForVal(col, int32(r.Strs[joinid]))] = r
 		}
 
 	}

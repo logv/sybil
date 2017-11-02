@@ -12,8 +12,8 @@ import (
 	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/query/load_and_query"
 	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
-	. "github.com/logv/sybil/src/storage/row_store"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
 func TestTableDigestRowRecords(test *testing.T) {
@@ -28,7 +28,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
-	IngestRecords(t, "ingest")
+	row_store.IngestRecords(t, "ingest")
 
 	UnloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
@@ -36,7 +36,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 	OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = &TRUE
 
-	LoadTableInfo(nt)
+	md_io.LoadTableInfo(nt)
 	LoadRecords(nt, nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
@@ -47,7 +47,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 		test.Error("Found other records than rowblock")
 	}
 
-	DigestRecords(nt)
+	row_store.DigestRecords(nt)
 
 	UnloadTestTable()
 
@@ -81,14 +81,14 @@ func TestColumnStoreFileNames(test *testing.T) {
 	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
-	IngestRecords(t, "ingest")
+	row_store.IngestRecords(t, "ingest")
 
 	UnloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
 	OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = &TRUE
 
-	LoadTableInfo(nt)
+	md_io.LoadTableInfo(nt)
 	LoadRecords(nt, nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
@@ -99,7 +99,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 		test.Error("Found other records than rowblock")
 	}
 
-	DigestRecords(nt)
+	row_store.DigestRecords(nt)
 
 	UnloadTestTable()
 
@@ -159,14 +159,14 @@ func TestBigIntColumns(test *testing.T) {
 	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
-	IngestRecords(t, "ingest")
+	row_store.IngestRecords(t, "ingest")
 
 	UnloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
 	OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = &TRUE
 
-	LoadTableInfo(nt)
+	md_io.LoadTableInfo(nt)
 	LoadRecords(nt, nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
@@ -177,7 +177,7 @@ func TestBigIntColumns(test *testing.T) {
 		test.Error("Found other records than rowblock")
 	}
 
-	DigestRecords(nt)
+	row_store.DigestRecords(nt)
 
 	UnloadTestTable()
 

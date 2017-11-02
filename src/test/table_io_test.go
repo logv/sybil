@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/lib/record"
+	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/query/load_and_query"
 	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 func TestTableCreate(test *testing.T) {
@@ -34,7 +34,7 @@ func TestTableCreate(test *testing.T) {
 		test.Error("TEST TABLE NAME INCORRECT")
 	}
 
-	LoadTableInfo(nt)
+	md_io.LoadTableInfo(nt)
 
 	_, err := os.Open(fmt.Sprintf("db/%s/info.db", TEST_TABLE_NAME))
 	if err != nil {

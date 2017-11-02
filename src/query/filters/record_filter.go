@@ -6,9 +6,9 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
+	md "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
+	specs "github.com/logv/sybil/src/query/specs"
 )
 
 import "regexp"
@@ -76,8 +76,8 @@ func (filter StrFilter) Filter(r *Record) bool {
 	}
 
 	val := r.Strs[filter.FieldId]
-	col := GetColumnInfo(r.Block, filter.FieldId)
-	filterval := int(GetColumnValID(col, filter.Value))
+	col := md.GetColumnInfo(r.Block, filter.FieldId)
+	filterval := int(md.GetColumnValID(col, filter.Value))
 
 	ok := false
 	ret := false
@@ -94,11 +94,11 @@ func (filter StrFilter) Filter(r *Record) bool {
 		if cardinality < REGEX_CACHE_SIZE {
 			ret, ok = col.RCache[int(val)]
 			if !ok {
-				str_val := GetColumnStringForVal(col, int32(val))
+				str_val := md.GetColumnStringForVal(col, int32(val))
 				ret = filter.regex.MatchString(str_val)
 			}
 		} else {
-			str_val := GetColumnStringForVal(col, int32(val))
+			str_val := md.GetColumnStringForVal(col, int32(val))
 			ret = filter.regex.MatchString(str_val)
 		}
 
@@ -125,7 +125,7 @@ func (filter StrFilter) Filter(r *Record) bool {
 
 func (filter SetFilter) Filter(r *Record) bool {
 
-	col := GetColumnInfo(r.Block, filter.FieldId)
+	col := md.GetColumnInfo(r.Block, filter.FieldId)
 	ret := false
 
 	ok := r.Populated[filter.FieldId] == SET_VAL
@@ -135,7 +135,7 @@ func (filter SetFilter) Filter(r *Record) bool {
 
 	sets := r.SetMap[filter.FieldId]
 
-	val_id := GetColumnValID(col, filter.Value)
+	val_id := md.GetColumnValID(col, filter.Value)
 
 	switch filter.Op {
 	// Check if tag exists
@@ -159,14 +159,14 @@ func (filter SetFilter) Filter(r *Record) bool {
 }
 
 func MakeIntFilter(t *Table, name string, op string, value int) IntFilter {
-	intFilter := IntFilter{Field: name, FieldId: GetTableKeyID(t, name), Op: op, Value: value}
+	intFilter := IntFilter{Field: name, FieldId: md.GetTableKeyID(t, name), Op: op, Value: value}
 
 	return intFilter
 
 }
 
 func MakeStrFilter(t *Table, name string, op string, value string) StrFilter {
-	strFilter := StrFilter{Field: name, FieldId: GetTableKeyID(t, name), Op: op, Value: value}
+	strFilter := StrFilter{Field: name, FieldId: md.GetTableKeyID(t, name), Op: op, Value: value}
 
 	var err error
 	if op == "re" || op == "nre" {
@@ -181,7 +181,7 @@ func MakeStrFilter(t *Table, name string, op string, value string) StrFilter {
 }
 
 func MakeSetFilter(t *Table, name string, op string, value string) SetFilter {
-	setFilter := SetFilter{Field: name, FieldId: GetTableKeyID(t, name), Op: op, Value: value}
+	setFilter := SetFilter{Field: name, FieldId: md.GetTableKeyID(t, name), Op: op, Value: value}
 
 	return setFilter
 
@@ -202,7 +202,7 @@ func checkTable(tokens []string, t *Table) bool {
 	}
 }
 
-func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter {
+func BuildFilters(t *Table, loadSpec *specs.LoadSpec, filterSpec FilterSpec) []Filter {
 	strfilters := make([]string, 0)
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)

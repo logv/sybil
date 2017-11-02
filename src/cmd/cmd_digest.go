@@ -6,8 +6,8 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
-	. "github.com/logv/sybil/src/storage/row_store"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
 func RunDigestCmdLine() {
@@ -26,9 +26,9 @@ func RunDigestCmdLine() {
 	OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 
 	t := GetTable(*FLAGS.TABLE)
-	if LoadTableInfo(t) == false {
+	if md_io.LoadTableInfo(t) == false {
 		Warn("Couldn't read table info, exiting early")
 		return
 	}
-	DigestRecords(t)
+	row_store.DigestRecords(t)
 }

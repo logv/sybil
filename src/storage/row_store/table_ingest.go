@@ -10,9 +10,10 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/column_store"
-	. "github.com/logv/sybil/src/storage/file_locks"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+
+	col_store "github.com/logv/sybil/src/storage/column_store"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
@@ -27,7 +28,7 @@ func IngestRecords(t *Table, blockname string) {
 
 	AppendRecordsToLog(t, t.NewRecords[:], blockname)
 	t.NewRecords = make(RecordList, 0)
-	SaveTableInfo(t, "info")
+	md_io.SaveTableInfo(t, "info")
 	ReleaseRecords(t)
 
 	MaybeCompactRecords(t)
@@ -75,11 +76,11 @@ func ShouldCompactRowStore(t *Table, digest string) bool {
 	}
 
 	var file *os.File
-	for i := 0; i < LOCK_TRIES; i++ {
+	for i := 0; i < flock.LOCK_TRIES; i++ {
 		file, err = os.Open(dirname)
 		if err != nil {
 			Debug("Can't open the ingestion dir", dirname)
-			time.Sleep(LOCK_US)
+			time.Sleep(flock.LOCK_US)
 			if i > MAX_ROW_STORE_TRIES {
 				return false
 			}
@@ -127,7 +128,7 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 var DELETE_BLOCKS = make([]string, 0)
 
 func RestoreUningestedFiles(t *Table) {
-	if GrabDigestLock(t) == false {
+	if flock.GrabDigestLock(t) == false {
 		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
 		return
 	}
@@ -173,7 +174,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 	t := GetTable(*FLAGS.TABLE)
 	if digestname == NO_MORE_BLOCKS {
 		if len(t.NewRecords) > 0 {
-			SaveRecordsToColumns(t)
+			col_store.SaveRecordsToColumns(t)
 			ReleaseRecords(t)
 		}
 
@@ -190,7 +191,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 				os.RemoveAll(cb.digestdir)
 			}
 		}
-		ReleaseDigestLock(t)
+		flock.ReleaseDigestLock(t)
 		return
 	}
 
@@ -204,10 +205,10 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 
 // Go through rowstore and save records out to column store
 func DigestRecords(t *Table) {
-	can_digest := GrabDigestLock(t)
+	can_digest := flock.GrabDigestLock(t)
 
 	if !can_digest {
-		ReleaseInfoLock(t)
+		flock.ReleaseInfoLock(t)
 		Debug("CANT GRAB LOCK FOR DIGEST RECORDS")
 		return
 	}
@@ -219,7 +220,7 @@ func DigestRecords(t *Table) {
 	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going
 	// to ruin us if it still exists (bc some proc didn't clean up after itself)
 	if err != nil {
-		ReleaseDigestLock(t)
+		flock.ReleaseDigestLock(t)
 		Debug("ERROR CREATING DIGESTION DIR", err)
 		time.Sleep(time.Millisecond * 50)
 		return
@@ -230,7 +231,7 @@ func DigestRecords(t *Table) {
 	files, err := file.Readdir(0)
 	if len(files) < MIN_FILES_TO_DIGEST {
 		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", MIN_FILES_TO_DIGEST)
-		ReleaseDigestLock(t)
+		flock.ReleaseDigestLock(t)
 		return
 	}
 
@@ -245,6 +246,6 @@ func DigestRecords(t *Table) {
 		cb := SaveBlockChunkCB{digesting}
 		LoadRowStoreRecords(t, basename, cb.CB)
 	} else {
-		ReleaseDigestLock(t)
+		flock.ReleaseDigestLock(t)
 	}
 }

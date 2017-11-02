@@ -1,6 +1,6 @@
 package sybil
 
-import . "github.com/logv/sybil/src/query/hists"
+import hists "github.com/logv/sybil/src/query/hists"
 
 var VERSION_STRING = "0.2.0"
 
@@ -12,7 +12,7 @@ func GetVersionInfo() map[string]interface{} {
 	version_info["log_hist"] = true
 	version_info["query_cache"] = true
 
-	if ENABLE_HDR {
+	if hists.ENABLE_HDR {
 		version_info["hdr_hist"] = true
 
 	}

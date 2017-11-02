@@ -2,7 +2,7 @@ package structs
 
 import "sync"
 
-// Table Block should have a bunch of metadata next to it, too
+// this metadata is saved into <table>/<block>/info.db
 type SavedTableBlockInfo struct {
 	Name string
 	Info *SavedColumnInfo

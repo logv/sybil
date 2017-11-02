@@ -8,7 +8,7 @@ import (
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/query/load_and_query"
-	. "github.com/logv/sybil/src/storage/column_store"
+	col_store "github.com/logv/sybil/src/storage/column_store"
 )
 
 type TrimSpec struct {
@@ -30,7 +30,7 @@ func TrimTable(t *Table, trimSpec *TrimSpec) []*TableBlock {
 			continue
 		}
 
-		block := LoadBlockFromDir(t, b.Name, nil, false)
+		block := col_store.LoadBlockFromDir(t, b.Name, nil, false)
 		if block != nil {
 			if block.Info.IntInfoMap[*FLAGS.TIME_COL] != nil {
 				block.Table = t

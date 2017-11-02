@@ -8,8 +8,8 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	specs "github.com/logv/sybil/src/query/specs"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 	. "github.com/logv/sybil/src/utils/table_trim"
 )
 
@@ -56,12 +56,12 @@ func RunTrimCmdLine() {
 	OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 
 	t := GetTable(*FLAGS.TABLE)
-	if LoadTableInfo(t) == false {
+	if md_io.LoadTableInfo(t) == false {
 		Warn("Couldn't read table info, exiting early")
 		return
 	}
 
-	loadSpec := NewTableLoadSpec(t)
+	loadSpec := specs.NewTableLoadSpec(t)
 	loadSpec.Int(*FLAGS.TIME_COL)
 
 	trimSpec := TrimSpec{}

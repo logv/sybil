@@ -16,9 +16,10 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
+
+	md "github.com/logv/sybil/src/lib/metadata"
+	specs "github.com/logv/sybil/src/query/specs"
 )
 
 func PrintJSON(data interface{}) {
@@ -30,7 +31,7 @@ func PrintJSON(data interface{}) {
 	}
 }
 
-func printTimeResults(querySpec *QuerySpec) {
+func printTimeResults(querySpec *specs.QuerySpec) {
 	Debug("PRINTING TIME RESULTS")
 	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
@@ -118,7 +119,7 @@ func getSparseBuckets(buckets map[string]int64) map[string]int64 {
 	return non_zero_buckets
 }
 
-func toResultJSON(r *Result, querySpec *QuerySpec) ResultJSON {
+func toResultJSON(r *specs.Result, querySpec *specs.QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
@@ -156,7 +157,7 @@ func toResultJSON(r *Result, querySpec *QuerySpec) ResultJSON {
 
 }
 
-func printSortedResults(querySpec *QuerySpec) {
+func printSortedResults(querySpec *specs.QuerySpec) {
 	sorted := querySpec.Sorted
 	if int(querySpec.Limit) < len(querySpec.Sorted) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
@@ -193,7 +194,7 @@ func printSortedResults(querySpec *QuerySpec) {
 	}
 }
 
-func printResult(querySpec *QuerySpec, v *Result) {
+func printResult(querySpec *specs.QuerySpec, v *specs.Result) {
 	group_key := strings.Replace(v.GroupByKey, GROUP_DELIMITER, ",", -1)
 	group_key = strings.TrimRight(group_key, ",")
 
@@ -232,7 +233,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 type ResultJSON map[string]interface{}
 
-func PrintResults(querySpec *QuerySpec) {
+func PrintResults(querySpec *specs.QuerySpec) {
 	if querySpec.TimeBucket > 0 {
 		printTimeResults(querySpec)
 
@@ -272,7 +273,7 @@ func PrintResults(querySpec *QuerySpec) {
 	}
 }
 
-func PrintFinalResults(qs *QuerySpec) {
+func PrintFinalResults(qs *specs.QuerySpec) {
 	if *FLAGS.PRINT {
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
@@ -296,8 +297,8 @@ func toTSVRow(r *Record) []string {
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			row = append(row, GetColumnStringForVal(col, int32(val)))
+			col := md.GetColumnInfo(r.Block, int16(name))
+			row = append(row, md.GetColumnStringForVal(col, int32(val)))
 		}
 	}
 
@@ -313,14 +314,12 @@ func SampleHeader(r *Record) []string {
 	header := make([]string, 0)
 	for name := range r.Ints {
 		if r.Populated[name] == INT_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			header = append(header, GetColumnStringForKey(col, name))
+			header = append(header, md.GetBlockStringForKey(r.Block, int16(name)))
 		}
 	}
 	for name := range r.Strs {
 		if r.Populated[name] == STR_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			header = append(header, GetColumnStringForKey(col, name))
+			header = append(header, md.GetBlockStringForKey(r.Block, int16(name)))
 		}
 	}
 
@@ -335,15 +334,14 @@ func toSample(r *Record) *Sample {
 	sample := Sample{}
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			sample[GetColumnStringForKey(col, name)] = val
+			sample[md.GetBlockStringForKey(r.Block, int16(name))] = val
 
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			sample[GetColumnStringForKey(col, name)] = GetColumnStringForVal(col, int32(val))
+			col := md.GetColumnInfo(r.Block, int16(name))
+			sample[md.GetBlockStringForKey(r.Block, int16(name))] = md.GetColumnStringForVal(col, int32(val))
 		}
 	}
 
@@ -574,21 +572,20 @@ func PrintRecord(r *Record) {
 
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			Print("  ", name, GetColumnStringForKey(col, name), val)
+			Print("  ", name, md.GetBlockStringForKey(r.Block, int16(name)), val)
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
-			Print("  ", name, GetColumnStringForKey(col, name), GetColumnStringForVal(col, int32(val)))
+			col := md.GetColumnInfo(r.Block, int16(name))
+			Print("  ", name, md.GetBlockStringForKey(r.Block, int16(name)), md.GetColumnStringForVal(col, int32(val)))
 		}
 	}
 	for name, vals := range r.SetMap {
 		if r.Populated[name] == SET_VAL {
-			col := GetColumnInfo(r.Block, int16(name))
+			col := md.GetColumnInfo(r.Block, int16(name))
 			for _, val := range vals {
-				Print("  ", name, GetColumnStringForKey(col, int(name)), val, GetColumnStringForVal(col, int32(val)))
+				Print("  ", name, md.GetBlockStringForKey(r.Block, int16(name)), val, md.GetColumnStringForVal(col, int32(val)))
 
 			}
 

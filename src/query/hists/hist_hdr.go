@@ -10,7 +10,7 @@ import (
 
 var ENABLE_HDR = true
 
-func newHDRHist(table *Table, info *IntInfo) Histogram {
+func newHDRHist(table *Table, info *IntInfo) hists.Histogram {
 	return NewHDRHist(table, info)
 }
 
@@ -24,7 +24,7 @@ type HDRHist struct {
 	PercentileMode bool
 }
 
-func (th *HDRHist) NewHist() Histogram {
+func (th *HDRHist) NewHist() hists.Histogram {
 	return NewHDRHist(th.table, th.info)
 }
 

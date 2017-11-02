@@ -10,7 +10,7 @@ import "os"
 import . "github.com/logv/sybil/src/lib/config"
 import . "github.com/logv/sybil/src/lib/common"
 import . "github.com/logv/sybil/src/lib/structs"
-import . "github.com/logv/sybil/src/storage/file_locks"
+import flock "github.com/logv/sybil/src/storage/file_locks"
 
 func SaveTableInfo(t *Table, fname string) {
 	save_table := getSaveTable(t)
@@ -27,11 +27,11 @@ func getSaveTable(t *Table) *Table {
 }
 
 func saveTableInfo(t *Table, fname string) {
-	if GrabInfoLock(t) == false {
+	if flock.GrabInfoLock(t) == false {
 		return
 	}
 
-	defer ReleaseInfoLock(t)
+	defer flock.ReleaseInfoLock(t)
 	var network bytes.Buffer // Stand-in for the network.
 	dirname := path.Join(*FLAGS.DIR, t.Name)
 	filename := path.Join(dirname, fmt.Sprintf("%s.db", fname))

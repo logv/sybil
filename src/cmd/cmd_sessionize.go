@@ -11,8 +11,8 @@ import (
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/query/load_and_query"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	specs "github.com/logv/sybil/src/query/specs"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 func addSessionFlags() {
@@ -56,7 +56,7 @@ func RunSessionizeCmdLine() {
 		t := GetTable(tablename)
 		// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 		// THE RIGHT COLUMN ID
-		LoadTableInfo(t)
+		md_io.LoadTableInfo(t)
 		LoadRecords(t, nil)
 
 		count := 0
@@ -90,10 +90,10 @@ func RunSessionizeCmdLine() {
 	}
 
 	filters := []Filter{}
-	groupings := []Grouping{}
-	aggs := []Aggregation{}
-	query_params := QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec := QuerySpec{QueryParams: query_params}
+	groupings := []specs.Grouping{}
+	aggs := []specs.Aggregation{}
+	query_params := specs.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := specs.QuerySpec{QueryParams: query_params}
 
 	querySpec.Limit = int16(*FLAGS.LIMIT)
 

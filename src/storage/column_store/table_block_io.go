@@ -7,13 +7,13 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/slab_manager"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/encoders"
-	. "github.com/logv/sybil/src/storage/file_locks"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+
+	slab_manager "github.com/logv/sybil/src/query/slab_manager"
+	specs "github.com/logv/sybil/src/query/specs"
+	encoders "github.com/logv/sybil/src/storage/encoders"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 func SaveRecordsToBlock(t *Table, records RecordList, filename string) bool {
@@ -70,12 +70,12 @@ func FillPartialBlock(t *Table) bool {
 
 	Debug("OPENING PARTIAL BLOCK", filename)
 
-	if GrabBlockLock(t, filename) == false {
+	if flock.GrabBlockLock(t, filename) == false {
 		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
 
-	defer ReleaseBlockLock(t, filename)
+	defer flock.ReleaseBlockLock(t, filename)
 
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
@@ -113,14 +113,14 @@ func FillPartialBlock(t *Table) bool {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func LoadBlockFromDir(t *Table, dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
+func LoadBlockFromDir(t *Table, dirname string, loadSpec *specs.LoadSpec, load_records bool) *TableBlock {
 	tb := NewTableBlock()
 
 	tb.Name = dirname
 
 	tb.Table = t
 
-	info := LoadBlockInfo(t, dirname)
+	info := md_io.LoadBlockInfo(t, dirname)
 
 	if info == nil {
 		return nil
@@ -134,7 +134,7 @@ func LoadBlockFromDir(t *Table, dirname string, loadSpec *LoadSpec, load_records
 	t.BlockList[dirname] = &tb
 	t.BlockMutex.Unlock()
 
-	AllocateRecords(&tb, loadSpec, *info, load_records)
+	slab_manager.AllocateRecords(&tb, loadSpec, *info, load_records)
 	tb.Info = info
 
 	file, _ := os.Open(dirname)
@@ -165,7 +165,7 @@ func LoadBlockFromDir(t *Table, dirname string, loadSpec *LoadSpec, load_records
 			fname = strings.TrimRight(fname, ext)
 		}
 
-		dec := GetFileDecoder(filename)
+		dec := encoders.GetFileDecoder(filename)
 
 		switch {
 		case strings.HasPrefix(fname, "str") || strings.HasSuffix(fname, ".str"):

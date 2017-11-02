@@ -12,21 +12,22 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/aggregate"
-	. "github.com/logv/sybil/src/query/filters"
-	. "github.com/logv/sybil/src/query/printer"
-	. "github.com/logv/sybil/src/query/query_cache"
-	. "github.com/logv/sybil/src/query/slab_manager"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/column_store"
-	. "github.com/logv/sybil/src/storage/file_locks"
-	. "github.com/logv/sybil/src/storage/metadata_io"
-	. "github.com/logv/sybil/src/storage/row_store"
+
+	md "github.com/logv/sybil/src/lib/metadata"
+	aggregate "github.com/logv/sybil/src/query/aggregate"
+	filters "github.com/logv/sybil/src/query/filters"
+	printer "github.com/logv/sybil/src/query/printer"
+	query_cache "github.com/logv/sybil/src/query/query_cache"
+	slab_manager "github.com/logv/sybil/src/query/slab_manager"
+	specs "github.com/logv/sybil/src/query/specs"
+	col_store "github.com/logv/sybil/src/storage/column_store"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
-func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int {
+func LoadAndQueryRecords(t *Table, loadSpec *specs.LoadSpec, querySpec *specs.QuerySpec) int {
 	waystart := time.Now()
 	Debug("LOADING", *FLAGS.DIR, t.Name)
 
@@ -58,12 +59,12 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 	}
 
 	var wg sync.WaitGroup
-	block_specs := make(map[string]*QuerySpec)
-	to_cache_specs := make(map[string]*QuerySpec)
+	block_specs := make(map[string]*specs.QuerySpec)
+	to_cache_specs := make(map[string]*specs.QuerySpec)
 
-	loaded_info := LoadTableInfo(t)
+	loaded_info := md_io.LoadTableInfo(t)
 	if loaded_info == false {
-		if HasFlagFile(t) {
+		if flock.HasFlagFile(t) {
 			return 0
 		}
 	}
@@ -102,7 +103,7 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 			v = files[len(files)-f-1]
 		}
 
-		if v.IsDir() && FileLooksLikeBlock(v) {
+		if v.IsDir() && col_store.FileLooksLikeBlock(v) {
 			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
 			this_block++
 
@@ -112,24 +113,24 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 
 				start := time.Now()
 
-				should_load := ShouldLoadBlockFromDir(t, filename, querySpec)
+				should_load := filters.ShouldLoadBlockFromDir(t, filename, querySpec)
 
 				if !should_load {
 					skipped++
 					return
 				}
 
-				var cachedSpec *QuerySpec
+				var cachedSpec *specs.QuerySpec
 				var cachedBlock *TableBlock
 
 				if querySpec != nil {
-					cachedBlock, cachedSpec = GetCachedQueryForBlock(t, filename, querySpec)
+					cachedBlock, cachedSpec = query_cache.GetCachedQueryForBlock(t, filename, querySpec)
 				}
 
 				var block *TableBlock
 				if cachedSpec == nil {
 					// couldnt load the cached query results
-					block = LoadBlockFromDir(t, filename, loadSpec, load_all)
+					block = col_store.LoadBlockFromDir(t, filename, loadSpec, load_all)
 					if block == nil {
 						broken_mutex.Lock()
 						broken_blocks = append(broken_blocks, filename)
@@ -167,8 +168,8 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 					} else { // Load and Query
 						blockQuery := cachedSpec
 						if blockQuery == nil {
-							blockQuery = CopyQuerySpec(querySpec)
-							blockQuery.MatchedCount = FilterAndAggRecords(blockQuery, &block.RecordList)
+							blockQuery = specs.CopyQuerySpec(querySpec)
+							blockQuery.MatchedCount = aggregate.FilterAndAggRecords(blockQuery, &block.RecordList)
 
 							if OPTS.HOLD_MATCHES {
 								block.Matched = blockQuery.Matched
@@ -197,11 +198,11 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 				}
 
 				if OPTS.WRITE_BLOCK_INFO {
-					SaveBlockInfo(block, block.Name)
+					col_store.SaveBlockInfo(block, block.Name)
 				}
 
 				if *FLAGS.EXPORT {
-					ExportBlockData(block)
+					printer.ExportBlockData(block)
 				}
 				// don't delete when testing so we can verify block
 				// loading results
@@ -209,7 +210,7 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 					t.BlockMutex.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
-						RecycleSlab(tb, loadSpec)
+						slab_manager.RecycleSlab(tb, loadSpec)
 
 						delete(t.BlockList, block.Name)
 					}
@@ -226,7 +227,7 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 				}
 			}
 
-			if OPTS.DELETE_BLOCKS_AFTER_QUERY && this_block%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
+			if OPTS.DELETE_BLOCKS_AFTER_QUERY && this_block%col_store.CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
 				wg.Wait()
 				start := time.Now()
 
@@ -247,16 +248,16 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 
 	}
 
-	rowStoreQuery := AfterLoadQueryCB{}
+	rowStoreQuery := row_store.AfterLoadQueryCB{}
 	var logend time.Time
 	logstart := time.Now()
 	if *FLAGS.READ_INGESTION_LOG {
 		if querySpec == nil {
-			rowStoreQuery.QuerySpec = &QuerySpec{}
+			rowStoreQuery.QuerySpec = &specs.QuerySpec{}
 			rowStoreQuery.QuerySpec.Table = t
 			rowStoreQuery.QuerySpec.Punctuate()
 		} else {
-			rowStoreQuery.QuerySpec = CopyQuerySpec(querySpec)
+			rowStoreQuery.QuerySpec = specs.CopyQuerySpec(querySpec)
 			rowStoreQuery.QuerySpec.Table = t
 		}
 
@@ -268,7 +269,7 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 
 		wg.Add(1)
 		go func() {
-			LoadRowStoreRecords(t, INGEST_DIR, rowStoreQuery.CB)
+			row_store.LoadRowStoreRecords(t, INGEST_DIR, rowStoreQuery.CB)
 			m.Lock()
 			logend = time.Now()
 			m.Unlock()
@@ -305,7 +306,7 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
-	PopulateStringIDLookup(t)
+	md.PopulateStringIDLookup(t)
 
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	Debug("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
@@ -319,12 +320,12 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 
 	// NOTE: we have to write the query cache before we combine our results,
 	// bc combining results is not idempotent
-	WriteQueryCache(t, to_cache_specs)
+	query_cache.WriteQueryCache(t, to_cache_specs)
 
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
-		resultSpec := CombineResults(querySpec, block_specs)
+		resultSpec := aggregate.CombineResults(querySpec, block_specs)
 
 		aend := time.Now()
 		Debug("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
@@ -334,21 +335,21 @@ func LoadAndQueryRecords(t *Table, loadSpec *LoadSpec, querySpec *QuerySpec) int
 		querySpec.Results = resultSpec.Results
 		querySpec.TimeResults = resultSpec.TimeResults
 
-		SortResults(querySpec)
+		aggregate.SortResults(querySpec)
 	}
 
-	WriteBlockCache(t)
+	col_store.WriteBlockCache(t)
 
 	return count
 
 }
 
-func LoadRecords(t *Table, loadSpec *LoadSpec) int {
-	LoadBlockCache(t)
+func LoadRecords(t *Table, loadSpec *specs.LoadSpec) int {
+	col_store.LoadBlockCache(t)
 
 	return LoadAndQueryRecords(t, loadSpec, nil)
 }
 
 func init() {
-	SetTableQueryFunc(LoadRecords)
+	col_store.SetTableQueryFunc(LoadRecords)
 }

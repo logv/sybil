@@ -11,13 +11,12 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/encoders"
-	. "github.com/logv/sybil/src/storage/file_locks"
-)
 
-import "github.com/DeDiS/protobuf"
+	md "github.com/logv/sybil/src/lib/metadata"
+	encoders "github.com/logv/sybil/src/storage/encoders"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+)
 
 type ValueMap map[int64][]uint32
 
@@ -64,7 +63,7 @@ func SaveIntsToColumns(tb *TableBlock, dirname string, same_ints map[int16]Value
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
 	os.MkdirAll(dirname, 0777)
 	for k, v := range same_ints {
-		col_name := GetBlockStringForKey(tb, k)
+		col_name := md.GetBlockStringForKey(tb, k)
 		if col_name == "" {
 			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
 			continue
@@ -87,7 +86,7 @@ func SaveIntsToColumns(tb *TableBlock, dirname string, same_ints map[int16]Value
 			}
 
 			// bookkeeping for info.db
-			UpdateBlockIntInfo(tb, k, bucket)
+			md.UpdateBlockIntInfo(tb, k, bucket)
 		}
 
 		intCol.BucketEncoded = true
@@ -114,30 +113,18 @@ func SaveIntsToColumns(tb *TableBlock, dirname string, same_ints map[int16]Value
 		}
 
 		var network bytes.Buffer
-		col_fname := fmt.Sprintf("%s/%s.int.gob", dirname, GetBlockStringForKey(tb, k))
+		col_fname := fmt.Sprintf("%s/%s.int.gob", dirname, md.GetBlockStringForKey(tb, k))
 
 		// TODO:
 		// this encoding function should be handed from above, maybe?
 		// but then how do we un-encode? rely on having encoding functions registered
 		// for each filetype?
 
-		var PROTOBUF_ENABLED = false
-		if PROTOBUF_ENABLED {
-			col_fname = fmt.Sprintf("%s/%s.int.pb", dirname, GetBlockStringForKey(tb, k))
-
-			buf, err := protobuf.Encode(&intCol)
-			if err != nil {
-				Error("encode:", err)
-			}
-			network = *bytes.NewBuffer(buf)
-
-		} else {
-			// Create an encoder and send a value.
-			enc := gob.NewEncoder(&network)
-			err := enc.Encode(intCol)
-			if err != nil {
-				Error("encode:", err)
-			}
+		// Create an encoder and send a value.
+		enc := gob.NewEncoder(&network)
+		err := enc.Encode(intCol)
+		if err != nil {
+			Error("encode:", err)
 		}
 
 		action := "SERIALIZED"
@@ -156,7 +143,7 @@ func SaveIntsToColumns(tb *TableBlock, dirname string, same_ints map[int16]Value
 
 func SaveSetsToColumns(tb *TableBlock, dirname string, same_sets map[int16]ValueMap) {
 	for k, v := range same_sets {
-		col_name := GetBlockStringForKey(tb, k)
+		col_name := md.GetBlockStringForKey(tb, k)
 		if col_name == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
@@ -168,14 +155,14 @@ func SaveSetsToColumns(tb *TableBlock, dirname string, same_sets map[int16]Value
 		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := NewTableBlock()
 
-		tb_col := GetColumnInfo(tb, k)
-		temp_col := GetColumnInfo(&temp_block, k)
+		tb_col := md.GetColumnInfo(tb, k)
+		temp_col := md.GetColumnInfo(&temp_block, k)
 		record_to_value := make(map[uint32][]int32)
 		max_r := 0
 		for bucket, records := range v {
 			// migrating string definitions from column definitions
-			str_val := GetColumnStringForVal(tb_col, int32(bucket))
-			str_id := GetColumnValID(temp_col, str_val)
+			str_val := md.GetColumnStringForVal(tb_col, int32(bucket))
+			str_id := md.GetColumnValID(temp_col, str_val)
 			si := SavedSetBucket{Value: int32(str_id), Records: records}
 			setCol.Bins = append(setCol.Bins, si)
 			for _, r := range records {
@@ -209,7 +196,7 @@ func SaveSetsToColumns(tb *TableBlock, dirname string, same_sets map[int16]Value
 			}
 		}
 
-		col_fname := fmt.Sprintf("%s/%s.set.gob", dirname, GetBlockStringForKey(tb, k))
+		col_fname := fmt.Sprintf("%s/%s.set.gob", dirname, md.GetBlockStringForKey(tb, k))
 
 		var network bytes.Buffer // Stand-in for the network.
 
@@ -236,7 +223,7 @@ func SaveSetsToColumns(tb *TableBlock, dirname string, same_sets map[int16]Value
 
 func SaveStrsToColumns(tb *TableBlock, dirname string, same_strs map[int16]ValueMap) {
 	for k, v := range same_strs {
-		col_name := GetBlockStringForKey(tb, k)
+		col_name := md.GetBlockStringForKey(tb, k)
 		if col_name == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
@@ -248,15 +235,15 @@ func SaveStrsToColumns(tb *TableBlock, dirname string, same_strs map[int16]Value
 		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 		temp_block := NewTableBlock()
 
-		temp_col := GetColumnInfo(&temp_block, k)
-		tb_col := GetColumnInfo(tb, k)
+		temp_col := md.GetColumnInfo(&temp_block, k)
+		tb_col := md.GetColumnInfo(tb, k)
 		record_to_value := make(map[uint32]int32)
 		max_r := 0
 		for bucket, records := range v {
 
 			// migrating string definitions from column definitions
-			str_id := GetColumnValID(temp_col,
-				GetColumnStringForVal(tb_col, int32(bucket)))
+			str_id := md.GetColumnValID(temp_col,
+				md.GetColumnStringForVal(tb_col, int32(bucket)))
 
 			si := SavedStrBucket{Value: str_id, Records: records}
 			strCol.Bins = append(strCol.Bins, si)
@@ -268,7 +255,7 @@ func SaveStrsToColumns(tb *TableBlock, dirname string, same_strs map[int16]Value
 			}
 
 			// also bookkeeping to be used later inside the block info.db, IMO
-			UpdateBlockStrInfo(tb, k, int(bucket), len(records))
+			md.UpdateBlockStrInfo(tb, k, int(bucket), len(records))
 		}
 
 		strCol.BucketEncoded = true
@@ -289,14 +276,14 @@ func SaveStrsToColumns(tb *TableBlock, dirname string, same_strs map[int16]Value
 			}
 		}
 
-		GetBlockStrInfo(tb, k).Prune()
+		md.GetBlockStrInfo(tb, k).Prune()
 
 		strCol.StringTable = make([]string, len(temp_col.StringTable))
 		for str, id := range temp_col.StringTable {
 			strCol.StringTable[id] = str
 		}
 
-		col_fname := fmt.Sprintf("%s/%s.str.gob", dirname, GetBlockStringForKey(tb, k))
+		col_fname := fmt.Sprintf("%s/%s.str.gob", dirname, md.GetBlockStringForKey(tb, k))
 
 		var network bytes.Buffer // Stand-in for the network.
 
@@ -344,12 +331,12 @@ func SaveBlockInfo(tb *TableBlock, dirname string) {
 	}
 
 	for k, v := range tb.IntInfo {
-		name := GetBlockStringForKey(tb, k)
+		name := md.GetBlockStringForKey(tb, k)
 		savedIntInfo[name] = v
 	}
 
 	for k, v := range tb.StrInfo {
-		name := GetBlockStringForKey(tb, k)
+		name := md.GetBlockStringForKey(tb, k)
 		savedStrInfo[name] = v
 	}
 
@@ -398,11 +385,11 @@ func SeparateRecordsIntoColumns(tb *TableBlock) SeparatedColumns {
 		}
 		for k, v := range r.Strs {
 			// transition key from the
-			col := GetColumnInfo(r.Block, int16(k))
-			new_col := GetColumnInfo(tb, int16(k))
+			col := md.GetColumnInfo(r.Block, int16(k))
+			new_col := md.GetColumnInfo(tb, int16(k))
 
-			v_name := GetColumnStringForVal(col, int32(v))
-			v_id := GetColumnValID(new_col, v_name)
+			v_name := md.GetColumnStringForVal(col, int32(v))
+			v_id := md.GetColumnValID(new_col, v_name)
 
 			// record the transitioned key
 			if r.Populated[k] == STR_VAL {
@@ -410,12 +397,12 @@ func SeparateRecordsIntoColumns(tb *TableBlock) SeparatedColumns {
 			}
 		}
 		for k, v := range r.SetMap {
-			col := GetColumnInfo(r.Block, int16(k))
-			new_col := GetColumnInfo(tb, int16(k))
+			col := md.GetColumnInfo(r.Block, int16(k))
+			new_col := md.GetColumnInfo(tb, int16(k))
 			if r.Populated[k] == SET_VAL {
 				for _, iv := range v {
-					v_name := GetColumnStringForVal(col, int32(iv))
-					v_id := GetColumnValID(new_col, v_name)
+					v_name := md.GetColumnStringForVal(col, int32(iv))
+					v_id := md.GetColumnValID(new_col, v_name)
 					record_value(same_sets, int32(i), int16(k), int64(v_id))
 				}
 			}
@@ -440,8 +427,8 @@ func SaveToColumns(tb *TableBlock, filename string) bool {
 	// of the various block infos
 	tb.Name = dirname
 
-	defer ReleaseBlockLock(tb.Table, filename)
-	if GrabBlockLock(tb.Table, filename) == false {
+	defer flock.ReleaseBlockLock(tb.Table, filename)
+	if flock.GrabBlockLock(tb.Table, filename) == false {
 		Debug("Can't grab lock to save block", filename)
 		return false
 	}
@@ -507,7 +494,7 @@ func SaveToColumns(tb *TableBlock, filename string) bool {
 
 }
 
-func unpackStrCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
+func unpackStrCol(tb *TableBlock, dec encoders.FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
@@ -519,14 +506,14 @@ func unpackStrCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 
 	string_lookup := make(map[int32]string)
 	key_table_len := len(tb.Table.KeyTable)
-	col_id := GetTableKeyID(tb.Table, into.Name)
+	col_id := md.GetTableKeyID(tb.Table, into.Name)
 
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
-	col := GetColumnInfo(tb, col_id)
+	col := md.GetColumnInfo(tb, col_id)
 	// unpack the string table
 
 	// Run our replacements!
@@ -617,7 +604,7 @@ func unpackStrCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func unpackSetCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
+func unpackSetCol(tb *TableBlock, dec encoders.FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList
 
 	saved_col := NewSavedSetColumn()
@@ -627,10 +614,10 @@ func unpackSetCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 		Debug("DECODE COL ERR:", err)
 	}
 
-	col_id := GetTableKeyID(tb.Table, into.Name)
+	col_id := md.GetTableKeyID(tb.Table, into.Name)
 	string_lookup := make(map[int32]string)
 
-	col := GetColumnInfo(tb, col_id)
+	col := md.GetColumnInfo(tb, col_id)
 	// unpack the string table
 	for k, v := range into.StringTable {
 		col.StringTable[v] = int32(k)
@@ -674,7 +661,7 @@ func unpackSetCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func unpackIntCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
+func unpackIntCol(tb *TableBlock, dec encoders.FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}
@@ -683,7 +670,7 @@ func unpackIntCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 		Debug("DECODE COL ERR:", err)
 	}
 
-	col_id := GetTableKeyID(tb.Table, into.Name)
+	col_id := md.GetTableKeyID(tb.Table, into.Name)
 
 	is_time_col := false
 	if FLAGS.TIME_COL != nil {
@@ -693,7 +680,7 @@ func unpackIntCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			if *FLAGS.UPDATE_TABLE_INFO {
-				UpdateBlockIntInfo(tb, col_id, bucket.Value)
+				md.UpdateBlockIntInfo(tb, col_id, bucket.Value)
 			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -725,7 +712,7 @@ func unpackIntCol(tb *TableBlock, dec FileDecoder, info SavedColumnInfo) {
 		prev := int64(0)
 		for r, v := range into.Values {
 			if *FLAGS.UPDATE_TABLE_INFO {
-				UpdateBlockIntInfo(tb, col_id, v)
+				md.UpdateBlockIntInfo(tb, col_id, v)
 			}
 
 			if into.ValueEncoded {

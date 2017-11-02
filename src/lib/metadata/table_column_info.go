@@ -108,7 +108,3 @@ func GetColumnStringForVal(tc *TableColumn, id int32) string {
 	val, _ := tc.ValStringIDLookup[id]
 	return val
 }
-
-func GetColumnStringForKey(tc *TableColumn, id int) string {
-	return GetBlockStringForKey(tc.Block, int16(id))
-}

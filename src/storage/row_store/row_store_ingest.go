@@ -12,7 +12,8 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/encoders"
+
+	encoders "github.com/logv/sybil/src/storage/encoders"
 )
 
 func LoadSavedRecordsFromLog(t *Table, filename string) []*SavedRecord {
@@ -20,7 +21,7 @@ func LoadSavedRecordsFromLog(t *Table, filename string) []*SavedRecord {
 	var marshalled_records []*SavedRecord
 
 	// Create an encoder and send a value.
-	err := DecodeInto(filename, &marshalled_records)
+	err := encoders.DecodeInto(filename, &marshalled_records)
 
 	if err != nil {
 		Debug("ERROR LOADING INGESTION LOG", err)

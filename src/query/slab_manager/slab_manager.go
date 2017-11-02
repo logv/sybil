@@ -5,12 +5,13 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
+
+	md "github.com/logv/sybil/src/lib/metadata"
+	specs "github.com/logv/sybil/src/query/specs"
 )
 
-func AllocateRecords(tb *TableBlock, loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
+func AllocateRecords(tb *TableBlock, loadSpec *specs.LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
 
 	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && load_records == false {
 		loadSpec.SlabMutex.Lock()
@@ -30,7 +31,7 @@ func AllocateRecords(tb *TableBlock, loadSpec *LoadSpec, info SavedColumnInfo, l
 
 }
 
-func makeRecordSlab(tb *TableBlock, loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
+func makeRecordSlab(tb *TableBlock, loadSpec *specs.LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
 	t := tb.Table
 
 	var r *Record
@@ -54,7 +55,7 @@ func makeRecordSlab(tb *TableBlock, loadSpec *LoadSpec, info SavedColumnInfo, lo
 	// each record
 	if loadSpec != nil && load_records == false {
 		for field_name := range loadSpec.Columns {
-			v := GetTableKeyID(t, field_name)
+			v := md.GetTableKeyID(t, field_name)
 
 			switch t.KeyTypes[v] {
 			case INT_VAL:
@@ -164,7 +165,7 @@ func ResetRecords(rl *RecordList, tb *TableBlock) {
 
 }
 
-func RecycleSlab(tb *TableBlock, loadSpec *LoadSpec) {
+func RecycleSlab(tb *TableBlock, loadSpec *specs.LoadSpec) {
 	if *FLAGS.RECYCLE_MEM {
 		rl := tb.RecordList
 

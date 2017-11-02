@@ -1,19 +1,19 @@
 package sybil
 
 import (
-	. "github.com/logv/sybil/src/lib/metadata"
+	md "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	specs "github.com/logv/sybil/src/query/specs"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 // optimizing for integer pre-cached info
-func ShouldLoadBlockFromDir(t *Table, dirname string, querySpec *QuerySpec) bool {
+func ShouldLoadBlockFromDir(t *Table, dirname string, querySpec *specs.QuerySpec) bool {
 	if querySpec == nil {
 		return true
 	}
 
-	info := LoadBlockInfo(t, dirname)
+	info := md_io.LoadBlockInfo(t, dirname)
 
 	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
@@ -23,13 +23,13 @@ func ShouldLoadBlockFromDir(t *Table, dirname string, querySpec *QuerySpec) bool
 	}
 
 	for field_name := range info.StrInfoMap {
-		field_id := GetTableKeyID(t, field_name)
+		field_id := md.GetTableKeyID(t, field_name)
 		ResizeFields(&min_record, field_id)
 		ResizeFields(&max_record, field_id)
 	}
 
 	for field_name, field_info := range info.IntInfoMap {
-		field_id := GetTableKeyID(t, field_name)
+		field_id := md.GetTableKeyID(t, field_name)
 		ResizeFields(&min_record, field_id)
 		ResizeFields(&max_record, field_id)
 

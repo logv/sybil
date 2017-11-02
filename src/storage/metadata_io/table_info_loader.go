@@ -5,15 +5,15 @@ import "path"
 import . "github.com/logv/sybil/src/lib/config"
 import . "github.com/logv/sybil/src/lib/common"
 import . "github.com/logv/sybil/src/lib/structs"
-import . "github.com/logv/sybil/src/lib/metadata"
-import . "github.com/logv/sybil/src/storage/encoders"
-import . "github.com/logv/sybil/src/storage/file_locks"
+import md "github.com/logv/sybil/src/lib/metadata"
+import encoders "github.com/logv/sybil/src/storage/encoders"
+import flock "github.com/logv/sybil/src/storage/file_locks"
 
 func LoadTableInfo(t *Table) bool {
 	tablename := t.Name
 	filename := path.Join(*FLAGS.DIR, tablename, "info.db")
-	if GrabInfoLock(t) {
-		defer ReleaseInfoLock(t)
+	if flock.GrabInfoLock(t) {
+		defer flock.ReleaseInfoLock(t)
 	} else {
 		Debug("LOAD TABLE INFO LOCK TAKEN")
 		return false
@@ -31,7 +31,7 @@ func LoadTableInfoFrom(t *Table, filename string) bool {
 	start := time.Now()
 
 	Debug("OPENING TABLE INFO FROM FILENAME", filename)
-	err := DecodeInto(filename, &saved_table)
+	err := encoders.DecodeInto(filename, &saved_table)
 	end := time.Now()
 	if err != nil {
 		Debug("TABLE INFO DECODE:", err)
@@ -60,7 +60,7 @@ func LoadTableInfoFrom(t *Table, filename string) bool {
 	// If we are recovering the INFO lock, we won't necessarily have
 	// all fields filled out
 	if t.StringIDMutex != nil {
-		PopulateStringIDLookup(t)
+		md.PopulateStringIDLookup(t)
 	}
 
 	return true

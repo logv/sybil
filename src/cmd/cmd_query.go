@@ -8,18 +8,18 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/logv/sybil/src/exp/luajit"
+	luajit "github.com/logv/sybil/src/exp/luajit"
 	. "github.com/logv/sybil/src/exp/stats"
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/metadata"
+	md "github.com/logv/sybil/src/lib/metadata"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/filters"
-	. "github.com/logv/sybil/src/query/hists"
-	. "github.com/logv/sybil/src/query/printer"
-	. "github.com/logv/sybil/src/query/specs"
+	filters "github.com/logv/sybil/src/query/filters"
+	hists "github.com/logv/sybil/src/query/hists"
 	. "github.com/logv/sybil/src/query/load_and_query"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	printer "github.com/logv/sybil/src/query/printer"
+	specs "github.com/logv/sybil/src/query/specs"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -41,7 +41,7 @@ func addQueryFlags() {
 
 	FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
-	if ENABLE_HDR {
+	if hists.ENABLE_HDR {
 		FLAGS.HDR_HIST = flag.Bool("hdr", false, "Use HDR Histograms (can be slow)")
 	}
 
@@ -85,7 +85,7 @@ func RunQueryCmdLine() {
 	flag.Parse()
 
 	if *LIST_TABLES {
-		PrintTables()
+		printer.PrintTables()
 		return
 	}
 
@@ -115,7 +115,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *FLAGS.LUAFILE != "" {
-		SetLuaScript(*FLAGS.LUAFILE)
+		luajit.SetLuaScript(*FLAGS.LUAFILE)
 	}
 
 	if *NO_RECYCLE_MEM == true {
@@ -144,7 +144,7 @@ func RunQueryCmdLine() {
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
-	LoadTableInfo(t)
+	md_io.LoadTableInfo(t)
 	LoadRecords(t, nil)
 
 	count := 0
@@ -154,14 +154,14 @@ func RunQueryCmdLine() {
 
 	Debug("WILL INSPECT", count, "RECORDS")
 
-	groupings := []Grouping{}
+	groupings := []specs.Grouping{}
 	for _, g := range groups {
-		groupings = append(groupings, GroupingForTable(t, g))
+		groupings = append(groupings, specs.GroupingForTable(t, g))
 	}
 
-	aggs := []Aggregation{}
+	aggs := []specs.Aggregation{}
 	for _, agg := range ints {
-		aggs = append(aggs, AggregationForTable(t, agg, *FLAGS.OP))
+		aggs = append(aggs, specs.AggregationForTable(t, agg, *FLAGS.OP))
 	}
 
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
@@ -177,23 +177,23 @@ func RunQueryCmdLine() {
 		}
 	}
 
-	loadSpec := NewTableLoadSpec(t)
-	filterSpec := FilterSpec{Int: *FLAGS.INT_FILTERS, Str: *FLAGS.STR_FILTERS, Set: *FLAGS.SET_FILTERS}
-	filters := BuildFilters(t, &loadSpec, filterSpec)
+	loadSpec := specs.NewTableLoadSpec(t)
+	filterSpec := filters.FilterSpec{Int: *FLAGS.INT_FILTERS, Str: *FLAGS.STR_FILTERS, Set: *FLAGS.SET_FILTERS}
+	filters := filters.BuildFilters(t, &loadSpec, filterSpec)
 
-	query_params := QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
-	querySpec := QuerySpec{QueryParams: query_params}
+	query_params := specs.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	querySpec := specs.QuerySpec{QueryParams: query_params}
 
 	for _, v := range groups {
-		switch GetColumnType(t, v) {
+		switch md.GetColumnType(t, v) {
 		case STR_VAL:
 			loadSpec.Str(v)
 		case INT_VAL:
 			loadSpec.Int(v)
 		default:
-			PrintColInfo(t)
+			printer.PrintColInfo(t)
 			fmt.Println("")
-			Error("Unknown column type for column: ", v, GetColumnType(t, v))
+			Error("Unknown column type for column: ", v, md.GetColumnType(t, v))
 		}
 
 	}
@@ -236,12 +236,12 @@ func RunQueryCmdLine() {
 		OPTS.HOLD_MATCHES = true
 		OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 
-		loadSpec := NewTableLoadSpec(t)
+		loadSpec := specs.NewTableLoadSpec(t)
 		loadSpec.LoadAllColumns = true
 
 		LoadAndQueryRecords(t, &loadSpec, &querySpec)
 
-		PrintSamples(t)
+		printer.PrintSamples(t)
 
 		return
 	}
@@ -266,7 +266,7 @@ func RunQueryCmdLine() {
 
 			end := time.Now()
 			Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
-			PrintFinalResults(&querySpec)
+			printer.PrintFinalResults(&querySpec)
 
 			if FLAGS.ANOVA_ICC != nil && *FLAGS.ANOVA_ICC {
 				CalculateICC(&querySpec)
@@ -284,7 +284,7 @@ func RunQueryCmdLine() {
 		FLAGS.LOAD_AND_QUERY = &FALSE
 
 		LoadRecords(t, nil)
-		PrintColInfo(t)
+		printer.PrintColInfo(t)
 	}
 
 }

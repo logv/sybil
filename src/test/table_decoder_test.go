@@ -13,12 +13,12 @@ import (
 	"time"
 
 	. "github.com/logv/sybil/src/lib/common"
-	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/lib/record"
+	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/query/load_and_query"
 	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/metadata_io"
-	. "github.com/logv/sybil/src/storage/row_store"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
 func TestOpenCompressedInfoDB(test *testing.T) {
@@ -65,7 +65,7 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 	loadSpec := NewTableLoadSpec(nt)
 	loadSpec.LoadAllColumns = true
 
-	loaded := LoadTableInfo(nt)
+	loaded := md_io.LoadTableInfo(nt)
 	if loaded == false {
 		test.Error("COULDNT LOAD ZIPPED TABLE INFO!")
 	}
@@ -99,7 +99,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 	}, blockCount)
 
 	nt := SaveAndReloadTestTable(test, blockCount)
-	DigestRecords(nt)
+	row_store.DigestRecords(nt)
 	LoadRecords(nt, nil)
 
 	blocks := nt.BlockList
@@ -143,7 +143,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 	loadSpec := NewTableLoadSpec(bt)
 	loadSpec.LoadAllColumns = true
 
-	loaded := LoadTableInfo(bt)
+	loaded := md_io.LoadTableInfo(bt)
 	if loaded == false {
 		test.Error("COULDNT LOAD ZIPPED TABLE INFO!")
 	}

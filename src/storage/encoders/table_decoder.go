@@ -4,40 +4,19 @@ import (
 	"compress/gzip"
 	"encoding/gob"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
-	"github.com/DeDiS/protobuf"
 	. "github.com/logv/sybil/src/lib/common"
 )
 
 var GOB_GZIP_EXT = ".db.gz"
-var PROTOBUF_EXT = ".pb"
-var PROTOBUF_GZIP_EXT = ".pb.gz"
 
 type GobFileDecoder struct {
 	*gob.Decoder
 	File *os.File
 }
 
-type ProtobufDecoder struct {
-	File io.Reader
-}
-
-func (pb ProtobufDecoder) Decode(into interface{}) error {
-	dat, err := ioutil.ReadAll(pb.File)
-	if err == nil {
-		protobuf.Decode(dat, into)
-	}
-
-	return err
-}
-
-func (pb ProtobufDecoder) CloseFile() bool {
-	return true
-}
 func (gfd GobFileDecoder) CloseFile() bool {
 	gfd.File.Close()
 	return true
@@ -54,40 +33,6 @@ func DecodeInto(filename string, obj interface{}) error {
 
 	err := dec.Decode(obj)
 	return err
-}
-
-func getProtobufDecoder(filename string) FileDecoder {
-
-	file, err := os.Open(filename)
-	if err != nil {
-		Debug("COULDNT OPEN GZ", filename)
-		return ProtobufDecoder{file}
-	}
-
-	reader, err := gzip.NewReader(file)
-	if err != nil {
-		Debug("COULDNT DECOMPRESS GZ", filename)
-		return ProtobufDecoder{reader}
-	}
-
-	return ProtobufDecoder{file}
-}
-
-func getProtobufGzipDecoder(filename string) FileDecoder {
-
-	file, err := os.Open(filename)
-	if err != nil {
-		Debug("COULDNT OPEN GZ", filename)
-		return ProtobufDecoder{file}
-	}
-
-	reader, err := gzip.NewReader(file)
-	if err != nil {
-		Debug("COULDNT DECOMPRESS GZ", filename)
-		return ProtobufDecoder{reader}
-	}
-
-	return ProtobufDecoder{reader}
 }
 
 func getGobGzipDecoder(filename string) FileDecoder {
@@ -113,18 +58,6 @@ func getGobGzipDecoder(filename string) FileDecoder {
 
 func GetFileDecoder(filename string) FileDecoder {
 	// if the file ends with GZ ext, we use compressed decoder
-	if strings.HasSuffix(filename, PROTOBUF_EXT) {
-		file, err := os.Open(filename)
-		if err == nil {
-			dec := ProtobufDecoder{file}
-			return dec
-		}
-	}
-
-	if strings.HasSuffix(filename, PROTOBUF_GZIP_EXT) {
-		dec := getProtobufGzipDecoder(filename)
-		return dec
-	}
 	// if the file ends with GZ ext, we use compressed decoder
 	if strings.HasSuffix(filename, GOB_GZIP_EXT) {
 		dec := getGobGzipDecoder(filename)
@@ -144,10 +77,6 @@ func GetFileDecoder(filename string) FileDecoder {
 				return dec
 			}
 
-			if strings.HasSuffix(zfilename, PROTOBUF_GZIP_EXT) {
-				dec := getProtobufGzipDecoder(filename)
-				return dec
-			}
 		}
 	}
 

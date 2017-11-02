@@ -9,11 +9,11 @@ import (
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/record"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/column_store"
-	. "github.com/logv/sybil/src/storage/file_locks"
 	. "github.com/logv/sybil/src/query/load_and_query"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	. "github.com/logv/sybil/src/query/specs"
+	col_store "github.com/logv/sybil/src/storage/column_store"
+	. "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 )
 
 var TEST_TABLE_NAME = "__TEST0__"
@@ -56,12 +56,12 @@ func SaveAndReloadTestTable(test *testing.T, expectedBlocks int) *Table {
 	expectedCount := CHUNK_SIZE * expectedBlocks
 	t := GetTable(TEST_TABLE_NAME)
 
-	SaveRecordsToColumns(t)
+	col_store.SaveRecordsToColumns(t)
 
 	UnloadTestTable()
 
 	nt := GetTable(TEST_TABLE_NAME)
-	LoadTableInfo(nt)
+	md_io.LoadTableInfo(nt)
 
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true

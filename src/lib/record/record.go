@@ -2,22 +2,22 @@ package sybil
 
 import . "github.com/logv/sybil/src/lib/common"
 import . "github.com/logv/sybil/src/lib/structs"
-import . "github.com/logv/sybil/src/lib/metadata"
+import md "github.com/logv/sybil/src/lib/metadata"
 
 func GetStrVal(r *Record, name string) (string, bool) {
-	id := GetBlockKeyID(r.Block, name)
+	id := md.GetBlockKeyID(r.Block, name)
 
 	is := r.Strs[id]
 	ok := r.Populated[id] == STR_VAL
 
-	col := GetColumnInfo(r.Block, id)
-	val := GetColumnStringForVal(col, int32(is))
+	col := md.GetColumnInfo(r.Block, id)
+	val := md.GetColumnStringForVal(col, int32(is))
 
 	return val, ok
 }
 
 func GetIntVal(r *Record, name string) (int, bool) {
-	id := GetBlockKeyID(r.Block, name)
+	id := md.GetBlockKeyID(r.Block, name)
 
 	is := r.Ints[id]
 	ok := r.Populated[id] == INT_VAL
@@ -25,17 +25,17 @@ func GetIntVal(r *Record, name string) (int, bool) {
 }
 
 func GetSetVal(r *Record, name string) ([]string, bool) {
-	id := GetBlockKeyID(r.Block, name)
+	id := md.GetBlockKeyID(r.Block, name)
 
 	is := r.SetMap[id]
 	ok := r.Populated[id] == SET_VAL
 
-	col := GetColumnInfo(r.Block, id)
+	col := md.GetColumnInfo(r.Block, id)
 	rets := make([]string, 0)
 
 	if ok {
 		for _, v := range is {
-			val := GetColumnStringForVal(col, int32(v))
+			val := md.GetColumnStringForVal(col, int32(v))
 			rets = append(rets, val)
 		}
 	}
@@ -44,38 +44,38 @@ func GetSetVal(r *Record, name string) ([]string, bool) {
 }
 
 func AddStrField(r *Record, name string, val string) {
-	NameID := GetBlockKeyID(r.Block, name)
+	NameID := md.GetBlockKeyID(r.Block, name)
 
-	col := GetColumnInfo(r.Block, NameID)
-	value_id := GetColumnValID(col, val)
+	col := md.GetColumnInfo(r.Block, NameID)
+	value_id := md.GetColumnValID(col, val)
 
 	ResizeFields(r, NameID)
 	r.Strs[NameID] = StrField(value_id)
 	r.Populated[NameID] = STR_VAL
 
-	if SetKeyType(r.Block.Table, NameID, STR_VAL) == false {
+	if md.SetKeyType(r.Block.Table, NameID, STR_VAL) == false {
 		Error("COULDNT SET STR VAL", name, val, NameID)
 	}
 }
 
 func AddIntField(r *Record, name string, val int64) {
-	NameID := GetBlockKeyID(r.Block, name)
-	UpdateBlockIntInfo(r.Block, NameID, val)
+	NameID := md.GetBlockKeyID(r.Block, name)
+	md.UpdateBlockIntInfo(r.Block, NameID, val)
 
 	ResizeFields(r, NameID)
 	r.Ints[NameID] = IntField(val)
 	r.Populated[NameID] = INT_VAL
-	if SetKeyType(r.Block.Table, NameID, INT_VAL) == false {
+	if md.SetKeyType(r.Block.Table, NameID, INT_VAL) == false {
 		Error("COULDNT SET INT VAL", name, val, NameID)
 	}
 }
 
 func AddSetField(r *Record, name string, val []string) {
-	NameID := GetBlockKeyID(r.Block, name)
+	NameID := md.GetBlockKeyID(r.Block, name)
 	vals := make([]int32, len(val))
 	for i, v := range val {
-		col := GetColumnInfo(r.Block, NameID)
-		vals[i] = GetColumnValID(col, v)
+		col := md.GetColumnInfo(r.Block, NameID)
+		vals[i] = md.GetColumnValID(col, v)
 	}
 
 	ResizeFields(r, NameID)
@@ -85,7 +85,7 @@ func AddSetField(r *Record, name string, val []string) {
 
 	r.SetMap[NameID] = SetField(vals)
 	r.Populated[NameID] = SET_VAL
-	if SetKeyType(r.Block.Table, NameID, SET_VAL) == false {
+	if md.SetKeyType(r.Block.Table, NameID, SET_VAL) == false {
 		Error("COULDNT SET SET VAL", name, val, NameID)
 	}
 }

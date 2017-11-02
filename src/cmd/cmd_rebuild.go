@@ -6,8 +6,8 @@ import (
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/file_locks"
-	. "github.com/logv/sybil/src/storage/metadata_io"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
 	. "github.com/logv/sybil/src/utils/table_info_recover"
 )
 
@@ -28,7 +28,7 @@ func RunRebuildCmdLine() {
 
 	t := GetTable(*FLAGS.TABLE)
 
-	loaded := LoadTableInfo(t) && *FORCE_UPDATE == false
+	loaded := md_io.LoadTableInfo(t) && *FORCE_UPDATE == false
 	if loaded {
 		Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
 		return
@@ -40,11 +40,11 @@ func RunRebuildCmdLine() {
 	// original info.db
 	if *REPLACE_INFO == true {
 		Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
-		lock := Lock{Table: t, Name: "info"}
+		lock := flock.Lock{Table: t, Name: "info"}
 		lock.ForceDeleteFile()
-		SaveTableInfo(t, "info")
+		md_io.SaveTableInfo(t, "info")
 	} else {
 		Print("SAVING TO temp_info.db")
-		SaveTableInfo(t, "temp_info")
+		md_io.SaveTableInfo(t, "temp_info")
 	}
 }

@@ -6,12 +6,12 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/column_store"
-	. "github.com/logv/sybil/src/storage/encoders"
+	col_store "github.com/logv/sybil/src/storage/column_store"
+	encoders "github.com/logv/sybil/src/storage/encoders"
 )
 
 func decodeTableInfo(digest_file *string) bool {
-	dec := GetFileDecoder(*digest_file)
+	dec := encoders.GetFileDecoder(*digest_file)
 
 	saved_table := Table{}
 	err := dec.Decode(&saved_table)
@@ -27,7 +27,7 @@ func decodeTableInfo(digest_file *string) bool {
 }
 
 func decodeInfoCol(digest_file *string) bool {
-	dec := GetFileDecoder(*digest_file)
+	dec := encoders.GetFileDecoder(*digest_file)
 
 	info := SavedColumnInfo{}
 	err := dec.Decode(&info)
@@ -44,9 +44,9 @@ func decodeInfoCol(digest_file *string) bool {
 }
 
 func decodeIntCol(digest_file *string) bool {
-	dec := GetFileDecoder(*digest_file)
+	dec := encoders.GetFileDecoder(*digest_file)
 
-	info := SavedIntColumn{}
+	info := col_store.SavedIntColumn{}
 	err := dec.Decode(&info)
 
 	if err != nil {
@@ -61,9 +61,9 @@ func decodeIntCol(digest_file *string) bool {
 }
 
 func decodeStrCol(digest_file *string) bool {
-	dec := GetFileDecoder(*digest_file)
+	dec := encoders.GetFileDecoder(*digest_file)
 
-	info := SavedStrColumn{}
+	info := col_store.SavedStrColumn{}
 	err := dec.Decode(&info)
 
 	bins := make([]string, 0)

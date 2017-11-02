@@ -6,7 +6,7 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/encoders"
+	encoders "github.com/logv/sybil/src/storage/encoders"
 )
 
 func LoadBlockInfo(t *Table, dirname string) *SavedColumnInfo {
@@ -23,7 +23,7 @@ func LoadBlockInfo(t *Table, dirname string) *SavedColumnInfo {
 	istart := time.Now()
 	filename := fmt.Sprintf("%s/info.db", dirname)
 
-	err := DecodeInto(filename, &info)
+	err := encoders.DecodeInto(filename, &info)
 
 	if err != nil {
 		Warn("ERROR DECODING COLUMN BLOCK INFO!", dirname, err)

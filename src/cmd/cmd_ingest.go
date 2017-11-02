@@ -14,12 +14,12 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/record"
+	record "github.com/logv/sybil/src/lib/record"
 	. "github.com/logv/sybil/src/lib/structs"
-	. "github.com/logv/sybil/src/storage/column_store"
-	. "github.com/logv/sybil/src/storage/file_locks"
-	. "github.com/logv/sybil/src/storage/metadata_io"
-	. "github.com/logv/sybil/src/storage/row_store"
+	col_store "github.com/logv/sybil/src/storage/column_store"
+	flock "github.com/logv/sybil/src/storage/file_locks"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
 type Dictionary map[string]interface{}
@@ -43,16 +43,16 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 			if INT_CAST[key_name] == true {
 				val, err := strconv.ParseInt(iv, 10, 64)
 				if err == nil {
-					AddIntField(r, key_name, int64(val))
+					record.AddIntField(r, key_name, int64(val))
 				}
 			} else {
-				AddStrField(r, key_name, iv)
+				record.AddStrField(r, key_name, iv)
 
 			}
 		case int64:
-			AddIntField(r, key_name, int64(iv))
+			record.AddIntField(r, key_name, int64(iv))
 		case float64:
-			AddIntField(r, key_name, int64(iv))
+			record.AddIntField(r, key_name, int64(iv))
 		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
@@ -71,7 +71,7 @@ func ingest_dictionary(r *Record, recordmap *Dictionary, prefix string) {
 				}
 			}
 
-			AddSetField(r, key_name, key_strs)
+			record.AddSetField(r, key_name, key_strs)
 		case nil:
 		default:
 			Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), key_name)
@@ -94,7 +94,7 @@ func import_csv_records() {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		r := NewRecord(t)
+		r := record.NewRecord(t)
 		fields := strings.Split(line, ",")
 		for i, v := range fields {
 			field_name := header_fields[i]
@@ -105,14 +105,14 @@ func import_csv_records() {
 
 			val, err := strconv.ParseFloat(v, 64)
 			if err == nil {
-				AddIntField(r, field_name, int64(val))
+				record.AddIntField(r, field_name, int64(val))
 			} else {
-				AddStrField(r, field_name, v)
+				record.AddStrField(r, field_name, v)
 			}
 
 		}
 
-		ChunkAndSave(t)
+		col_store.ChunkAndSave(t)
 	}
 
 }
@@ -184,7 +184,7 @@ func import_json_records() {
 		decoded = nil
 
 		for _, ing := range records {
-			r := NewRecord(t)
+			r := record.NewRecord(t)
 			switch dict := ing.(type) {
 			case map[string]interface{}:
 				ndict := Dictionary(dict)
@@ -193,7 +193,7 @@ func import_json_records() {
 				ingest_dictionary(r, &dict, "")
 
 			}
-			ChunkAndSave(t)
+			col_store.ChunkAndSave(t)
 		}
 
 	}
@@ -257,8 +257,8 @@ func RunIngestCmdLine() {
 	// someone else
 	var loaded_table = false
 	for i := 0; i < TABLE_INFO_GRABS; i++ {
-		loaded := LoadTableInfo(t)
-		if loaded == true || HasFlagFile(t) == false {
+		loaded := md_io.LoadTableInfo(t)
+		if loaded == true || flock.HasFlagFile(t) == false {
 			loaded_table = true
 			break
 		}
@@ -266,7 +266,7 @@ func RunIngestCmdLine() {
 	}
 
 	if loaded_table == false {
-		if HasFlagFile(t) {
+		if flock.HasFlagFile(t) {
 			Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
@@ -278,5 +278,5 @@ func RunIngestCmdLine() {
 		import_csv_records()
 	}
 
-	IngestRecords(t, digestfile)
+	row_store.IngestRecords(t, digestfile)
 }

@@ -24,6 +24,17 @@ type IntInfo struct {
 	M2    float64 // used for calculating std dev, expressed as M2 / (Count - 1)
 	Count int
 }
+
+// This metadata is saved into <table>/info.db
+type SavedTableInfo struct {
+	Name     string
+	KeyTable map[string]int16 // String Key Names
+	KeyTypes map[int16]int8
+
+	StrInfo StrInfoTable
+	IntInfo IntInfoTable
+}
+
 type Table struct {
 	SavedTableInfo
 
@@ -47,14 +58,6 @@ type Table struct {
 	StringIDMutex *sync.RWMutex
 	RecordMutex   *sync.Mutex
 	BlockMutex    *sync.Mutex
-}
-type SavedTableInfo struct {
-	Name     string
-	KeyTable map[string]int16 // String Key Names
-	KeyTypes map[int16]int8
-
-	StrInfo StrInfoTable
-	IntInfo IntInfoTable
 }
 
 func InitDataStructures(t *Table) {

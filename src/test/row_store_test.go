@@ -9,12 +9,12 @@ import (
 
 	. "github.com/logv/sybil/src/lib/common"
 	. "github.com/logv/sybil/src/lib/config"
-	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/lib/record"
+	. "github.com/logv/sybil/src/lib/structs"
 	. "github.com/logv/sybil/src/query/aggregate"
 	. "github.com/logv/sybil/src/query/load_and_query"
 	. "github.com/logv/sybil/src/query/specs"
-	. "github.com/logv/sybil/src/storage/row_store"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
 func TestTableLoadRowRecords(test *testing.T) {
@@ -29,7 +29,7 @@ func TestTableLoadRowRecords(test *testing.T) {
 	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
-	IngestRecords(t, "ingest")
+	row_store.IngestRecords(t, "ingest")
 
 	UnloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
