@@ -3,30 +3,32 @@ package cmd
 import (
 	"flag"
 
-	sybil "github.com/logv/sybil/src/lib"
-	"github.com/logv/sybil/src/lib/common"
-	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/common"
+	. "github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/structs"
+	md_io "github.com/logv/sybil/src/storage/metadata_io"
+	row_store "github.com/logv/sybil/src/storage/row_store"
 )
 
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if *config.FLAGS.TABLE == "" {
+	if *FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *config.FLAGS.PROFILE {
-		profile := config.RUN_PROFILER()
+	if *FLAGS.PROFILE {
+		profile := RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
+	OPTS.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*config.FLAGS.TABLE)
-	if t.LoadTableInfo() == false {
-		common.Warn("Couldn't read table info, exiting early")
+	t := GetTable(*FLAGS.TABLE)
+	if md_io.LoadTableInfo(t) == false {
+		Warn("Couldn't read table info, exiting early")
 		return
 	}
-	t.DigestRecords()
+	row_store.DigestRecords(t)
 }

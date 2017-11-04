@@ -3,7 +3,6 @@
 package config
 
 import (
-	"github.com/logv/sybil/src/lib/config"
 	"github.com/pkg/profile"
 )
 
@@ -14,7 +13,7 @@ type PkgProfile struct {
 }
 
 func (p PkgProfile) Start() ProfilerStart {
-	if *config.FLAGS.PROFILE_MEM {
+	if *FLAGS.PROFILE_MEM {
 		PROFILE = profile.Start(profile.MemProfile, profile.ProfilePath("."))
 	} else {
 		PROFILE = profile.Start(profile.CPUProfile, profile.ProfilePath("."))
@@ -30,6 +29,5 @@ func STOP_PROFILER() {
 }
 
 var RUN_PROFILER = func() ProfilerStop {
-	common.Debug("RUNNING ENABLED PROFILER")
 	return PkgProfile{}
 }

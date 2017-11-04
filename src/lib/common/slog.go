@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/logv/sybil/src/lib/config"
+	. "github.com/logv/sybil/src/lib/config"
 )
 
 // extracted from and influenced by
@@ -22,7 +22,7 @@ func Warn(args ...interface{}) {
 }
 
 func Debug(args ...interface{}) {
-	if *config.FLAGS.DEBUG || ENV_FLAG != "" {
+	if *FLAGS.DEBUG || ENV_FLAG != "" {
 		log.Println(args...)
 	}
 }
