@@ -172,6 +172,9 @@ func printSortedResults(querySpec *QuerySpec) {
 	if *FLAGS.OP == "distinct" {
 		fmt.Println("DISTINCT RESULTS", len(querySpec.Results))
 	} else {
+		percent_scanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
+		Debug("SCANNED", fmt.Sprintf("%.02f%%", percent_scanned), "(", querySpec.Cumulative.Count,
+			") OF ROWS OUT OF", querySpec.MatchedCount)
 		if len(sorted) > 1 {
 			printResult(querySpec, querySpec.Cumulative)
 		}

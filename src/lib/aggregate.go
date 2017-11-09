@@ -1,11 +1,13 @@
 package sybil
 
+import "fmt"
 import "time"
 import "bytes"
 import "sort"
 import "strconv"
 import "sync"
 import "math"
+import "runtime"
 
 import "encoding/binary"
 
@@ -284,6 +286,75 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 
 }
 
+func CombineAndPrune(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
+	for _, spec := range block_specs {
+		spec.OrderBy = OPTS.SORT_COUNT
+		SortResults(spec)
+		PruneResults(spec)
+	}
+
+	resultSpec := CombineResults(querySpec, block_specs)
+	resultSpec.OrderBy = OPTS.SORT_COUNT
+	SortResults(resultSpec)
+	PruneResults(resultSpec)
+
+	return resultSpec
+}
+
+// TODO: this is an approximate combination technique
+func MultiCombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
+	num_specs := len(block_specs)
+	num_procs := runtime.NumCPU()
+
+	per_block := num_specs / num_procs
+
+	if per_block < 4 {
+		return CombineResults(querySpec, block_specs)
+	}
+
+	all_results := make([]*QuerySpec, 0)
+	next_specs := make(map[string]*QuerySpec)
+	m := &sync.Mutex{}
+	var wg sync.WaitGroup
+
+	count := 0
+
+	for k, spec := range block_specs {
+
+		next_specs[k] = spec
+		count += 1
+
+		if count%per_block == 0 {
+			var resultSpec *QuerySpec
+			this_specs := next_specs
+			next_specs = make(map[string]*QuerySpec)
+			wg.Add(1)
+			go func() {
+				resultSpec = CombineAndPrune(querySpec, this_specs)
+				m.Lock()
+				all_results = append(all_results, resultSpec)
+				m.Unlock()
+				wg.Done()
+			}()
+		}
+	}
+
+	wg.Wait()
+
+	agg_specs := make(map[string]*QuerySpec)
+
+	if len(next_specs) > 0 {
+		agg_specs["result_last"] = CombineAndPrune(querySpec, next_specs)
+	}
+
+	for k, v := range all_results {
+		agg_specs[fmt.Sprintf("result_%v", k)] = v
+	}
+
+	return CombineResults(querySpec, agg_specs)
+
+}
+
 func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
 
 	astart := time.Now()
@@ -332,9 +403,30 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	resultSpec.Results = master_result
 
 	aend := time.Now()
-	Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
+	if DEBUG_TIMING {
+		Debug("AGGREGATING", len(block_specs), "BLOCK RESULTS TOOK", aend.Sub(astart))
+	}
 
 	return &resultSpec
+}
+
+func PruneResults(querySpec *QuerySpec) {
+	querySpec.Results = make(ResultMap)
+	for _, res := range querySpec.Sorted {
+		querySpec.Results[res.GroupByKey] = res
+	}
+
+	for time_bucket, results := range qs.TimeResults {
+		interim_result := make(ResultMap)
+		for _, res := range results {
+			_, ok := qs.Results[res.GroupByKey]
+			if ok {
+				interim_result[res.GroupByKey] = res
+			}
+		}
+
+		qs.TimeResults[time_bucket] = interim_result
+	}
 }
 
 func SortResults(querySpec *QuerySpec) {
@@ -356,8 +448,13 @@ func SortResults(querySpec *QuerySpec) {
 			Debug("SORTING TOOK", end.Sub(start))
 		}
 
-		if len(sorter.Results) > *FLAGS.LIMIT {
-			sorter.Results = sorter.Results[:*FLAGS.LIMIT]
+		limit := *FLAGS.LIMIT * 10
+		if limit < 5000 {
+			limit = 5000
+		}
+
+		if len(sorter.Results) > limit {
+			sorter.Results = sorter.Results[:limit]
 		}
 
 		querySpec.Sorted = sorter.Results
@@ -372,7 +469,7 @@ func SearchBlocks(querySpec *QuerySpec, block_list map[string]*TableBlock) map[s
 	// after all queries finish executing, the specs are combined
 	block_specs := make(map[string]*QuerySpec, len(block_list))
 
-	// TODO: why iterate through blocklist after loading it instead of filtering
+	// DONE: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
 	// That would mean pushing the call to 'FilterAndAggRecords' to the loading area
 	spec_lock := sync.Mutex{}

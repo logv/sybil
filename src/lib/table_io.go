@@ -6,6 +6,7 @@ import "os"
 import "path"
 import "sort"
 import "strings"
+import "sync"
 import "time"
 import "bytes"
 import "io/ioutil"
@@ -274,23 +275,37 @@ func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
 
 	// NOW WE SAVE OUR QUERY CACHE HERE...
 	savestart := time.Now()
+	var wg sync.WaitGroup
+
+	saved := 0
 
 	if *FLAGS.CACHED_QUERIES {
 		for blockName, blockQuery := range to_cache_specs {
 
-			if blockName == INGEST_DIR {
+			if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
 				continue
 			}
+			thisQuery := blockQuery
+			thisName := blockName
 
-			blockQuery.SaveCachedResults(blockName)
-			if *FLAGS.DEBUG {
-				fmt.Fprint(os.Stderr, "s")
-			}
+			wg.Add(1)
+			saved += 1
+			go func() {
+
+				thisQuery.SaveCachedResults(thisName)
+				if *FLAGS.DEBUG {
+					fmt.Fprint(os.Stderr, "s")
+				}
+
+				wg.Done()
+			}()
 		}
+
+		wg.Wait()
 
 		saveend := time.Now()
 
-		if len(to_cache_specs) > 0 {
+		if saved > 0 {
 			if *FLAGS.DEBUG {
 				fmt.Fprint(os.Stderr, "\n")
 			}

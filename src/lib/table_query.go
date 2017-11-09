@@ -8,6 +8,7 @@ import "strings"
 import "sync"
 import "time"
 import "io/ioutil"
+import "runtime"
 import "runtime/debug"
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
@@ -74,8 +75,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
 
+	all_results := make([]*QuerySpec, 0)
+
 	broken_mutex := sync.Mutex{}
 	broken_blocks := make([]string, 0)
+
+	var memstats runtime.MemStats
+	var max_alloc = uint64(0)
+
 	for f := range files {
 
 		// TODO: decide more formally on order of block loading
@@ -221,6 +228,30 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					m.Unlock()
 				}
 
+				if querySpec != nil {
+
+					t.WriteQueryCache(to_cache_specs)
+					to_cache_specs = make(map[string]*QuerySpec)
+
+					resultSpec := MultiCombineResults(querySpec, block_specs)
+					block_specs = make(map[string]*QuerySpec)
+
+					m.Lock()
+					all_results = append(all_results, resultSpec)
+					m.Unlock()
+
+					runtime.ReadMemStats(&memstats)
+					alloced := memstats.Alloc / 1024 / 1024
+					if alloced > max_alloc {
+						max_alloc = alloced
+					}
+
+					if alloced > 500 {
+						debug.FreeOSMemory()
+						runtime.ReadMemStats(&memstats)
+					}
+				}
+
 				if *FLAGS.DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
@@ -285,6 +316,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	if block_gc_time > 0 {
 		Debug("BLOCK GC TOOK", block_gc_time)
+		Debug("MAX ALLOC", max_alloc)
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
@@ -307,7 +339,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
-		resultSpec := CombineResults(querySpec, block_specs)
+		for k, v := range all_results {
+			block_specs[fmt.Sprintf("result_%v", k)] = v
+		}
+
+		resultSpec := MultiCombineResults(querySpec, block_specs)
 
 		aend := time.Now()
 		Debug("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
@@ -316,6 +352,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 		querySpec.Results = resultSpec.Results
 		querySpec.TimeResults = resultSpec.TimeResults
+		querySpec.MatchedCount = count + cached_count
 
 		SortResults(querySpec)
 	}

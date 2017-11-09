@@ -18,8 +18,11 @@ func run_tests(m *testing.M) {
 	m.Run()
 }
 
+var BLANK_STRING = ""
+
 func setup_test_vars(chunk_size int) {
 	FLAGS.TABLE = &TEST_TABLE_NAME
+	FLAGS.OP = &BLANK_STRING
 
 	TEST_MODE = true
 	CHUNK_SIZE = chunk_size
