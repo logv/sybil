@@ -45,6 +45,7 @@ func addQueryFlags() {
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
 	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
 	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
+	sybil.FLAGS.DISTINCT = flag.String(sybil.DISTINCT_STR, "", "distinct group by")
 
 	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
 
@@ -84,11 +85,16 @@ func RunQueryCmdLine() {
 	ints := make([]string, 0)
 	groups := make([]string, 0)
 	strs := make([]string, 0)
+	distinct := make([]string, 0)
 
 	if *sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
 		sybil.OPTS.GROUP_BY = groups
+	}
 
+	if *sybil.FLAGS.DISTINCT != "" {
+		distinct = strings.Split(*sybil.FLAGS.DISTINCT, *sybil.FLAGS.FIELD_SEPARATOR)
+		sybil.OPTS.DISTINCT = distinct
 	}
 
 	if *NO_RECYCLE_MEM == true {
@@ -137,6 +143,16 @@ func RunQueryCmdLine() {
 		aggs = append(aggs, t.Aggregation(agg, *sybil.FLAGS.OP))
 	}
 
+	distincts := []sybil.Grouping{}
+	for _, g := range distinct {
+		distincts = append(distincts, t.Grouping(g))
+	}
+
+	if *sybil.FLAGS.OP == sybil.DISTINCT_STR {
+		distincts = groupings
+		groupings = make([]sybil.Grouping, 0)
+	}
+
 	// VERIFY THE KEY TABLE IS IN ORDER, OTHERWISE WE NEED TO EXIT
 	sybil.Debug("KEY TABLE", t.KeyTable)
 	sybil.Debug("KEY TYPES", t.KeyTypes)
@@ -154,10 +170,13 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
-	query_params := sybil.QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}
+	query_params := sybil.QueryParams{Groups: groupings, Filters: filters,
+		Aggregations: aggs, Distincts: distincts}
+
 	querySpec := sybil.QuerySpec{QueryParams: query_params}
 
-	for _, v := range groups {
+	all_groups := append(groups, distinct...)
+	for _, v := range all_groups {
 		switch t.GetColumnType(v) {
 		case sybil.STR_VAL:
 			loadSpec.Str(v)

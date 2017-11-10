@@ -25,6 +25,7 @@ type FlagDefs struct {
 	INTS        *string
 	STRS        *string
 	GROUPS      *string
+	DISTINCT    *string
 
 	ADD_RECORDS *int
 
@@ -103,6 +104,7 @@ type OptionDefs struct {
 	TIME_COL_ID             int16
 	TIME_FORMAT             string
 	GROUP_BY                []string
+	DISTINCT                []string
 }
 
 // TODO: merge these two into one thing

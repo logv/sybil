@@ -1,6 +1,6 @@
 package sybil
 
-import "C"
+import hll "github.com/logv/loglogbeta"
 
 type ResultMap map[string]*Result
 
@@ -20,6 +20,7 @@ type savedQueryParams struct {
 	Filters      []Filter
 	Groups       []Grouping
 	Aggregations []Aggregation
+	Distincts    []Grouping // list of columns we are creating a count distinct query on
 
 	OrderBy    string
 	Limit      int16
@@ -56,7 +57,8 @@ type Aggregation struct {
 }
 
 type Result struct {
-	Hists map[string]Histogram
+	Hists    map[string]Histogram
+	Distinct *hll.LogLogBeta
 
 	GroupByKey  string
 	BinaryByKey string
@@ -64,9 +66,14 @@ type Result struct {
 	Samples     int64
 }
 
-func NewResult() *Result {
+func (qs *QuerySpec) NewResult() *Result {
 	added_record := &Result{}
 	added_record.Hists = make(map[string]Histogram)
+
+	if len(qs.Distincts) > 0 {
+		added_record.Distinct = hll.New()
+	}
+
 	added_record.Count = 0
 	return added_record
 }
@@ -105,6 +112,17 @@ func (rs *Result) Combine(next_result *Result) {
 			rs.Hists[k] = nh
 		} else {
 			rs.Hists[k].Combine(h)
+		}
+	}
+
+	// combine count distincts
+	if next_result.Distinct != nil {
+
+		if rs.Distinct == nil {
+			rs.Distinct = next_result.Distinct
+		} else {
+			rs.Distinct.Merge(next_result.Distinct)
+
 		}
 	}
 
@@ -157,7 +175,7 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 		}
 	}
 
-	if op == "distinct" {
+	if op == DISTINCT_STR {
 		agg.op_id = OP_DISTINCT
 	}
 

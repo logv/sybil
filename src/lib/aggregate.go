@@ -14,6 +14,8 @@ import "encoding/binary"
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
 
+var DISTINCT_STR = "distinct"
+
 const (
 	NO_OP       = iota
 	OP_AVG      = iota
@@ -56,6 +58,8 @@ func (a SortResultsByCol) Less(i, j int) bool {
 func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	var ok bool
 	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
+	var distinctbuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Distincts))
+	var slowdistinctbuffer bytes.Buffer
 
 	bs := make([]byte, GROUP_BY_WIDTH)
 	zero := make([]byte, GROUP_BY_WIDTH)
@@ -66,6 +70,18 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	matched_records := 0
 	if HOLD_MATCHES {
 		querySpec.Matched = make(RecordList, 0)
+	}
+
+	op_distinct := false
+	only_distinct_ints := true
+
+	if len(querySpec.Distincts) > 0 {
+		op_distinct = true
+		for _, g := range querySpec.Distincts {
+			if INT_VAL != querySpec.Table.KeyTypes[g.name_id] {
+				only_distinct_ints = false
+			}
+		}
 	}
 
 	var result_map ResultMap
@@ -141,7 +157,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			big_record, b_ok := querySpec.Results[string(binarybuffer)]
 			if !b_ok {
 				if len(querySpec.Results) < INTERNAL_RESULT_LIMIT {
-					big_record = NewResult()
+					big_record = querySpec.NewResult()
 					big_record.BinaryByKey = string(binarybuffer)
 					querySpec.Results[string(binarybuffer)] = big_record
 					b_ok = true
@@ -173,7 +189,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				continue
 			}
 
-			added_record = NewResult()
+			added_record = querySpec.NewResult()
 			added_record.BinaryByKey = string(binarybuffer)
 
 			result_map[string(binarybuffer)] = added_record
@@ -181,6 +197,45 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		added_record.Samples++
 		added_record.Count += weight
+
+		// IF WE ARE DOING A COUNT DISTINCT, LETS TRY TO GO THE FAST ROUTE
+		if op_distinct {
+
+			if only_distinct_ints {
+				for i, g := range querySpec.Distincts {
+					copy(bs, zero)
+					switch r.Populated[g.name_id] {
+					case INT_VAL:
+						binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.name_id]))
+					case _NO_VAL:
+						binary.LittleEndian.PutUint64(bs, math.MaxUint64)
+					}
+
+					copy(distinctbuffer[i*GROUP_BY_WIDTH:], bs)
+				}
+
+				added_record.Distinct.Add(distinctbuffer)
+
+			} else {
+				// slow path for count distinct on strings
+				for _, g := range querySpec.Distincts {
+					switch r.Populated[g.name_id] {
+					case INT_VAL:
+						slowdistinctbuffer.WriteString(strconv.FormatInt(int64(r.Ints[g.name_id]), 10))
+					case STR_VAL:
+						col := r.block.GetColumnInfo(g.name_id)
+						slowdistinctbuffer.WriteString(col.get_string_for_val(int32(r.Strs[g.name_id])))
+
+					}
+					slowdistinctbuffer.WriteString(GROUP_DELIMITER)
+				}
+
+				added_record.Distinct.Add(slowdistinctbuffer.Bytes())
+				slowdistinctbuffer.Reset()
+
+			}
+
+		}
 
 		// GO THROUGH AGGREGATIONS AND REALIZE THEM
 		for _, a := range querySpec.Aggregations {
@@ -269,6 +324,7 @@ func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
 	blockQuery.Filters = querySpec.Filters
 	blockQuery.Aggregations = querySpec.Aggregations
 	blockQuery.Groups = querySpec.Groups
+	blockQuery.Distincts = querySpec.Distincts
 
 	return &blockQuery
 }
@@ -287,6 +343,7 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 }
 
 func CombineAndPrune(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
+
 	for _, spec := range block_specs {
 		spec.OrderBy = OPTS.SORT_COUNT
 		SortResults(spec)
@@ -301,7 +358,6 @@ func CombineAndPrune(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Q
 	return resultSpec
 }
 
-// TODO: this is an approximate combination technique
 func MultiCombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
 	num_specs := len(block_specs)
 	num_procs := runtime.NumCPU()
@@ -364,7 +420,7 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	master_result := make(ResultMap)
 	master_time_result := make(map[int]ResultMap)
 
-	cumulative_result := NewResult()
+	cumulative_result := querySpec.NewResult()
 	cumulative_result.GroupByKey = "TOTAL"
 	if len(querySpec.Groups) > 1 {
 		for _, _ = range querySpec.Groups[1:] {
@@ -374,7 +430,6 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 
 	for _, spec := range block_specs {
 		master_result.Combine(&spec.Results)
-
 		for _, result := range spec.Results {
 			cumulative_result.Combine(result)
 		}

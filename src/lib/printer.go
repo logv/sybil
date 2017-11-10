@@ -36,7 +36,7 @@ func printTimeResults(querySpec *QuerySpec) {
 
 	sort.Ints(keys)
 
-	Debug("RESULT COUNT", len(querySpec.TimeResults))
+	Debug("RESULT COUNT", len(keys))
 	if *FLAGS.JSON {
 
 		marshalled_results := make(map[string][]ResultJSON)
@@ -44,19 +44,12 @@ func printTimeResults(querySpec *QuerySpec) {
 			key := strconv.FormatInt(int64(k), 10)
 			marshalled_results[key] = make([]ResultJSON, 0)
 
-			if *FLAGS.OP == "distinct" {
-				marshalled_results[key] = append(marshalled_results[key],
-					ResultJSON{"Distinct": len(v), "Count": len(v)})
-			} else {
-				for _, r := range v {
-					_, ok := is_top_result[r.GroupByKey]
-					if ok {
-						marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
-					}
+			for _, r := range v {
+				_, ok := is_top_result[r.GroupByKey]
+				if ok {
+					marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
 				}
-
 			}
-
 		}
 
 		printJson(marshalled_results)
@@ -72,23 +65,22 @@ func printTimeResults(querySpec *QuerySpec) {
 	w.Init(os.Stdout, 0, 1, 0, ' ', tabwriter.AlignRight)
 
 	for _, time_bucket := range keys {
-		results := querySpec.TimeResults[time_bucket]
+
 		time_str := time.Unix(int64(time_bucket), 0).Format(OPTS.TIME_FORMAT)
+		results := querySpec.TimeResults[time_bucket]
+		for _, r := range results {
+			if len(querySpec.Distincts) > 0 {
+				fmt.Fprintln(w, time_str, "\t", r.Distinct.Cardinality(), "\t", r.GroupByKey, "\t")
 
-		if *FLAGS.OP == "distinct" {
-			fmt.Fprintln(w, time_str, "\t", len(results), "\t")
-		} else {
-			for _, r := range results {
-				if len(r.Hists) == 0 {
-					fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t")
-				} else {
-					for agg, hist := range r.Hists {
-						avg_str := fmt.Sprintf("%.2f", hist.Mean())
-						fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t", agg, "\t", avg_str, "\t")
-					}
+			} else if len(r.Hists) == 0 {
+				fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t")
+			} else {
+				for agg, hist := range r.Hists {
+					avg_str := fmt.Sprintf("%.2f", hist.Mean())
+					fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t", agg, "\t", avg_str, "\t")
 				}
-
 			}
+
 		}
 	}
 
@@ -138,8 +130,13 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 		res[g.Name] = group_key[i]
 	}
 
-	res["Count"] = r.Count
-	res["Samples"] = r.Samples
+	if len(querySpec.Distincts) > 0 {
+		res["Distinct"] = r.Distinct.Cardinality()
+		res["Count"] = r.Distinct.Cardinality()
+	} else {
+		res["Count"] = r.Count
+		res["Samples"] = r.Samples
+	}
 
 	return res
 
@@ -154,34 +151,24 @@ func printSortedResults(querySpec *QuerySpec) {
 	if *FLAGS.JSON {
 		var results = make([]ResultJSON, 0)
 
-		if *FLAGS.OP == "distinct" {
-			results = append(results, ResultJSON{"Distinct": len(querySpec.Results)})
-
-		} else {
-
-			for _, r := range sorted {
-				var res = r.toResultJSON(querySpec)
-				results = append(results, res)
-			}
+		for _, r := range sorted {
+			var res = r.toResultJSON(querySpec)
+			results = append(results, res)
 		}
 
 		printJson(results)
 		return
 	}
 
-	if *FLAGS.OP == "distinct" {
-		fmt.Println("DISTINCT RESULTS", len(querySpec.Results))
-	} else {
-		percent_scanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
-		Debug("SCANNED", fmt.Sprintf("%.02f%%", percent_scanned), "(", querySpec.Cumulative.Count,
-			") OF ROWS OUT OF", querySpec.MatchedCount)
-		if len(sorted) > 1 {
-			printResult(querySpec, querySpec.Cumulative)
-		}
+	percent_scanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
+	Debug("SCANNED", fmt.Sprintf("%.02f%%", percent_scanned), "(", querySpec.Cumulative.Count,
+		") OF ROWS OUT OF", querySpec.MatchedCount)
+	if len(sorted) > 1 {
+		printResult(querySpec, querySpec.Cumulative)
+	}
 
-		for _, v := range sorted {
-			printResult(querySpec, v)
-		}
+	for _, v := range sorted {
+		printResult(querySpec, v)
 	}
 }
 
@@ -197,6 +184,11 @@ func printResult(querySpec *QuerySpec, v *Result) {
 		fmt.Print(v.Samples)
 		fmt.Print(")")
 	}
+
+	if len(querySpec.Distincts) > 0 {
+		fmt.Print(" Distinct: ", v.Distinct.Cardinality())
+	}
+
 	fmt.Printf("\n")
 
 	for _, agg := range querySpec.Aggregations {
@@ -220,6 +212,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}
+
 }
 
 type ResultJSON map[string]interface{}
@@ -244,22 +237,18 @@ func PrintResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if FLAGS.OP != nil && *FLAGS.OP == "distinct" {
-		fmt.Println("DISTINCT VALUES:", len(querySpec.Results))
-	} else {
-		count := 0
+	count := 0
 
-		Debug("PRINTING CUMULATIVE RESULT")
-		if len(querySpec.Results) > 1 {
-			printResult(querySpec, querySpec.Cumulative)
-		}
+	Debug("PRINTING CUMULATIVE RESULT")
+	if len(querySpec.Results) > 1 {
+		printResult(querySpec, querySpec.Cumulative)
+	}
 
-		for _, v := range querySpec.Results {
-			printResult(querySpec, v)
-			count++
-			if count >= int(querySpec.Limit) {
-				return
-			}
+	for _, v := range querySpec.Results {
+		printResult(querySpec, v)
+		count++
+		if count >= int(querySpec.Limit) {
+			return
 		}
 	}
 }
