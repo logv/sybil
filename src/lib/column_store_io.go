@@ -506,7 +506,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	col_id := tb.table.get_key_id(into.Name)
 
 	if int(col_id) >= key_table_len {
-		Debug("IGNORING COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
+		Debug("IGNORING STR COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
@@ -611,8 +611,14 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 		Debug("DECODE COL ERR:", err)
 	}
 
+	key_table_len := len(tb.table.KeyTable)
 	col_id := tb.table.get_key_id(into.Name)
 	string_lookup := make(map[int32]string)
+
+	if int(col_id) >= key_table_len {
+		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
+		return
+	}
 
 	col := tb.GetColumnInfo(col_id)
 	// unpack the string table
@@ -667,7 +673,12 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 		Debug("DECODE COL ERR:", err)
 	}
 
+	key_table_len := len(tb.table.KeyTable)
 	col_id := tb.table.get_key_id(into.Name)
+	if int(col_id) >= key_table_len {
+		Debug("IGNORING INT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
+		return
+	}
 
 	is_time_col := false
 	if FLAGS.TIME_COL != nil {
