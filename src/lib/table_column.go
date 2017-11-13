@@ -10,13 +10,13 @@ type TableColumn struct {
 	block *TableBlock
 
 	string_id_m          *sync.Mutex
-	val_string_id_lookup map[int32]string
+	val_string_id_lookup []string
 }
 
 func (tb *TableBlock) newTableColumn() *TableColumn {
 	tc := TableColumn{}
 	tc.StringTable = make(map[string]int32)
-	tc.val_string_id_lookup = make(map[int32]string)
+	tc.val_string_id_lookup = make([]string, CHUNK_SIZE+1)
 	tc.string_id_m = &sync.Mutex{}
 	tc.block = tb
 	tc.RCache = make(map[int]bool)
@@ -34,13 +34,21 @@ func (tc *TableColumn) get_val_id(name string) int32 {
 
 	tc.string_id_m.Lock()
 	tc.StringTable[name] = int32(len(tc.StringTable))
+
+	// resize our string lookup if we need to
+	if len(tc.StringTable) > len(tc.val_string_id_lookup) {
+		new_lookup := make([]string, len(tc.StringTable)<<1)
+		copy(new_lookup, tc.val_string_id_lookup)
+		tc.val_string_id_lookup = new_lookup
+	}
+
 	tc.val_string_id_lookup[tc.StringTable[name]] = name
 	tc.string_id_m.Unlock()
 	return tc.StringTable[name]
 }
 
 func (tc *TableColumn) get_string_for_val(id int32) string {
-	val, _ := tc.val_string_id_lookup[id]
+	val := tc.val_string_id_lookup[id]
 	return val
 }
 

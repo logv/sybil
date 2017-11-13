@@ -501,7 +501,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 		return
 	}
 
-	string_lookup := make(map[int32]string)
+	string_lookup := make([]string, info.NumRecords)
 	key_table_len := len(tb.table.KeyTable)
 	col_id := tb.table.get_key_id(into.Name)
 
@@ -613,7 +613,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 	key_table_len := len(tb.table.KeyTable)
 	col_id := tb.table.get_key_id(into.Name)
-	string_lookup := make(map[int32]string)
+	string_lookup := make([]string, info.NumRecords)
 
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
