@@ -56,6 +56,8 @@ func (a SortResultsByCol) Less(i, j int) bool {
 }
 
 func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
+
+	// {{{ variable decls and func setup
 	var ok bool
 	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
 	var distinctbuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Distincts))
@@ -71,27 +73,28 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	if HOLD_MATCHES {
 		querySpec.Matched = make(RecordList, 0)
 	}
-
-	op_distinct := false
-	only_distinct_ints := true
-
-	if len(querySpec.Distincts) > 0 {
-		op_distinct = true
-		for _, g := range querySpec.Distincts {
-			if INT_VAL != querySpec.Table.KeyTypes[g.name_id] {
-				only_distinct_ints = false
-			}
-		}
-	}
-
-	var result_map ResultMap
 	length := len(querySpec.Table.KeyTable)
 	columns := make([]*TableColumn, length)
+	result_map := querySpec.Results
 
-	if querySpec.TimeBucket <= 0 {
-		result_map = querySpec.Results
-	}
+	// {{{ check if we need to do a count distinct
+	do_count_distinct := false
+	only_ints_in_distinct := true
 
+	// check whether we can go down the fast path (integer only)
+	// or we have to use a slow path when doing count distinct
+	if len(querySpec.Distincts) > 0 {
+		do_count_distinct = true
+		for _, g := range querySpec.Distincts {
+			if INT_VAL != querySpec.Table.KeyTypes[g.name_id] {
+				only_ints_in_distinct = false
+			}
+		}
+	} // }}} count distinct check
+
+	// }}} func setup
+
+	// {{{ the main loop over all records
 	for i := 0; i < len(records); i++ {
 		add := true
 		r := records[i]
@@ -100,7 +103,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
 		}
 
-		// FILTERING
+		// {{{ FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
 			// returns True if the record matches!
 			ret := querySpec.Filters[j].Filter(r) != true
@@ -113,16 +116,14 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		if !add {
 			continue
 		}
-
 		matched_records++
 		if HOLD_MATCHES {
 			querySpec.Matched = append(querySpec.Matched, r)
 		}
 
-		if *FLAGS.LUA {
-			continue
-		}
+		// }}} FILTERING
 
+		// {{{ GROUP BY into a byte buffer using integer values
 		for i, g := range querySpec.Groups {
 			copy(bs, zero)
 
@@ -141,9 +142,9 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			}
 
 			copy(binarybuffer[i*GROUP_BY_WIDTH:], bs)
-		}
+		} // }}}
 
-		// IF WE ARE DOING A TIME SERIES AGGREGATION (WHICH CAN BE SLOWER)
+		// {{{ time series aggregation
 		if querySpec.TimeBucket > 0 {
 			if len(r.Populated) <= int(OPTS.TIME_COL_ID) {
 				continue
@@ -169,6 +170,9 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				big_record.Count += weight
 			}
 
+			// to do a time series aggregation, we treat each time bucket
+			// as its own ResultMap and promote the current time bucket to
+			// our result map for this record's aggregation
 			val = int64(int(val) / querySpec.TimeBucket * querySpec.TimeBucket)
 			result_map, ok = querySpec.TimeResults[int(val)]
 
@@ -178,11 +182,13 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				querySpec.TimeResults[int(val)] = result_map
 			}
 
-		}
+		} // }}} time series
 
+		// {{{ group by lookup in our result map
 		added_record, ok := result_map[string(binarybuffer)]
 
-		// BUILD GROUPING RECORD
+		// this finds or creates a Result for the groupbykey
+		// we created earlier
 		if !ok {
 			// TODO: take into account whether we are doint time series or not...
 			if len(result_map) >= INTERNAL_RESULT_LIMIT {
@@ -193,15 +199,16 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			added_record.BinaryByKey = string(binarybuffer)
 
 			result_map[string(binarybuffer)] = added_record
-		}
+		} // }}}
 
 		added_record.Samples++
 		added_record.Count += weight
 
-		// IF WE ARE DOING A COUNT DISTINCT, LETS TRY TO GO THE FAST ROUTE
-		if op_distinct {
+		// {{{ count distinct aggregation
+		if do_count_distinct {
 
-			if only_distinct_ints {
+			if only_ints_in_distinct {
+				// if we are doing a count distinct, lets try to go the fast route
 				for i, g := range querySpec.Distincts {
 					copy(bs, zero)
 					switch r.Populated[g.name_id] {
@@ -235,9 +242,9 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 			}
 
-		}
+		} // }}}
 
-		// GO THROUGH AGGREGATIONS AND REALIZE THEM
+		// {{{ aggregations
 		for _, a := range querySpec.Aggregations {
 			switch r.Populated[a.name_id] {
 			case INT_VAL:
@@ -253,12 +260,13 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist.RecordValues(val, weight)
 			}
 
-		}
+		} // }}}
 
-	}
+	} // }}} main record loop
 
-	// Now to unpack the byte buffers we oh so stupidly used in the group by...
-
+	// {{{ translate group by
+	// turn the group by byte buffers into their
+	// actual string equivalents.
 	if len(querySpec.TimeResults) > 0 {
 		for k, result_map := range querySpec.TimeResults {
 			querySpec.TimeResults[k] = *translate_group_by(result_map, querySpec.Groups, columns)
@@ -269,6 +277,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	if len(querySpec.Results) > 0 {
 		querySpec.Results = *translate_group_by(querySpec.Results, querySpec.Groups, columns)
 	}
+	// }}}
 
 	return matched_records
 
@@ -579,3 +588,5 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 	Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 
 }
+
+// vim: foldmethod=marker
