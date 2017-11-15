@@ -72,6 +72,6 @@ func (vt *VTable) AggregateDirs(dirs []string) {
 	combined_result := CombineResults(&final_result, all_specs)
 	combined_result.QueryParams = qs.QueryParams
 
-	SortResults(combined_result)
-	PrintResults(combined_result)
+	combined_result.SortResults()
+	combined_result.PrintResults()
 }

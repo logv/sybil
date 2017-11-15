@@ -356,14 +356,14 @@ func CombineAndPrune(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Q
 
 	for _, spec := range block_specs {
 		spec.OrderBy = OPTS.SORT_COUNT
-		SortResults(spec)
-		PruneResults(spec)
+		spec.SortResults()
+		spec.PruneResults(*FLAGS.LIMIT)
 	}
 
 	resultSpec := CombineResults(querySpec, block_specs)
 	resultSpec.OrderBy = OPTS.SORT_COUNT
-	SortResults(resultSpec)
-	PruneResults(resultSpec)
+	resultSpec.SortResults()
+	resultSpec.PruneResults(*FLAGS.LIMIT)
 
 	return resultSpec
 }
@@ -477,10 +477,19 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 	return &resultSpec
 }
 
-func PruneResults(querySpec *QuerySpec) {
-	querySpec.Results = make(ResultMap)
-	for _, res := range querySpec.Sorted {
-		querySpec.Results[res.GroupByKey] = res
+func (qs *QuerySpec) PruneResults(limit int) {
+	limit *= 10
+	if limit > 1000 {
+		limit = 1000
+	}
+
+	if len(qs.Sorted) > limit {
+		qs.Sorted = qs.Sorted[:limit]
+	}
+
+	qs.Results = make(ResultMap)
+	for _, res := range qs.Sorted {
+		qs.Results[res.GroupByKey] = res
 	}
 
 	for time_bucket, results := range qs.TimeResults {
@@ -496,18 +505,18 @@ func PruneResults(querySpec *QuerySpec) {
 	}
 }
 
-func SortResults(querySpec *QuerySpec) {
+func (qs *QuerySpec) SortResults() {
 	// SORT THE RESULTS
-	if querySpec.OrderBy != "" {
+	if qs.OrderBy != "" {
 		start := time.Now()
 		sorter := SortResultsByCol{}
 		sorter.Results = make([]*Result, 0)
-		for _, v := range querySpec.Results {
+		for _, v := range qs.Results {
 			sorter.Results = append(sorter.Results, v)
 		}
-		querySpec.Sorted = sorter.Results
+		qs.Sorted = sorter.Results
 
-		sorter.Col = querySpec.OrderBy
+		sorter.Col = qs.OrderBy
 		sort.Sort(sorter)
 
 		end := time.Now()
@@ -515,16 +524,7 @@ func SortResults(querySpec *QuerySpec) {
 			Debug("SORTING TOOK", end.Sub(start))
 		}
 
-		limit := *FLAGS.LIMIT * 10
-		if limit < 5000 {
-			limit = 5000
-		}
-
-		if len(sorter.Results) > limit {
-			sorter.Results = sorter.Results[:limit]
-		}
-
-		querySpec.Sorted = sorter.Results
+		qs.Sorted = sorter.Results
 	}
 
 }
@@ -586,7 +586,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	end := time.Now()
 
-	SortResults(querySpec)
+	querySpec.SortResults()
 
 	Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 

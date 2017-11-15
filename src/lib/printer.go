@@ -226,7 +226,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 type ResultJSON map[string]interface{}
 
-func PrintResults(querySpec *QuerySpec) {
+func printResults(querySpec *QuerySpec) {
 	if querySpec.TimeBucket > 0 {
 		printTimeResults(querySpec)
 
@@ -281,10 +281,9 @@ func (qs *QuerySpec) PrintResults() {
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
 		} else if qs.OrderBy != "" {
-			Debug("PRINTING SORTED RESULTS", qs)
 			printSortedResults(qs)
 		} else {
-			PrintResults(qs)
+			printResults(qs)
 		}
 	}
 }
