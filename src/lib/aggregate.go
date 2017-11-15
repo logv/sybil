@@ -327,14 +327,9 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 }
 
 func CopyQuerySpec(querySpec *QuerySpec) *QuerySpec {
-	blockQuery := QuerySpec{}
+	blockQuery := QuerySpec{QueryParams: querySpec.QueryParams}
 	blockQuery.Table = querySpec.Table
 	blockQuery.Punctuate()
-	blockQuery.TimeBucket = querySpec.TimeBucket
-	blockQuery.Filters = querySpec.Filters
-	blockQuery.Aggregations = querySpec.Aggregations
-	blockQuery.Groups = querySpec.Groups
-	blockQuery.Distincts = querySpec.Distincts
 
 	return &blockQuery
 }

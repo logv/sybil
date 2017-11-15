@@ -21,6 +21,7 @@ type savedQueryParams struct {
 	Groups       []Grouping
 	Aggregations []Aggregation
 	Distincts    []Grouping // list of columns we are creating a count distinct query on
+	StrReplace   map[string]StrReplace
 
 	OrderBy    string
 	Limit      int16

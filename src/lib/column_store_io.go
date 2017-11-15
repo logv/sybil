@@ -518,13 +518,13 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	bucket_replace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
-		re, err = regexp.Compile(str_replace.pattern)
+		re, err = regexp.Compile(str_replace.Pattern)
 	}
 
 	for k, v := range into.StringTable {
 		var nv = v
 		if re != nil {
-			nv = re.ReplaceAllString(v, str_replace.replace)
+			nv = re.ReplaceAllString(v, str_replace.Replace)
 		}
 
 		existing_key, exists := col.StringTable[nv]

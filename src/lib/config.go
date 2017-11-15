@@ -89,8 +89,8 @@ type FlagDefs struct {
 }
 
 type StrReplace struct {
-	pattern string
-	replace string
+	Pattern string
+	Replace string
 }
 
 type OptionDefs struct {

@@ -40,6 +40,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				OPTS.STR_REPLACEMENTS[col] = StrReplace{pattern, replacement}
 			}
 		}
+
+		if querySpec != nil {
+			querySpec.StrReplace = OPTS.STR_REPLACEMENTS
+		}
 	}
 
 	var wg sync.WaitGroup
