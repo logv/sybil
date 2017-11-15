@@ -19,7 +19,7 @@ type MultiHist struct {
 
 var HIST_FACTOR_POW = uint(1)
 
-func (t *Table) NewMultiHist(info *IntInfo) *MultiHistCompat {
+func newMultiHist(t *Table, info *IntInfo) *MultiHistCompat {
 
 	h := &MultiHist{}
 	h.table = t
@@ -242,7 +242,7 @@ func (h *MultiHist) TrackPercentiles() {
 		info.Max = right_edge
 
 		right_edge = info.Min
-		h.Subhists[i] = h.table.NewBasicHist(&info)
+		h.Subhists[i] = newBasicHist(h.table, &info)
 		h.Subhists[i].TrackPercentiles()
 	}
 
@@ -251,7 +251,7 @@ func (h *MultiHist) TrackPercentiles() {
 	info.Min = h.Min
 	info.Max = right_edge
 
-	h.Subhists[num_hists] = h.table.NewBasicHist(&info)
+	h.Subhists[num_hists] = newBasicHist(h.table, &info)
 	h.Subhists[num_hists].TrackPercentiles()
 
 }

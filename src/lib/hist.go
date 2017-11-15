@@ -27,9 +27,9 @@ func (t *Table) NewHist(info *IntInfo) Histogram {
 	if *FLAGS.HDR_HIST && ENABLE_HDR {
 		hist = newHDRHist(t, info)
 	} else if *FLAGS.LOG_HIST {
-		hist = t.NewMultiHist(info)
+		hist = newMultiHist(t, info)
 	} else {
-		hist = t.NewBasicHist(info)
+		hist = newBasicHist(t, info)
 	}
 
 	return hist
