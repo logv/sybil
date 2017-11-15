@@ -5,6 +5,7 @@ import "os"
 import "path"
 
 var ROW_STORE_BLOCK = "ROW_STORE"
+var NULL_BLOCK = "NULL_BLOCK"
 
 type Table struct {
 	Name      string

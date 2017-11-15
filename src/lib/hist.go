@@ -16,6 +16,8 @@ type Histogram interface {
 	RecordValues(int64, int64) error
 	GetPercentiles() []int64
 	GetBuckets() map[string]int64
+	GetIntBuckets() map[int64]int64
+	Range() (int64, int64)
 	StdDev() float64
 	NewHist() Histogram
 

@@ -157,6 +157,10 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 }
 
 func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
+	info := SavedColumnInfo{}
+	if dirname == NULL_BLOCK {
+		return &info
+	}
 
 	t.block_m.Lock()
 	cached_info, ok := t.BlockInfoCache[dirname]
@@ -166,7 +170,6 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 	}
 
 	// find out how many records are kept in this dir...
-	info := SavedColumnInfo{}
 	istart := time.Now()
 	filename := fmt.Sprintf("%s/info.db", dirname)
 

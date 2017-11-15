@@ -440,6 +440,8 @@ func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *Qu
 
 	for _, spec := range block_specs {
 		master_result.Combine(&spec.Results)
+		resultSpec.MatchedCount += spec.MatchedCount
+
 		for _, result := range spec.Results {
 			cumulative_result.Combine(result)
 		}

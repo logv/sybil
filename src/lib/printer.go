@@ -1,5 +1,7 @@
 package sybil
 
+import "bytes"
+import "encoding/gob"
 import "sort"
 import "strings"
 import "encoding/json"
@@ -160,9 +162,12 @@ func printSortedResults(querySpec *QuerySpec) {
 		return
 	}
 
-	percent_scanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
-	Debug("SCANNED", fmt.Sprintf("%.02f%%", percent_scanned), "(", querySpec.Cumulative.Count,
-		") OF ROWS OUT OF", querySpec.MatchedCount)
+	if querySpec.Cumulative != nil {
+		percent_scanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
+		Debug("SCANNED", fmt.Sprintf("%.02f%%", percent_scanned), "(", querySpec.Cumulative.Count,
+			") OF ROWS OUT OF", querySpec.MatchedCount)
+	}
+
 	if len(sorted) > 1 {
 		printResult(querySpec, querySpec.Cumulative)
 	}
@@ -173,6 +178,10 @@ func printSortedResults(querySpec *QuerySpec) {
 }
 
 func printResult(querySpec *QuerySpec, v *Result) {
+	if v == nil {
+		return
+	}
+
 	group_key := strings.Replace(v.GroupByKey, GROUP_DELIMITER, ",", -1)
 	group_key = strings.TrimRight(group_key, ",")
 
@@ -193,7 +202,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 	for _, agg := range querySpec.Aggregations {
 		col_name := fmt.Sprintf("  %5s", agg.Name)
-		if *FLAGS.OP == "hist" {
+		if agg.Op == "hist" {
 			h, ok := v.Hists[agg.Name]
 			if !ok {
 				Debug("NO HIST AROUND FOR KEY", agg.Name, v.GroupByKey)
@@ -208,7 +217,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			} else {
 				fmt.Println(col_name, "No Data")
 			}
-		} else if *FLAGS.OP == "avg" {
+		} else if agg.Op == "avg" {
 			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}
@@ -253,11 +262,26 @@ func PrintResults(querySpec *QuerySpec) {
 	}
 }
 
+func encodeResults(qs *QuerySpec) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	enc.Encode(qs)
+
+	Print(string(buf.Bytes()))
+
+}
+
 func (qs *QuerySpec) PrintResults() {
+	if *FLAGS.ENCODE == true {
+		encodeResults(qs)
+		return
+	}
+
 	if *FLAGS.PRINT {
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
 		} else if qs.OrderBy != "" {
+			Debug("PRINTING SORTED RESULTS", qs)
 			printSortedResults(qs)
 		} else {
 			PrintResults(qs)

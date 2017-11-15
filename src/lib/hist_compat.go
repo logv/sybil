@@ -46,6 +46,14 @@ func (h *HistCompat) Distribution() map[string]int64 {
 	return h.GetBuckets()
 }
 
+func (h *HistCompat) GetIntBuckets() map[int64]int64 {
+	return h.GetSparseBuckets()
+}
+
+func (h *HistCompat) Range() (int64, int64) {
+	return h.Info.Min, h.Info.Max
+}
+
 // }}}
 
 // {{{ HIST COMPAT WRAPPER FOR MULTI HIST
@@ -94,6 +102,14 @@ func (h *MultiHistCompat) RecordValues(value int64, n int64) error {
 
 func (h *MultiHistCompat) Distribution() map[string]int64 {
 	return h.GetBuckets()
+}
+
+func (h *MultiHistCompat) GetIntBuckets() map[int64]int64 {
+	return h.GetSparseBuckets()
+}
+
+func (h *MultiHistCompat) Range() (int64, int64) {
+	return h.Info.Min, h.Info.Max
 }
 
 // }}}

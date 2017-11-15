@@ -73,6 +73,10 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 
 	info := t.LoadBlockInfo(blockname)
 
+	if info == nil {
+		return filters
+	}
+
 	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
 

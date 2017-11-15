@@ -27,6 +27,20 @@ type savedQueryParams struct {
 	TimeBucket int
 }
 
+func Min(x, y int64) int64 {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func Max(x, y int64) int64 {
+	if x > y {
+		return x
+	}
+	return y
+}
+
 // For outside consumption
 type QueryParams savedQueryParams
 type QueryResults savedQueryResults
@@ -89,6 +103,25 @@ func (master_result *ResultMap) Combine(results *ResultMap) {
 	}
 }
 
+func fullMergeHist(h, ph Histogram) Histogram {
+	l1, r1 := h.Range()
+	l2, r2 := ph.Range()
+
+	info := IntInfo{Min: Min(l1, l2), Max: Max(r1, r2)}
+
+	nh := OPTS.MERGE_TABLE.NewHist(&info)
+
+	for bucket, count := range h.GetIntBuckets() {
+		nh.RecordValues(bucket, count)
+	}
+
+	for bucket, count := range ph.GetIntBuckets() {
+		nh.RecordValues(bucket, count)
+	}
+
+	return nh
+}
+
 // This does an in place combine of the next_result into this one...
 func (rs *Result) Combine(next_result *Result) {
 	if next_result == nil {
@@ -104,14 +137,31 @@ func (rs *Result) Combine(next_result *Result) {
 
 	// combine histograms...
 	for k, h := range next_result.Hists {
-		_, ok := rs.Hists[k]
-		if !ok {
-			nh := h.NewHist()
 
-			nh.Combine(h)
-			rs.Hists[k] = nh
+		// If we are doing a node aggregation, we have a MERGE_TABLE
+		// set, which means we should go the slow route when merging
+		// histograms because we can't be sure they were created with
+		// the same extents (being that they may originate from different
+		// nodes)
+		if OPTS.MERGE_TABLE != nil {
+			ph, ok := rs.Hists[k]
+
+			if ok {
+				rs.Hists[k] = fullMergeHist(h, ph)
+			} else {
+				rs.Hists[k] = h
+			}
+
 		} else {
-			rs.Hists[k].Combine(h)
+			_, ok := rs.Hists[k]
+			if !ok {
+				nh := h.NewHist()
+
+				nh.Combine(h)
+				rs.Hists[k] = nh
+			} else {
+				rs.Hists[k].Combine(h)
+			}
 		}
 	}
 

@@ -13,9 +13,11 @@ var TEST_MODE = false
 var ENABLE_LUA = false
 
 type FlagDefs struct {
-	OP          *string
-	PRINT       *bool
-	EXPORT      *bool
+	OP     *string
+	PRINT  *bool // print results out
+	EXPORT *bool // save records that match filter to tsv files
+	ENCODE *bool // print the querySpec results to stdout as binary
+
 	INT_FILTERS *string
 	STR_FILTERS *string
 	STR_REPLACE *string // regex replacement for strings
@@ -105,6 +107,7 @@ type OptionDefs struct {
 	TIME_FORMAT             string
 	GROUP_BY                []string
 	DISTINCT                []string
+	MERGE_TABLE             *Table
 }
 
 // TODO: merge these two into one thing
@@ -127,6 +130,7 @@ func setDefaults() {
 	FLAGS.GC = &TRUE
 	FLAGS.JSON = &FALSE
 	FLAGS.PRINT = &TRUE
+	FLAGS.ENCODE = &FALSE
 	FLAGS.EXPORT = &FALSE
 
 	FLAGS.SKIP_COMPACT = &FALSE

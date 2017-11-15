@@ -22,7 +22,7 @@ type HDRHist struct {
 }
 
 func (th *HDRHist) NewHist() Histogram {
-	return th.table.NewHDRHist(th.info)
+	return NewHDRHist(th.table, th.info)
 }
 
 func NewHDRHist(t *Table, info *IntInfo) *HDRHist {
@@ -57,6 +57,21 @@ func (th *HDRHist) GetBuckets() map[string]int64 {
 	ret := make(map[string]int64)
 	for _, v := range th.Distribution() {
 		key := strconv.FormatInt(int64(v.From+v.To)/2, 10)
+		ret[key] = v.Count
+	}
+
+	return ret
+
+}
+
+func (th *HDRHist) Range() (int64, int64) {
+	return th.info.Min, th.info.Max
+
+}
+func (th *HDRHist) GetIntBuckets() map[int64]int64 {
+	ret := make(map[int64]int64)
+	for _, v := range th.Distribution() {
+		key := int64(v.From+v.To) / 2
 		ret[key] = v.Count
 	}
 

@@ -57,7 +57,7 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 		}
 	}
 
-	if OPTS.WEIGHT_COL && weight > 1 {
+	if OPTS.WEIGHT_COL || weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {

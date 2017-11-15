@@ -32,6 +32,7 @@ func addQueryFlags() {
 	}
 
 	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
+	sybil.FLAGS.ENCODE = flag.Bool("encode", false, "Print the results in binary format")
 	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
