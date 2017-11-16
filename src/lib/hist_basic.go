@@ -90,15 +90,15 @@ func (h *BasicHist) TrackPercentiles() {
 	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
 }
 
-func (h *BasicHist) addValue(value int64) {
-	h.addWeightedValue(value, 1)
+func (h *BasicHist) AddValue(value int64) {
+	h.AddWeightedValue(value, 1)
 }
 
 func (h *BasicHist) Sum() int64 {
 	return int64(h.Avg * float64(h.Count))
 }
 
-func (h *BasicHist) addWeightedValue(value int64, weight int64) {
+func (h *BasicHist) AddWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
 	if value > h.Info.Max*10 || value < h.Info.Min {
@@ -238,7 +238,7 @@ func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 	return ret
 }
 
-func (h *BasicHist) GetBuckets() map[string]int64 {
+func (h *BasicHist) GetStrBuckets() map[string]int64 {
 	ret := make(map[string]int64, 0)
 
 	for k, v := range h.Values {

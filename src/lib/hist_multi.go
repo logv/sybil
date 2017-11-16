@@ -37,15 +37,15 @@ func newMultiHist(t *Table, info *IntInfo) *MultiHistCompat {
 	return &compat
 }
 
-func (h *MultiHist) addValue(value int64) {
-	h.addWeightedValue(value, 1)
+func (h *MultiHist) AddValue(value int64) {
+	h.AddWeightedValue(value, 1)
 }
 
 func (h *MultiHist) Sum() int64 {
 	return int64(h.Avg * float64(h.Count))
 }
 
-func (h *MultiHist) addWeightedValue(value int64, weight int64) {
+func (h *MultiHist) AddWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
 	if h.Info != nil {
@@ -80,7 +80,7 @@ func (h *MultiHist) addWeightedValue(value int64, weight int64) {
 
 	for _, sh := range h.Subhists {
 		if value >= sh.Info.Min && value <= sh.Info.Max {
-			sh.addWeightedValue(value, weight)
+			sh.AddWeightedValue(value, weight)
 			break
 		}
 	}
@@ -159,7 +159,7 @@ func (h *MultiHist) GetStdDev() float64 {
 
 func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
 	non_zero_buckets := make(map[string]int64)
-	buckets := h.GetBuckets()
+	buckets := h.GetStrBuckets()
 	for k, v := range buckets {
 		if v > 0 {
 			non_zero_buckets[k] = v
@@ -170,10 +170,10 @@ func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
 
 }
 
-func (h *MultiHist) GetBuckets() map[string]int64 {
+func (h *MultiHist) GetStrBuckets() map[string]int64 {
 	all_buckets := make(map[string]int64, 0)
 	for _, subhist := range h.Subhists {
-		for key, count := range subhist.GetBuckets() {
+		for key, count := range subhist.GetStrBuckets() {
 			all_buckets[key] = count
 		}
 	}

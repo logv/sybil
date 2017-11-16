@@ -179,7 +179,7 @@ func TestHistograms(test *testing.T) {
 
 		Debug("PERCENTILES", percentiles)
 		Debug("AGES", ages)
-		Debug("BUCKETS", v.Hists["age"].GetBuckets())
+		Debug("BUCKETS", v.Hists["age"].GetStrBuckets())
 	}
 
 	querySpec.OrderBy = "age"

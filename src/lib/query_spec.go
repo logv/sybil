@@ -113,11 +113,11 @@ func fullMergeHist(h, ph Histogram) Histogram {
 	nh := OPTS.MERGE_TABLE.NewHist(&info)
 
 	for bucket, count := range h.GetIntBuckets() {
-		nh.RecordValues(bucket, count)
+		nh.AddWeightedValue(bucket, count)
 	}
 
 	for bucket, count := range ph.GetIntBuckets() {
-		nh.RecordValues(bucket, count)
+		nh.AddWeightedValue(bucket, count)
 	}
 
 	return nh

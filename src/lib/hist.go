@@ -13,22 +13,21 @@ type Histogram interface {
 	Min() int64
 	TotalCount() int64
 
-	RecordValues(int64, int64) error
+	AddWeightedValue(int64, int64)
 	GetPercentiles() []int64
-	GetBuckets() map[string]int64
+	GetStrBuckets() map[string]int64
 	GetIntBuckets() map[int64]int64
+
 	Range() (int64, int64)
 	StdDev() float64
-	NewHist() Histogram
 
+	NewHist() Histogram
 	Combine(interface{})
 }
 
 func (t *Table) NewHist(info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.HDR_HIST && ENABLE_HDR {
-		hist = newHDRHist(t, info)
-	} else if *FLAGS.LOG_HIST {
+	if *FLAGS.LOG_HIST {
 		hist = newMultiHist(t, info)
 	} else {
 		hist = newBasicHist(t, info)

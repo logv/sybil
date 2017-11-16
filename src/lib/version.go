@@ -10,11 +10,6 @@ func GetVersionInfo() map[string]interface{} {
 	version_info["log_hist"] = true
 	version_info["query_cache"] = true
 
-	if ENABLE_HDR {
-		version_info["hdr_hist"] = true
-
-	}
-
 	return version_info
 
 }

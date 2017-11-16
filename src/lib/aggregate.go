@@ -258,7 +258,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 					added_record.Hists[a.Name] = hist
 				}
 
-				hist.RecordValues(val, weight)
+				hist.AddWeightedValue(val, weight)
 			}
 
 		} // }}}

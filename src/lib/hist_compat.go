@@ -35,17 +35,6 @@ func (h *HistCompat) StdDev() float64 {
 	return h.GetStdDev()
 }
 
-// compat layer with hdr hist
-func (h *HistCompat) RecordValues(value int64, n int64) error {
-	h.addWeightedValue(value, n)
-
-	return nil
-}
-
-func (h *HistCompat) Distribution() map[string]int64 {
-	return h.GetBuckets()
-}
-
 func (h *HistCompat) GetIntBuckets() map[int64]int64 {
 	return h.GetSparseBuckets()
 }
@@ -91,17 +80,6 @@ func (h *MultiHistCompat) TotalCount() int64 {
 
 func (h *MultiHistCompat) StdDev() float64 {
 	return h.GetStdDev()
-}
-
-// compat layer with hdr hist
-func (h *MultiHistCompat) RecordValues(value int64, n int64) error {
-	h.addWeightedValue(value, n)
-
-	return nil
-}
-
-func (h *MultiHistCompat) Distribution() map[string]int64 {
-	return h.GetBuckets()
 }
 
 func (h *MultiHistCompat) GetIntBuckets() map[int64]int64 {

@@ -27,9 +27,6 @@ func addQueryFlags() {
 
 	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	sybil.FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
-	if sybil.ENABLE_HDR {
-		sybil.FLAGS.HDR_HIST = flag.Bool("hdr", false, "Use HDR Histograms (can be slow)")
-	}
 
 	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
 	sybil.FLAGS.ENCODE = flag.Bool("encode", false, "Print the results in binary format")
