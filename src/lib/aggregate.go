@@ -300,7 +300,6 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 			bs = []byte(r.BinaryByKey[i*GROUP_BY_WIDTH : (i+1)*GROUP_BY_WIDTH])
 
 			col := columns[g.name_id]
-
 			if col == nil {
 				buffer.WriteString(GROUP_DELIMITER)
 				continue
@@ -311,6 +310,7 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 			case INT_VAL:
 				buffer.WriteString(strconv.FormatInt(int64(val), 10))
 			case STR_VAL:
+
 				buffer.WriteString(col.get_string_for_val(int32(val)))
 
 			}

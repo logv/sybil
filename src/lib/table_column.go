@@ -48,6 +48,11 @@ func (tc *TableColumn) get_val_id(name string) int32 {
 }
 
 func (tc *TableColumn) get_string_for_val(id int32) string {
+	if int(id) >= len(tc.val_string_id_lookup) {
+		Warn("TRYING TO GET STRING ID FOR NON EXISTENT VAL", id)
+		return ""
+	}
+
 	val := tc.val_string_id_lookup[id]
 	return val
 }
