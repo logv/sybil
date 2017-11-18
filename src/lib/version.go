@@ -1,6 +1,6 @@
 package sybil
 
-var VERSION_STRING = "0.3.0"
+var VERSION_STRING = "0.4.0"
 
 func GetVersionInfo() map[string]interface{} {
 	version_info := make(map[string]interface{})
