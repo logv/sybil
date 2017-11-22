@@ -3,7 +3,7 @@ package sybil_cmd
 import sybil "github.com/logv/sybil/src/lib"
 
 import (
-	"bufio"
+	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -77,19 +77,33 @@ var IMPORTED_COUNT = 0
 func import_csv_records() {
 	// For importing CSV records, we need to validate the headers, then we just
 	// read in and fill out record fields!
-	scanner := bufio.NewScanner(os.Stdin)
-	scanner.Scan()
-	header := scanner.Text()
-	header_fields := strings.Split(header, ",")
-	sybil.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
+	scanner := csv.NewReader(os.Stdin)
+	header_fields, err := scanner.Read()
+	if err == nil {
+		sybil.Debug("HEADER FIELDS FOR CSV ARE", header_fields)
+	} else {
+		sybil.Error("ERROR READING CSV HEADER", err)
+	}
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		fields, err := scanner.Read()
+		if err == io.EOF {
+			break
+		}
+
+		if err, ok := err.(*csv.ParseError); ok && err.Err != csv.ErrFieldCount {
+			sybil.Warn("ERROR READING LINE", err, fields)
+			continue
+		}
+
 		r := t.NewRecord()
-		fields := strings.Split(line, ",")
 		for i, v := range fields {
+			if i >= len(header_fields) {
+				continue
+			}
+
 			field_name := header_fields[i]
 
 			if v == "" {
