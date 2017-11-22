@@ -25,6 +25,7 @@ const (
 )
 
 var GROUP_DELIMITER = "\t"
+var MISSING_VALUE = uint64(math.MaxUint64)
 
 type SortResultsByCol struct {
 	Results []*Result
@@ -139,7 +140,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			case STR_VAL:
 				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.name_id]))
 			case _NO_VAL:
-				binary.LittleEndian.PutUint64(bs, math.MaxUint64)
+				binary.LittleEndian.PutUint64(bs, MISSING_VALUE)
 			}
 
 			copy(binarybuffer[i*GROUP_BY_WIDTH:], bs)
@@ -216,7 +217,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 					case INT_VAL:
 						binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.name_id]))
 					case _NO_VAL:
-						binary.LittleEndian.PutUint64(bs, math.MaxUint64)
+						binary.LittleEndian.PutUint64(bs, MISSING_VALUE)
 					}
 
 					copy(distinctbuffer[i*GROUP_BY_WIDTH:], bs)
@@ -306,13 +307,13 @@ func translate_group_by(Results ResultMap, Groups []Grouping, columns []*TableCo
 			}
 
 			val := binary.LittleEndian.Uint64(bs)
-			switch col.Type {
-			case INT_VAL:
-				buffer.WriteString(strconv.FormatInt(int64(val), 10))
-			case STR_VAL:
-
-				buffer.WriteString(col.get_string_for_val(int32(val)))
-
+			if val != MISSING_VALUE {
+				switch col.Type {
+				case INT_VAL:
+					buffer.WriteString(strconv.FormatInt(int64(val), 10))
+				case STR_VAL:
+					buffer.WriteString(col.get_string_for_val(int32(val)))
+				}
 			}
 
 			buffer.WriteString(GROUP_DELIMITER)
