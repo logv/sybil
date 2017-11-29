@@ -26,7 +26,12 @@ func printTimeResults(querySpec *QuerySpec) {
 	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
 	is_top_result := make(map[string]bool)
-	for _, result := range querySpec.Sorted {
+	sorted := querySpec.Sorted
+	if len(sorted) > int(querySpec.Limit) {
+		sorted = sorted[:querySpec.Limit]
+	}
+
+	for _, result := range sorted {
 		is_top_result[result.GroupByKey] = true
 	}
 
