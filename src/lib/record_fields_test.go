@@ -12,7 +12,7 @@ func TestSets(test *testing.T) {
 	block_count := 3
 	min_count := CHUNK_SIZE * block_count
 	records := add_records(func(r *Record, i int) {
-		set_id := []string{strconv.FormatInt(int64(i), 10)}
+		set_id := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
 		r.AddIntField("id_int", int64(i))
 		r.AddSetField("id_set", set_id)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
