@@ -613,7 +613,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 	key_table_len := len(tb.table.KeyTable)
 	col_id := tb.table.get_key_id(into.Name)
-	string_lookup := make([]string, info.NumRecords)
+	string_lookup := make(map[int32]string)
 
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
@@ -626,7 +626,13 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 		col.StringTable[v] = int32(k)
 		string_lookup[int32(k)] = v
 	}
-	col.val_string_id_lookup = string_lookup
+
+	tr_string_lookup := make([]string, len(string_lookup))
+	for k, v := range string_lookup {
+		tr_string_lookup[k] = v
+	}
+
+	col.val_string_id_lookup = tr_string_lookup
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
