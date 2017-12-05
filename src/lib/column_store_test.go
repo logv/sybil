@@ -22,7 +22,7 @@ func TestTableDigestRowRecords(test *testing.T) {
 	unload_test_table()
 	nt := GetTable(TEST_TABLE_NAME)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = &TRUE
+	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -75,7 +75,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 	unload_test_table()
 	nt := GetTable(TEST_TABLE_NAME)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = &TRUE
+	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -150,7 +150,7 @@ func TestBigIntColumns(test *testing.T) {
 	unload_test_table()
 	nt := GetTable(TEST_TABLE_NAME)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = &TRUE
+	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -168,7 +168,7 @@ func TestBigIntColumns(test *testing.T) {
 	unload_test_table()
 
 	READ_ROWS_ONLY = false
-	FLAGS.SAMPLES = &TRUE
+	FLAGS.SAMPLES = NewTrueFlag()
 	limit := 1000
 	FLAGS.LIMIT = &limit
 	nt = GetTable(TEST_TABLE_NAME)
@@ -196,6 +196,6 @@ func TestBigIntColumns(test *testing.T) {
 		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	FLAGS.SAMPLES = &FALSE
+	FLAGS.SAMPLES = NewFalseFlag()
 
 }

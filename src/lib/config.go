@@ -2,21 +2,40 @@ package sybil
 
 import "flag"
 
+import "os"
+import "encoding/gob"
+
 func init() {
 	setDefaults()
 }
 
-var FALSE = false
-var TRUE = true
+const FALSE = false
+const TRUE = true
+
+func NewFalseFlag() *bool {
+	r := false
+	return &r
+
+}
+
+func NewTrueFlag() *bool {
+	r := true
+	return &r
+}
 
 var TEST_MODE = false
 var ENABLE_LUA = false
 
 type FlagDefs struct {
-	OP     *string
-	PRINT  *bool // print results out
-	EXPORT *bool // save records that match filter to tsv files
-	ENCODE *bool // print the querySpec results to stdout as binary
+	OP          *string
+	PRINT       *bool // print results out
+	EXPORT      *bool // save records that match filter to tsv files
+	LIST_TABLES *bool // list the tables in the db dir
+
+	// for usage with distributed queries
+	DECODE_FLAGS   *bool // load query flags from stdin as gob encoded data
+	ENCODE_FLAGS   *bool // print the query flags to stdout as binary
+	ENCODE_RESULTS *bool // print the querySpec results to stdout as binary
 
 	INT_FILTERS *string
 	STR_FILTERS *string
@@ -127,20 +146,24 @@ func setDefaults() {
 	OPTS.TIMESERIES = false
 	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
-	FLAGS.GC = &TRUE
-	FLAGS.JSON = &FALSE
-	FLAGS.PRINT = &TRUE
-	FLAGS.ENCODE = &FALSE
-	FLAGS.EXPORT = &FALSE
+	FLAGS.GC = NewTrueFlag()
+	FLAGS.JSON = NewFalseFlag()
+	FLAGS.PRINT = NewTrueFlag()
+	FLAGS.EXPORT = NewFalseFlag()
+	FLAGS.LIST_TABLES = NewFalseFlag()
 
-	FLAGS.SKIP_COMPACT = &FALSE
+	FLAGS.ENCODE_RESULTS = NewFalseFlag()
+	FLAGS.ENCODE_FLAGS = NewFalseFlag()
+	FLAGS.DECODE_FLAGS = NewFalseFlag()
+
+	FLAGS.SKIP_COMPACT = NewFalseFlag()
 
 	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
-	FLAGS.LOAD_AND_QUERY = &TRUE
-	FLAGS.LOAD_THEN_QUERY = &FALSE
-	FLAGS.READ_INGESTION_LOG = &FALSE
-	FLAGS.READ_ROWSTORE = &FALSE
-	FLAGS.ANOVA_ICC = &FALSE
+	FLAGS.LOAD_AND_QUERY = NewTrueFlag()
+	FLAGS.LOAD_THEN_QUERY = NewFalseFlag()
+	FLAGS.READ_INGESTION_LOG = NewFalseFlag()
+	FLAGS.READ_ROWSTORE = NewFalseFlag()
+	FLAGS.ANOVA_ICC = NewFalseFlag()
 	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
 	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
 
@@ -148,26 +171,42 @@ func setDefaults() {
 	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
 	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
 
-	FLAGS.UPDATE_TABLE_INFO = &FALSE
-	FLAGS.SKIP_OUTLIERS = &TRUE
-	FLAGS.SAMPLES = &FALSE
-	FLAGS.LUA = &FALSE
+	FLAGS.UPDATE_TABLE_INFO = NewFalseFlag()
+	FLAGS.SKIP_OUTLIERS = NewTrueFlag()
+	FLAGS.SAMPLES = NewFalseFlag()
+	FLAGS.LUA = NewFalseFlag()
 	FLAGS.LUAFILE = &EMPTY
 
-	FLAGS.RECYCLE_MEM = &TRUE
-	FLAGS.CACHED_QUERIES = &FALSE
+	FLAGS.RECYCLE_MEM = NewTrueFlag()
+	FLAGS.CACHED_QUERIES = NewFalseFlag()
 
-	FLAGS.HDR_HIST = &FALSE
-	FLAGS.LOG_HIST = &FALSE
+	FLAGS.HDR_HIST = NewFalseFlag()
+	FLAGS.LOG_HIST = NewFalseFlag()
 
 	DEFAULT_LIMIT := 100
 	FLAGS.LIMIT = &DEFAULT_LIMIT
 
-	FLAGS.PROFILE = &FALSE
-	FLAGS.PROFILE_MEM = &FALSE
+	FLAGS.PROFILE = NewFalseFlag()
+	FLAGS.PROFILE_MEM = NewFalseFlag()
 	if PROFILER_ENABLED {
 		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
 		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 	}
 
+}
+
+func EncodeFlags() {
+	old_encode := *FLAGS.ENCODE_FLAGS
+	FLAGS.ENCODE_FLAGS = NewFalseFlag()
+	PrintBytes(FLAGS)
+	FLAGS.ENCODE_FLAGS = &old_encode
+}
+
+func DecodeFlags() {
+	Debug("READING ENCODED FLAGS FROM STDIN")
+	dec := gob.NewDecoder(os.Stdin)
+	err := dec.Decode(&FLAGS)
+	if err != nil {
+		Error("ERROR DECODING FLAGS", err)
+	}
 }

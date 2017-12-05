@@ -78,7 +78,10 @@ func (t *Table) init_data_structures() {
 
 	t.LastBlock = newTableBlock()
 	t.LastBlock.RecordList = t.newRecords
+	t.init_locks()
+}
 
+func (t *Table) init_locks() {
 	t.string_id_m = &sync.RWMutex{}
 	t.record_m = &sync.Mutex{}
 	t.block_m = &sync.Mutex{}

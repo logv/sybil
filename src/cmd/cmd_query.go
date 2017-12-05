@@ -11,7 +11,6 @@ import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
-var LIST_TABLES *bool
 var NO_RECYCLE_MEM *bool
 
 func addQueryFlags() {
@@ -29,7 +28,9 @@ func addQueryFlags() {
 	sybil.FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
 
 	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
-	sybil.FLAGS.ENCODE = flag.Bool("encode", false, "Print the results in binary format")
+	sybil.FLAGS.ENCODE_RESULTS = flag.Bool("encode-results", false, "Print the results in binary format")
+	sybil.FLAGS.ENCODE_FLAGS = flag.Bool("encode-flags", false, "Print the query flags in binary format")
+	sybil.FLAGS.DECODE_FLAGS = flag.Bool("decode-flags", false, "Use the query flags supplied on stdin")
 	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
@@ -52,7 +53,7 @@ func addQueryFlags() {
 	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
-	LIST_TABLES = flag.Bool("tables", false, "List tables")
+	sybil.FLAGS.LIST_TABLES = flag.Bool("tables", false, "List tables")
 
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
@@ -64,7 +65,17 @@ func RunQueryCmdLine() {
 	addQueryFlags()
 	flag.Parse()
 
-	if *LIST_TABLES {
+	if *sybil.FLAGS.DECODE_FLAGS {
+		sybil.DecodeFlags()
+	}
+
+	if *sybil.FLAGS.ENCODE_FLAGS {
+		sybil.Debug("PRINTING ENCODED FLAGS")
+		sybil.EncodeFlags()
+		return
+	}
+
+	if *sybil.FLAGS.LIST_TABLES {
 		sybil.PrintTables()
 		return
 	}
@@ -96,7 +107,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *NO_RECYCLE_MEM == true {
-		sybil.FLAGS.RECYCLE_MEM = &sybil.FALSE
+		sybil.FLAGS.RECYCLE_MEM = sybil.NewFalseFlag()
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
@@ -111,12 +122,8 @@ func RunQueryCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	if *sybil.FLAGS.LOAD_THEN_QUERY {
-		sybil.FLAGS.LOAD_AND_QUERY = &FALSE
-	}
-
 	if *sybil.FLAGS.READ_ROWSTORE {
-		sybil.FLAGS.READ_INGESTION_LOG = &TRUE
+		sybil.FLAGS.READ_INGESTION_LOG = sybil.NewTrueFlag()
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -267,7 +274,7 @@ func RunQueryCmdLine() {
 
 	if *sybil.FLAGS.PRINT_INFO {
 		t := sybil.GetTable(table)
-		sybil.FLAGS.LOAD_AND_QUERY = &FALSE
+		sybil.FLAGS.LOAD_AND_QUERY = sybil.NewFalseFlag()
 
 		t.LoadRecords(nil)
 		t.PrintColInfo()

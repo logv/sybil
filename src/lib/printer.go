@@ -267,17 +267,29 @@ func printResults(querySpec *QuerySpec) {
 	}
 }
 
-func encodeResults(qs *QuerySpec) {
+func PrintBytes(obj interface{}) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	enc.Encode(qs)
+	err := enc.Encode(obj)
+	if err != nil {
+		Warn("COULDNT ENCODE BYTES", err)
+	}
 
 	Print(string(buf.Bytes()))
 
 }
 
+func encodeResults(qs *QuerySpec) {
+	table := qs.Table
+	qs.Table = nil
+	PrintBytes(NodeResults{QuerySpec: *qs})
+	qs.Table = table
+}
+
 func (qs *QuerySpec) PrintResults() {
-	if *FLAGS.ENCODE == true {
+	if *FLAGS.ENCODE_RESULTS == true {
+		Debug("ENCODING RESULTS")
+
 		encodeResults(qs)
 		return
 	}
@@ -382,41 +394,65 @@ func (t *Table) PrintSamples() {
 		}
 	}
 
-	if *FLAGS.JSON {
-		samples := make([]*Sample, 0)
-		for _, r := range records {
-			if r == nil {
-				break
-			}
-
-			s := r.toSample()
-			samples = append(samples, s)
+	samples := make([]*Sample, 0)
+	for _, r := range records {
+		if r == nil {
+			break
 		}
+
+		s := r.toSample()
+		samples = append(samples, s)
+	}
+
+	if *FLAGS.ENCODE_RESULTS {
+		Debug("NUMBER SAMPLES", len(samples))
+		PrintBytes(NodeResults{Samples: samples})
+		return
+	}
+
+	if *FLAGS.JSON {
 
 		printJson(samples)
-	} else {
-		for _, r := range records {
-			if r == nil {
-				break
-			}
-
-			t.PrintRecord(r)
-		}
+		return
 	}
-	return
+
+	for _, r := range records {
+		if r == nil {
+			break
+		}
+
+		t.PrintRecord(r)
+	}
 }
 
-func PrintTables() {
+func ListTables() []string {
 	files, err := ioutil.ReadDir(*FLAGS.DIR)
 	if err != nil {
 		Error("No tables found!")
-		return
+		return []string{}
 	}
 
 	tables := make([]string, 0)
 	for _, db := range files {
 		t := GetTable(db.Name())
 		tables = append(tables, t.Name)
+	}
+
+	return tables
+
+}
+
+func PrintTables() {
+	tables := ListTables()
+
+	printTablesToOutput(tables)
+
+}
+
+func printTablesToOutput(tables []string) {
+	if *FLAGS.ENCODE_RESULTS {
+		PrintBytes(NodeResults{Tables: tables})
+		return
 	}
 
 	if *FLAGS.JSON {
@@ -435,7 +471,6 @@ func PrintTables() {
 	}
 
 	fmt.Println("")
-
 }
 
 func (t *Table) getColsOfType(wanted_type int8) []string {
@@ -483,6 +518,11 @@ func (t *Table) PrintColInfo() {
 
 	}
 
+	if *FLAGS.ENCODE_RESULTS {
+		PrintBytes(NodeResults{Table: *t})
+		return
+	}
+
 	if *FLAGS.JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
@@ -501,19 +541,20 @@ func (t *Table) PrintColInfo() {
 		table_info["storageSize"] = size
 
 		printJson(table_info)
-	} else {
-		fmt.Println("\nString Columns\n")
-		t.printColsOfType(STR_VAL)
-		fmt.Println("\nInteger Columns\n")
-		t.printColsOfType(INT_VAL)
-		fmt.Println("\nSet Columns\n")
-		t.printColsOfType(SET_VAL)
-		fmt.Println("")
-		fmt.Println("Stats")
-		fmt.Println("  count", count)
-		fmt.Println("  storageSize", small_size, suffixes[suffix_idx])
-		fmt.Println("  avgObjSize", fmt.Sprintf("%.02f", float64(size)/float64(count)), "bytes")
+		return
 	}
+
+	fmt.Println("\nString Columns\n")
+	t.printColsOfType(STR_VAL)
+	fmt.Println("\nInteger Columns\n")
+	t.printColsOfType(INT_VAL)
+	fmt.Println("\nSet Columns\n")
+	t.printColsOfType(SET_VAL)
+	fmt.Println("")
+	fmt.Println("Stats")
+	fmt.Println("  count", count)
+	fmt.Println("  storageSize", small_size, suffixes[suffix_idx])
+	fmt.Println("  avgObjSize", fmt.Sprintf("%.02f", float64(size)/float64(count)), "bytes")
 
 }
 

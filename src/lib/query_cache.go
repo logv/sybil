@@ -19,6 +19,10 @@ func registerTypesForQueryCache() {
 	gob.Register(IntFilter{})
 	gob.Register(StrFilter{})
 	gob.Register(SetFilter{})
+
+	gob.Register(IntField(0))
+	gob.Register(StrField(0))
+	gob.Register(SetField{})
 	gob.Register(&HistCompat{})
 	gob.Register(&MultiHistCompat{})
 }

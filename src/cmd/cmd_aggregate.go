@@ -10,9 +10,17 @@ import "flag"
 func RunAggregateCmdLine() {
 	flag.Parse()
 	dirs := flag.Args()
+
+	var t, f = true, false
+	sybil.FLAGS.DEBUG = &t
+	sybil.Debug("AGGREGATING")
+
+	sybil.DecodeFlags()
+	sybil.FLAGS.PRINT = &t
+	sybil.FLAGS.ENCODE_RESULTS = &f
 	sybil.Debug("AGGREGATING DIRS", dirs)
 
 	vt := sybil.VTable{}
-	vt.AggregateDirs(dirs)
+	vt.StitchResults(dirs)
 
 }
