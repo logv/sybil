@@ -17,6 +17,8 @@ func addQueryFlags() {
 
 	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
 	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
+	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
+
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
 	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
@@ -208,6 +210,15 @@ func RunQueryCmdLine() {
 		querySpec.OrderBy = *sybil.FLAGS.SORT
 	} else {
 		querySpec.OrderBy = ""
+	}
+
+	if *sybil.FLAGS.PRUNE_BY != "" {
+		if *sybil.FLAGS.PRUNE_BY != sybil.OPTS.SORT_COUNT {
+			loadSpec.Int(*sybil.FLAGS.PRUNE_BY)
+		}
+		querySpec.PruneBy = *sybil.FLAGS.PRUNE_BY
+	} else {
+		querySpec.PruneBy = sybil.OPTS.SORT_COUNT
 	}
 
 	if *sybil.FLAGS.TIME {

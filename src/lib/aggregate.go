@@ -45,13 +45,6 @@ func (a SortResultsByCol) Less(i, j int) bool {
 		return t1 > t2
 	}
 
-	if *FLAGS.OP == "hist" {
-		t1 := a.Results[i].Hists[a.Col].Mean()
-		t2 := a.Results[j].Hists[a.Col].Mean()
-		return t1 > t2
-
-	}
-
 	t1 := a.Results[i].Hists[a.Col].Mean()
 	t2 := a.Results[j].Hists[a.Col].Mean()
 	return t1 > t2
@@ -351,14 +344,12 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 func CombineAndPrune(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
 
 	for _, spec := range block_specs {
-		spec.OrderBy = OPTS.SORT_COUNT
-		spec.SortResults()
+		spec.SortResults(spec.PruneBy)
 		spec.PruneResults(*FLAGS.LIMIT)
 	}
 
 	resultSpec := CombineResults(querySpec, block_specs)
-	resultSpec.OrderBy = OPTS.SORT_COUNT
-	resultSpec.SortResults()
+	resultSpec.SortResults(resultSpec.PruneBy)
 	resultSpec.PruneResults(*FLAGS.LIMIT)
 
 	return resultSpec
@@ -420,8 +411,7 @@ func MultiCombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec
 func CombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
 
 	astart := time.Now()
-	resultSpec := QuerySpec{}
-	resultSpec.Table = querySpec.Table
+	resultSpec := *CopyQuerySpec(querySpec)
 
 	master_result := make(ResultMap)
 	master_time_result := make(map[int]ResultMap)
@@ -501,9 +491,9 @@ func (qs *QuerySpec) PruneResults(limit int) {
 	}
 }
 
-func (qs *QuerySpec) SortResults() {
+func (qs *QuerySpec) SortResults(orderBy string) {
 	// SORT THE RESULTS
-	if qs.OrderBy != "" {
+	if orderBy != "" {
 		start := time.Now()
 		sorter := SortResultsByCol{}
 		sorter.Results = make([]*Result, 0)
@@ -582,7 +572,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	end := time.Now()
 
-	querySpec.SortResults()
+	querySpec.SortResults(querySpec.OrderBy)
 
 	Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 

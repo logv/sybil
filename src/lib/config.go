@@ -82,6 +82,7 @@ type FlagDefs struct {
 
 	DIR        *string
 	SORT       *string
+	PRUNE_BY   *string
 	TABLE      *string
 	PRINT_INFO *bool
 	SAMPLES    *bool

@@ -24,6 +24,7 @@ type savedQueryParams struct {
 	StrReplace   map[string]StrReplace
 
 	OrderBy    string
+	PruneBy    string
 	Limit      int16
 	TimeBucket int
 }
