@@ -6,7 +6,7 @@ import (
 	"os"
 	"sort"
 
-	cmd "github.com/logv/sybil/src/cmd"
+	"github.com/logv/sybil/src/cmd"
 )
 
 var (
