@@ -55,12 +55,6 @@ Query Commands:
     # reads the row store log (off by default)
     example: sybil query -table TABLE -read-log -print -group col1 -int col2 -op hist
 
-  [EXPERIMENTAL]
-  session: run a session based query
-    example: sybil session -table ta -time-col time -session userid \
-             -join-table ta_info -join-key userid -join-group browser
-
-
 Emergency Maintenance Commands:
 
   rebuild: re-create the main table info.db based on the consensus of blocks' info.db
@@ -75,18 +69,18 @@ Emergency Maintenance Commands:
 
 `
 
-func printCommandHelp() {
+func printCommandHelp(msg string) {
 	sort.Strings(CMD_KEYS)
 
 	fmt.Print(USAGE)
-	log.Fatal()
+	log.Fatal(msg)
 }
 
 func main() {
 	setupCommands()
 
 	if len(os.Args) < 2 {
-		printCommandHelp()
+		printCommandHelp("insufficient number of arguments")
 	}
 
 	first_arg := os.Args[1]
@@ -94,7 +88,7 @@ func main() {
 
 	handler, ok := CMD_FUNCS[first_arg]
 	if !ok {
-		printCommandHelp()
+		printCommandHelp(fmt.Sprintf("subcommand '%s' is invalid", first_arg))
 	}
 
 	handler()
