@@ -41,27 +41,27 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	b.table = t
 	r.block = &b
 
-	max_key_id := 0
+	maxKeyId := 0
 	for _, v := range t.KeyTable {
-		if max_key_id <= int(v) {
-			max_key_id = int(v) + 1
+		if maxKeyId <= int(v) {
+			maxKeyId = int(v) + 1
 		}
 	}
 
-	r.ResizeFields(int16(max_key_id))
+	r.ResizeFields(int16(maxKeyId))
 
 	for _, v := range s.Ints {
 		r.Populated[v.Name] = INT_VAL
 		r.Ints[v.Name] = IntField(v.Value)
-		t.update_int_info(v.Name, v.Value)
+		t.updateIntInfo(v.Name, v.Value)
 	}
 
 	for _, v := range s.Strs {
-		r.AddStrField(t.get_string_for_key(int(v.Name)), v.Value)
+		r.AddStrField(t.getStringForKey(int(v.Name)), v.Value)
 	}
 
 	for _, v := range s.Sets {
-		r.AddSetField(t.get_string_for_key(int(v.Name)), v.Value)
+		r.AddSetField(t.getStringForKey(int(v.Name)), v.Value)
 		r.Populated[v.Name] = SET_VAL
 	}
 
@@ -79,19 +79,19 @@ func (r Record) toSavedRecord() *SavedRecord {
 	for k, v := range r.Strs {
 		if r.Populated[k] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(k))
-			str_val := col.get_string_for_val(int32(v))
-			s.Strs = append(s.Strs, RowSavedStr{int16(k), str_val})
+			strVal := col.getStringForVal(int32(v))
+			s.Strs = append(s.Strs, RowSavedStr{int16(k), strVal})
 		}
 	}
 
 	for k, v := range r.SetMap {
 		if r.Populated[k] == SET_VAL {
 			col := r.block.GetColumnInfo(int16(k))
-			set_vals := make([]string, len(v))
+			setVals := make([]string, len(v))
 			for i, val := range v {
-				set_vals[i] = col.get_string_for_val(int32(val))
+				setVals[i] = col.getStringForVal(int32(val))
 			}
-			s.Sets = append(s.Sets, RowSavedSet{int16(k), set_vals})
+			s.Sets = append(s.Sets, RowSavedSet{int16(k), setVals})
 		}
 	}
 
@@ -105,30 +105,30 @@ type SavedRecords struct {
 
 func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	Debug("LOADING RECORDS FROM LOG", filename)
-	var marshalled_records []*SavedRecord
+	var marshalledRecords []*SavedRecord
 
 	// Create an encoder and send a value.
-	err := decodeInto(filename, &marshalled_records)
+	err := decodeInto(filename, &marshalledRecords)
 
 	if err != nil {
 		Debug("ERROR LOADING INGESTION LOG", err)
 	}
 
-	return marshalled_records
+	return marshalledRecords
 }
 
 func (t *Table) LoadRecordsFromLog(filename string) RecordList {
-	var marshalled_records []*SavedRecord
+	var marshalledRecords []*SavedRecord
 
 	// Create an encoder and send a value.
-	err := decodeInto(filename, &marshalled_records)
+	err := decodeInto(filename, &marshalledRecords)
 	if err != nil {
 		Debug("ERROR LOADING INGESTION LOG", err)
 	}
 
-	ret := make(RecordList, len(marshalled_records))
+	ret := make(RecordList, len(marshalledRecords))
 
-	for i, r := range marshalled_records {
+	for i, r := range marshalledRecords {
 		ret[i] = r.toRecord(t)
 	}
 	return ret
@@ -149,18 +149,18 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 
 	w, err := ioutil.TempFile(tempingestdir, fmt.Sprintf("%s_", blockname))
 
-	marshalled_records := make([]*SavedRecord, len(records))
+	marshalledRecords := make([]*SavedRecord, len(records))
 	for i, r := range records {
-		marshalled_records[i] = r.toSavedRecord()
+		marshalledRecords[i] = r.toSavedRecord()
 	}
 
 	var network bytes.Buffer // Stand-in for the network.
 
-	Debug("SAVING RECORDS", len(marshalled_records), "TO INGESTION LOG")
+	Debug("SAVING RECORDS", len(marshalledRecords), "TO INGESTION LOG")
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
-	err = enc.Encode(marshalled_records)
+	err = enc.Encode(marshalledRecords)
 
 	if err != nil {
 		Error("encode:", err)
@@ -169,7 +169,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	filename := fmt.Sprintf("%s.db", w.Name())
 	basename := path.Base(filename)
 
-	Debug("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalled_records), ")")
+	Debug("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalledRecords), ")")
 
 	network.WriteTo(w)
 

@@ -47,11 +47,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	var wg sync.WaitGroup
-	block_specs := make(map[string]*QuerySpec)
-	to_cache_specs := make(map[string]*QuerySpec)
+	blockSpecs := make(map[string]*QuerySpec)
+	toCacheSpecs := make(map[string]*QuerySpec)
 
-	loaded_info := t.LoadTableInfo()
-	if loaded_info == false {
+	loadedInfo := t.LoadTableInfo()
+	if loadedInfo == false {
 		if t.HasFlagFile() {
 			return 0
 		}
@@ -65,27 +65,27 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	m := &sync.Mutex{}
 
-	load_all := false
+	loadAll := false
 	if loadSpec != nil && loadSpec.LoadAllColumns {
-		load_all = true
+		loadAll = true
 	}
 
 	count := 0
-	cached_count := 0
-	cached_blocks := 0
-	loaded_count := 0
+	cachedCount := 0
+	cachedBlocks := 0
+	loadedCount := 0
 	skipped := 0
-	broken_count := 0
-	this_block := 0
-	block_gc_time := time.Now().Sub(time.Now())
+	brokenCount := 0
+	thisBlock := 0
+	blockGcTime := time.Now().Sub(time.Now())
 
-	all_results := make([]*QuerySpec, 0)
+	allResults := make([]*QuerySpec, 0)
 
-	broken_mutex := sync.Mutex{}
-	broken_blocks := make([]string, 0)
+	brokenMutex := sync.Mutex{}
+	brokenBlocks := make([]string, 0)
 
 	var memstats runtime.MemStats
-	var max_alloc = uint64(0)
+	var maxAlloc = uint64(0)
 
 	for f := range files {
 
@@ -97,9 +97,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 			v = files[len(files)-f-1]
 		}
 
-		if v.IsDir() && file_looks_like_block(v) {
+		if v.IsDir() && fileLooksLikeBlock(v) {
 			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
-			this_block++
+			thisBlock++
 
 			wg.Add(1)
 			go func() {
@@ -107,9 +107,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				start := time.Now()
 
-				should_load := t.ShouldLoadBlockFromDir(filename, querySpec)
+				shouldLoad := t.ShouldLoadBlockFromDir(filename, querySpec)
 
-				if !should_load {
+				if !shouldLoad {
 					skipped++
 					return
 				}
@@ -124,11 +124,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				var block *TableBlock
 				if cachedSpec == nil {
 					// couldnt load the cached query results
-					block = t.LoadBlockFromDir(filename, loadSpec, load_all)
+					block = t.LoadBlockFromDir(filename, loadSpec, loadAll)
 					if block == nil {
-						broken_mutex.Lock()
-						broken_blocks = append(broken_blocks, filename)
-						broken_mutex.Unlock()
+						brokenMutex.Lock()
+						brokenBlocks = append(brokenBlocks, filename)
+						brokenMutex.Unlock()
 						return
 					}
 				} else {
@@ -174,17 +174,17 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						if blockQuery != nil {
 							m.Lock()
 							if cachedSpec != nil {
-								cached_count += blockQuery.MatchedCount
-								cached_blocks += 1
+								cachedCount += blockQuery.MatchedCount
+								cachedBlocks += 1
 
 							} else {
 								count += blockQuery.MatchedCount
-								loaded_count += 1
+								loadedCount += 1
 								if block.Info.NumRecords == int32(CHUNK_SIZE) {
-									to_cache_specs[block.Name] = blockQuery
+									toCacheSpecs[block.Name] = blockQuery
 								}
 							}
-							block_specs[block.Name] = blockQuery
+							blockSpecs[block.Name] = blockQuery
 							m.Unlock()
 						}
 					}
@@ -201,14 +201,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				// don't delete when testing so we can verify block
 				// loading results
 				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
-					t.block_m.Lock()
+					t.blockM.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
 						tb.RecycleSlab(loadSpec)
 
 						delete(t.BlockList, block.Name)
 					}
-					t.block_m.Unlock()
+					t.blockM.Unlock()
 
 				}
 			}()
@@ -221,33 +221,33 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if DELETE_BLOCKS_AFTER_QUERY && this_block%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
+			if DELETE_BLOCKS_AFTER_QUERY && thisBlock%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
 				wg.Wait()
 				start := time.Now()
 
 				if *FLAGS.RECYCLE_MEM == false {
 					m.Lock()
-					old_percent := debug.SetGCPercent(100)
-					debug.SetGCPercent(old_percent)
+					oldPercent := debug.SetGCPercent(100)
+					debug.SetGCPercent(oldPercent)
 					m.Unlock()
 				}
 
 				if querySpec != nil {
 
-					t.WriteQueryCache(to_cache_specs)
-					to_cache_specs = make(map[string]*QuerySpec)
+					t.WriteQueryCache(toCacheSpecs)
+					toCacheSpecs = make(map[string]*QuerySpec)
 
-					resultSpec := MultiCombineResults(querySpec, block_specs)
-					block_specs = make(map[string]*QuerySpec)
+					resultSpec := MultiCombineResults(querySpec, blockSpecs)
+					blockSpecs = make(map[string]*QuerySpec)
 
 					m.Lock()
-					all_results = append(all_results, resultSpec)
+					allResults = append(allResults, resultSpec)
 					m.Unlock()
 
 					runtime.ReadMemStats(&memstats)
 					alloced := memstats.Alloc / 1024 / 1024
-					if alloced > max_alloc {
-						max_alloc = alloced
+					if alloced > maxAlloc {
+						maxAlloc = alloced
 					}
 
 					if alloced > 500 {
@@ -260,7 +260,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					fmt.Fprint(os.Stderr, ",")
 				}
 				end := time.Now()
-				block_gc_time += end.Sub(start)
+				blockGcTime += end.Sub(start)
 			}
 		}
 
@@ -282,7 +282,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		// Entrust AfterLoadQueryCB to call Done on wg
 		rowStoreQuery.wg = &wg
 		m.Lock()
-		block_specs[INGEST_DIR] = rowStoreQuery.querySpec
+		blockSpecs[INGEST_DIR] = rowStoreQuery.querySpec
 		m.Unlock()
 
 		wg.Add(1)
@@ -300,8 +300,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		fmt.Fprint(os.Stderr, "\n")
 	}
 
-	for _, broken_block_name := range broken_blocks {
-		Debug("BLOCK", broken_block_name, "IS BROKEN, SKIPPING")
+	for _, brokenBlockName := range brokenBlocks {
+		Debug("BLOCK", brokenBlockName, "IS BROKEN, SKIPPING")
 	}
 
 	if *FLAGS.READ_INGESTION_LOG {
@@ -318,36 +318,36 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		}
 	}
 
-	if block_gc_time > 0 {
-		Debug("BLOCK GC TOOK", block_gc_time)
-		Debug("MAX ALLOC", max_alloc)
+	if blockGcTime > 0 {
+		Debug("BLOCK GC TOOK", blockGcTime)
+		Debug("MAX ALLOC", maxAlloc)
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
-	t.populate_string_id_lookup()
+	t.populateStringIdLookup()
 
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
-	Debug("SKIPPED", broken_count, "BLOCKS BASED ON BROKEN INFO")
-	Debug("SKIPPED", cached_blocks, "BLOCKS &", cached_count, "RECORDS BASED ON QUERY CACHE")
+	Debug("SKIPPED", brokenCount, "BLOCKS BASED ON BROKEN INFO")
+	Debug("SKIPPED", cachedBlocks, "BLOCKS &", cachedCount, "RECORDS BASED ON QUERY CACHE")
 	end := time.Now()
 	if loadSpec != nil {
-		Debug("LOADED", count, "RECORDS FROM", loaded_count, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
+		Debug("LOADED", count, "RECORDS FROM", loadedCount, "BLOCKS INTO", t.Name, "TOOK", end.Sub(waystart))
 	} else {
 		Debug("INSPECTED", len(t.BlockList), "BLOCKS", "TOOK", end.Sub(waystart))
 	}
 
 	// NOTE: we have to write the query cache before we combine our results,
 	// bc combining results is not idempotent
-	t.WriteQueryCache(to_cache_specs)
+	t.WriteQueryCache(toCacheSpecs)
 
 	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
-		for k, v := range all_results {
-			block_specs[fmt.Sprintf("result_%v", k)] = v
+		for k, v := range allResults {
+			blockSpecs[fmt.Sprintf("result_%v", k)] = v
 		}
 
-		resultSpec := MultiCombineResults(querySpec, block_specs)
+		resultSpec := MultiCombineResults(querySpec, blockSpecs)
 
 		aend := time.Now()
 		Debug("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
@@ -356,7 +356,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 		querySpec.Results = resultSpec.Results
 		querySpec.TimeResults = resultSpec.TimeResults
-		querySpec.MatchedCount = count + cached_count
+		querySpec.MatchedCount = count + cachedCount
 
 		querySpec.SortResults(querySpec.OrderBy)
 	}

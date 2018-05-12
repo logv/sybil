@@ -16,11 +16,11 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
 		return true
 	}
 
-	temp_block := newTableBlock()
-	temp_block.RecordList = records
-	temp_block.table = t
+	tempBlock := newTableBlock()
+	tempBlock.RecordList = records
+	tempBlock.table = t
 
-	return temp_block.SaveToColumns(filename)
+	return tempBlock.SaveToColumns(filename)
 }
 
 func (t *Table) FindPartialBlocks() []*TableBlock {
@@ -29,7 +29,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 
 	ret := make([]*TableBlock, 0)
 
-	t.block_m.Lock()
+	t.blockM.Lock()
 	for _, v := range t.BlockList {
 		if v.Name == ROW_STORE_BLOCK {
 			continue
@@ -39,7 +39,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 			ret = append(ret, v)
 		}
 	}
-	t.block_m.Unlock()
+	t.blockM.Unlock()
 
 	return ret
 }
@@ -50,16 +50,16 @@ func (t *Table) FillPartialBlock() bool {
 		return false
 	}
 
-	open_blocks := t.FindPartialBlocks()
+	openBlocks := t.FindPartialBlocks()
 
-	Debug("OPEN BLOCKS", open_blocks)
+	Debug("OPEN BLOCKS", openBlocks)
 	var filename string
 
-	if len(open_blocks) == 0 {
+	if len(openBlocks) == 0 {
 		return true
 	}
 
-	for _, b := range open_blocks {
+	for _, b := range openBlocks {
 		filename = b.Name
 	}
 
@@ -114,29 +114,29 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 
 	info := t.LoadBlockInfo(dirname)
 
-	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
-	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
+	maxRecord := Record{Ints: IntArr{}, Strs: StrArr{}}
+	minRecord := Record{Ints: IntArr{}, Strs: StrArr{}}
 
 	if len(info.IntInfoMap) == 0 {
 		return true
 	}
 
-	for field_name, _ := range info.StrInfoMap {
-		field_id := t.get_key_id(field_name)
-		min_record.ResizeFields(field_id)
-		max_record.ResizeFields(field_id)
+	for fieldName, _ := range info.StrInfoMap {
+		fieldId := t.getKeyId(fieldName)
+		minRecord.ResizeFields(fieldId)
+		maxRecord.ResizeFields(fieldId)
 	}
 
-	for field_name, field_info := range info.IntInfoMap {
-		field_id := t.get_key_id(field_name)
-		min_record.ResizeFields(field_id)
-		max_record.ResizeFields(field_id)
+	for fieldName, fieldInfo := range info.IntInfoMap {
+		fieldId := t.getKeyId(fieldName)
+		minRecord.ResizeFields(fieldId)
+		maxRecord.ResizeFields(fieldId)
 
-		min_record.Ints[field_id] = IntField(field_info.Min)
-		max_record.Ints[field_id] = IntField(field_info.Max)
+		minRecord.Ints[fieldId] = IntField(fieldInfo.Min)
+		maxRecord.Ints[fieldId] = IntField(fieldInfo.Max)
 
-		min_record.Populated[field_id] = INT_VAL
-		max_record.Populated[field_id] = INT_VAL
+		minRecord.Populated[fieldId] = INT_VAL
+		maxRecord.Populated[fieldId] = INT_VAL
 	}
 
 	add := true
@@ -145,7 +145,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 		switch fil := f.(type) {
 		case IntFilter:
 			if fil.Op == "gt" || fil.Op == "lt" {
-				if f.Filter(&min_record) != true && f.Filter(&max_record) != true {
+				if f.Filter(&minRecord) != true && f.Filter(&maxRecord) != true {
 					add = false
 					break
 				}
@@ -162,11 +162,11 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 		return &info
 	}
 
-	t.block_m.Lock()
-	cached_info, ok := t.BlockInfoCache[dirname]
-	t.block_m.Unlock()
+	t.blockM.Lock()
+	cachedInfo, ok := t.BlockInfoCache[dirname]
+	t.blockM.Unlock()
 	if ok {
-		return cached_info
+		return cachedInfo
 	}
 
 	// find out how many records are kept in this dir...
@@ -185,19 +185,19 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 		Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
-	t.block_m.Lock()
+	t.blockM.Lock()
 	t.BlockInfoCache[dirname] = &info
 	if info.NumRecords >= int32(CHUNK_SIZE) {
 		t.NewBlockInfos = append(t.NewBlockInfos, dirname)
 	}
-	t.block_m.Unlock()
+	t.blockM.Unlock()
 
 	return &info
 }
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool) *TableBlock {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -214,11 +214,11 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 		return nil
 	}
 
-	t.block_m.Lock()
+	t.blockM.Lock()
 	t.BlockList[dirname] = &tb
-	t.block_m.Unlock()
+	t.blockM.Unlock()
 
-	tb.allocateRecords(loadSpec, *info, load_records)
+	tb.allocateRecords(loadSpec, *info, loadRecords)
 	tb.Info = info
 
 	file, _ := os.Open(dirname)
@@ -236,10 +236,10 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 			// we cut off extensions to check our loadSpec
 			cname := strings.TrimRight(fname, GZIP_EXT)
 
-			if loadSpec.files[cname] != true && load_records == false {
+			if loadSpec.files[cname] != true && loadRecords == false {
 				continue
 			}
-		} else if load_records == false {
+		} else if loadRecords == false {
 			continue
 		}
 
@@ -315,25 +315,25 @@ func (b *TableBlock) ExportBlockData() {
 		return
 	}
 
-	tsv_data := make([]string, 0)
+	tsvData := make([]string, 0)
 
 	for _, r := range b.RecordList {
 		sample := r.toTSVRow()
-		tsv_data = append(tsv_data, strings.Join(sample, "\t"))
+		tsvData = append(tsvData, strings.Join(sample, "\t"))
 
 	}
 
-	export_name := path.Base(b.Name)
-	dir_name := path.Dir(b.Name)
-	fName := path.Join(dir_name, "export", export_name+".tsv.gz")
+	exportName := path.Base(b.Name)
+	dirName := path.Dir(b.Name)
+	fName := path.Join(dirName, "export", exportName+".tsv.gz")
 
-	os.MkdirAll(path.Join(dir_name, "export"), 0755)
+	os.MkdirAll(path.Join(dirName, "export"), 0755)
 
-	tsv_header := strings.Join(b.RecordList[0].sampleHeader(), "\t")
-	tsv_str := strings.Join(tsv_data, "\n")
-	Debug("SAVING TSV ", len(tsv_str), "RECORDS", len(tsv_data), fName)
+	tsvHeader := strings.Join(b.RecordList[0].sampleHeader(), "\t")
+	tsvStr := strings.Join(tsvData, "\n")
+	Debug("SAVING TSV ", len(tsvStr), "RECORDS", len(tsvData), fName)
 
-	all_data := strings.Join([]string{tsv_header, tsv_str}, "\n")
+	allData := strings.Join([]string{tsvHeader, tsvStr}, "\n")
 	// Need to save these to a file.
 	//	Print(tsv_headers)
 	//	Print(tsv_str)
@@ -341,7 +341,7 @@ func (b *TableBlock) ExportBlockData() {
 	// GZIPPING
 	var buf bytes.Buffer
 	w := gzip.NewWriter(&buf)
-	w.Write([]byte(all_data))
+	w.Write([]byte(allData))
 	w.Close() // You must close this first to flush the bytes to the buffer.
 
 	f, _ := os.Create(fName)

@@ -50,11 +50,11 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		// we align the Time Filter to the Time Bucket iff we are doing a time series query
 		if col == *FLAGS.TIME_COL && *FLAGS.TIME {
 			bucket := int64(*FLAGS.TIME_BUCKET)
-			new_val := int64(val/bucket) * bucket
+			newVal := int64(val/bucket) * bucket
 
-			if val != new_val {
-				Debug("ALIGNING TIME FILTER TO BUCKET", val, new_val)
-				val = new_val
+			if val != newVal {
+				Debug("ALIGNING TIME FILTER TO BUCKET", val, newVal)
+				val = newVal
 			}
 		}
 
@@ -167,7 +167,7 @@ func (filter StrFilter) Filter(r *Record) bool {
 
 	val := r.Strs[filter.FieldId]
 	col := r.block.GetColumnInfo(filter.FieldId)
-	filterval := int(col.get_val_id(filter.Value))
+	filterval := int(col.getValId(filter.Value))
 
 	ok := false
 	ret := false
@@ -184,12 +184,12 @@ func (filter StrFilter) Filter(r *Record) bool {
 		if cardinality < REGEX_CACHE_SIZE {
 			ret, ok = col.RCache[int(val)]
 			if !ok {
-				str_val := col.get_string_for_val(int32(val))
-				ret = filter.regex.MatchString(str_val)
+				strVal := col.getStringForVal(int32(val))
+				ret = filter.regex.MatchString(strVal)
 			}
 		} else {
-			str_val := col.get_string_for_val(int32(val))
-			ret = filter.regex.MatchString(str_val)
+			strVal := col.getStringForVal(int32(val))
+			ret = filter.regex.MatchString(strVal)
 		}
 
 		if cardinality < REGEX_CACHE_SIZE && !ok {
@@ -225,21 +225,21 @@ func (filter SetFilter) Filter(r *Record) bool {
 
 	sets := r.SetMap[filter.FieldId]
 
-	val_id := col.get_val_id(filter.Value)
+	valId := col.getValId(filter.Value)
 
 	switch filter.Op {
 	// Check if tag exists
 	case "in":
 		// Check if tag does not exist
 		for _, tag := range sets {
-			if tag == val_id {
+			if tag == valId {
 				return true
 			}
 		}
 	case "nin":
 		ret = true
 		for _, tag := range sets {
-			if tag == val_id {
+			if tag == valId {
 				return false
 			}
 		}
@@ -249,7 +249,7 @@ func (filter SetFilter) Filter(r *Record) bool {
 }
 
 func (t *Table) IntFilter(name string, op string, value int) IntFilter {
-	intFilter := IntFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
+	intFilter := IntFilter{Field: name, FieldId: t.getKeyId(name), Op: op, Value: value}
 	intFilter.table = t
 
 	return intFilter
@@ -257,7 +257,7 @@ func (t *Table) IntFilter(name string, op string, value int) IntFilter {
 }
 
 func (t *Table) StrFilter(name string, op string, value string) StrFilter {
-	strFilter := StrFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
+	strFilter := StrFilter{Field: name, FieldId: t.getKeyId(name), Op: op, Value: value}
 	strFilter.table = t
 
 	var err error
@@ -273,7 +273,7 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 }
 
 func (t *Table) SetFilter(name string, op string, value string) SetFilter {
-	setFilter := SetFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
+	setFilter := SetFilter{Field: name, FieldId: t.getKeyId(name), Op: op, Value: value}
 	setFilter.table = t
 
 	return setFilter

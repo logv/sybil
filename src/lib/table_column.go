@@ -9,22 +9,22 @@ type TableColumn struct {
 
 	block *TableBlock
 
-	string_id_m          *sync.Mutex
-	val_string_id_lookup []string
+	stringIdM         *sync.Mutex
+	valStringIdLookup []string
 }
 
 func (tb *TableBlock) newTableColumn() *TableColumn {
 	tc := TableColumn{}
 	tc.StringTable = make(map[string]int32)
-	tc.val_string_id_lookup = make([]string, CHUNK_SIZE+1)
-	tc.string_id_m = &sync.Mutex{}
+	tc.valStringIdLookup = make([]string, CHUNK_SIZE+1)
+	tc.stringIdM = &sync.Mutex{}
 	tc.block = tb
 	tc.RCache = make(map[int]bool)
 
 	return &tc
 }
 
-func (tc *TableColumn) get_val_id(name string) int32 {
+func (tc *TableColumn) getValId(name string) int32 {
 
 	id, ok := tc.StringTable[name]
 
@@ -32,31 +32,31 @@ func (tc *TableColumn) get_val_id(name string) int32 {
 		return int32(id)
 	}
 
-	tc.string_id_m.Lock()
+	tc.stringIdM.Lock()
 	tc.StringTable[name] = int32(len(tc.StringTable))
 
 	// resize our string lookup if we need to
-	if len(tc.StringTable) > len(tc.val_string_id_lookup) {
-		new_lookup := make([]string, len(tc.StringTable)<<1)
-		copy(new_lookup, tc.val_string_id_lookup)
-		tc.val_string_id_lookup = new_lookup
+	if len(tc.StringTable) > len(tc.valStringIdLookup) {
+		newLookup := make([]string, len(tc.StringTable)<<1)
+		copy(newLookup, tc.valStringIdLookup)
+		tc.valStringIdLookup = newLookup
 	}
 
-	tc.val_string_id_lookup[tc.StringTable[name]] = name
-	tc.string_id_m.Unlock()
+	tc.valStringIdLookup[tc.StringTable[name]] = name
+	tc.stringIdM.Unlock()
 	return tc.StringTable[name]
 }
 
-func (tc *TableColumn) get_string_for_val(id int32) string {
-	if int(id) >= len(tc.val_string_id_lookup) {
+func (tc *TableColumn) getStringForVal(id int32) string {
+	if int(id) >= len(tc.valStringIdLookup) {
 		Warn("TRYING TO GET STRING ID FOR NON EXISTENT VAL", id)
 		return ""
 	}
 
-	val := tc.val_string_id_lookup[id]
+	val := tc.valStringIdLookup[id]
 	return val
 }
 
-func (tc *TableColumn) get_string_for_key(id int) string {
-	return tc.block.get_string_for_key(int16(id))
+func (tc *TableColumn) getStringForKey(id int) string {
+	return tc.block.getStringForKey(int16(id))
 }

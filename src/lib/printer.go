@@ -25,14 +25,14 @@ func printTimeResults(querySpec *QuerySpec) {
 	Debug("PRINTING TIME RESULTS")
 	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
-	is_top_result := make(map[string]bool)
+	isTopResult := make(map[string]bool)
 	sorted := querySpec.Sorted
 	if len(sorted) > int(querySpec.Limit) {
 		sorted = sorted[:querySpec.Limit]
 	}
 
 	for _, result := range sorted {
-		is_top_result[result.GroupByKey] = true
+		isTopResult[result.GroupByKey] = true
 	}
 
 	keys := make([]int, 0)
@@ -46,45 +46,45 @@ func printTimeResults(querySpec *QuerySpec) {
 	Debug("RESULT COUNT", len(keys))
 	if *FLAGS.JSON {
 
-		marshalled_results := make(map[string][]ResultJSON)
+		marshalledResults := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
 			key := strconv.FormatInt(int64(k), 10)
-			marshalled_results[key] = make([]ResultJSON, 0)
+			marshalledResults[key] = make([]ResultJSON, 0)
 
 			for _, r := range v {
-				_, ok := is_top_result[r.GroupByKey]
+				_, ok := isTopResult[r.GroupByKey]
 				if ok {
-					marshalled_results[key] = append(marshalled_results[key], r.toResultJSON(querySpec))
+					marshalledResults[key] = append(marshalledResults[key], r.toResultJSON(querySpec))
 				}
 			}
 		}
 
-		printJson(marshalled_results)
+		printJson(marshalledResults)
 		return
 	}
 
-	top_results := make([]string, 0)
+	topResults := make([]string, 0)
 	for _, r := range querySpec.Sorted {
-		top_results = append(top_results, r.GroupByKey)
+		topResults = append(topResults, r.GroupByKey)
 	}
 
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 1, 0, ' ', tabwriter.AlignRight)
 
-	for _, time_bucket := range keys {
+	for _, timeBucket := range keys {
 
-		time_str := time.Unix(int64(time_bucket), 0).Format(OPTS.TIME_FORMAT)
-		results := querySpec.TimeResults[time_bucket]
+		timeStr := time.Unix(int64(timeBucket), 0).Format(OPTS.TIME_FORMAT)
+		results := querySpec.TimeResults[timeBucket]
 		for _, r := range results {
 			if len(querySpec.Distincts) > 0 {
-				fmt.Fprintln(w, time_str, "\t", r.Distinct.Cardinality(), "\t", r.GroupByKey, "\t")
+				fmt.Fprintln(w, timeStr, "\t", r.Distinct.Cardinality(), "\t", r.GroupByKey, "\t")
 
 			} else if len(r.Hists) == 0 {
-				fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t")
+				fmt.Fprintln(w, timeStr, "\t", r.Count, "\t", r.GroupByKey, "\t")
 			} else {
 				for agg, hist := range r.Hists {
-					avg_str := fmt.Sprintf("%.2f", hist.Mean())
-					fmt.Fprintln(w, time_str, "\t", r.Count, "\t", r.GroupByKey, "\t", agg, "\t", avg_str, "\t")
+					avgStr := fmt.Sprintf("%.2f", hist.Mean())
+					fmt.Fprintln(w, timeStr, "\t", r.Count, "\t", r.GroupByKey, "\t", agg, "\t", avgStr, "\t")
 				}
 			}
 
@@ -96,14 +96,14 @@ func printTimeResults(querySpec *QuerySpec) {
 }
 
 func getSparseBuckets(buckets map[string]int64) map[string]int64 {
-	non_zero_buckets := make(map[string]int64)
+	nonZeroBuckets := make(map[string]int64)
 	for k, v := range buckets {
 		if v > 0 {
-			non_zero_buckets[k] = v
+			nonZeroBuckets[k] = v
 		}
 	}
 
-	return non_zero_buckets
+	return nonZeroBuckets
 }
 
 func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
@@ -132,9 +132,9 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 		}
 	}
 
-	var group_key = strings.Split(r.GroupByKey, GROUP_DELIMITER)
+	var groupKey = strings.Split(r.GroupByKey, GROUP_DELIMITER)
 	for i, g := range querySpec.Groups {
-		res[g.Name] = group_key[i]
+		res[g.Name] = groupKey[i]
 	}
 
 	if len(querySpec.Distincts) > 0 {
@@ -168,8 +168,8 @@ func printSortedResults(querySpec *QuerySpec) {
 	}
 
 	if querySpec.Cumulative != nil {
-		percent_scanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
-		Debug("SCANNED", fmt.Sprintf("%.02f%%", percent_scanned), "(", querySpec.Cumulative.Count,
+		percentScanned := float64(querySpec.Cumulative.Count) / float64(querySpec.MatchedCount) * 100
+		Debug("SCANNED", fmt.Sprintf("%.02f%%", percentScanned), "(", querySpec.Cumulative.Count,
 			") OF ROWS OUT OF", querySpec.MatchedCount)
 	}
 
@@ -187,10 +187,10 @@ func printResult(querySpec *QuerySpec, v *Result) {
 		return
 	}
 
-	group_key := strings.Replace(v.GroupByKey, GROUP_DELIMITER, ",", -1)
-	group_key = strings.TrimRight(group_key, ",")
+	groupKey := strings.Replace(v.GroupByKey, GROUP_DELIMITER, ",", -1)
+	groupKey = strings.TrimRight(groupKey, ",")
 
-	fmt.Printf(fmt.Sprintf("%-20s", group_key)[:20])
+	fmt.Printf(fmt.Sprintf("%-20s", groupKey)[:20])
 
 	fmt.Printf("%.0d", v.Count)
 	if OPTS.WEIGHT_COL {
@@ -206,7 +206,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Printf("\n")
 
 	for _, agg := range querySpec.Aggregations {
-		col_name := fmt.Sprintf("  %5s", agg.Name)
+		colName := fmt.Sprintf("  %5s", agg.Name)
 		if agg.Op == "hist" {
 			h, ok := v.Hists[agg.Name]
 			if !ok {
@@ -216,14 +216,14 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			p := h.GetPercentiles()
 
 			if len(p) > 0 {
-				avg_str := fmt.Sprintf("%.2f", h.Mean())
-				std_str := fmt.Sprintf("%.2f", h.StdDev())
-				fmt.Println(col_name, "|", p[0], p[99], "|", avg_str, "|", p[0], p[25], p[50], p[75], p[99], "|", std_str)
+				avgStr := fmt.Sprintf("%.2f", h.Mean())
+				stdStr := fmt.Sprintf("%.2f", h.StdDev())
+				fmt.Println(colName, "|", p[0], p[99], "|", avgStr, "|", p[0], p[25], p[50], p[75], p[99], "|", stdStr)
 			} else {
-				fmt.Println(col_name, "No Data")
+				fmt.Println(colName, "No Data")
 			}
 		} else if agg.Op == "avg" {
-			fmt.Println(col_name, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
+			fmt.Println(colName, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}
 
@@ -318,7 +318,7 @@ func (r *Record) toTSVRow() []string {
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			row = append(row, col.get_string_for_val(int32(val)))
+			row = append(row, col.getStringForVal(int32(val)))
 		}
 	}
 
@@ -335,13 +335,13 @@ func (r *Record) sampleHeader() []string {
 	for name, _ := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			header = append(header, col.get_string_for_key(name))
+			header = append(header, col.getStringForKey(name))
 		}
 	}
 	for name, _ := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			header = append(header, col.get_string_for_key(name))
+			header = append(header, col.getStringForKey(name))
 		}
 	}
 
@@ -357,14 +357,14 @@ func (r *Record) toSample() *Sample {
 	for name, val := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			sample[col.get_string_for_key(name)] = val
+			sample[col.getStringForKey(name)] = val
 
 		}
 	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))
-			sample[col.get_string_for_key(name)] = col.get_string_for_val(int32(val))
+			sample[col.getStringForKey(name)] = col.getStringForVal(int32(val))
 		}
 	}
 
@@ -473,23 +473,23 @@ func printTablesToOutput(tables []string) {
 	fmt.Println("")
 }
 
-func (t *Table) getColsOfType(wanted_type int8) []string {
-	print_keys := make([]string, 0)
-	for name, name_id := range t.KeyTable {
-		col_type := t.KeyTypes[name_id]
-		if int8(col_type) != wanted_type {
+func (t *Table) getColsOfType(wantedType int8) []string {
+	printKeys := make([]string, 0)
+	for name, nameId := range t.KeyTable {
+		colType := t.KeyTypes[nameId]
+		if int8(colType) != wantedType {
 			continue
 		}
 
-		print_keys = append(print_keys, name)
+		printKeys = append(printKeys, name)
 
 	}
-	sort.Strings(print_keys)
+	sort.Strings(printKeys)
 
-	return print_keys
+	return printKeys
 }
-func (t *Table) printColsOfType(wanted_type int8) {
-	for _, v := range t.getColsOfType(wanted_type) {
+func (t *Table) printColsOfType(wantedType int8) {
+	for _, v := range t.getColsOfType(wantedType) {
 		fmt.Println(" ", v)
 	}
 }
@@ -509,12 +509,12 @@ func (t *Table) PrintColInfo() {
 
 	suffixes := []string{"B", "KB", "MB", "GB", "TB", "PB"}
 
-	suffix_idx := 0
+	suffixIdx := 0
 
-	small_size := size
+	smallSize := size
 
-	for ; small_size > 1024; small_size /= 1024 {
-		suffix_idx += 1
+	for ; smallSize > 1024; smallSize /= 1024 {
+		suffixIdx += 1
 
 	}
 
@@ -524,23 +524,23 @@ func (t *Table) PrintColInfo() {
 	}
 
 	if *FLAGS.JSON {
-		table_cols := make(map[string][]string)
-		table_info := make(map[string]interface{})
+		tableCols := make(map[string][]string)
+		tableInfo := make(map[string]interface{})
 
-		table_cols["ints"] = t.getColsOfType(INT_VAL)
-		table_cols["strs"] = t.getColsOfType(STR_VAL)
-		table_cols["sets"] = t.getColsOfType(SET_VAL)
-		table_info["columns"] = table_cols
+		tableCols["ints"] = t.getColsOfType(INT_VAL)
+		tableCols["strs"] = t.getColsOfType(STR_VAL)
+		tableCols["sets"] = t.getColsOfType(SET_VAL)
+		tableInfo["columns"] = tableCols
 
-		table_info["count"] = count
-		table_info["size"] = size
+		tableInfo["count"] = count
+		tableInfo["size"] = size
 		if count == 0 {
 			count = 1
 		}
-		table_info["avgObjSize"] = float64(size) / float64(count)
-		table_info["storageSize"] = size
+		tableInfo["avgObjSize"] = float64(size) / float64(count)
+		tableInfo["storageSize"] = size
 
-		printJson(table_info)
+		printJson(tableInfo)
 		return
 	}
 
@@ -553,20 +553,20 @@ func (t *Table) PrintColInfo() {
 	fmt.Println("")
 	fmt.Println("Stats")
 	fmt.Println("  count", count)
-	fmt.Println("  storageSize", small_size, suffixes[suffix_idx])
+	fmt.Println("  storageSize", smallSize, suffixes[suffixIdx])
 	fmt.Println("  avgObjSize", fmt.Sprintf("%.02f", float64(size)/float64(count)), "bytes")
 
 }
 
 func PrintVersionInfo() {
 
-	version_info := GetVersionInfo()
+	versionInfo := GetVersionInfo()
 
 	if *FLAGS.JSON {
-		printJson(version_info)
+		printJson(versionInfo)
 
 	} else {
-		for k, v := range version_info {
+		for k, v := range versionInfo {
 			fmt.Println(k, ":", v)
 		}
 

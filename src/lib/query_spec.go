@@ -60,15 +60,15 @@ type Filter interface {
 }
 
 type Grouping struct {
-	Name    string
-	name_id int16
+	Name   string
+	nameId int16
 }
 
 type Aggregation struct {
 	Op       string
-	op_id    int
+	opId     int
 	Name     string
-	name_id  int16
+	nameId   int16
 	HistType string
 }
 
@@ -83,15 +83,15 @@ type Result struct {
 }
 
 func (qs *QuerySpec) NewResult() *Result {
-	added_record := &Result{}
-	added_record.Hists = make(map[string]Histogram)
+	addedRecord := &Result{}
+	addedRecord.Hists = make(map[string]Histogram)
 
 	if len(qs.Distincts) > 0 {
-		added_record.Distinct = hll.New()
+		addedRecord.Distinct = hll.New()
 	}
 
-	added_record.Count = 0
-	return added_record
+	addedRecord.Count = 0
+	return addedRecord
 }
 
 func (master_result *ResultMap) Combine(results *ResultMap) {
@@ -125,20 +125,20 @@ func fullMergeHist(h, ph Histogram) Histogram {
 }
 
 // This does an in place combine of the next_result into this one...
-func (rs *Result) Combine(next_result *Result) {
-	if next_result == nil {
+func (rs *Result) Combine(nextResult *Result) {
+	if nextResult == nil {
 		return
 	}
 
-	if next_result.Count == 0 {
+	if nextResult.Count == 0 {
 		return
 	}
 
-	total_samples := rs.Samples + next_result.Samples
-	total_count := rs.Count + next_result.Count
+	totalSamples := rs.Samples + nextResult.Samples
+	totalCount := rs.Count + nextResult.Count
 
 	// combine histograms...
-	for k, h := range next_result.Hists {
+	for k, h := range nextResult.Hists {
 
 		// If we are doing a node aggregation, we have a MERGE_TABLE
 		// set, which means we should go the slow route when merging
@@ -168,18 +168,18 @@ func (rs *Result) Combine(next_result *Result) {
 	}
 
 	// combine count distincts
-	if next_result.Distinct != nil {
+	if nextResult.Distinct != nil {
 
 		if rs.Distinct == nil {
-			rs.Distinct = next_result.Distinct
+			rs.Distinct = nextResult.Distinct
 		} else {
-			rs.Distinct.Merge(next_result.Distinct)
+			rs.Distinct.Merge(nextResult.Distinct)
 
 		}
 	}
 
-	rs.Samples = total_samples
-	rs.Count = total_count
+	rs.Samples = totalSamples
+	rs.Count = totalCount
 }
 
 func (querySpec *QuerySpec) Punctuate() {
@@ -202,20 +202,20 @@ func (querySpec *QuerySpec) ResetResults() {
 	}
 }
 func (t *Table) Grouping(name string) Grouping {
-	col_id := t.get_key_id(name)
-	return Grouping{name, col_id}
+	colId := t.getKeyId(name)
+	return Grouping{name, colId}
 }
 
 func (t *Table) Aggregation(name string, op string) Aggregation {
-	col_id := t.get_key_id(name)
+	colId := t.getKeyId(name)
 
-	agg := Aggregation{Name: name, name_id: col_id, Op: op}
+	agg := Aggregation{Name: name, nameId: colId, Op: op}
 	if op == "avg" {
-		agg.op_id = OP_AVG
+		agg.opId = OP_AVG
 	}
 
 	if op == "hist" {
-		agg.op_id = OP_HIST
+		agg.opId = OP_HIST
 		agg.HistType = "basic"
 		if *FLAGS.LOG_HIST {
 			agg.HistType = "multi"
@@ -228,10 +228,10 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	}
 
 	if op == DISTINCT_STR {
-		agg.op_id = OP_DISTINCT
+		agg.opId = OP_DISTINCT
 	}
 
-	_, ok := t.IntInfo[col_id]
+	_, ok := t.IntInfo[colId]
 	if !ok {
 		// TODO: tell our table we need to load all records!
 		Debug("MISSING CACHED INFO FOR", agg)

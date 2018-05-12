@@ -13,19 +13,19 @@ import "time"
 import "strings"
 
 func TestOpenCompressedInfoDB(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	created := add_records(func(r *Record, index int) {
+	blockCount := 3
+	created := addRecords(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 		r.AddIntField("time", int64(time.Now().Unix()))
 		r.AddStrField("name", fmt.Sprint("user", index))
-	}, block_count)
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTable(test, blockCount)
 
 	if nt.Name != TEST_TABLE_NAME {
 		test.Error("TEST TABLE NAME INCORRECT")
@@ -72,24 +72,24 @@ func TestOpenCompressedInfoDB(test *testing.T) {
 		test.Error("More records were created than expected", len(records))
 	}
 
-	delete_test_db()
+	deleteTestDb()
 
 }
 
 func TestOpenCompressedColumn(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	created := add_records(func(r *Record, index int) {
+	blockCount := 3
+	created := addRecords(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 		r.AddIntField("time", int64(time.Now().Unix()))
 		r.AddStrField("name", fmt.Sprint("user", index))
-	}, block_count)
+	}, blockCount)
 
-	nt := save_and_reload_table(test, block_count)
+	nt := saveAndReloadTable(test, blockCount)
 	nt.DigestRecords()
 	nt.LoadRecords(nil)
 
@@ -130,7 +130,7 @@ func TestOpenCompressedColumn(test *testing.T) {
 
 	// END COMPRESSING BLOCK FILES
 
-	bt := save_and_reload_table(test, block_count)
+	bt := saveAndReloadTable(test, blockCount)
 
 	loadSpec := bt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
@@ -151,6 +151,6 @@ func TestOpenCompressedColumn(test *testing.T) {
 		test.Error("More records were created than expected", len(records))
 	}
 
-	delete_test_db()
+	deleteTestDb()
 
 }

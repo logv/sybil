@@ -92,12 +92,12 @@ func (h *MultiHist) GetPercentiles() []int64 {
 		return make([]int64, 0)
 	}
 
-	all_buckets := h.GetSparseBuckets()
+	allBuckets := h.GetSparseBuckets()
 
 	buckets := make([]int, 0)
 	total := int64(0)
-	for bucket, count := range all_buckets {
-		if all_buckets[bucket] > 0 {
+	for bucket, count := range allBuckets {
+		if allBuckets[bucket] > 0 {
 			buckets = append(buckets, int(bucket))
 			total += count
 		}
@@ -105,14 +105,14 @@ func (h *MultiHist) GetPercentiles() []int64 {
 
 	sort.Ints(buckets)
 
-	prev_p := int64(0)
+	prevP := int64(0)
 	count := int64(0)
 	percentiles := make([]int64, 101)
 	for _, k := range buckets {
-		key_count := all_buckets[int64(k)]
-		count = count + key_count
+		keyCount := allBuckets[int64(k)]
+		count = count + keyCount
 		p := (100 * count) / total
-		for ip := prev_p; ip <= p; ip++ {
+		for ip := prevP; ip <= p; ip++ {
 			if ip <= 100 {
 				percentiles[ip] = int64(k)
 			}
@@ -124,7 +124,7 @@ func (h *MultiHist) GetPercentiles() []int64 {
 		} else if DEBUG_OUTLIERS {
 			Print("SETTING P", p, k)
 		}
-		prev_p = p
+		prevP = p
 	}
 
 	return percentiles[:100]
@@ -142,81 +142,81 @@ func (h *MultiHist) GetVariance() float64 {
 // VARIANCE is defined as the squared error from the mean
 // STD DEV is defined as sqrt(VARIANCE)
 func (h *MultiHist) GetStdDev() float64 {
-	all_buckets := h.GetSparseBuckets()
+	allBuckets := h.GetSparseBuckets()
 
-	sum_variance := float64(0)
-	for val, count := range all_buckets {
+	sumVariance := float64(0)
+	for val, count := range allBuckets {
 		delta := float64(val) - h.Avg
 
 		ratio := float64(count) / float64(h.Count)
 
 		// unbiased variance. probably unstable
-		sum_variance += (float64(delta*delta) * ratio)
+		sumVariance += (float64(delta*delta) * ratio)
 	}
 
-	return math.Sqrt(sum_variance)
+	return math.Sqrt(sumVariance)
 }
 
 func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
-	non_zero_buckets := make(map[string]int64)
+	nonZeroBuckets := make(map[string]int64)
 	buckets := h.GetStrBuckets()
 	for k, v := range buckets {
 		if v > 0 {
-			non_zero_buckets[k] = v
+			nonZeroBuckets[k] = v
 		}
 	}
 
-	return non_zero_buckets
+	return nonZeroBuckets
 
 }
 
 func (h *MultiHist) GetStrBuckets() map[string]int64 {
-	all_buckets := make(map[string]int64, 0)
+	allBuckets := make(map[string]int64, 0)
 	for _, subhist := range h.Subhists {
 		for key, count := range subhist.GetStrBuckets() {
-			all_buckets[key] = count
+			allBuckets[key] = count
 		}
 	}
 
-	return all_buckets
+	return allBuckets
 }
 
 func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
-	all_buckets := make(map[int64]int64, 0)
+	allBuckets := make(map[int64]int64, 0)
 	for _, subhist := range h.Subhists {
 		for key, count := range subhist.GetSparseBuckets() {
-			_, ok := all_buckets[key]
+			_, ok := allBuckets[key]
 
 			if !ok {
-				all_buckets[key] = count
+				allBuckets[key] = count
 			} else {
-				all_buckets[key] += count
+				allBuckets[key] += count
 			}
 		}
 	}
 
-	return all_buckets
+	return allBuckets
 
 }
 
 func (h *MultiHist) Combine(oh interface{}) {
-	next_hist := oh.(*MultiHistCompat)
+	nextHist := oh.(*MultiHistCompat)
 	for i, subhist := range h.Subhists {
-		subhist.Combine(next_hist.Subhists[i])
+		subhist.Combine(nextHist.Subhists[i])
 	}
 
-	total := h.Count + next_hist.Count
-	h.Avg = (h.Avg * (float64(h.Count) / float64(total))) + (next_hist.Avg * (float64(next_hist.Count) / float64(total)))
+	total := h.Count + nextHist.Count
+	h.Avg = (h.Avg * (float64(h.Count) / float64(total))) + (nextHist.Avg * (float64(nextHist.Count) / float64(total)))
 
-	if h.Min > next_hist.Min() {
-		h.Min = next_hist.Min()
+	if h.Min > nextHist.Min() {
+		h.Min = nextHist.Min()
 	}
 
-	if h.Max < next_hist.Max() {
-		h.Max = next_hist.Max()
+	if h.Max < nextHist.Max() {
+		h.Max = nextHist.Max()
 	}
 
-	h.Samples = h.Samples + next_hist.Samples
+	h.Samples = h.Samples + nextHist.Samples
 	h.Count = total
 }
 
@@ -226,22 +226,22 @@ func (h *MultiHist) TrackPercentiles() {
 
 	// We create 1:1 buckets for the smallest bucket, then increase
 	// logarithmically
-	num_hists := 0
+	numHists := 0
 	for t := BucketSize; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
-		num_hists += 1
+		numHists += 1
 	}
 
-	h.Subhists = make([]*HistCompat, num_hists+1)
+	h.Subhists = make([]*HistCompat, numHists+1)
 
-	right_edge := h.Max
+	rightEdge := h.Max
 
-	for i := 0; i < num_hists; i++ {
+	for i := 0; i < numHists; i++ {
 		BucketSize >>= HIST_FACTOR_POW
 		info := IntInfo{}
-		info.Min = right_edge - BucketSize
-		info.Max = right_edge
+		info.Min = rightEdge - BucketSize
+		info.Max = rightEdge
 
-		right_edge = info.Min
+		rightEdge = info.Min
 		h.Subhists[i] = newBasicHist(h.table, &info)
 		h.Subhists[i].TrackPercentiles()
 	}
@@ -249,10 +249,10 @@ func (h *MultiHist) TrackPercentiles() {
 	// Add the smallest hist to the end from h.Min -> the last bucket
 	info := IntInfo{}
 	info.Min = h.Min
-	info.Max = right_edge
+	info.Max = rightEdge
 
-	h.Subhists[num_hists] = newBasicHist(h.table, &info)
-	h.Subhists[num_hists].TrackPercentiles()
+	h.Subhists[numHists] = newBasicHist(h.table, &info)
+	h.Subhists[numHists].TrackPercentiles()
 
 }
 
