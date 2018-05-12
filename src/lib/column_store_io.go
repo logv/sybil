@@ -14,7 +14,7 @@ type ValueMap map[int64][]uint32
 var CARDINALITY_THRESHOLD = 4
 var DEBUG_RECORD_CONSISTENCY = false
 
-func delta_encode_col(col ValueMap) {
+func deltaEncodeCol(col ValueMap) {
 	for _, records := range col {
 		prev := uint32(0)
 		for i, v := range records {
@@ -25,21 +25,21 @@ func delta_encode_col(col ValueMap) {
 	}
 }
 
-func delta_encode(same_map map[int16]ValueMap) {
-	for _, col := range same_map {
+func deltaEncode(sameMap map[int16]ValueMap) {
+	for _, col := range sameMap {
 		if len(col) <= CHUNK_SIZE/CARDINALITY_THRESHOLD {
-			delta_encode_col(col)
+			deltaEncodeCol(col)
 		}
 	}
 }
 
 // this is used to record the buckets when building the column
 // blobs
-func record_value(same_map map[int16]ValueMap, index int32, name int16, value int64) {
-	s, ok := same_map[name]
+func recordValue(sameMap map[int16]ValueMap, index int32, name int16, value int64) {
+	s, ok := sameMap[name]
 	if !ok {
-		same_map[name] = ValueMap{}
-		s = same_map[name]
+		sameMap[name] = ValueMap{}
+		s = sameMap[name]
 	}
 
 	vi := value
@@ -47,47 +47,47 @@ func record_value(same_map map[int16]ValueMap, index int32, name int16, value in
 	s[vi] = append(s[vi], uint32(index))
 }
 
-func (tb *TableBlock) GetColumnInfo(name_id int16) *TableColumn {
-	col, ok := tb.columns[name_id]
+func (tb *TableBlock) GetColumnInfo(nameId int16) *TableColumn {
+	col, ok := tb.columns[nameId]
 	if !ok {
 		col = tb.newTableColumn()
-		tb.columns[name_id] = col
+		tb.columns[nameId] = col
 	}
 
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
 	os.MkdirAll(dirname, 0777)
-	for k, v := range same_ints {
-		col_name := tb.get_string_for_key(k)
-		if col_name == "" {
+	for k, v := range sameInts {
+		colName := tb.getStringForKey(k)
+		if colName == "" {
 			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
 			continue
 		}
 		intCol := NewSavedIntColumn()
 
-		intCol.Name = col_name
+		intCol.Name = colName
 		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
 
-		max_r := 0
-		record_to_value := make(map[uint32]int64)
+		maxR := 0
+		recordToValue := make(map[uint32]int64)
 		for bucket, records := range v {
 			si := SavedIntBucket{Value: bucket, Records: records}
 			intCol.Bins = append(intCol.Bins, si)
 			for _, r := range records {
-				record_to_value[r] = bucket
-				if int(r) >= max_r {
-					max_r = int(r) + 1
+				recordToValue[r] = bucket
+				if int(r) >= maxR {
+					maxR = int(r) + 1
 				}
 			}
 
 			// bookkeeping for info.db
-			tb.update_int_info(k, bucket)
-			tb.table.update_int_info(k, bucket)
+			tb.updateIntInfo(k, bucket)
+			tb.table.updateIntInfo(k, bucket)
 		}
 
 		intCol.BucketEncoded = true
@@ -95,10 +95,10 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		if len(intCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
-			intCol.Values = make([]int64, max_r)
+			intCol.Values = make([]int64, maxR)
 			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
 
-			for r, val := range record_to_value {
+			for r, val := range recordToValue {
 				intCol.Values[r] = val
 			}
 
@@ -114,7 +114,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		}
 
 		var network bytes.Buffer
-		col_fname := fmt.Sprintf("%s/int_%s.db", dirname, tb.get_string_for_key(k))
+		colFname := fmt.Sprintf("%s/int_%s.db", dirname, tb.getStringForKey(k))
 		// Create an encoder and send a value.
 		enc := gob.NewEncoder(&network)
 		err := enc.Encode(intCol)
@@ -127,56 +127,56 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
-		w, _ := os.Create(col_fname)
+		w, _ := os.Create(colFname)
 
 		network.WriteTo(w)
 	}
 
 }
 
-func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]ValueMap) {
-	for k, v := range same_sets {
-		col_name := tb.get_string_for_key(k)
-		if col_name == "" {
+func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]ValueMap) {
+	for k, v := range sameSets {
+		colName := tb.getStringForKey(k)
+		if colName == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
 			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
 			continue
 		}
 		setCol := SavedSetColumn{}
-		setCol.Name = col_name
+		setCol.Name = colName
 		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
-		temp_block := newTableBlock()
+		tempBlock := newTableBlock()
 
-		tb_col := tb.GetColumnInfo(k)
-		temp_col := temp_block.GetColumnInfo(k)
-		record_to_value := make(map[uint32][]int32)
-		max_r := 0
+		tbCol := tb.GetColumnInfo(k)
+		tempCol := tempBlock.GetColumnInfo(k)
+		recordToValue := make(map[uint32][]int32)
+		maxR := 0
 		for bucket, records := range v {
 			// migrating string definitions from column definitions
-			str_val := tb_col.get_string_for_val(int32(bucket))
-			str_id := temp_col.get_val_id(str_val)
-			si := SavedSetBucket{Value: int32(str_id), Records: records}
+			strVal := tbCol.getStringForVal(int32(bucket))
+			strId := tempCol.getValId(strVal)
+			si := SavedSetBucket{Value: int32(strId), Records: records}
 			setCol.Bins = append(setCol.Bins, si)
 			for _, r := range records {
-				_, ok := record_to_value[r]
-				if int(r) >= max_r {
-					max_r = int(r) + 1
+				_, ok := recordToValue[r]
+				if int(r) >= maxR {
+					maxR = int(r) + 1
 				}
 
 				if !ok {
-					record_to_value[r] = make([]int32, 0)
+					recordToValue[r] = make([]int32, 0)
 
 				}
 
-				record_to_value[r] = append(record_to_value[r], str_id)
+				recordToValue[r] = append(recordToValue[r], strId)
 			}
 		}
 
-		setCol.StringTable = make([]string, len(temp_col.StringTable))
-		for str, id := range temp_col.StringTable {
+		setCol.StringTable = make([]string, len(tempCol.StringTable))
+		for str, id := range tempCol.StringTable {
 			setCol.StringTable[id] = str
 		}
 
@@ -185,13 +185,13 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		if len(setCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
 			setCol.BucketEncoded = false
 			setCol.Bins = nil
-			setCol.Values = make([][]int32, max_r)
-			for k, v := range record_to_value {
+			setCol.Values = make([][]int32, maxR)
+			for k, v := range recordToValue {
 				setCol.Values[k] = v
 			}
 		}
 
-		col_fname := fmt.Sprintf("%s/set_%s.db", dirname, tb.get_string_for_key(k))
+		colFname := fmt.Sprintf("%s/set_%s.db", dirname, tb.getStringForKey(k))
 
 		var network bytes.Buffer // Stand-in for the network.
 
@@ -208,48 +208,48 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
-		w, _ := os.Create(col_fname)
+		w, _ := os.Create(colFname)
 		network.WriteTo(w)
 
 	}
 }
 
-func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]ValueMap) {
-	for k, v := range same_strs {
-		col_name := tb.get_string_for_key(k)
-		if col_name == "" {
+func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]ValueMap) {
+	for k, v := range sameStrs {
+		colName := tb.getStringForKey(k)
+		if colName == "" {
 			// TODO: validate what this means. I think it means reading 'null' values off disk
 			// when pulling off incomplete records
 			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "PROBABLY AN ERRONEOUS FIELD")
 			continue
 		}
 		strCol := NewSavedStrColumn()
-		strCol.Name = col_name
+		strCol.Name = colName
 		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
-		temp_block := newTableBlock()
+		tempBlock := newTableBlock()
 
-		temp_col := temp_block.GetColumnInfo(k)
-		tb_col := tb.GetColumnInfo(k)
-		record_to_value := make(map[uint32]int32)
-		max_r := 0
+		tempCol := tempBlock.GetColumnInfo(k)
+		tbCol := tb.GetColumnInfo(k)
+		recordToValue := make(map[uint32]int32)
+		maxR := 0
 		for bucket, records := range v {
 
 			// migrating string definitions from column definitions
-			str_id := temp_col.get_val_id(tb_col.get_string_for_val(int32(bucket)))
+			strId := tempCol.getValId(tbCol.getStringForVal(int32(bucket)))
 
-			si := SavedStrBucket{Value: str_id, Records: records}
+			si := SavedStrBucket{Value: strId, Records: records}
 			strCol.Bins = append(strCol.Bins, si)
 			for _, r := range records {
-				record_to_value[r] = str_id
-				if r >= uint32(max_r) {
-					max_r = int(r) + 1
+				recordToValue[r] = strId
+				if r >= uint32(maxR) {
+					maxR = int(r) + 1
 				}
 			}
 
 			// also bookkeeping to be used later inside the block info.db, IMO
-			tb.update_str_info(k, int(bucket), len(records))
+			tb.updateStrInfo(k, int(bucket), len(records))
 		}
 
 		strCol.BucketEncoded = true
@@ -257,27 +257,27 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		if len(strCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
 			strCol.BucketEncoded = false
 			strCol.Bins = nil
-			strCol.Values = make([]int32, max_r)
-			for k, v := range record_to_value {
+			strCol.Values = make([]int32, maxR)
+			for k, v := range recordToValue {
 				strCol.Values[k] = v
 			}
 		}
 
 		for _, bucket := range strCol.Bins {
-			first_val := bucket.Records[0]
-			if first_val > 1000 && DEBUG_RECORD_CONSISTENCY {
-				Warn(k, bucket.Value, "FIRST RECORD IS", first_val)
+			firstVal := bucket.Records[0]
+			if firstVal > 1000 && DEBUG_RECORD_CONSISTENCY {
+				Warn(k, bucket.Value, "FIRST RECORD IS", firstVal)
 			}
 		}
 
-		tb.get_str_info(k).prune()
+		tb.getStrInfo(k).prune()
 
-		strCol.StringTable = make([]string, len(temp_col.StringTable))
-		for str, id := range temp_col.StringTable {
+		strCol.StringTable = make([]string, len(tempCol.StringTable))
+		for str, id := range tempCol.StringTable {
 			strCol.StringTable[id] = str
 		}
 
-		col_fname := fmt.Sprintf("%s/str_%s.db", dirname, tb.get_string_for_key(k))
+		colFname := fmt.Sprintf("%s/str_%s.db", dirname, tb.getStringForKey(k))
 
 		var network bytes.Buffer // Stand-in for the network.
 
@@ -294,9 +294,9 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 			action = "BUCKETED  "
 		}
 
-		Debug(action, "COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
-		w, _ := os.Create(col_fname)
+		w, _ := os.Create(colFname)
 		network.WriteTo(w)
 
 	}
@@ -309,7 +309,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	records := tb.RecordList
 
 	// Now to save block info...
-	col_fname := fmt.Sprintf("%s/info.db", dirname)
+	colFname := fmt.Sprintf("%s/info.db", dirname)
 
 	var network bytes.Buffer // Stand-in for the network.
 
@@ -328,12 +328,12 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	}
 
 	for k, v := range tb.IntInfo {
-		name := tb.get_string_for_key(k)
+		name := tb.getStringForKey(k)
 		savedIntInfo[name] = v
 	}
 
 	for k, v := range tb.StrInfo {
-		name := tb.get_string_for_key(k)
+		name := tb.getStringForKey(k)
 		savedStrInfo[name] = v
 	}
 
@@ -350,10 +350,10 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	}
 
 	if DEBUG_TIMING {
-		Debug("SERIALIZED BLOCK INFO", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/length, ")")
+		Debug("SERIALIZED BLOCK INFO", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/length, ")")
 	}
 
-	w, _ := os.Create(col_fname)
+	w, _ := os.Create(colFname)
 	network.WriteTo(w)
 }
 
@@ -368,51 +368,51 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 	// making a cross section of records that share values
 	// goes from fieldname{} -> value{} -> record
-	same_ints := make(map[int16]ValueMap)
-	same_strs := make(map[int16]ValueMap)
-	same_sets := make(map[int16]ValueMap)
+	sameInts := make(map[int16]ValueMap)
+	sameStrs := make(map[int16]ValueMap)
+	sameSets := make(map[int16]ValueMap)
 
 	// parse record list and transfer book keeping data into the current
 	// table block, as well as separate record values by column type
 	for i, r := range records {
 		for k, v := range r.Ints {
 			if r.Populated[k] == INT_VAL {
-				record_value(same_ints, int32(i), int16(k), int64(v))
+				recordValue(sameInts, int32(i), int16(k), int64(v))
 			}
 		}
 		for k, v := range r.Strs {
 			// transition key from the
 			col := r.block.GetColumnInfo(int16(k))
-			new_col := tb.GetColumnInfo(int16(k))
+			newCol := tb.GetColumnInfo(int16(k))
 
-			v_name := col.get_string_for_val(int32(v))
-			v_id := new_col.get_val_id(v_name)
+			vName := col.getStringForVal(int32(v))
+			vId := newCol.getValId(vName)
 
 			// record the transitioned key
 			if r.Populated[k] == STR_VAL {
-				record_value(same_strs, int32(i), int16(k), int64(v_id))
+				recordValue(sameStrs, int32(i), int16(k), int64(vId))
 			}
 		}
 		for k, v := range r.SetMap {
 			col := r.block.GetColumnInfo(int16(k))
-			new_col := tb.GetColumnInfo(int16(k))
+			newCol := tb.GetColumnInfo(int16(k))
 			if r.Populated[k] == SET_VAL {
 				for _, iv := range v {
-					v_name := col.get_string_for_val(int32(iv))
-					v_id := new_col.get_val_id(v_name)
-					record_value(same_sets, int32(i), int16(k), int64(v_id))
+					vName := col.getStringForVal(int32(iv))
+					vId := newCol.getValId(vName)
+					recordValue(sameSets, int32(i), int16(k), int64(vId))
 				}
 			}
 		}
 	}
 
 	if OPTS.DELTA_ENCODE_RECORD_IDS {
-		delta_encode(same_ints)
-		delta_encode(same_strs)
-		delta_encode(same_sets)
+		deltaEncode(sameInts)
+		deltaEncode(sameStrs)
+		deltaEncode(sameSets)
 	}
 
-	ret := SeparatedColumns{ints: same_ints, strs: same_strs, sets: same_sets}
+	ret := SeparatedColumns{ints: sameInts, strs: sameStrs, sets: sameSets}
 	return ret
 
 }
@@ -434,20 +434,20 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	oldblock := fmt.Sprintf("%s.old", dirname)
 
 	start := time.Now()
-	old_percent := debug.SetGCPercent(-1)
-	separated_columns := tb.SeparateRecordsIntoColumns()
+	oldPercent := debug.SetGCPercent(-1)
+	separatedColumns := tb.SeparateRecordsIntoColumns()
 	end := time.Now()
 	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
-	tb.SaveIntsToColumns(partialname, separated_columns.ints)
-	tb.SaveStrsToColumns(partialname, separated_columns.strs)
-	tb.SaveSetsToColumns(partialname, separated_columns.sets)
+	tb.SaveIntsToColumns(partialname, separatedColumns.ints)
+	tb.SaveStrsToColumns(partialname, separatedColumns.strs)
+	tb.SaveSetsToColumns(partialname, separatedColumns.sets)
 	tb.SaveInfoToColumns(partialname)
 
 	end = time.Now()
 	Debug("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
 
-	debug.SetGCPercent(old_percent)
+	debug.SetGCPercent(oldPercent)
 
 	// TODO: Add a stronger consistency check here
 	// For now, we load info.db and check NumRecords inside it to prevent
@@ -501,51 +501,51 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 		return
 	}
 
-	string_lookup := make([]string, info.NumRecords)
-	key_table_len := len(tb.table.KeyTable)
-	col_id := tb.table.get_key_id(into.Name)
+	stringLookup := make([]string, info.NumRecords)
+	keyTableLen := len(tb.table.KeyTable)
+	colId := tb.table.getKeyId(into.Name)
 
-	if int(col_id) >= key_table_len {
+	if int(colId) >= keyTableLen {
 		Debug("IGNORING STR COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
-	col := tb.GetColumnInfo(col_id)
+	col := tb.GetColumnInfo(colId)
 	// unpack the string table
 
 	// Run our replacements!
-	str_replace, ok := OPTS.STR_REPLACEMENTS[into.Name]
-	bucket_replace := make(map[int32]int32)
+	strReplace, ok := OPTS.STR_REPLACEMENTS[into.Name]
+	bucketReplace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
-		re, err = regexp.Compile(str_replace.Pattern)
+		re, err = regexp.Compile(strReplace.Pattern)
 	}
 
 	for k, v := range into.StringTable {
 		var nv = v
 		if re != nil {
-			nv = re.ReplaceAllString(v, str_replace.Replace)
+			nv = re.ReplaceAllString(v, strReplace.Replace)
 		}
 
-		existing_key, exists := col.StringTable[nv]
+		existingKey, exists := col.StringTable[nv]
 
 		v = nv
 
 		if exists {
-			bucket_replace[int32(k)] = existing_key
+			bucketReplace[int32(k)] = existingKey
 		} else {
-			bucket_replace[int32(k)] = int32(k)
+			bucketReplace[int32(k)] = int32(k)
 			col.StringTable[v] = int32(k)
 		}
 
-		string_lookup[int32(k)] = v
+		stringLookup[int32(k)] = v
 	}
 
-	col.val_string_id_lookup = string_lookup
+	col.valStringIdLookup = stringLookup
 
-	is_path_col := false
+	isPathCol := false
 	if FLAGS.PATH_KEY != nil {
-		is_path_col = into.Name == *FLAGS.PATH_KEY
+		isPathCol = into.Name == *FLAGS.PATH_KEY
 	}
 	var record *Record
 	var r uint32
@@ -557,12 +557,12 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 		for _, bucket := range into.Bins {
 			prev = 0
 			value := bucket.Value
-			new_value, should_replace := bucket_replace[value]
-			if should_replace {
-				value = new_value
+			newValue, shouldReplace := bucketReplace[value]
+			if shouldReplace {
+				value = newValue
 			}
 
-			cast_value := StrField(new_value)
+			castValue := StrField(newValue)
 			for _, r = range bucket.Records {
 
 				if did {
@@ -573,29 +573,29 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 				record = records[r]
 
 				if DEBUG_RECORD_CONSISTENCY {
-					if record.Populated[col_id] != _NO_VAL {
-						Error("OVERWRITING RECORD VALUE", record, into.Name, col_id, bucket.Value)
+					if record.Populated[colId] != _NO_VAL {
+						Error("OVERWRITING RECORD VALUE", record, into.Name, colId, bucket.Value)
 					}
 				}
 
-				records[r].Populated[col_id] = STR_VAL
-				records[r].Strs[col_id] = cast_value
+				records[r].Populated[colId] = STR_VAL
+				records[r].Strs[colId] = castValue
 
-				if is_path_col {
-					record.Path = string_lookup[new_value]
+				if isPathCol {
+					record.Path = stringLookup[newValue]
 				}
 			}
 		}
 
 	} else {
 		for r, v := range into.Values {
-			new_value, should_replace := bucket_replace[v]
-			if should_replace {
-				v = new_value
+			newValue, shouldReplace := bucketReplace[v]
+			if shouldReplace {
+				v = newValue
 			}
 
-			records[r].Strs[col_id] = StrField(v)
-			records[r].Populated[col_id] = STR_VAL
+			records[r].Strs[colId] = StrField(v)
+			records[r].Populated[colId] = STR_VAL
 		}
 
 	}
@@ -604,35 +604,35 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 	records := tb.RecordList
 
-	saved_col := NewSavedSetColumn()
-	into := &saved_col
+	savedCol := NewSavedSetColumn()
+	into := &savedCol
 	err := dec.Decode(into)
 	if err != nil {
 		Debug("DECODE COL ERR:", err)
 	}
 
-	key_table_len := len(tb.table.KeyTable)
-	col_id := tb.table.get_key_id(into.Name)
-	string_lookup := make(map[int32]string)
+	keyTableLen := len(tb.table.KeyTable)
+	colId := tb.table.getKeyId(into.Name)
+	stringLookup := make(map[int32]string)
 
-	if int(col_id) >= key_table_len {
+	if int(colId) >= keyTableLen {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
-	col := tb.GetColumnInfo(col_id)
+	col := tb.GetColumnInfo(colId)
 	// unpack the string table
 	for k, v := range into.StringTable {
 		col.StringTable[v] = int32(k)
-		string_lookup[int32(k)] = v
+		stringLookup[int32(k)] = v
 	}
 
-	tr_string_lookup := make([]string, len(string_lookup))
-	for k, v := range string_lookup {
-		tr_string_lookup[k] = v
+	trStringLookup := make([]string, len(stringLookup))
+	for k, v := range stringLookup {
+		trStringLookup[k] = v
 	}
 
-	col.val_string_id_lookup = tr_string_lookup
+	col.valStringIdLookup = trStringLookup
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
@@ -643,29 +643,29 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				cur_set, ok := records[r].SetMap[col_id]
+				curSet, ok := records[r].SetMap[colId]
 				if !ok {
-					cur_set = make(SetField, 0)
+					curSet = make(SetField, 0)
 				}
 
-				cur_set = append(cur_set, bucket.Value)
-				records[r].SetMap[col_id] = cur_set
+				curSet = append(curSet, bucket.Value)
+				records[r].SetMap[colId] = curSet
 
-				records[r].Populated[col_id] = SET_VAL
+				records[r].Populated[colId] = SET_VAL
 				prev = r
 			}
 
 		}
 	} else {
 		for r, v := range into.Values {
-			cur_set, ok := records[r].SetMap[col_id]
+			curSet, ok := records[r].SetMap[colId]
 			if !ok {
-				cur_set = make(SetField, 0)
-				records[r].SetMap[col_id] = cur_set
+				curSet = make(SetField, 0)
+				records[r].SetMap[colId] = curSet
 			}
 
-			records[r].SetMap[col_id] = SetField(v)
-			records[r].Populated[col_id] = SET_VAL
+			records[r].SetMap[colId] = SetField(v)
+			records[r].Populated[colId] = SET_VAL
 		}
 	}
 }
@@ -679,23 +679,23 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 		Debug("DECODE COL ERR:", err)
 	}
 
-	key_table_len := len(tb.table.KeyTable)
-	col_id := tb.table.get_key_id(into.Name)
-	if int(col_id) >= key_table_len {
+	keyTableLen := len(tb.table.KeyTable)
+	colId := tb.table.getKeyId(into.Name)
+	if int(colId) >= keyTableLen {
 		Debug("IGNORING INT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
-	is_time_col := false
+	isTimeCol := false
 	if FLAGS.TIME_COL != nil {
-		is_time_col = into.Name == *FLAGS.TIME_COL
+		isTimeCol = into.Name == *FLAGS.TIME_COL
 	}
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.update_int_info(col_id, bucket.Value)
-				tb.table.update_int_info(col_id, bucket.Value)
+				tb.updateIntInfo(colId, bucket.Value)
+				tb.table.updateIntInfo(colId, bucket.Value)
 			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -706,16 +706,16 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 				}
 
 				if DEBUG_RECORD_CONSISTENCY {
-					if records[r].Populated[col_id] != _NO_VAL {
-						Error("OVERWRITING RECORD VALUE", records[r], into.Name, col_id, bucket.Value)
+					if records[r].Populated[colId] != _NO_VAL {
+						Error("OVERWRITING RECORD VALUE", records[r], into.Name, colId, bucket.Value)
 					}
 				}
 
-				records[r].Ints[col_id] = IntField(bucket.Value)
-				records[r].Populated[col_id] = INT_VAL
+				records[r].Ints[colId] = IntField(bucket.Value)
+				records[r].Populated[colId] = INT_VAL
 				prev = r
 
-				if is_time_col {
+				if isTimeCol {
 					records[r].Timestamp = bucket.Value
 				}
 
@@ -727,18 +727,18 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 		prev := int64(0)
 		for r, v := range into.Values {
 			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.update_int_info(col_id, v)
-				tb.table.update_int_info(col_id, v)
+				tb.updateIntInfo(colId, v)
+				tb.table.updateIntInfo(colId, v)
 			}
 
 			if into.ValueEncoded {
 				v = v + prev
 			}
 
-			records[r].Ints[col_id] = IntField(v)
-			records[r].Populated[col_id] = INT_VAL
+			records[r].Ints[colId] = IntField(v)
+			records[r].Populated[colId] = INT_VAL
 
-			if is_time_col {
+			if isTimeCol {
 				records[r].Timestamp = v
 			}
 

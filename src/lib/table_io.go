@@ -64,8 +64,8 @@ func (t *Table) saveTableInfo(fname string) {
 }
 
 func (t *Table) SaveTableInfo(fname string) {
-	save_table := getSaveTable(t)
-	save_table.saveTableInfo(fname)
+	saveTable := getSaveTable(t)
+	saveTable.saveTableInfo(fname)
 
 }
 
@@ -84,8 +84,8 @@ func (t *Table) saveRecordList(records RecordList) bool {
 
 	Debug("SAVING RECORD LIST", len(records), t.Name)
 
-	chunk_size := CHUNK_SIZE
-	chunks := len(records) / chunk_size
+	chunkSize := CHUNK_SIZE
+	chunks := len(records) / chunkSize
 
 	if chunks == 0 {
 		filename, err := t.getNewIngestBlockName()
@@ -99,17 +99,17 @@ func (t *Table) saveRecordList(records RecordList) bool {
 			if err != nil {
 				Error("ERR SAVING BLOCK", filename, err)
 			}
-			t.SaveRecordsToBlock(records[j*chunk_size:(j+1)*chunk_size], filename)
+			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename)
 		}
 
 		// SAVE THE REMAINDER
-		if len(records) > chunks*chunk_size {
+		if len(records) > chunks*chunkSize {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
 				Error("Error creating new ingestion block", err)
 			}
 
-			t.SaveRecordsToBlock(records[chunks*chunk_size:], filename)
+			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename)
 		}
 	}
 
@@ -143,13 +143,13 @@ func (t *Table) LoadTableInfo() bool {
 }
 
 func (t *Table) LoadTableInfoFrom(filename string) bool {
-	saved_table := Table{Name: t.Name}
-	saved_table.init_data_structures()
+	savedTable := Table{Name: t.Name}
+	savedTable.initDataStructures()
 
 	start := time.Now()
 
 	Debug("OPENING TABLE INFO FROM FILENAME", filename)
-	err := decodeInto(filename, &saved_table)
+	err := decodeInto(filename, &savedTable)
 	end := time.Now()
 	if err != nil {
 		Debug("TABLE INFO DECODE:", err)
@@ -160,25 +160,25 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 		Debug("TABLE INFO OPEN TOOK", end.Sub(start))
 	}
 
-	if len(saved_table.KeyTable) > 0 {
-		t.KeyTable = saved_table.KeyTable
+	if len(savedTable.KeyTable) > 0 {
+		t.KeyTable = savedTable.KeyTable
 	}
 
-	if len(saved_table.KeyTypes) > 0 {
-		t.KeyTypes = saved_table.KeyTypes
+	if len(savedTable.KeyTypes) > 0 {
+		t.KeyTypes = savedTable.KeyTypes
 	}
 
-	if saved_table.IntInfo != nil {
-		t.IntInfo = saved_table.IntInfo
+	if savedTable.IntInfo != nil {
+		t.IntInfo = savedTable.IntInfo
 	}
-	if saved_table.StrInfo != nil {
-		t.StrInfo = saved_table.StrInfo
+	if savedTable.StrInfo != nil {
+		t.StrInfo = savedTable.StrInfo
 	}
 
 	// If we are recovering the INFO lock, we won't necessarily have
 	// all fields filled out
-	if t.string_id_m != nil {
-		t.populate_string_id_lookup()
+	if t.stringIdM != nil {
+		t.populateStringIdLookup()
 	}
 
 	return true
@@ -207,7 +207,7 @@ func (t *Table) HasFlagFile() bool {
 
 }
 
-func file_looks_like_block(v os.FileInfo) bool {
+func fileLooksLikeBlock(v os.FileInfo) bool {
 
 	switch {
 
@@ -247,19 +247,19 @@ func (t *Table) LoadBlockCache() {
 		return
 	}
 
-	for _, block_file := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
-		block_cache := SavedBlockCache{}
+	for _, blockFile := range files {
+		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
+		blockCache := SavedBlockCache{}
 		if err != nil {
 			continue
 		}
 
-		err = decodeInto(filename, &block_cache)
+		err = decodeInto(filename, &blockCache)
 		if err != nil {
 			continue
 		}
 
-		for k, v := range block_cache {
+		for k, v := range blockCache {
 			t.BlockInfoCache[k] = v
 		}
 	}
@@ -271,7 +271,7 @@ func (t *Table) ResetBlockCache() {
 	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
 }
 
-func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
+func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 
 	// NOW WE SAVE OUR QUERY CACHE HERE...
 	savestart := time.Now()
@@ -280,7 +280,7 @@ func (t *Table) WriteQueryCache(to_cache_specs map[string]*QuerySpec) {
 	saved := 0
 
 	if *FLAGS.CACHED_QUERIES {
-		for blockName, blockQuery := range to_cache_specs {
+		for blockName, blockQuery := range toCacheSpecs {
 
 			if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
 				continue
@@ -330,32 +330,32 @@ func (t *Table) WriteBlockCache() {
 
 	Debug("WRITING BLOCK CACHE, OUTSTANDING", len(t.NewBlockInfos))
 
-	var num_blocks = len(t.NewBlockInfos) / BLOCKS_PER_CACHE_FILE
+	var numBlocks = len(t.NewBlockInfos) / BLOCKS_PER_CACHE_FILE
 
-	for i := 0; i < num_blocks; i++ {
-		cached_info := t.NewBlockInfos[i*BLOCKS_PER_CACHE_FILE : (i+1)*BLOCKS_PER_CACHE_FILE]
+	for i := 0; i < numBlocks; i++ {
+		cachedInfo := t.NewBlockInfos[i*BLOCKS_PER_CACHE_FILE : (i+1)*BLOCKS_PER_CACHE_FILE]
 
-		block_file, err := t.getNewCacheBlockFile()
+		blockFile, err := t.getNewCacheBlockFile()
 		if err != nil {
 			Debug("TROUBLE CREATING CACHE BLOCK FILE")
 			break
 		}
-		block_cache := SavedBlockCache{}
+		blockCache := SavedBlockCache{}
 
-		for _, block_name := range cached_info {
-			block_cache[block_name] = t.BlockInfoCache[block_name]
+		for _, blockName := range cachedInfo {
+			blockCache[blockName] = t.BlockInfoCache[blockName]
 		}
 
-		enc := gob.NewEncoder(block_file)
-		err = enc.Encode(&block_cache)
+		enc := gob.NewEncoder(blockFile)
+		err = enc.Encode(&blockCache)
 		if err != nil {
 			Debug("ERROR ENCODING BLOCK CACHE", err)
 		}
 
-		pathname := fmt.Sprintf("%s.db", block_file.Name())
+		pathname := fmt.Sprintf("%s.db", blockFile.Name())
 
-		Debug("RENAMING", block_file.Name(), pathname)
-		RenameAndMod(block_file.Name(), pathname)
+		Debug("RENAMING", blockFile.Name(), pathname)
+		RenameAndMod(blockFile.Name(), pathname)
 
 	}
 
@@ -387,7 +387,7 @@ func (t *Table) ChunkAndSave() {
 }
 
 func (t *Table) IsNotExist() bool {
-	table_dir := path.Join(*FLAGS.DIR, t.Name)
-	_, err := ioutil.ReadDir(table_dir)
+	tableDir := path.Join(*FLAGS.DIR, t.Name)
+	_, err := ioutil.ReadDir(tableDir)
 	return err != nil
 }

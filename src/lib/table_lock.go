@@ -118,11 +118,11 @@ func (l *CacheLock) Recover() bool {
 		return true
 	}
 
-	for _, block_file := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, block_file.Name())
-		block_cache := SavedBlockCache{}
+	for _, blockFile := range files {
+		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
+		blockCache := SavedBlockCache{}
 
-		err := decodeInto(filename, &block_cache)
+		err := decodeInto(filename, &blockCache)
 		if err != nil {
 			os.RemoveAll(filename)
 			continue
@@ -180,17 +180,17 @@ func (l *Lock) ForceMakeFile(pid int64) {
 
 }
 
-func is_active_pid(val []byte) bool {
+func isActivePid(val []byte) bool {
 	// Check if its our PID or not...
-	pid_str := strconv.FormatInt(int64(os.Getpid()), 10)
-	if pid_str == string(val) {
+	pidStr := strconv.FormatInt(int64(os.Getpid()), 10)
+	if pidStr == string(val) {
 		return true
 	}
 
 	return false
 }
 
-func check_if_broken(lockfile string, l *Lock) bool {
+func checkIfBroken(lockfile string, l *Lock) bool {
 	var val []byte
 	var err error
 	// To check if a PID is active, we... first parse the PID in the file, then
@@ -199,9 +199,9 @@ func check_if_broken(lockfile string, l *Lock) bool {
 	// EPERM error
 	val, err = ioutil.ReadFile(lockfile)
 
-	var pid_int = int64(0)
+	var pidInt = int64(0)
 	if err == nil {
-		pid_int, err = strconv.ParseInt(string(val), 10, 32)
+		pidInt, err = strconv.ParseInt(string(val), 10, 32)
 
 		if err != nil {
 			breaks, ok := BREAK_MAP[lockfile]
@@ -222,8 +222,8 @@ func check_if_broken(lockfile string, l *Lock) bool {
 		}
 	}
 
-	if err == nil && pid_int != 0 {
-		process, err := os.FindProcess(int(pid_int))
+	if err == nil && pidInt != 0 {
+		process, err := os.FindProcess(int(pidInt))
 		// err is Always nil on *nix
 		if err == nil {
 			err := process.Signal(syscall.Signal(0))
@@ -252,7 +252,7 @@ func check_if_broken(lockfile string, l *Lock) bool {
 	return false
 }
 
-func check_pid(lockfile string, l *Lock) bool {
+func checkPid(lockfile string, l *Lock) bool {
 	cangrab := false
 
 	var val []byte
@@ -260,7 +260,7 @@ func check_pid(lockfile string, l *Lock) bool {
 
 	// check if the PID is active or not. If the PID isn't active, we enter
 	// recovery mode for this Lock() and say it's grabbable
-	if check_if_broken(lockfile, l) {
+	if checkIfBroken(lockfile, l) {
 		return true
 	}
 
@@ -269,7 +269,7 @@ func check_pid(lockfile string, l *Lock) bool {
 
 		if err == nil {
 			// Check if its our PID or not...
-			if is_active_pid(val) {
+			if isActivePid(val) {
 				return true
 			}
 
@@ -295,7 +295,7 @@ func (l *Lock) Grab() bool {
 	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
 		time.Sleep(LOCK_US)
-		if check_pid(lockfile, l) == false {
+		if checkPid(lockfile, l) == false {
 			if l.broken {
 				Debug("MARKING BROKEN LOCKFILE", lockfile)
 				return false
@@ -317,7 +317,7 @@ func (l *Lock) Grab() bool {
 		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
 
-		if check_pid(lockfile, l) == false {
+		if checkPid(lockfile, l) == false {
 			continue
 		}
 
@@ -345,7 +345,7 @@ func (l *Lock) Release() bool {
 			continue
 		}
 
-		if is_active_pid(val) {
+		if isActivePid(val) {
 			Debug("UNLOCKING", lockfile)
 			os.RemoveAll(lockfile)
 			break

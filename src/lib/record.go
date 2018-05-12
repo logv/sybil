@@ -20,19 +20,19 @@ const (
 )
 
 func (r *Record) GetStrVal(name string) (string, bool) {
-	id := r.block.get_key_id(name)
+	id := r.block.getKeyId(name)
 
 	is := r.Strs[id]
 	ok := r.Populated[id] == STR_VAL
 
 	col := r.block.GetColumnInfo(id)
-	val := col.get_string_for_val(int32(is))
+	val := col.getStringForVal(int32(is))
 
 	return val, ok
 }
 
 func (r *Record) GetIntVal(name string) (int, bool) {
-	id := r.block.get_key_id(name)
+	id := r.block.getKeyId(name)
 
 	is := r.Ints[id]
 	ok := r.Populated[id] == INT_VAL
@@ -40,7 +40,7 @@ func (r *Record) GetIntVal(name string) (int, bool) {
 }
 
 func (r *Record) GetSetVal(name string) ([]string, bool) {
-	id := r.block.get_key_id(name)
+	id := r.block.getKeyId(name)
 
 	is := r.SetMap[id]
 	ok := r.Populated[id] == SET_VAL
@@ -50,7 +50,7 @@ func (r *Record) GetSetVal(name string) ([]string, bool) {
 
 	if ok {
 		for _, v := range is {
-			val := col.get_string_for_val(int32(v))
+			val := col.getStringForVal(int32(v))
 			rets = append(rets, val)
 		}
 	}
@@ -59,13 +59,13 @@ func (r *Record) GetSetVal(name string) ([]string, bool) {
 }
 
 func (r *Record) getVal(name string) (int, bool) {
-	name_id := r.block.get_key_id(name)
-	switch r.Populated[name_id] {
+	nameId := r.block.getKeyId(name)
+	switch r.Populated[nameId] {
 	case STR_VAL:
-		return int(r.Strs[name_id]), true
+		return int(r.Strs[nameId]), true
 
 	case INT_VAL:
-		return int(r.Ints[name_id]), true
+		return int(r.Ints[nameId]), true
 
 	default:
 		return 0, false
@@ -82,69 +82,69 @@ func (r *Record) ResizeFields(length int16) {
 	length++
 
 	if int(length) >= len(r.Strs) {
-		delta_records := make([]StrField, int(float64(length)))
+		deltaRecords := make([]StrField, int(float64(length)))
 
-		r.Strs = append(r.Strs, delta_records...)
+		r.Strs = append(r.Strs, deltaRecords...)
 	}
 
 	if int(length) >= len(r.Populated) {
-		delta_records := make([]int8, int(float64(length)))
+		deltaRecords := make([]int8, int(float64(length)))
 
-		r.Populated = append(r.Populated, delta_records...)
+		r.Populated = append(r.Populated, deltaRecords...)
 	}
 
 	if int(length) >= len(r.Ints) {
-		delta_records := make([]IntField, int(float64(length)))
+		deltaRecords := make([]IntField, int(float64(length)))
 
-		r.Ints = append(r.Ints, delta_records...)
+		r.Ints = append(r.Ints, deltaRecords...)
 	}
 
 }
 
 func (r *Record) AddStrField(name string, val string) {
-	name_id := r.block.get_key_id(name)
+	nameId := r.block.getKeyId(name)
 
-	col := r.block.GetColumnInfo(name_id)
-	value_id := col.get_val_id(val)
+	col := r.block.GetColumnInfo(nameId)
+	valueId := col.getValId(val)
 
-	r.ResizeFields(name_id)
-	r.Strs[name_id] = StrField(value_id)
-	r.Populated[name_id] = STR_VAL
+	r.ResizeFields(nameId)
+	r.Strs[nameId] = StrField(valueId)
+	r.Populated[nameId] = STR_VAL
 
-	if r.block.table.set_key_type(name_id, STR_VAL) == false {
-		Error("COULDNT SET STR VAL", name, val, name_id)
+	if r.block.table.setKeyType(nameId, STR_VAL) == false {
+		Error("COULDNT SET STR VAL", name, val, nameId)
 	}
 }
 
 func (r *Record) AddIntField(name string, val int64) {
-	name_id := r.block.get_key_id(name)
-	r.block.table.update_int_info(name_id, val)
+	nameId := r.block.getKeyId(name)
+	r.block.table.updateIntInfo(nameId, val)
 
-	r.ResizeFields(name_id)
-	r.Ints[name_id] = IntField(val)
-	r.Populated[name_id] = INT_VAL
-	if r.block.table.set_key_type(name_id, INT_VAL) == false {
-		Error("COULDNT SET INT VAL", name, val, name_id)
+	r.ResizeFields(nameId)
+	r.Ints[nameId] = IntField(val)
+	r.Populated[nameId] = INT_VAL
+	if r.block.table.setKeyType(nameId, INT_VAL) == false {
+		Error("COULDNT SET INT VAL", name, val, nameId)
 	}
 }
 
 func (r *Record) AddSetField(name string, val []string) {
-	name_id := r.block.get_key_id(name)
+	nameId := r.block.getKeyId(name)
 	vals := make([]int32, len(val))
 	for i, v := range val {
-		col := r.block.GetColumnInfo(name_id)
-		vals[i] = col.get_val_id(v)
+		col := r.block.GetColumnInfo(nameId)
+		vals[i] = col.getValId(v)
 	}
 
-	r.ResizeFields(name_id)
+	r.ResizeFields(nameId)
 	if r.SetMap == nil {
 		r.SetMap = make(map[int16]SetField)
 	}
 
-	r.SetMap[name_id] = SetField(vals)
-	r.Populated[name_id] = SET_VAL
-	if r.block.table.set_key_type(name_id, SET_VAL) == false {
-		Error("COULDNT SET SET VAL", name, val, name_id)
+	r.SetMap[nameId] = SetField(vals)
+	r.Populated[nameId] = SET_VAL
+	if r.block.table.setKeyType(nameId, SET_VAL) == false {
+		Error("COULDNT SET SET VAL", name, val, nameId)
 	}
 }
 

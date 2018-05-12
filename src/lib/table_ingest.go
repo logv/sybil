@@ -21,11 +21,11 @@ func (t *Table) getNewIngestBlockName() (string, error) {
 
 func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 	Debug("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
-	table_cache_dir := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR)
-	os.MkdirAll(table_cache_dir, 0755)
+	tableCacheDir := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR)
+	os.MkdirAll(tableCacheDir, 0755)
 
 	// this info block needs to be moved once its finished being written to
-	file, err := ioutil.TempFile(table_cache_dir, "info")
+	file, err := ioutil.TempFile(tableCacheDir, "info")
 	return file, err
 }
 
@@ -122,15 +122,15 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	return false
 
 }
-func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowBlockLoad) {
+func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBlockLoad) {
 	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
 	var err error
 
 	// if the row store dir does not exist, skip the whole function
 	_, err = os.Stat(dirname)
 	if os.IsNotExist(err) {
-		if after_block_load_cb != nil {
-			after_block_load_cb(NO_MORE_BLOCKS, nil)
+		if afterBlockLoadCb != nil {
+			afterBlockLoadCb(NO_MORE_BLOCKS, nil)
 		}
 
 		return
@@ -155,9 +155,9 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 		t.RowBlock = &TableBlock{}
 		(*t.RowBlock).RecordList = make(RecordList, 0)
 		t.RowBlock.Info = &SavedColumnInfo{}
-		t.block_m.Lock()
+		t.blockM.Lock()
 		t.BlockList[ROW_STORE_BLOCK] = t.RowBlock
-		t.block_m.Unlock()
+		t.blockM.Unlock()
 		t.RowBlock.Name = ROW_STORE_BLOCK
 	}
 
@@ -174,13 +174,13 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 		filename = path.Join(dirname, file.Name())
 
 		records := t.LoadRecordsFromLog(filename)
-		if after_block_load_cb != nil {
-			after_block_load_cb(filename, records)
+		if afterBlockLoadCb != nil {
+			afterBlockLoadCb(filename, records)
 		}
 	}
 
-	if after_block_load_cb != nil {
-		after_block_load_cb(NO_MORE_BLOCKS, nil)
+	if afterBlockLoadCb != nil {
+		afterBlockLoadCb(NO_MORE_BLOCKS, nil)
 	}
 
 }
@@ -282,9 +282,9 @@ var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
 func (t *Table) DigestRecords() {
-	can_digest := t.GrabDigestLock()
+	canDigest := t.GrabDigestLock()
 
-	if !can_digest {
+	if !canDigest {
 		t.ReleaseInfoLock()
 		Debug("CANT GRAB LOCK FOR DIGEST RECORDS")
 		return

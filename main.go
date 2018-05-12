@@ -1,32 +1,36 @@
 package main
 
-import cmd "github.com/logv/sybil/src/cmd"
+import (
+	"fmt"
+	"log"
+	"os"
+	"sort"
 
-import "fmt"
-import "os"
-import "log"
-import "sort"
+	"github.com/logv/sybil/src/cmd"
+)
 
-var CMD_FUNCS = make(map[string]func())
-var CMD_KEYS = make([]string, 0)
+var (
+	cmdFuncs = make(map[string]func())
+	cmdKeys  = make([]string, 0)
+)
 
 func setupCommands() {
-	CMD_FUNCS["ingest"] = cmd.RunIngestCmdLine
-	CMD_FUNCS["digest"] = cmd.RunDigestCmdLine
-	CMD_FUNCS["trim"] = cmd.RunTrimCmdLine
-	CMD_FUNCS["query"] = cmd.RunQueryCmdLine
-	CMD_FUNCS["index"] = cmd.RunIndexCmdLine
-	CMD_FUNCS["rebuild"] = cmd.RunRebuildCmdLine
-	CMD_FUNCS["inspect"] = cmd.RunInspectCmdLine
-	CMD_FUNCS["aggregate"] = cmd.RunAggregateCmdLine
-	CMD_FUNCS["version"] = cmd.RunVersionCmdLine
+	cmdFuncs["ingest"] = cmd.RunIngestCmdLine
+	cmdFuncs["digest"] = cmd.RunDigestCmdLine
+	cmdFuncs["trim"] = cmd.RunTrimCmdLine
+	cmdFuncs["query"] = cmd.RunQueryCmdLine
+	cmdFuncs["index"] = cmd.RunIndexCmdLine
+	cmdFuncs["rebuild"] = cmd.RunRebuildCmdLine
+	cmdFuncs["inspect"] = cmd.RunInspectCmdLine
+	cmdFuncs["aggregate"] = cmd.RunAggregateCmdLine
+	cmdFuncs["version"] = cmd.RunVersionCmdLine
 
-	for k, _ := range CMD_FUNCS {
-		CMD_KEYS = append(CMD_KEYS, k)
+	for k := range cmdFuncs {
+		cmdKeys = append(cmdKeys, k)
 	}
 }
 
-var USAGE = `sybil: a fast and simple NoSQL column store
+var usage = `sybil: a fast and simple NoSQL column store
 
 Commands: ingest, digest, trim, query, session, rebuild, inspect
 
@@ -70,9 +74,9 @@ Emergency Maintenance Commands:
 `
 
 func printCommandHelp(msg string) {
-	sort.Strings(CMD_KEYS)
+	sort.Strings(cmdKeys)
 
-	fmt.Print(USAGE)
+	fmt.Print(usage)
 	log.Fatal(msg)
 }
 
@@ -83,12 +87,12 @@ func main() {
 		printCommandHelp("insufficient number of arguments")
 	}
 
-	first_arg := os.Args[1]
+	firstArg := os.Args[1]
 	os.Args = os.Args[1:]
 
-	handler, ok := CMD_FUNCS[first_arg]
+	handler, ok := cmdFuncs[firstArg]
 	if !ok {
-		printCommandHelp(fmt.Sprintf("subcommand '%s' is invalid", first_arg))
+		printCommandHelp(fmt.Sprintf("subcommand '%s' is invalid", firstArg))
 	}
 
 	handler()

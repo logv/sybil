@@ -1,4 +1,4 @@
-package sybil_cmd
+package cmd
 
 import "flag"
 
@@ -62,11 +62,11 @@ func RunTrimCmdLine() {
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
 	trimSpec.MBLimit = int64(*MB_LIMIT)
 
-	to_trim := t.TrimTable(&trimSpec)
+	toTrim := t.TrimTable(&trimSpec)
 
-	sybil.Debug("FOUND", len(to_trim), "CANDIDATE BLOCKS FOR TRIMMING")
-	if len(to_trim) > 0 {
-		for _, b := range to_trim {
+	sybil.Debug("FOUND", len(toTrim), "CANDIDATE BLOCKS FOR TRIMMING")
+	if len(toTrim) > 0 {
+		for _, b := range toTrim {
 			fmt.Println(b.Name)
 		}
 	}
@@ -83,7 +83,7 @@ func RunTrimCmdLine() {
 		}
 
 		sybil.Debug("DELETING CANDIDATE BLOCKS")
-		for _, b := range to_trim {
+		for _, b := range toTrim {
 			sybil.Debug("DELETING", b.Name)
 			if len(b.Name) > 5 {
 				os.RemoveAll(b.Name)

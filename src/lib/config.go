@@ -197,10 +197,10 @@ func setDefaults() {
 }
 
 func EncodeFlags() {
-	old_encode := *FLAGS.ENCODE_FLAGS
+	oldEncode := *FLAGS.ENCODE_FLAGS
 	FLAGS.ENCODE_FLAGS = NewFalseFlag()
 	PrintBytes(FLAGS)
-	FLAGS.ENCODE_FLAGS = &old_encode
+	FLAGS.ENCODE_FLAGS = &oldEncode
 }
 
 func DecodeFlags() {

@@ -9,8 +9,8 @@ type LoadSpec struct {
 	LoadAllColumns bool
 	table          *Table
 
-	slabs  []*RecordList
-	slab_m *sync.Mutex
+	slabs []*RecordList
+	slabM *sync.Mutex
 }
 
 func NewLoadSpec() LoadSpec {
@@ -20,7 +20,7 @@ func NewLoadSpec() LoadSpec {
 
 	l.slabs = make([]*RecordList, 0)
 
-	l.slab_m = &sync.Mutex{}
+	l.slabM = &sync.Mutex{}
 	return l
 }
 
@@ -31,43 +31,43 @@ func (t *Table) NewLoadSpec() LoadSpec {
 	return l
 }
 
-func (l *LoadSpec) assert_col_type(name string, col_type int8) {
+func (l *LoadSpec) assertColType(name string, colType int8) {
 	if l.table == nil {
 		return
 	}
-	name_id := l.table.get_key_id(name)
+	nameId := l.table.getKeyId(name)
 
-	if l.table.KeyTypes[name_id] == 0 {
+	if l.table.KeyTypes[nameId] == 0 {
 		Error("Query Error! Column ", name, " does not exist")
 	}
 
-	if l.table.KeyTypes[name_id] != col_type {
-		var col_type_name string
-		switch col_type {
+	if l.table.KeyTypes[nameId] != colType {
+		var colTypeName string
+		switch colType {
 		case INT_VAL:
-			col_type_name = "Int"
+			colTypeName = "Int"
 		case STR_VAL:
-			col_type_name = "Str"
+			colTypeName = "Str"
 		case SET_VAL:
-			col_type_name = "Set"
+			colTypeName = "Set"
 		}
 
-		Error("Query Error! Key ", name, " exists, but is not of type ", col_type_name)
+		Error("Query Error! Key ", name, " exists, but is not of type ", colTypeName)
 	}
 }
 
 func (l *LoadSpec) Str(name string) {
-	l.assert_col_type(name, STR_VAL)
+	l.assertColType(name, STR_VAL)
 	l.columns[name] = true
 	l.files["str_"+name+".db"] = true
 }
 func (l *LoadSpec) Int(name string) {
-	l.assert_col_type(name, INT_VAL)
+	l.assertColType(name, INT_VAL)
 	l.columns[name] = true
 	l.files["int_"+name+".db"] = true
 }
 func (l *LoadSpec) Set(name string) {
-	l.assert_col_type(name, SET_VAL)
+	l.assertColType(name, SET_VAL)
 	l.columns[name] = true
 	l.files["set_"+name+".db"] = true
 }

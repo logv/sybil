@@ -7,21 +7,21 @@ import "math"
 import "strings"
 
 func TestFilters(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	add_records(func(r *Record, i int) {
+	blockCount := 3
+	addRecords(func(r *Record, i int) {
 		age := int64(rand.Intn(20)) + 10
 
-		age_str := strconv.FormatInt(int64(age), 10)
+		ageStr := strconv.FormatInt(int64(age), 10)
 		r.AddIntField("id", int64(i))
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", age_str)
-		r.AddSetField("age_set", []string{age_str})
+		r.AddStrField("age_str", ageStr)
+		r.AddSetField("age_set", []string{ageStr})
 
-	}, block_count)
+	}, blockCount)
 
-	save_and_reload_table(test, block_count)
+	saveAndReloadTable(test, blockCount)
 
 	DELETE_BLOCKS_AFTER_QUERY = false
 
@@ -35,7 +35,7 @@ func TestFilters(test *testing.T) {
 	testSetIn(test)
 	testSetNin(test)
 
-	delete_test_db()
+	deleteTestDb()
 
 }
 

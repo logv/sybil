@@ -1,11 +1,11 @@
-package sybil_cmd
+package cmd
 
 import sybil "github.com/logv/sybil/src/lib"
 import "flag"
 import "strings"
 
 func RunIndexCmdLine() {
-	var f_INTS = flag.String("int", "", "Integer values to index")
+	var fInts = flag.String("int", "", "Integer values to index")
 	flag.Parse()
 	if *sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
@@ -13,8 +13,8 @@ func RunIndexCmdLine() {
 	}
 
 	var ints []string
-	if *f_INTS != "" {
-		ints = strings.Split(*f_INTS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if *fInts != "" {
+		ints = strings.Split(*fInts, *sybil.FLAGS.FIELD_SEPARATOR)
 	}
 
 	sybil.FLAGS.UPDATE_TABLE_INFO = sybil.NewTrueFlag()

@@ -6,73 +6,20 @@ import "testing"
 import "os"
 
 func TestTableDigestRowRecords(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
-	block_count := 3
-	add_records(func(r *Record, index int) {
+	blockCount := 3
+	addRecords(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-	}, block_count)
-
-	t := GetTable(TEST_TABLE_NAME)
-	t.IngestRecords("ingest")
-
-	unload_test_table()
-	nt := GetTable(TEST_TABLE_NAME)
-	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
-
-	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
-
-	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*block_count {
-		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
-	}
-
-	if len(nt.BlockList) != 1 {
-		test.Error("Found other records than rowblock")
-	}
-
-	nt.DigestRecords()
-
-	unload_test_table()
-
-	READ_ROWS_ONLY = false
-	nt = GetTable(TEST_TABLE_NAME)
-	nt.LoadRecords(nil)
-
-	count := int32(0)
-	for _, b := range nt.BlockList {
-		Debug("COUNTING RECORDS IN", b.Name)
-		count += b.Info.NumRecords
-	}
-
-	if count != int32(block_count*CHUNK_SIZE) {
-		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
-
-	}
-
-}
-
-func TestColumnStoreFileNames(test *testing.T) {
-
-	delete_test_db()
-
-	blockCount := 3
-	add_records(func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
-		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
-		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
-		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
 	}, blockCount)
 
 	t := GetTable(TEST_TABLE_NAME)
 	t.IngestRecords("ingest")
 
-	unload_test_table()
+	unloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
 	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
@@ -90,7 +37,60 @@ func TestColumnStoreFileNames(test *testing.T) {
 
 	nt.DigestRecords()
 
-	unload_test_table()
+	unloadTestTable()
+
+	READ_ROWS_ONLY = false
+	nt = GetTable(TEST_TABLE_NAME)
+	nt.LoadRecords(nil)
+
+	count := int32(0)
+	for _, b := range nt.BlockList {
+		Debug("COUNTING RECORDS IN", b.Name)
+		count += b.Info.NumRecords
+	}
+
+	if count != int32(blockCount*CHUNK_SIZE) {
+		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+
+	}
+
+}
+
+func TestColumnStoreFileNames(test *testing.T) {
+
+	deleteTestDb()
+
+	blockCount := 3
+	addRecords(func(r *Record, index int) {
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(20)) + 10
+		r.AddIntField("age", age)
+		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
+		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
+	}, blockCount)
+
+	t := GetTable(TEST_TABLE_NAME)
+	t.IngestRecords("ingest")
+
+	unloadTestTable()
+	nt := GetTable(TEST_TABLE_NAME)
+	DELETE_BLOCKS_AFTER_QUERY = false
+	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+
+	nt.LoadTableInfo()
+	nt.LoadRecords(nil)
+
+	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
+		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
+	}
+
+	if len(nt.BlockList) != 1 {
+		test.Error("Found other records than rowblock")
+	}
+
+	nt.DigestRecords()
+
+	unloadTestTable()
 
 	READ_ROWS_ONLY = false
 	nt = GetTable(TEST_TABLE_NAME)
@@ -104,13 +104,13 @@ func TestColumnStoreFileNames(test *testing.T) {
 
 		file, _ := os.Open(b.Name)
 		files, _ := file.Readdir(-1)
-		created_files := make(map[string]bool)
+		createdFiles := make(map[string]bool)
 
 		for _, f := range files {
-			created_files[f.Name()] = true
+			createdFiles[f.Name()] = true
 		}
 
-		Debug("FILENAMES", created_files)
+		Debug("FILENAMES", createdFiles)
 		Debug("BLOCK NAME", b.Name)
 		if b.Name == ROW_STORE_BLOCK {
 			continue
@@ -118,7 +118,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 
 		var colFiles = []string{"int_age.db", "int_id.db", "str_ageStr.db", "set_ageSet.db"}
 		for _, filename := range colFiles {
-			_, ok := created_files[filename]
+			_, ok := createdFiles[filename]
 			if !ok {
 				test.Error("MISSING COLUMN FILE", filename)
 			}
@@ -134,11 +134,11 @@ func TestColumnStoreFileNames(test *testing.T) {
 }
 
 func TestBigIntColumns(test *testing.T) {
-	delete_test_db()
+	deleteTestDb()
 
 	var minVal = int64(1 << 50)
 	blockCount := 3
-	add_records(func(r *Record, index int) {
+	addRecords(func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(1 << 20))
 		r.AddIntField("time", minVal+age)
@@ -147,7 +147,7 @@ func TestBigIntColumns(test *testing.T) {
 	t := GetTable(TEST_TABLE_NAME)
 	t.IngestRecords("ingest")
 
-	unload_test_table()
+	unloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
 	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
@@ -165,7 +165,7 @@ func TestBigIntColumns(test *testing.T) {
 
 	nt.DigestRecords()
 
-	unload_test_table()
+	unloadTestTable()
 
 	READ_ROWS_ONLY = false
 	FLAGS.SAMPLES = NewTrueFlag()

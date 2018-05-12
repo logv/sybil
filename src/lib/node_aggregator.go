@@ -18,7 +18,7 @@ type VTable struct {
 }
 
 func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
-	all_specs := make(map[string]*NodeResults)
+	allSpecs := make(map[string]*NodeResults)
 	for _, d := range dirs {
 		files, err := ioutil.ReadDir(d)
 		if err != nil {
@@ -31,17 +31,17 @@ func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
 			fd, err := os.Open(fname)
 			dec := gob.NewDecoder(fd)
 
-			var node_results NodeResults
+			var nodeResults NodeResults
 			if err != nil {
 				Debug("DECODE ERROR", err)
 				continue
 			}
 
-			err = dec.Decode(&node_results)
+			err = dec.Decode(&nodeResults)
 
 			if err == nil {
-				cs := NodeResults(node_results)
-				all_specs[f.Name()] = &node_results
+				cs := NodeResults(nodeResults)
+				allSpecs[f.Name()] = &nodeResults
 				Debug("DECODED QUERY RESULTS FROM", fname)
 				Debug("QUERY SPEC CACHE KEY IS", cs.QuerySpec.GetCacheKey(NULL_BLOCK))
 			} else {
@@ -52,19 +52,19 @@ func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
 
 	}
 
-	return all_specs
+	return allSpecs
 
 }
 
 func (vt *VTable) AggregateSamples(dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
-	all_results := vt.findResultsInDirs(dirs)
+	allResults := vt.findResultsInDirs(dirs)
 
 	limit := *FLAGS.LIMIT
 
 	samples := make([]*Sample, 0)
 
-	for _, res := range all_results {
+	for _, res := range allResults {
 		for _, s := range res.Samples {
 			samples = append(samples, s)
 		}
@@ -82,38 +82,38 @@ func (vt *VTable) AggregateSamples(dirs []string) {
 
 func (vt *VTable) AggregateTables(dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
-	all_results := vt.findResultsInDirs(dirs)
-	Debug("FOUND", len(all_results), "SPECS TO AGG")
+	allResults := vt.findResultsInDirs(dirs)
+	Debug("FOUND", len(allResults), "SPECS TO AGG")
 
-	all_tables := make(map[string]int, 0)
+	allTables := make(map[string]int, 0)
 
-	for _, res := range all_results {
+	for _, res := range allResults {
 		for _, table := range res.Tables {
-			count, ok := all_tables[table]
+			count, ok := allTables[table]
 			if !ok {
 				count = 0
 			}
-			all_tables[table] = count + 1
+			allTables[table] = count + 1
 		}
 	}
 
-	table_arr := make([]string, 0)
-	for table := range all_tables {
-		table_arr = append(table_arr, table)
+	tableArr := make([]string, 0)
+	for table := range allTables {
+		tableArr = append(tableArr, table)
 	}
 
-	printTablesToOutput(table_arr)
+	printTablesToOutput(tableArr)
 }
 
 func (vt *VTable) AggregateInfo(dirs []string) {
 	// TODO: combine all result info
 	Debug("AGGREGATING TABLE INFO LIST")
-	all_results := vt.findResultsInDirs(dirs)
+	allResults := vt.findResultsInDirs(dirs)
 
 	count := 0
 	size := int64(0)
 
-	for res_name, res := range all_results {
+	for resName, res := range allResults {
 		for _, block := range res.Table.BlockList {
 			count += int(block.Info.NumRecords)
 			size += block.Size
@@ -121,21 +121,21 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 
 		res.Table.BlockList = make(map[string]*TableBlock, 0)
 
-		res.Table.init_locks()
-		res.Table.populate_string_id_lookup()
+		res.Table.initLocks()
+		res.Table.populateStringIdLookup()
 
-		virtual_block := TableBlock{}
-		virtual_block.Size = size
-		saved_info := SavedColumnInfo{NumRecords: int32(count)}
-		virtual_block.Info = &saved_info
+		virtualBlock := TableBlock{}
+		virtualBlock.Size = size
+		savedInfo := SavedColumnInfo{NumRecords: int32(count)}
+		virtualBlock.Info = &savedInfo
 
-		vt.BlockList[res_name] = &virtual_block
+		vt.BlockList[resName] = &virtualBlock
 
-		for name_id, key_type := range res.Table.KeyTypes {
-			key_name := res.Table.get_string_for_key(int(name_id))
-			this_id := vt.get_key_id(key_name)
+		for nameId, keyType := range res.Table.KeyTypes {
+			keyName := res.Table.getStringForKey(int(nameId))
+			thisId := vt.getKeyId(keyName)
 
-			vt.set_key_type(this_id, key_type)
+			vt.setKeyType(thisId, keyType)
 		}
 
 	}
@@ -148,36 +148,36 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 	Debug("AGGREGATING QUERY RESULTS")
 
 	// TODO: verify all specs have the same md5 key
-	all_results := vt.findResultsInDirs(dirs)
-	Debug("FOUND", len(all_results), "SPECS TO AGG")
+	allResults := vt.findResultsInDirs(dirs)
+	Debug("FOUND", len(allResults), "SPECS TO AGG")
 
 	var qs QuerySpec
-	for _, res := range all_results {
+	for _, res := range allResults {
 		qs = res.QuerySpec
 		break
 	}
 
-	all_specs := make(map[string]*QuerySpec)
-	for k, v := range all_results {
-		all_specs[k] = &v.QuerySpec
+	allSpecs := make(map[string]*QuerySpec)
+	for k, v := range allResults {
+		allSpecs[k] = &v.QuerySpec
 	}
 
-	final_result := QuerySpec{}
-	final_result.Punctuate()
-	final_result.QueryParams = qs.QueryParams
+	finalResult := QuerySpec{}
+	finalResult.Punctuate()
+	finalResult.QueryParams = qs.QueryParams
 
 	FLAGS.OP = &HIST_STR
 	OPTS.MERGE_TABLE = &vt.Table
 
-	combined_result := CombineResults(&final_result, all_specs)
-	combined_result.QueryParams = qs.QueryParams
+	combinedResult := CombineResults(&finalResult, allSpecs)
+	combinedResult.QueryParams = qs.QueryParams
 
-	combined_result.SortResults(combined_result.OrderBy)
-	combined_result.PrintResults()
+	combinedResult.SortResults(combinedResult.OrderBy)
+	combinedResult.PrintResults()
 }
 
 func (vt *VTable) StitchResults(dirs []string) {
-	vt.init_data_structures()
+	vt.initDataStructures()
 
 	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES == true {
 		vt.AggregateTables(dirs)

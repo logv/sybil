@@ -52,9 +52,9 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 	blockQuery := CopyQuerySpec(querySpec)
 	if blockQuery.LoadCachedResults(tb.Name) {
-		t.block_m.Lock()
+		t.blockM.Lock()
 		t.BlockList[dirname] = &tb
-		t.block_m.Unlock()
+		t.blockM.Unlock()
 
 		return &tb, blockQuery
 
@@ -81,29 +81,29 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 		return filters
 	}
 
-	max_record := Record{Ints: IntArr{}, Strs: StrArr{}}
-	min_record := Record{Ints: IntArr{}, Strs: StrArr{}}
+	maxRecord := Record{Ints: IntArr{}, Strs: StrArr{}}
+	minRecord := Record{Ints: IntArr{}, Strs: StrArr{}}
 
 	if len(info.IntInfoMap) == 0 {
 		return filters
 	}
 
-	for field_name, _ := range info.StrInfoMap {
-		field_id := t.get_key_id(field_name)
-		min_record.ResizeFields(field_id)
-		max_record.ResizeFields(field_id)
+	for fieldName, _ := range info.StrInfoMap {
+		fieldId := t.getKeyId(fieldName)
+		minRecord.ResizeFields(fieldId)
+		maxRecord.ResizeFields(fieldId)
 	}
 
-	for field_name, field_info := range info.IntInfoMap {
-		field_id := t.get_key_id(field_name)
-		min_record.ResizeFields(field_id)
-		max_record.ResizeFields(field_id)
+	for fieldName, fieldInfo := range info.IntInfoMap {
+		fieldId := t.getKeyId(fieldName)
+		minRecord.ResizeFields(fieldId)
+		maxRecord.ResizeFields(fieldId)
 
-		min_record.Ints[field_id] = IntField(field_info.Min)
-		max_record.Ints[field_id] = IntField(field_info.Max)
+		minRecord.Ints[fieldId] = IntField(fieldInfo.Min)
+		maxRecord.Ints[fieldId] = IntField(fieldInfo.Max)
 
-		min_record.Populated[field_id] = INT_VAL
-		max_record.Populated[field_id] = INT_VAL
+		minRecord.Populated[fieldId] = INT_VAL
+		maxRecord.Populated[fieldId] = INT_VAL
 	}
 
 	for _, f := range querySpec.Filters {
@@ -116,7 +116,7 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 				continue
 			}
 
-			if f.Filter(&min_record) && f.Filter(&max_record) {
+			if f.Filter(&minRecord) && f.Filter(&maxRecord) {
 			} else {
 				filters = append(filters, f)
 			}
@@ -131,20 +131,20 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 }
 
 func (qs *QuerySpec) GetCacheStruct(blockname string) QueryParams {
-	cache_spec := QueryParams(qs.QueryParams)
+	cacheSpec := QueryParams(qs.QueryParams)
 
 	// kick out trivial filters
-	cache_spec.Filters = qs.GetCacheRelevantFilters(blockname)
+	cacheSpec.Filters = qs.GetCacheRelevantFilters(blockname)
 
-	return cache_spec
+	return cacheSpec
 }
 
 func (qs *QuerySpec) GetCacheKey(blockname string) string {
-	cache_spec := qs.GetCacheStruct(blockname)
+	cacheSpec := qs.GetCacheStruct(blockname)
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(cache_spec)
+	err := enc.Encode(cacheSpec)
 	if err != nil {
 		Warn("encode:", err)
 		return ""
@@ -167,11 +167,11 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 
 	}
 
-	cache_key := qs.GetCacheKey(blockname)
+	cacheKey := qs.GetCacheKey(blockname)
 
-	cache_dir := path.Join(blockname, "cache")
-	cache_name := fmt.Sprintf("%s.db", cache_key)
-	filename := path.Join(cache_dir, cache_name)
+	cacheDir := path.Join(blockname, "cache")
+	cacheName := fmt.Sprintf("%s.db", cacheKey)
+	filename := path.Join(cacheDir, cacheName)
 
 	cachedSpec := QueryResults{}
 	err := decodeInto(filename, &cachedSpec)
@@ -200,20 +200,20 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 		return
 	}
 
-	cache_key := qs.GetCacheKey(blockname)
+	cacheKey := qs.GetCacheKey(blockname)
 
 	cachedInfo := qs.QueryResults
 
-	cache_dir := path.Join(blockname, "cache")
-	err := os.MkdirAll(cache_dir, 0777)
+	cacheDir := path.Join(blockname, "cache")
+	err := os.MkdirAll(cacheDir, 0777)
 	if err != nil {
 		Debug("COULDNT CREATE CACHE DIR", err, "NOT CACHING QUERY")
 		return
 	}
 
-	cache_name := fmt.Sprintf("%s.db.gz", cache_key)
-	filename := path.Join(cache_dir, cache_name)
-	tempfile, err := ioutil.TempFile(cache_dir, cache_name)
+	cacheName := fmt.Sprintf("%s.db.gz", cacheKey)
+	filename := path.Join(cacheDir, cacheName)
+	tempfile, err := ioutil.TempFile(cacheDir, cacheName)
 	if err != nil {
 		Debug("TEMPFILE ERROR", err)
 	}

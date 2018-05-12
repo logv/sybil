@@ -1,4 +1,4 @@
-package sybil_cmd
+package cmd
 
 import sybil "github.com/logv/sybil/src/lib"
 
@@ -177,13 +177,13 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
-	query_params := sybil.QueryParams{Groups: groupings, Filters: filters,
+	queryParams := sybil.QueryParams{Groups: groupings, Filters: filters,
 		Aggregations: aggs, Distincts: distincts}
 
-	querySpec := sybil.QuerySpec{QueryParams: query_params}
+	querySpec := sybil.QuerySpec{QueryParams: queryParams}
 
-	all_groups := append(groups, distinct...)
-	for _, v := range all_groups {
+	allGroups := append(groups, distinct...)
+	for _, v := range allGroups {
 		switch t.GetColumnType(v) {
 		case sybil.STR_VAL:
 			loadSpec.Str(v)
@@ -226,9 +226,9 @@ func RunQueryCmdLine() {
 		querySpec.TimeBucket = *sybil.FLAGS.TIME_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*sybil.FLAGS.TIME_COL)
-		time_col_id, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
+		timeColId, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
 		if ok {
-			sybil.OPTS.TIME_COL_ID = time_col_id
+			sybil.OPTS.TIME_COL_ID = timeColId
 		}
 	}
 

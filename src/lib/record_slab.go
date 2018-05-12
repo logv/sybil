@@ -1,13 +1,12 @@
 package sybil
 
-
 import "time"
 
-func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
+func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
 
-	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && load_records == false {
-		loadSpec.slab_m.Lock()
-		defer loadSpec.slab_m.Unlock()
+	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && loadRecords == false {
+		loadSpec.slabM.Lock()
+		defer loadSpec.slabM.Unlock()
 		if len(loadSpec.slabs) > 0 {
 			slab := loadSpec.slabs[0]
 			loadSpec.slabs = loadSpec.slabs[1:]
@@ -18,12 +17,12 @@ func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, 
 		}
 	}
 
-	slab := tb.makeRecordSlab(loadSpec, info, load_records)
+	slab := tb.makeRecordSlab(loadSpec, info, loadRecords)
 	return slab
 
 }
 
-func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
+func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
 	t := tb.table
 
 	var r *Record
@@ -33,50 +32,50 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	var bigIntArr IntArr
 	var bigStrArr StrArr
 	var bigPopArr []int8
-	var has_sets = false
-	var has_strs = false
-	var has_ints = false
-	max_key_id := 0
+	var hasSets = false
+	var hasStrs = false
+	var hasInts = false
+	maxKeyId := 0
 	for _, v := range t.KeyTable {
-		if max_key_id <= int(v) {
-			max_key_id = int(v) + 1
+		if maxKeyId <= int(v) {
+			maxKeyId = int(v) + 1
 		}
 	}
 
 	// determine if we need to allocate the different field containers inside
 	// each record
-	if loadSpec != nil && load_records == false {
-		for field_name, _ := range loadSpec.columns {
-			v := t.get_key_id(field_name)
+	if loadSpec != nil && loadRecords == false {
+		for fieldName, _ := range loadSpec.columns {
+			v := t.getKeyId(fieldName)
 
 			switch t.KeyTypes[v] {
 			case INT_VAL:
-				has_ints = true
+				hasInts = true
 			case SET_VAL:
-				has_sets = true
+				hasSets = true
 			case STR_VAL:
-				has_strs = true
+				hasStrs = true
 			default:
 				Error("MISSING KEY TYPE FOR COL", v)
 			}
 		}
 	} else {
-		has_sets = true
-		has_ints = true
-		has_strs = true
+		hasSets = true
+		hasInts = true
+		hasStrs = true
 	}
 
-	if loadSpec != nil || load_records {
+	if loadSpec != nil || loadRecords {
 		mstart := time.Now()
 		records = make(RecordList, info.NumRecords)
 		alloced = make([]Record, info.NumRecords)
-		if has_ints {
-			bigIntArr = make(IntArr, max_key_id*int(info.NumRecords))
+		if hasInts {
+			bigIntArr = make(IntArr, maxKeyId*int(info.NumRecords))
 		}
-		if has_strs {
-			bigStrArr = make(StrArr, max_key_id*int(info.NumRecords))
+		if hasStrs {
+			bigStrArr = make(StrArr, maxKeyId*int(info.NumRecords))
 		}
-		bigPopArr = make([]int8, max_key_id*int(info.NumRecords))
+		bigPopArr = make([]int8, maxKeyId*int(info.NumRecords))
 		mend := time.Now()
 
 		if DEBUG_TIMING {
@@ -86,20 +85,20 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		start := time.Now()
 		for i := range records {
 			r = &alloced[i]
-			if has_ints {
-				r.Ints = bigIntArr[i*max_key_id : (i+1)*max_key_id]
+			if hasInts {
+				r.Ints = bigIntArr[i*maxKeyId : (i+1)*maxKeyId]
 			}
 
-			if has_strs {
-				r.Strs = bigStrArr[i*max_key_id : (i+1)*max_key_id]
+			if hasStrs {
+				r.Strs = bigStrArr[i*maxKeyId : (i+1)*maxKeyId]
 			}
 
 			// TODO: move this allocation next to the allocations above
-			if has_sets {
+			if hasSets {
 				r.SetMap = make(SetMap)
 			}
 
-			r.Populated = bigPopArr[i*max_key_id : (i+1)*max_key_id]
+			r.Populated = bigPopArr[i*maxKeyId : (i+1)*maxKeyId]
 
 			r.block = tb
 			records[i] = r
@@ -162,9 +161,9 @@ func (tb *TableBlock) RecycleSlab(loadSpec *LoadSpec) {
 		rl := tb.RecordList
 
 		if len(rl) == CHUNK_SIZE {
-			loadSpec.slab_m.Lock()
+			loadSpec.slabM.Lock()
 			loadSpec.slabs = append(loadSpec.slabs, &rl)
-			loadSpec.slab_m.Unlock()
+			loadSpec.slabM.Unlock()
 		}
 	}
 }

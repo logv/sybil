@@ -1,4 +1,4 @@
-package sybil_cmd
+package cmd
 
 import sybil "github.com/logv/sybil/src/lib"
 
@@ -6,24 +6,24 @@ import "flag"
 
 import "strconv"
 
-func decodeTableInfo(digest_file *string) bool {
-	dec := sybil.GetFileDecoder(*digest_file)
+func decodeTableInfo(digestFile *string) bool {
+	dec := sybil.GetFileDecoder(*digestFile)
 
-	saved_table := sybil.Table{}
-	err := dec.Decode(&saved_table)
+	savedTable := sybil.Table{}
+	err := dec.Decode(&savedTable)
 
-	if err != nil || len(saved_table.KeyTable) == 0 {
+	if err != nil || len(savedTable.KeyTable) == 0 {
 		return false
 	}
 
-	sybil.Print("TABLE INFO", saved_table)
+	sybil.Print("TABLE INFO", savedTable)
 
 	return true
 
 }
 
-func decodeInfoCol(digest_file *string) bool {
-	dec := sybil.GetFileDecoder(*digest_file)
+func decodeInfoCol(digestFile *string) bool {
+	dec := sybil.GetFileDecoder(*digestFile)
 
 	info := sybil.SavedColumnInfo{}
 	err := dec.Decode(&info)
@@ -39,8 +39,8 @@ func decodeInfoCol(digest_file *string) bool {
 
 }
 
-func decodeIntCol(digest_file *string) bool {
-	dec := sybil.GetFileDecoder(*digest_file)
+func decodeIntCol(digestFile *string) bool {
+	dec := sybil.GetFileDecoder(*digestFile)
 
 	info := sybil.SavedIntColumn{}
 	err := dec.Decode(&info)
@@ -56,8 +56,8 @@ func decodeIntCol(digest_file *string) bool {
 
 }
 
-func decodeStrCol(digest_file *string) bool {
-	dec := sybil.GetFileDecoder(*digest_file)
+func decodeStrCol(digestFile *string) bool {
+	dec := sybil.GetFileDecoder(*digestFile)
 
 	info := sybil.SavedStrColumn{}
 	err := dec.Decode(&info)
@@ -81,25 +81,25 @@ func decodeStrCol(digest_file *string) bool {
 
 // TODO: make a list of potential types that can be decoded into
 func RunInspectCmdLine() {
-	digest_file := flag.String("file", "", "Name of file to inspect")
+	digestFile := flag.String("file", "", "Name of file to inspect")
 	flag.Parse()
 
-	if *digest_file == "" || digest_file == nil {
+	if *digestFile == "" || digestFile == nil {
 		sybil.Print("Please specify a file to inspect with the -file flag")
 		return
 	}
 
-	if decodeTableInfo(digest_file) {
+	if decodeTableInfo(digestFile) {
 		return
 	}
 
-	if decodeInfoCol(digest_file) {
+	if decodeInfoCol(digestFile) {
 		return
 	}
-	if decodeStrCol(digest_file) {
+	if decodeStrCol(digestFile) {
 		return
 	}
-	if decodeIntCol(digest_file) {
+	if decodeIntCol(digestFile) {
 		return
 	}
 
