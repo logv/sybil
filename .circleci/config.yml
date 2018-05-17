@@ -16,8 +16,15 @@ jobs:
 
       - run: make
 
-      - run: go get github.com/jstemmer/go-junit-report
+      - run: go get github.com/alecthomas/gometalinter
+      - run: go get github.com/bradleyfalzon/revgrep/cmd/revgrep
+      - run:
+          name: Run linters
+          command: |
+            gometalinter -i > /dev/null
+            make lint
 
+      - run: go get github.com/jstemmer/go-junit-report
       - run:
           name: Run unit tests
           command: |
