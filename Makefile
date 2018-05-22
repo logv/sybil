@@ -11,6 +11,9 @@ GO_FLAGS=--ldflags '-extldflags "-static"'
 
 all: sybil
 
+deps:
+	${GOBIN} get -d -v -t ./...
+
 sybil: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
 
