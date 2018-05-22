@@ -6,6 +6,7 @@ import "math"
 import "strconv"
 
 func TestCachedQueries(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 

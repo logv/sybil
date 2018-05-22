@@ -7,6 +7,7 @@ import "math"
 import "strings"
 
 func TestFilters(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)

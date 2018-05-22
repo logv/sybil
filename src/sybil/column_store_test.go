@@ -8,6 +8,7 @@ import (
 )
 
 func TestTableDigestRowRecords(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -62,6 +63,7 @@ func TestTableDigestRowRecords(t *testing.T) {
 }
 
 func TestColumnStoreFileNames(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -141,6 +143,7 @@ func TestColumnStoreFileNames(t *testing.T) {
 }
 
 func TestBigIntColumns(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)

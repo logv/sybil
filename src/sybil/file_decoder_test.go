@@ -13,6 +13,7 @@ import "time"
 import "strings"
 
 func TestOpenCompressedInfoDB(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -77,6 +78,7 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 }
 
 func TestOpenCompressedColumn(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)

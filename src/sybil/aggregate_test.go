@@ -11,6 +11,7 @@ import "strings"
 import "time"
 
 func TestTableLoadRecords(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -57,6 +58,7 @@ func TestTableLoadRecords(t *testing.T) {
 
 // Tests that the average histogram works
 func TestAveraging(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 
@@ -100,6 +102,7 @@ func TestAveraging(t *testing.T) {
 
 // Tests that the histogram works
 func TestHistograms(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -204,6 +207,7 @@ func TestHistograms(t *testing.T) {
 
 // Tests that the histogram works
 func TestTimeSeries(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -274,6 +278,7 @@ func TestTimeSeries(t *testing.T) {
 }
 
 func TestOrderBy(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
 		return
