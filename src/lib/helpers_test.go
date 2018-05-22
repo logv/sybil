@@ -1,8 +1,12 @@
 package sybil
 
-import "os"
-import "fmt"
-import "testing"
+import (
+	"fmt"
+	"os"
+	"runtime"
+	"strings"
+	"testing"
+)
 
 var TEST_TABLE_NAME = "__TEST0__"
 
@@ -28,6 +32,22 @@ func setupTestVars(chunkSize int) {
 	CHUNK_SIZE = chunkSize
 	LOCK_US = 1
 	LOCK_TRIES = 3
+}
+
+// getTestTableName uses the caller as the test name to help provide test case isolation.
+func getTestTableName(t *testing.T) string {
+	t.Helper()
+	fpcs := make([]uintptr, 1)
+	n := runtime.Callers(3, fpcs)
+	if n == 0 {
+		return "default"
+	}
+	fun := runtime.FuncForPC(fpcs[0] - 1)
+	if fun == nil {
+		return "default"
+	}
+	parts := strings.Split(fun.Name(), ".")
+	return parts[len(parts)-1]
 }
 
 func addRecords(cb RecordSetupCB, blockCount int) []*Record {
