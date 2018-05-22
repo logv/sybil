@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 
 func runTests(m *testing.M) {
 	setupTestVars(100)
-	m.Run()
+	os.Exit(m.Run())
 }
 
 var BLANK_STRING = ""
