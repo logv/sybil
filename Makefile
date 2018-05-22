@@ -11,6 +11,9 @@ GO_FLAGS=--ldflags '-extldflags "-static"'
 
 all: sybil
 
+deps:
+	${GOBIN} get -d -v -t ./...
+
 sybil: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
 
@@ -33,6 +36,13 @@ bindir:
 
 test:
 	${GOBIN} test ./src/lib/ -v
+
+lint:
+	gometalinter -t --disable-all \
+		--enable=vet \
+		--enable=golint \
+		--enable=megacheck \
+		--deadline=3m ./... 2>&1 | revgrep origin/master
 
 testv:
 	${GOBIN} test ./src/lib/ -v -debug

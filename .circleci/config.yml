@@ -1,0 +1,39 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.9
+    working_directory: /go/src/github.com/logv/sybil
+
+    environment:
+      TEST_RESULTS: /tmp/test-results
+
+    steps:
+      - checkout
+      - run: mkdir -p $TEST_RESULTS
+
+      - run: make deps
+
+      - run: make
+
+      - run: go get github.com/alecthomas/gometalinter
+      - run: go get github.com/bradleyfalzon/revgrep/cmd/revgrep
+      - run:
+          name: Run linters
+          command: |
+            gometalinter -i > /dev/null
+            make lint
+
+      - run: go get github.com/jstemmer/go-junit-report
+      - run:
+          name: Run unit tests
+          command: |
+            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
+            make testv | tee ${TEST_RESULTS}/go-test.out
+
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
+
+      - store_test_results:
+          path: /tmp/test-results
