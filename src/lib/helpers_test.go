@@ -8,13 +8,10 @@ import (
 	"testing"
 )
 
-var TEST_TABLE_NAME = "__TEST0__"
-
 type RecordSetupCB func(*Record, int)
 
 func TestMain(m *testing.M) {
 	runTests(m)
-	deleteTestDb()
 }
 
 func runTests(m *testing.M) {
@@ -25,7 +22,8 @@ func runTests(m *testing.M) {
 var BLANK_STRING = ""
 
 func setupTestVars(chunkSize int) {
-	FLAGS.TABLE = &TEST_TABLE_NAME
+	//tableName := "unknown"
+	//FLAGS.TABLE = &tableName
 	FLAGS.OP = &BLANK_STRING
 
 	TEST_MODE = true
@@ -38,7 +36,7 @@ func setupTestVars(chunkSize int) {
 func getTestTableName(t *testing.T) string {
 	t.Helper()
 	fpcs := make([]uintptr, 1)
-	n := runtime.Callers(3, fpcs)
+	n := runtime.Callers(2, fpcs)
 	if n == 0 {
 		return "default"
 	}
@@ -50,11 +48,11 @@ func getTestTableName(t *testing.T) string {
 	return parts[len(parts)-1]
 }
 
-func addRecords(cb RecordSetupCB, blockCount int) []*Record {
+func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
 	count := CHUNK_SIZE * blockCount
 
 	ret := make([]*Record, 0)
-	tbl := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 
 	for i := 0; i < count; i++ {
 		r := tbl.NewRecord()
@@ -65,16 +63,17 @@ func addRecords(cb RecordSetupCB, blockCount int) []*Record {
 	return ret
 }
 
-func saveAndReloadTable(t *testing.T, expectedBlocks int) *Table {
+func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Table {
+	t.Helper()
 
 	expectedCount := CHUNK_SIZE * expectedBlocks
-	tbl := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 
 	tbl.SaveRecordsToColumns()
 
-	unloadTestTable()
+	unloadTestTable(tableName)
 
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(tableName)
 	nt.LoadTableInfo()
 
 	loadSpec := NewLoadSpec()
@@ -105,11 +104,11 @@ func newQuerySpec() *QuerySpec {
 	return &querySpec
 }
 
-func unloadTestTable() {
-	delete(LOADED_TABLES, TEST_TABLE_NAME)
+func unloadTestTable(tableName string) {
+	delete(LOADED_TABLES, tableName)
 }
 
-func deleteTestDb() {
-	os.RemoveAll(fmt.Sprintf("db/%s", TEST_TABLE_NAME))
-	unloadTestTable()
+func deleteTestDb(tableName string) {
+	os.RemoveAll(fmt.Sprintf("db/%s", tableName))
+	unloadTestTable(tableName)
 }

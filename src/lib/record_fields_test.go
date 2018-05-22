@@ -5,13 +5,15 @@ import "math/rand"
 import "strconv"
 
 func TestSets(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	totalAge := int64(0)
 
-	addRecords(func(r *Record, i int) {}, 0)
+	addRecords(tableName, func(r *Record, i int) {}, 0)
 	blockCount := 3
 	minCount := CHUNK_SIZE * blockCount
-	records := addRecords(func(r *Record, i int) {
+	records := addRecords(tableName, func(r *Record, i int) {
 		setId := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
 		r.AddIntField("id_int", int64(i))
 		r.AddSetField("id_set", setId)
@@ -25,7 +27,7 @@ func TestSets(t *testing.T) {
 	avgAge := float64(totalAge) / float64(len(records))
 	Debug("AVG AGE", avgAge-float64(minCount))
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
 	for _, b := range nt.BlockList {
 		for _, r := range b.RecordList {
@@ -60,8 +62,5 @@ func TestSets(t *testing.T) {
 		}
 	}
 
-	deleteTestDb()
-
 	// Load Some Samples?
-
 }

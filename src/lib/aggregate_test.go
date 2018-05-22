@@ -11,7 +11,8 @@ import "strings"
 import "time"
 
 func TestTableLoadRecords(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -20,14 +21,14 @@ func TestTableLoadRecords(t *testing.T) {
 
 	blockCount := 3
 
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
 	querySpec := newQuerySpec()
 
@@ -55,7 +56,8 @@ func TestTableLoadRecords(t *testing.T) {
 
 // Tests that the average histogram works
 func TestAveraging(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -66,7 +68,7 @@ func TestAveraging(t *testing.T) {
 
 	totalAge := int64(0)
 	count := 0
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
@@ -77,7 +79,7 @@ func TestAveraging(t *testing.T) {
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
 	querySpec := newQuerySpec()
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
@@ -91,13 +93,15 @@ func TestAveraging(t *testing.T) {
 			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avgAge, v.Hists["age"].Mean())
 		}
 	}
-	deleteTestDb()
+	deleteTestDb(tableName)
 
 }
 
 // Tests that the histogram works
 func TestHistograms(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -110,7 +114,7 @@ func TestHistograms(t *testing.T) {
 	count := 0
 	ages := make([]int, 0)
 
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
@@ -122,7 +126,7 @@ func TestHistograms(t *testing.T) {
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 	var HIST = "hist"
 	FLAGS.OP = &HIST
 
@@ -200,14 +204,13 @@ func TestHistograms(t *testing.T) {
 		prevCount = v.Count
 
 	}
-
-	deleteTestDb()
-
 }
 
 // Tests that the histogram works
 func TestTimeSeries(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -220,7 +223,7 @@ func TestTimeSeries(t *testing.T) {
 	count := 0
 	ages := make([]int, 0)
 
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		random := rand.Intn(50) * -1
@@ -236,7 +239,7 @@ func TestTimeSeries(t *testing.T) {
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
 	hist := "hist"
 	FLAGS.OP = &hist
@@ -272,8 +275,6 @@ func TestTimeSeries(t *testing.T) {
 			}
 		}
 	}
-
-	deleteTestDb()
 }
 
 func TestOrderBy(t *testing.T) {
@@ -286,7 +287,8 @@ func TestOrderBy(t *testing.T) {
 
 	totalAge := int64(0)
 	count := 0
-	addRecords(func(r *Record, index int) {
+	tableName := getTestTableName(t)
+	addRecords(tableName, func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
@@ -297,7 +299,7 @@ func TestOrderBy(t *testing.T) {
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
 	querySpec := newQuerySpec()
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
@@ -334,6 +336,6 @@ func TestOrderBy(t *testing.T) {
 
 	}
 
-	deleteTestDb()
+	deleteTestDb(tableName)
 
 }

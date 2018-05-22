@@ -1,27 +1,31 @@
 package sybil
 
-import "strconv"
-import "math/rand"
-import "testing"
-import "os"
+import (
+	"math/rand"
+	"os"
+	"strconv"
+	"testing"
+)
 
 func TestTableDigestRowRecords(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	tbl := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 	tbl.IngestRecords("ingest")
 
-	unloadTestTable()
-	nt := GetTable(TEST_TABLE_NAME)
+	unloadTestTable(tableName)
+	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
+	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
@@ -37,10 +41,10 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	nt.DigestRecords()
 
-	unloadTestTable()
+	unloadTestTable(tableName)
 
 	READ_ROWS_ONLY = false
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(tableName)
 	nt.LoadRecords(nil)
 
 	count := int32(0)
@@ -50,18 +54,18 @@ func TestTableDigestRowRecords(t *testing.T) {
 	}
 
 	if count != int32(blockCount*CHUNK_SIZE) {
-		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+		t.Errorf("COLUMN STORE RETURNED TOO FEW COLUMNS, got %v, want %v", count, blockCount*CHUNK_SIZE)
 
 	}
 
 }
 
 func TestColumnStoreFileNames(t *testing.T) {
-
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
@@ -69,12 +73,13 @@ func TestColumnStoreFileNames(t *testing.T) {
 		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
 	}, blockCount)
 
-	tbl := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 	tbl.IngestRecords("ingest")
 
-	unloadTestTable()
-	nt := GetTable(TEST_TABLE_NAME)
+	unloadTestTable(tableName)
+	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
+	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
@@ -90,10 +95,10 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	nt.DigestRecords()
 
-	unloadTestTable()
+	unloadTestTable(tableName)
 
 	READ_ROWS_ONLY = false
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(tableName)
 	nt.LoadRecords(nil)
 
 	count := int32(0)
@@ -134,22 +139,24 @@ func TestColumnStoreFileNames(t *testing.T) {
 }
 
 func TestBigIntColumns(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	var minVal = int64(1 << 50)
 	blockCount := 3
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(1 << 20))
 		r.AddIntField("time", minVal+age)
 	}, blockCount)
 
-	tbl := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 	tbl.IngestRecords("ingest")
 
-	unloadTestTable()
-	nt := GetTable(TEST_TABLE_NAME)
+	unloadTestTable(tableName)
+	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
+	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
@@ -165,13 +172,13 @@ func TestBigIntColumns(t *testing.T) {
 
 	nt.DigestRecords()
 
-	unloadTestTable()
+	unloadTestTable(tableName)
 
 	READ_ROWS_ONLY = false
 	FLAGS.SAMPLES = NewTrueFlag()
 	limit := 1000
 	FLAGS.LIMIT = &limit
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true

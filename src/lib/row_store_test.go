@@ -7,21 +7,22 @@ import "math/rand"
 import "testing"
 
 func TestTableLoadRowRecords(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(func(r *Record, index int) {
+	addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	tbl := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 	tbl.IngestRecords("ingest")
 
-	unloadTestTable()
-	nt := GetTable(TEST_TABLE_NAME)
+	unloadTestTable(tableName)
+	nt := GetTable(tableName)
 
 	nt.LoadRecords(nil)
 

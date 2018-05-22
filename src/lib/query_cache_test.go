@@ -6,7 +6,8 @@ import "math"
 import "strconv"
 
 func TestCachedQueries(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	blockCount := 5
 
@@ -14,7 +15,7 @@ func TestCachedQueries(t *testing.T) {
 	FLAGS.CACHED_QUERIES = NewTrueFlag()
 
 	var thisAddRecords = func(block_count int) {
-		addRecords(func(r *Record, i int) {
+		addRecords(tableName, func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
 
 			ageStr := strconv.FormatInt(int64(age), 10)
@@ -24,28 +25,27 @@ func TestCachedQueries(t *testing.T) {
 			r.AddSetField("age_set", []string{ageStr})
 
 		}, block_count)
-		saveAndReloadTable(t, block_count)
+		saveAndReloadTable(t, tableName, block_count)
 
 	}
 
 	thisAddRecords(blockCount)
-	testCachedQueryFiles(t)
-	deleteTestDb()
+	testCachedQueryFiles(t, tableName)
+	deleteTestDb(tableName)
 
 	thisAddRecords(blockCount)
-	testCachedQueryConsistency(t)
-	deleteTestDb()
+	testCachedQueryConsistency(t, tableName)
+	deleteTestDb(tableName)
 
 	thisAddRecords(blockCount)
-	testCachedBasicHist(t)
-	deleteTestDb()
+	testCachedBasicHist(t, tableName)
+	deleteTestDb(tableName)
 
 	FLAGS.CACHED_QUERIES = NewFalseFlag()
-
 }
 
-func testCachedQueryFiles(t *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testCachedQueryFiles(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -96,8 +96,8 @@ func testCachedQueryFiles(t *testing.T) {
 
 }
 
-func testCachedQueryConsistency(t *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testCachedQueryConsistency(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -112,7 +112,7 @@ func testCachedQueryConsistency(t *testing.T) {
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
 
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(tableName)
 
 	// clear the copied query spec result map and look
 	// at the cached query results
@@ -150,8 +150,8 @@ func testCachedQueryConsistency(t *testing.T) {
 
 }
 
-func testCachedBasicHist(t *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testCachedBasicHist(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
@@ -178,7 +178,7 @@ func testCachedBasicHist(t *testing.T) {
 		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)
 
-		nt = GetTable(TEST_TABLE_NAME)
+		nt = GetTable(tableName)
 
 		// clear the copied query spec result map and look
 		// at the cached query results

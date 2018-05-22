@@ -13,10 +13,12 @@ import "time"
 import "strings"
 
 func TestOpenCompressedInfoDB(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	created := addRecords(func(r *Record, index int) {
+	created := addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
@@ -25,13 +27,13 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 		r.AddStrField("name", fmt.Sprint("user", index))
 	}, blockCount)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != tableName {
 		t.Error("TEST TABLE NAME INCORRECT")
 	}
 
-	filename := fmt.Sprintf("db/%s/info.db", TEST_TABLE_NAME)
+	filename := fmt.Sprintf("db/%s/info.db", tableName)
 	dat, err := ioutil.ReadFile(filename)
 
 	if err != nil {
@@ -40,7 +42,7 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 	}
 
 	// NOW WE COMPRESS INFO.DB.GZ
-	zfilename := fmt.Sprintf("db/%s/info.db.gz", TEST_TABLE_NAME)
+	zfilename := fmt.Sprintf("db/%s/info.db.gz", tableName)
 	file, err := os.Create(zfilename)
 	if err != nil {
 		t.Error("COULDNT LOAD ZIPPED TABLE FILE FOR WRITING!")
@@ -72,15 +74,15 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 		t.Error("More records were created than expected", len(records))
 	}
 
-	deleteTestDb()
-
 }
 
 func TestOpenCompressedColumn(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	created := addRecords(func(r *Record, index int) {
+	created := addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
@@ -89,13 +91,13 @@ func TestOpenCompressedColumn(t *testing.T) {
 		r.AddStrField("name", fmt.Sprint("user", index))
 	}, blockCount)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 	nt.DigestRecords()
 	nt.LoadRecords(nil)
 
 	blocks := nt.BlockList
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != tableName {
 		t.Error("TEST TABLE NAME INCORRECT")
 	}
 
@@ -130,7 +132,7 @@ func TestOpenCompressedColumn(t *testing.T) {
 
 	// END COMPRESSING BLOCK FILES
 
-	bt := saveAndReloadTable(t, blockCount)
+	bt := saveAndReloadTable(t, tableName, blockCount)
 
 	loadSpec := bt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
@@ -150,7 +152,5 @@ func TestOpenCompressedColumn(t *testing.T) {
 	if len(records) != len(created) {
 		t.Error("More records were created than expected", len(records))
 	}
-
-	deleteTestDb()
 
 }

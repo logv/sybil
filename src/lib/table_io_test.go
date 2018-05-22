@@ -8,10 +8,12 @@ import "math/rand"
 import "strconv"
 
 func TestTableCreate(t *testing.T) {
-	deleteTestDb()
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	created := addRecords(func(r *Record, index int) {
+	created := addRecords(tableName, func(r *Record, index int) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
@@ -20,15 +22,15 @@ func TestTableCreate(t *testing.T) {
 		r.AddStrField("name", fmt.Sprint("user", index))
 	}, blockCount)
 
-	nt := saveAndReloadTable(t, blockCount)
+	nt := saveAndReloadTable(t, tableName, blockCount)
 
-	if nt.Name != TEST_TABLE_NAME {
+	if nt.Name != tableName {
 		t.Error("TEST TABLE NAME INCORRECT")
 	}
 
 	nt.LoadTableInfo()
 
-	_, err := os.Open(fmt.Sprintf("db/%s/info.db", TEST_TABLE_NAME))
+	_, err := os.Open(fmt.Sprintf("db/%s/info.db", tableName))
 	if err != nil {
 		fmt.Println("ERR", err)
 		t.Error("Test table did not create info.db")
@@ -47,6 +49,4 @@ func TestTableCreate(t *testing.T) {
 	if len(records) != len(created) {
 		t.Error("More records were created than expected", len(records))
 	}
-
-	deleteTestDb()
 }
