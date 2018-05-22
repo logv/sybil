@@ -13,6 +13,7 @@ import "time"
 func TestTableLoadRecords(t *testing.T) {
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")

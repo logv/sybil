@@ -7,6 +7,7 @@ import "testing"
 func TestGrabInfoLock(t *testing.T) {
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
 
 	tbl.MakeDir()
@@ -19,7 +20,10 @@ func TestGrabInfoLock(t *testing.T) {
 
 func TestRecoverInfoLock(t *testing.T) {
 	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
+	tbl.MakeDir()
 	lock := Lock{Table: tbl, Name: "info"}
 	lock.ForceMakeFile(int64(0))
 	infolock := InfoLock{lock}
@@ -37,6 +41,8 @@ func TestRecoverInfoLock(t *testing.T) {
 
 func TestGrabDigestLock(t *testing.T) {
 	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
 
 	tbl.MakeDir()
@@ -48,7 +54,16 @@ func TestGrabDigestLock(t *testing.T) {
 
 func TestRecoverDigestLock(t *testing.T) {
 	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
+	tbl.MakeDir()
+
+	// first grab digest lock
+	if grabbed := tbl.GrabDigestLock(); grabbed != true {
+		t.Error("COULD NOT GRAB DIGEST LOCK")
+	}
+
 	lock := Lock{Table: tbl, Name: STOMACHE_DIR}
 	lock.ForceMakeFile(int64(0))
 

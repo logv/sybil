@@ -9,6 +9,7 @@ import "testing"
 func TestTableLoadRowRecords(t *testing.T) {
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {

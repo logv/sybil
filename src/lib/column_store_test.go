@@ -10,6 +10,7 @@ import (
 func TestTableDigestRowRecords(t *testing.T) {
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {
@@ -63,6 +64,7 @@ func TestTableDigestRowRecords(t *testing.T) {
 func TestColumnStoreFileNames(t *testing.T) {
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {
@@ -141,6 +143,7 @@ func TestColumnStoreFileNames(t *testing.T) {
 func TestBigIntColumns(t *testing.T) {
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	var minVal = int64(1 << 50)
 	blockCount := 3
