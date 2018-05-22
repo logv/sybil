@@ -4,53 +4,52 @@ import "testing"
 
 // Try out the different situations for lock recovery and see if they behave
 // appropriately
-func TestGrabInfoLock(test *testing.T) {
-	t := GetTable(TEST_TABLE_NAME)
+func TestGrabInfoLock(t *testing.T) {
+	tbl := GetTable(TEST_TABLE_NAME)
 
-	t.MakeDir()
+	tbl.MakeDir()
 
-	grabbed := t.GrabInfoLock()
+	grabbed := tbl.GrabInfoLock()
 	if grabbed != true {
-		test.Error("COULD NOT GRAB INFO LOCK")
+		t.Error("COULD NOT GRAB INFO LOCK")
 	}
 }
 
-func TestRecoverInfoLock(test *testing.T) {
-	t := GetTable(TEST_TABLE_NAME)
-	lock := Lock{Table: t, Name: "info"}
+func TestRecoverInfoLock(t *testing.T) {
+	tbl := GetTable(TEST_TABLE_NAME)
+	lock := Lock{Table: tbl, Name: "info"}
 	lock.ForceMakeFile(int64(0))
 	infolock := InfoLock{lock}
 
-	t.MakeDir()
+	tbl.MakeDir()
 
-	grabbed := t.GrabInfoLock()
+	grabbed := tbl.GrabInfoLock()
 	if grabbed == true {
-		test.Error("GRABBED INFO LOCK WHEN IT ALREADY EXISTS AND BELONGS ELSEWHERE")
+		t.Error("GRABBED INFO LOCK WHEN IT ALREADY EXISTS AND BELONGS ELSEWHERE")
 	}
 
 	infolock.Recover()
 
 }
 
-func TestGrabDigestLock(test *testing.T) {
-	t := GetTable(TEST_TABLE_NAME)
+func TestGrabDigestLock(t *testing.T) {
+	tbl := GetTable(TEST_TABLE_NAME)
 
-	t.MakeDir()
-	grabbed := t.GrabDigestLock()
+	tbl.MakeDir()
+	grabbed := tbl.GrabDigestLock()
 	if grabbed != true {
-		test.Error("COULD NOT GRAB DIGEST LOCK")
+		t.Error("COULD NOT GRAB DIGEST LOCK")
 	}
 }
 
-func TestRecoverDigestLock(test *testing.T) {
-	t := GetTable(TEST_TABLE_NAME)
-	lock := Lock{Table: t, Name: STOMACHE_DIR}
+func TestRecoverDigestLock(t *testing.T) {
+	tbl := GetTable(TEST_TABLE_NAME)
+	lock := Lock{Table: tbl, Name: STOMACHE_DIR}
 	lock.ForceMakeFile(int64(0))
 
-	t.MakeDir()
-	grabbed := t.GrabDigestLock()
+	tbl.MakeDir()
+	grabbed := tbl.GrabDigestLock()
 	if grabbed == true {
-		test.Error("COULD GRAB DIGEST LOCK WHEN IT ARLEADY EXISTS")
+		t.Error("COULD GRAB DIGEST LOCK WHEN IT ARLEADY EXISTS")
 	}
-
 }

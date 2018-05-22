@@ -5,7 +5,7 @@ import "math/rand"
 import "testing"
 import "os"
 
-func TestTableDigestRowRecords(test *testing.T) {
+func TestTableDigestRowRecords(t *testing.T) {
 	deleteTestDb()
 
 	blockCount := 3
@@ -16,8 +16,8 @@ func TestTableDigestRowRecords(test *testing.T) {
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	t := GetTable(TEST_TABLE_NAME)
-	t.IngestRecords("ingest")
+	tbl := GetTable(TEST_TABLE_NAME)
+	tbl.IngestRecords("ingest")
 
 	unloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
@@ -28,11 +28,11 @@ func TestTableDigestRowRecords(test *testing.T) {
 	nt.LoadRecords(nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
-		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
+		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
 	if len(nt.BlockList) != 1 {
-		test.Error("Found other records than rowblock")
+		t.Error("Found other records than rowblock")
 	}
 
 	nt.DigestRecords()
@@ -50,13 +50,13 @@ func TestTableDigestRowRecords(test *testing.T) {
 	}
 
 	if count != int32(blockCount*CHUNK_SIZE) {
-		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
 
 }
 
-func TestColumnStoreFileNames(test *testing.T) {
+func TestColumnStoreFileNames(t *testing.T) {
 
 	deleteTestDb()
 
@@ -69,8 +69,8 @@ func TestColumnStoreFileNames(test *testing.T) {
 		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
 	}, blockCount)
 
-	t := GetTable(TEST_TABLE_NAME)
-	t.IngestRecords("ingest")
+	tbl := GetTable(TEST_TABLE_NAME)
+	tbl.IngestRecords("ingest")
 
 	unloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
@@ -81,11 +81,11 @@ func TestColumnStoreFileNames(test *testing.T) {
 	nt.LoadRecords(nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
-		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
+		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
 	if len(nt.BlockList) != 1 {
-		test.Error("Found other records than rowblock")
+		t.Error("Found other records than rowblock")
 	}
 
 	nt.DigestRecords()
@@ -120,7 +120,7 @@ func TestColumnStoreFileNames(test *testing.T) {
 		for _, filename := range colFiles {
 			_, ok := createdFiles[filename]
 			if !ok {
-				test.Error("MISSING COLUMN FILE", filename)
+				t.Error("MISSING COLUMN FILE", filename)
 			}
 
 		}
@@ -128,12 +128,12 @@ func TestColumnStoreFileNames(test *testing.T) {
 	}
 
 	if count != int32(blockCount*CHUNK_SIZE) {
-		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 	}
 
 }
 
-func TestBigIntColumns(test *testing.T) {
+func TestBigIntColumns(t *testing.T) {
 	deleteTestDb()
 
 	var minVal = int64(1 << 50)
@@ -144,8 +144,8 @@ func TestBigIntColumns(test *testing.T) {
 		r.AddIntField("time", minVal+age)
 	}, blockCount)
 
-	t := GetTable(TEST_TABLE_NAME)
-	t.IngestRecords("ingest")
+	tbl := GetTable(TEST_TABLE_NAME)
+	tbl.IngestRecords("ingest")
 
 	unloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
@@ -156,11 +156,11 @@ func TestBigIntColumns(test *testing.T) {
 	nt.LoadRecords(nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
-		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
+		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
 	if len(nt.BlockList) != 1 {
-		test.Error("Found other records than rowblock")
+		t.Error("Found other records than rowblock")
 	}
 
 	nt.DigestRecords()
@@ -185,7 +185,7 @@ func TestBigIntColumns(test *testing.T) {
 		for _, r := range b.RecordList {
 			v, ok := r.GetIntVal("time")
 			if int64(v) < minVal || !ok {
-				test.Error("BIG INT UNPACKED INCORRECTLY! VAL:", v, "OK?", ok)
+				t.Error("BIG INT UNPACKED INCORRECTLY! VAL:", v, "OK?", ok)
 			}
 
 		}
@@ -193,7 +193,7 @@ func TestBigIntColumns(test *testing.T) {
 	}
 
 	if count != int32(blockCount*CHUNK_SIZE) {
-		test.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
 	FLAGS.SAMPLES = NewFalseFlag()

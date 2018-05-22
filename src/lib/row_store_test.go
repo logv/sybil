@@ -6,7 +6,7 @@ import "math"
 import "math/rand"
 import "testing"
 
-func TestTableLoadRowRecords(test *testing.T) {
+func TestTableLoadRowRecords(t *testing.T) {
 	deleteTestDb()
 
 	blockCount := 3
@@ -17,8 +17,8 @@ func TestTableLoadRowRecords(test *testing.T) {
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	t := GetTable(TEST_TABLE_NAME)
-	t.IngestRecords("ingest")
+	tbl := GetTable(TEST_TABLE_NAME)
+	tbl.IngestRecords("ingest")
 
 	unloadTestTable()
 	nt := GetTable(TEST_TABLE_NAME)
@@ -26,11 +26,11 @@ func TestTableLoadRowRecords(test *testing.T) {
 	nt.LoadRecords(nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
-		test.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
+		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
 	}
 
 	if len(nt.BlockList) != 1 {
-		test.Error("Found other records than rowblock")
+		t.Error("Found other records than rowblock")
 	}
 
 	querySpec := newQuerySpec()
@@ -46,7 +46,7 @@ func TestTableLoadRowRecords(test *testing.T) {
 
 		val, err := strconv.ParseInt(k, 10, 64)
 		if err != nil || math.Abs(float64(val)-float64(v.Hists["age"].Mean())) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, val, v.Hists["age"].Mean())
 		}
 	}
 

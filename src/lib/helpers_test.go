@@ -34,10 +34,10 @@ func addRecords(cb RecordSetupCB, blockCount int) []*Record {
 	count := CHUNK_SIZE * blockCount
 
 	ret := make([]*Record, 0)
-	t := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(TEST_TABLE_NAME)
 
 	for i := 0; i < count; i++ {
-		r := t.NewRecord()
+		r := tbl.NewRecord()
 		cb(r, i)
 		ret = append(ret, r)
 	}
@@ -45,12 +45,12 @@ func addRecords(cb RecordSetupCB, blockCount int) []*Record {
 	return ret
 }
 
-func saveAndReloadTable(test *testing.T, expectedBlocks int) *Table {
+func saveAndReloadTable(t *testing.T, expectedBlocks int) *Table {
 
 	expectedCount := CHUNK_SIZE * expectedBlocks
-	t := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(TEST_TABLE_NAME)
 
-	t.SaveRecordsToColumns()
+	tbl.SaveRecordsToColumns()
 
 	unloadTestTable()
 
@@ -62,12 +62,12 @@ func saveAndReloadTable(test *testing.T, expectedBlocks int) *Table {
 	count := nt.LoadRecords(&loadSpec)
 
 	if count != expectedCount {
-		test.Error("Wrote", expectedCount, "records, but read back", count)
+		t.Error("Wrote", expectedCount, "records, but read back", count)
 	}
 
 	// +1 is the Row Store Block...
 	if len(nt.BlockList) != expectedBlocks {
-		test.Error("Wrote", expectedBlocks, "blocks, but came back with", len(nt.BlockList))
+		t.Error("Wrote", expectedBlocks, "blocks, but came back with", len(nt.BlockList))
 	}
 
 	return nt
