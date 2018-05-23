@@ -10,7 +10,6 @@ import "strings"
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
 // to digest, make a new STOMACHE_DIR tempdir and move all files from ingest/ into it
 
-var READ_ROWS_ONLY = false
 var MIN_FILES_TO_DIGEST = 0
 
 func (t *Table) getNewIngestBlockName() (string, error) {
@@ -46,7 +45,6 @@ func (t *Table) IngestRecords(blockname string) {
 // collation inside a file somewhere
 func (t *Table) CompactRecords() {
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
-	READ_ROWS_ONLY = true
 	DELETE_BLOCKS_AFTER_QUERY = false
 	HOLD_MATCHES = true
 

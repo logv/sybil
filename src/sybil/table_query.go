@@ -1,23 +1,26 @@
 package sybil
 
-import "fmt"
-
-import "os"
-import "path"
-import "strings"
-import "sync"
-import "time"
-import "io/ioutil"
-import "runtime"
-import "runtime/debug"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"runtime"
+	"runtime/debug"
+	"strings"
+	"sync"
+	"time"
+)
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	Debug("LOADING", *FLAGS.DIR, t.Name)
 
+	readRowsOnly := loadSpec != nil && loadSpec.ReadRowsOnly
+
 	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
 
-	if READ_ROWS_ONLY {
+	if readRowsOnly {
 		Debug("ONLY READING RECORDS FROM ROW STORE")
 		files = nil
 	}
