@@ -659,12 +659,6 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 		}
 	} else {
 		for r, v := range into.Values {
-			curSet, ok := records[r].SetMap[colID]
-			if !ok {
-				curSet = make(SetField, 0)
-				records[r].SetMap[colID] = curSet
-			}
-
 			records[r].SetMap[colID] = SetField(v)
 			records[r].Populated[colID] = SET_VAL
 		}
