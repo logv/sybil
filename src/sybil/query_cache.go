@@ -66,14 +66,14 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 // for a per block query cache, we exclude any trivial filters (that are true
 // for all records in the block) when creating our cache key
-func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
+func (qs *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 
 	filters := make([]Filter, 0)
-	if querySpec == nil {
+	if qs == nil {
 		return filters
 	}
 
-	t := querySpec.Table
+	t := qs.Table
 
 	info := t.LoadBlockInfo(blockname)
 
@@ -106,7 +106,7 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 		maxRecord.Populated[fieldID] = INT_VAL
 	}
 
-	for _, f := range querySpec.Filters {
+	for _, f := range qs.Filters {
 		// make the minima record and the maxima records...
 		switch fil := f.(type) {
 		case IntFilter:

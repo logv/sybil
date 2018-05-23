@@ -182,17 +182,17 @@ func (rs *Result) Combine(nextResult *Result) {
 	rs.Count = totalCount
 }
 
-func (querySpec *QuerySpec) Punctuate() {
-	querySpec.Results = make(ResultMap)
-	querySpec.TimeResults = make(map[int]ResultMap)
+func (qs *QuerySpec) Punctuate() {
+	qs.Results = make(ResultMap)
+	qs.TimeResults = make(map[int]ResultMap)
 }
 
-func (querySpec *QuerySpec) ResetResults() {
-	querySpec.Punctuate()
+func (qs *QuerySpec) ResetResults() {
+	qs.Punctuate()
 
-	if querySpec.Table != nil && querySpec.Table.BlockList != nil {
+	if qs.Table != nil && qs.Table.BlockList != nil {
 		// Reach into all our table blocks and reset their REGEX CACHE
-		for _, b := range querySpec.Table.BlockList {
+		for _, b := range qs.Table.BlockList {
 			for _, c := range b.columns {
 				if len(c.RCache) > 0 {
 					c.RCache = make(map[int]bool)

@@ -19,28 +19,28 @@ func (hc *HistCompat) NewHist() Histogram {
 	return hc.table.NewHist(&hc.Info)
 }
 
-func (h *HistCompat) Mean() float64 {
-	return h.Avg
+func (hc *HistCompat) Mean() float64 {
+	return hc.Avg
 }
 
-func (h *HistCompat) GetMeanVariance() float64 {
-	return h.GetVariance() / float64(h.Count)
+func (hc *HistCompat) GetMeanVariance() float64 {
+	return hc.GetVariance() / float64(hc.Count)
 }
 
-func (h *HistCompat) TotalCount() int64 {
-	return h.Count
+func (hc *HistCompat) TotalCount() int64 {
+	return hc.Count
 }
 
-func (h *HistCompat) StdDev() float64 {
-	return h.GetStdDev()
+func (hc *HistCompat) StdDev() float64 {
+	return hc.GetStdDev()
 }
 
-func (h *HistCompat) GetIntBuckets() map[int64]int64 {
-	return h.GetSparseBuckets()
+func (hc *HistCompat) GetIntBuckets() map[int64]int64 {
+	return hc.GetSparseBuckets()
 }
 
-func (h *HistCompat) Range() (int64, int64) {
-	return h.Info.Min, h.Info.Max
+func (hc *HistCompat) Range() (int64, int64) {
+	return hc.Info.Min, hc.Info.Max
 }
 
 // }}}
@@ -66,28 +66,28 @@ func (hc *MultiHistCompat) NewHist() Histogram {
 	return newMultiHist(hc.table, hc.Info)
 }
 
-func (h *MultiHistCompat) Mean() float64 {
-	return h.Avg
+func (hc *MultiHistCompat) Mean() float64 {
+	return hc.Avg
 }
 
-func (h *MultiHistCompat) GetMeanVariance() float64 {
-	return h.GetVariance() / float64(h.Count)
+func (hc *MultiHistCompat) GetMeanVariance() float64 {
+	return hc.GetVariance() / float64(hc.Count)
 }
 
-func (h *MultiHistCompat) TotalCount() int64 {
-	return h.Count
+func (hc *MultiHistCompat) TotalCount() int64 {
+	return hc.Count
 }
 
-func (h *MultiHistCompat) StdDev() float64 {
-	return h.GetStdDev()
+func (hc *MultiHistCompat) StdDev() float64 {
+	return hc.GetStdDev()
 }
 
-func (h *MultiHistCompat) GetIntBuckets() map[int64]int64 {
-	return h.GetSparseBuckets()
+func (hc *MultiHistCompat) GetIntBuckets() map[int64]int64 {
+	return hc.GetSparseBuckets()
 }
 
-func (h *MultiHistCompat) Range() (int64, int64) {
-	return h.Info.Min, h.Info.Max
+func (hc *MultiHistCompat) Range() (int64, int64) {
+	return hc.Info.Min, hc.Info.Max
 }
 
 // }}}
