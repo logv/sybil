@@ -96,8 +96,7 @@ func (t *Table) initLocks() {
 }
 
 func (t *Table) getStringForKey(id int) string {
-	val, _ := t.keyStringIDLookup[int16(id)]
-	return val
+	return t.keyStringIDLookup[int16(id)]
 }
 
 func (t *Table) populateStringIDLookup() {

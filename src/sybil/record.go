@@ -111,7 +111,7 @@ func (r *Record) AddStrField(name string, val string) {
 	r.Strs[nameID] = StrField(valueID)
 	r.Populated[nameID] = STR_VAL
 
-	if r.block.table.setKeyType(nameID, STR_VAL) == false {
+	if !r.block.table.setKeyType(nameID, STR_VAL) {
 		Error("COULDNT SET STR VAL", name, val, nameID)
 	}
 }
@@ -123,7 +123,7 @@ func (r *Record) AddIntField(name string, val int64) {
 	r.ResizeFields(nameID)
 	r.Ints[nameID] = IntField(val)
 	r.Populated[nameID] = INT_VAL
-	if r.block.table.setKeyType(nameID, INT_VAL) == false {
+	if !r.block.table.setKeyType(nameID, INT_VAL) {
 		Error("COULDNT SET INT VAL", name, val, nameID)
 	}
 }
@@ -143,7 +143,7 @@ func (r *Record) AddSetField(name string, val []string) {
 
 	r.SetMap[nameID] = SetField(vals)
 	r.Populated[nameID] = SET_VAL
-	if r.block.table.setKeyType(nameID, SET_VAL) == false {
+	if !r.block.table.setKeyType(nameID, SET_VAL) {
 		Error("COULDNT SET SET VAL", name, val, nameID)
 	}
 }
