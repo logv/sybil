@@ -61,6 +61,13 @@ func GetTable(name string) *Table {
 	return t
 }
 
+// UnloadTable de-registers a table.
+func UnloadTable(name string) {
+	table_m.Lock()
+	delete(LOADED_TABLES, name)
+	table_m.Unlock()
+}
+
 func (t *Table) init_data_structures() {
 	t.key_string_id_lookup = make(map[int16]string)
 	t.val_string_id_lookup = make(map[int32]string)

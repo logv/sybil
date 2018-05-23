@@ -5,6 +5,7 @@ import "testing"
 // Try out the different situations for lock recovery and see if they behave
 // appropriately
 func TestGrabInfoLock(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -19,6 +20,7 @@ func TestGrabInfoLock(t *testing.T) {
 }
 
 func TestRecoverInfoLock(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -40,6 +42,7 @@ func TestRecoverInfoLock(t *testing.T) {
 }
 
 func TestGrabDigestLock(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -53,6 +56,7 @@ func TestGrabDigestLock(t *testing.T) {
 }
 
 func TestRecoverDigestLock(t *testing.T) {
+	t.Parallel()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)

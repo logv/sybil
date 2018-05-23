@@ -102,7 +102,7 @@ func newQuerySpec() *QuerySpec {
 }
 
 func unloadTestTable(tableName string) {
-	delete(LOADED_TABLES, tableName)
+	UnloadTable(tableName)
 }
 
 func deleteTestDb(tableName string) {
