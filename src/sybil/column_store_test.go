@@ -45,7 +45,6 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
 	nt = GetTable(tableName)
 	nt.LoadRecords(nil)
 
@@ -101,7 +100,6 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
 	nt = GetTable(tableName)
 	nt.LoadRecords(nil)
 
@@ -180,7 +178,6 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
 	FLAGS.SAMPLES = NewTrueFlag()
 	limit := 1000
 	FLAGS.LIMIT = &limit

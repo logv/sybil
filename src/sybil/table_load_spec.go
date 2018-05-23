@@ -7,6 +7,7 @@ type LoadSpec struct {
 	files   map[string]bool
 
 	LoadAllColumns bool
+	ReadRowsOnly   bool
 	table          *Table
 
 	slabs  []*RecordList

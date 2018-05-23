@@ -26,7 +26,9 @@ func TestTableLoadRowRecords(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		ReadRowsOnly: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
