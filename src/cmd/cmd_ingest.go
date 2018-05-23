@@ -1,7 +1,5 @@
 package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
-
 import (
 	"encoding/csv"
 	"encoding/json"
@@ -13,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/logv/sybil/src/sybil"
 )
 
 type Dictionary map[string]interface{}

@@ -1,10 +1,11 @@
 package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
+import (
+	"flag"
+	"strconv"
 
-import "flag"
-
-import "strconv"
+	"github.com/logv/sybil/src/sybil"
+)
 
 func decodeTableInfo(digestFile *string) bool {
 	dec := sybil.GetFileDecoder(*digestFile)

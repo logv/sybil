@@ -1,11 +1,12 @@
 package cmd
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+	"os"
 
-import "fmt"
-import "os"
-
-import sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/sybil"
+)
 
 func askConfirmation() bool {
 

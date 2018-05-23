@@ -1,8 +1,10 @@
 package cmd
 
-import "flag"
+import (
+	"flag"
 
-import sybil "github.com/logv/sybil/src/lib"
+	"github.com/logv/sybil/src/sybil"
+)
 
 func RunDigestCmdLine() {
 	flag.Parse()

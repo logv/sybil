@@ -1,8 +1,11 @@
 package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
-import "flag"
-import "strings"
+import (
+	"flag"
+	"strings"
+
+	"github.com/logv/sybil/src/sybil"
+)
 
 func RunIndexCmdLine() {
 	var fInts = flag.String("int", "", "Integer values to index")

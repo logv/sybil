@@ -1,8 +1,10 @@
 package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
+import (
+	"flag"
 
-import "flag"
+	"github.com/logv/sybil/src/sybil"
+)
 
 // our aggregate command will take multiple output files on the command in,
 // verify all their query specs match the same md5 result and then combine them

@@ -1,13 +1,15 @@
 package cmd
 
-import sybil "github.com/logv/sybil/src/lib"
+import (
+	"flag"
+	"fmt"
+	"path"
+	"runtime/debug"
+	"strings"
+	"time"
 
-import "fmt"
-import "flag"
-import "strings"
-import "time"
-import "path"
-import "runtime/debug"
+	"github.com/logv/sybil/src/sybil"
+)
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
