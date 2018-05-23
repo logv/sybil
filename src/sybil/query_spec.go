@@ -182,11 +182,13 @@ func (rs *Result) Combine(nextResult *Result) {
 	rs.Count = totalCount
 }
 
+// Punctuate resets results on the QuerySpec.
 func (qs *QuerySpec) Punctuate() {
 	qs.Results = make(ResultMap)
 	qs.TimeResults = make(map[int]ResultMap)
 }
 
+// ResetResults resets results on the QuerySpec and clears table caches.
 func (qs *QuerySpec) ResetResults() {
 	qs.Punctuate()
 
