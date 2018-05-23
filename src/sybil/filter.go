@@ -106,7 +106,7 @@ func (f NoFilter) Filter(r *Record) bool {
 
 type IntFilter struct {
 	Field   string
-	FieldId int16
+	FieldID int16
 	Op      string
 	Value   int
 
@@ -115,7 +115,7 @@ type IntFilter struct {
 
 type StrFilter struct {
 	Field   string
-	FieldId int16
+	FieldID int16
 	Op      string
 	Value   string
 	regex   *regexp.Regexp
@@ -125,7 +125,7 @@ type StrFilter struct {
 
 type SetFilter struct {
 	Field   string
-	FieldId int16
+	FieldID int16
 	Op      string
 	Value   string
 
@@ -133,11 +133,11 @@ type SetFilter struct {
 }
 
 func (filter IntFilter) Filter(r *Record) bool {
-	if r.Populated[filter.FieldId] == 0 {
+	if r.Populated[filter.FieldID] == 0 {
 		return false
 	}
 
-	field := r.Ints[filter.FieldId]
+	field := r.Ints[filter.FieldID]
 	switch filter.Op {
 	case "gt":
 		return int(field) > int(filter.Value)
@@ -161,13 +161,13 @@ func (filter IntFilter) Filter(r *Record) bool {
 var REGEX_CACHE_SIZE = 100000
 
 func (filter StrFilter) Filter(r *Record) bool {
-	if r.Populated[filter.FieldId] == 0 {
+	if r.Populated[filter.FieldID] == 0 {
 		return false
 	}
 
-	val := r.Strs[filter.FieldId]
-	col := r.block.GetColumnInfo(filter.FieldId)
-	filterval := int(col.getValId(filter.Value))
+	val := r.Strs[filter.FieldID]
+	col := r.block.GetColumnInfo(filter.FieldID)
+	filterval := int(col.getValID(filter.Value))
 
 	ok := false
 	ret := false
@@ -215,31 +215,31 @@ func (filter StrFilter) Filter(r *Record) bool {
 
 func (filter SetFilter) Filter(r *Record) bool {
 
-	col := r.block.GetColumnInfo(filter.FieldId)
+	col := r.block.GetColumnInfo(filter.FieldID)
 	ret := false
 
-	ok := r.Populated[filter.FieldId] == SET_VAL
+	ok := r.Populated[filter.FieldID] == SET_VAL
 	if !ok {
 		return false
 	}
 
-	sets := r.SetMap[filter.FieldId]
+	sets := r.SetMap[filter.FieldID]
 
-	valId := col.getValId(filter.Value)
+	valID := col.getValID(filter.Value)
 
 	switch filter.Op {
 	// Check if tag exists
 	case "in":
 		// Check if tag does not exist
 		for _, tag := range sets {
-			if tag == valId {
+			if tag == valID {
 				return true
 			}
 		}
 	case "nin":
 		ret = true
 		for _, tag := range sets {
-			if tag == valId {
+			if tag == valID {
 				return false
 			}
 		}
@@ -249,7 +249,7 @@ func (filter SetFilter) Filter(r *Record) bool {
 }
 
 func (t *Table) IntFilter(name string, op string, value int) IntFilter {
-	intFilter := IntFilter{Field: name, FieldId: t.getKeyId(name), Op: op, Value: value}
+	intFilter := IntFilter{Field: name, FieldID: t.getKeyID(name), Op: op, Value: value}
 	intFilter.table = t
 
 	return intFilter
@@ -257,7 +257,7 @@ func (t *Table) IntFilter(name string, op string, value int) IntFilter {
 }
 
 func (t *Table) StrFilter(name string, op string, value string) StrFilter {
-	strFilter := StrFilter{Field: name, FieldId: t.getKeyId(name), Op: op, Value: value}
+	strFilter := StrFilter{Field: name, FieldID: t.getKeyID(name), Op: op, Value: value}
 	strFilter.table = t
 
 	var err error
@@ -273,7 +273,7 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 }
 
 func (t *Table) SetFilter(name string, op string, value string) SetFilter {
-	setFilter := SetFilter{Field: name, FieldId: t.getKeyId(name), Op: op, Value: value}
+	setFilter := SetFilter{Field: name, FieldID: t.getKeyID(name), Op: op, Value: value}
 	setFilter.table = t
 
 	return setFilter

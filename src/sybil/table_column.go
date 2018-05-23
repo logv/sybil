@@ -9,22 +9,22 @@ type TableColumn struct {
 
 	block *TableBlock
 
-	stringIdM         *sync.Mutex
-	valStringIdLookup []string
+	stringIDM         *sync.Mutex
+	valStringIDLookup []string
 }
 
 func (tb *TableBlock) newTableColumn() *TableColumn {
 	tc := TableColumn{}
 	tc.StringTable = make(map[string]int32)
-	tc.valStringIdLookup = make([]string, CHUNK_SIZE+1)
-	tc.stringIdM = &sync.Mutex{}
+	tc.valStringIDLookup = make([]string, CHUNK_SIZE+1)
+	tc.stringIDM = &sync.Mutex{}
 	tc.block = tb
 	tc.RCache = make(map[int]bool)
 
 	return &tc
 }
 
-func (tc *TableColumn) getValId(name string) int32 {
+func (tc *TableColumn) getValID(name string) int32 {
 
 	id, ok := tc.StringTable[name]
 
@@ -32,28 +32,28 @@ func (tc *TableColumn) getValId(name string) int32 {
 		return int32(id)
 	}
 
-	tc.stringIdM.Lock()
+	tc.stringIDM.Lock()
 	tc.StringTable[name] = int32(len(tc.StringTable))
 
 	// resize our string lookup if we need to
-	if len(tc.StringTable) > len(tc.valStringIdLookup) {
+	if len(tc.StringTable) > len(tc.valStringIDLookup) {
 		newLookup := make([]string, len(tc.StringTable)<<1)
-		copy(newLookup, tc.valStringIdLookup)
-		tc.valStringIdLookup = newLookup
+		copy(newLookup, tc.valStringIDLookup)
+		tc.valStringIDLookup = newLookup
 	}
 
-	tc.valStringIdLookup[tc.StringTable[name]] = name
-	tc.stringIdM.Unlock()
+	tc.valStringIDLookup[tc.StringTable[name]] = name
+	tc.stringIDM.Unlock()
 	return tc.StringTable[name]
 }
 
 func (tc *TableColumn) getStringForVal(id int32) string {
-	if int(id) >= len(tc.valStringIdLookup) {
+	if int(id) >= len(tc.valStringIDLookup) {
 		Warn("TRYING TO GET STRING ID FOR NON EXISTENT VAL", id)
 		return ""
 	}
 
-	val := tc.valStringIdLookup[id]
+	val := tc.valStringIDLookup[id]
 	return val
 }
 

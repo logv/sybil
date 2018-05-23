@@ -14,9 +14,9 @@ func TestSets(t *testing.T) {
 	blockCount := 3
 	minCount := CHUNK_SIZE * blockCount
 	records := addRecords(tableName, func(r *Record, i int) {
-		setId := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
+		setID := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
 		r.AddIntField("id_int", int64(i))
-		r.AddSetField("id_set", setId)
+		r.AddSetField("id_set", setID)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
 		age := int64(rand.Intn(20)) + int64(minCount)
 		totalAge += age

@@ -167,7 +167,7 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 	return nil
 }
 
-func importJsonRecords() {
+func importJSONRecords() {
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
@@ -215,7 +215,7 @@ func RunIngestCmdLine() {
 	fInts := flag.String("ints", "", "columns to treat as ints (comma delimited)")
 	fCsv := flag.Bool("csv", false, "expect incoming data in CSV format")
 	fExcludes := flag.String("exclude", "", "Columns to exclude (comma delimited)")
-	fJsonPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
+	fJSONPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	fSkipCompact := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
 	fReopen := flag.String("infile", "", "input file to use (instead of stdin)")
 	sybil.FLAGS.SKIP_COMPACT = fSkipCompact
@@ -229,7 +229,7 @@ func RunIngestCmdLine() {
 		return
 	}
 
-	JSON_PATH = *fJsonPath
+	JSON_PATH = *fJSONPath
 
 	if *fReopen != "" {
 
@@ -280,7 +280,7 @@ func RunIngestCmdLine() {
 	}
 
 	if *fCsv == false {
-		importJsonRecords()
+		importJSONRecords()
 	} else {
 		importCsvRecords()
 	}

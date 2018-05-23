@@ -324,7 +324,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
-	t.populateStringIdLookup()
+	t.populateStringIDLookup()
 
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	Debug("SKIPPED", brokenCount, "BLOCKS BASED ON BROKEN INFO")

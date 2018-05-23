@@ -61,10 +61,10 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 			colType = INT_VAL
 
 			colInfo := info.IntInfoMap[colName]
-			colId := t.getKeyId(colName)
-			intInfo, ok := t.IntInfo[colId]
+			colID := t.getKeyID(colName)
+			intInfo, ok := t.IntInfo[colID]
 			if !ok {
-				t.IntInfo[colId] = colInfo
+				t.IntInfo[colID] = colInfo
 			} else {
 				if colInfo.Min < intInfo.Min {
 					intInfo.Min = colInfo.Min
@@ -73,8 +73,8 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 		}
 
 		if colName != "" {
-			colId := t.getKeyId(colName)
-			t.setKeyType(colId, int8(colType))
+			colID := t.getKeyID(colName)
+			t.setKeyType(colID, int8(colType))
 			columns[colName] = colType
 		}
 

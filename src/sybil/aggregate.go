@@ -81,7 +81,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	if len(querySpec.Distincts) > 0 {
 		doCountDistinct = true
 		for _, g := range querySpec.Distincts {
-			if INT_VAL != querySpec.Table.KeyTypes[g.nameId] {
+			if INT_VAL != querySpec.Table.KeyTypes[g.nameID] {
 				onlyIntsInDistinct = false
 			}
 		}
@@ -122,16 +122,16 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		for i, g := range querySpec.Groups {
 			copy(bs, zero)
 
-			if columns[g.nameId] == nil && r.Populated[g.nameId] != _NO_VAL {
-				columns[g.nameId] = r.block.GetColumnInfo(g.nameId)
-				columns[g.nameId].Type = r.Populated[g.nameId]
+			if columns[g.nameID] == nil && r.Populated[g.nameID] != _NO_VAL {
+				columns[g.nameID] = r.block.GetColumnInfo(g.nameID)
+				columns[g.nameID].Type = r.Populated[g.nameID]
 			}
 
-			switch r.Populated[g.nameId] {
+			switch r.Populated[g.nameID] {
 			case INT_VAL:
-				binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.nameId]))
+				binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.nameID]))
 			case STR_VAL:
-				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.nameId]))
+				binary.LittleEndian.PutUint64(bs, uint64(r.Strs[g.nameID]))
 			case _NO_VAL:
 				binary.LittleEndian.PutUint64(bs, MISSING_VALUE)
 			}
@@ -206,9 +206,9 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				// if we are doing a count distinct, lets try to go the fast route
 				for i, g := range querySpec.Distincts {
 					copy(bs, zero)
-					switch r.Populated[g.nameId] {
+					switch r.Populated[g.nameID] {
 					case INT_VAL:
-						binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.nameId]))
+						binary.LittleEndian.PutUint64(bs, uint64(r.Ints[g.nameID]))
 					case _NO_VAL:
 						binary.LittleEndian.PutUint64(bs, MISSING_VALUE)
 					}
@@ -221,12 +221,12 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			} else {
 				// slow path for count distinct on strings
 				for _, g := range querySpec.Distincts {
-					switch r.Populated[g.nameId] {
+					switch r.Populated[g.nameID] {
 					case INT_VAL:
-						slowdistinctbuffer.WriteString(strconv.FormatInt(int64(r.Ints[g.nameId]), 10))
+						slowdistinctbuffer.WriteString(strconv.FormatInt(int64(r.Ints[g.nameID]), 10))
 					case STR_VAL:
-						col := r.block.GetColumnInfo(g.nameId)
-						slowdistinctbuffer.WriteString(col.getStringForVal(int32(r.Strs[g.nameId])))
+						col := r.block.GetColumnInfo(g.nameID)
+						slowdistinctbuffer.WriteString(col.getStringForVal(int32(r.Strs[g.nameID])))
 
 					}
 					slowdistinctbuffer.WriteString(GROUP_DELIMITER)
@@ -241,14 +241,14 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		// {{{ aggregations
 		for _, a := range querySpec.Aggregations {
-			switch r.Populated[a.nameId] {
+			switch r.Populated[a.nameID] {
 			case INT_VAL:
-				val := int64(r.Ints[a.nameId])
+				val := int64(r.Ints[a.nameID])
 
 				hist, ok := addedRecord.Hists[a.Name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.getIntInfo(a.nameId))
+					hist = r.block.table.NewHist(r.block.table.getIntInfo(a.nameID))
 					addedRecord.Hists[a.Name] = hist
 				}
 
@@ -293,7 +293,7 @@ func translateGroupBy(Results ResultMap, Groups []Grouping, columns []*TableColu
 		for i, g := range Groups {
 			bs = []byte(r.BinaryByKey[i*GROUP_BY_WIDTH : (i+1)*GROUP_BY_WIDTH])
 
-			col := columns[g.nameId]
+			col := columns[g.nameID]
 			if col == nil {
 				buffer.WriteString(GROUP_DELIMITER)
 				continue

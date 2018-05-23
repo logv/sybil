@@ -35,13 +35,13 @@ func (l *LoadSpec) assertColType(name string, colType int8) {
 	if l.table == nil {
 		return
 	}
-	nameId := l.table.getKeyId(name)
+	nameID := l.table.getKeyID(name)
 
-	if l.table.KeyTypes[nameId] == 0 {
+	if l.table.KeyTypes[nameID] == 0 {
 		Error("Query Error! Column ", name, " does not exist")
 	}
 
-	if l.table.KeyTypes[nameId] != colType {
+	if l.table.KeyTypes[nameID] != colType {
 		var colTypeName string
 		switch colType {
 		case INT_VAL:

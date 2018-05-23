@@ -41,14 +41,14 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	b.table = t
 	r.block = &b
 
-	maxKeyId := 0
+	maxKeyID := 0
 	for _, v := range t.KeyTable {
-		if maxKeyId <= int(v) {
-			maxKeyId = int(v) + 1
+		if maxKeyID <= int(v) {
+			maxKeyID = int(v) + 1
 		}
 	}
 
-	r.ResizeFields(int16(maxKeyId))
+	r.ResizeFields(int16(maxKeyID))
 
 	for _, v := range s.Ints {
 		r.Populated[v.Name] = INT_VAL

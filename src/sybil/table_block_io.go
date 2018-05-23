@@ -122,21 +122,21 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	}
 
 	for fieldName, _ := range info.StrInfoMap {
-		fieldId := t.getKeyId(fieldName)
-		minRecord.ResizeFields(fieldId)
-		maxRecord.ResizeFields(fieldId)
+		fieldID := t.getKeyID(fieldName)
+		minRecord.ResizeFields(fieldID)
+		maxRecord.ResizeFields(fieldID)
 	}
 
 	for fieldName, fieldInfo := range info.IntInfoMap {
-		fieldId := t.getKeyId(fieldName)
-		minRecord.ResizeFields(fieldId)
-		maxRecord.ResizeFields(fieldId)
+		fieldID := t.getKeyID(fieldName)
+		minRecord.ResizeFields(fieldID)
+		maxRecord.ResizeFields(fieldID)
 
-		minRecord.Ints[fieldId] = IntField(fieldInfo.Min)
-		maxRecord.Ints[fieldId] = IntField(fieldInfo.Max)
+		minRecord.Ints[fieldID] = IntField(fieldInfo.Min)
+		maxRecord.Ints[fieldID] = IntField(fieldInfo.Max)
 
-		minRecord.Populated[fieldId] = INT_VAL
-		maxRecord.Populated[fieldId] = INT_VAL
+		minRecord.Populated[fieldID] = INT_VAL
+		maxRecord.Populated[fieldID] = INT_VAL
 	}
 
 	add := true

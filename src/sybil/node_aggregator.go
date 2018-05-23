@@ -76,7 +76,7 @@ func (vt *VTable) AggregateSamples(dirs []string) {
 
 	// TODO: call into vt.PrintSamples later after adjusting how we store the samples
 	// on a per table basis
-	printJson(samples)
+	printJSON(samples)
 
 }
 
@@ -122,7 +122,7 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 		res.Table.BlockList = make(map[string]*TableBlock, 0)
 
 		res.Table.initLocks()
-		res.Table.populateStringIdLookup()
+		res.Table.populateStringIDLookup()
 
 		virtualBlock := TableBlock{}
 		virtualBlock.Size = size
@@ -131,11 +131,11 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 
 		vt.BlockList[resName] = &virtualBlock
 
-		for nameId, keyType := range res.Table.KeyTypes {
-			keyName := res.Table.getStringForKey(int(nameId))
-			thisId := vt.getKeyId(keyName)
+		for nameID, keyType := range res.Table.KeyTypes {
+			keyName := res.Table.getStringForKey(int(nameID))
+			thisID := vt.getKeyID(keyName)
 
-			vt.setKeyType(thisId, keyType)
+			vt.setKeyType(thisID, keyType)
 		}
 
 	}
