@@ -289,7 +289,7 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 			thisName := blockName
 
 			wg.Add(1)
-			saved += 1
+			saved++
 			go func() {
 
 				thisQuery.SaveCachedResults(thisName)

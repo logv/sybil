@@ -175,11 +175,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 							m.Lock()
 							if cachedSpec != nil {
 								cachedCount += blockQuery.MatchedCount
-								cachedBlocks += 1
+								cachedBlocks++
 
 							} else {
 								count += blockQuery.MatchedCount
-								loadedCount += 1
+								loadedCount++
 								if block.Info.NumRecords == int32(CHUNK_SIZE) {
 									toCacheSpecs[block.Name] = blockQuery
 								}

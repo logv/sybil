@@ -228,7 +228,7 @@ func (h *MultiHist) TrackPercentiles() {
 	// logarithmically
 	numHists := 0
 	for t := BucketSize; t > int64(NUM_BUCKETS); t >>= HIST_FACTOR_POW {
-		numHists += 1
+		numHists++
 	}
 
 	h.Subhists = make([]*HistCompat, numHists+1)

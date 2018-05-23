@@ -514,7 +514,7 @@ func (t *Table) PrintColInfo() {
 	smallSize := size
 
 	for ; smallSize > 1024; smallSize /= 1024 {
-		suffixIdx += 1
+		suffixIdx++
 
 	}
 

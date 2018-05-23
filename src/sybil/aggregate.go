@@ -375,7 +375,7 @@ func MultiCombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec)
 	for k, spec := range blockSpecs {
 
 		nextSpecs[k] = spec
-		count += 1
+		count++
 
 		if count%perBlock == 0 {
 			var resultSpec *QuerySpec

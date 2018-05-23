@@ -15,9 +15,8 @@ type FilterSpec struct {
 func checkTable(tokens []string, t *Table) bool {
 	if len(tokens) > 3 {
 		return t.Name == tokens[3]
-	} else {
-		return true
 	}
+	return true
 }
 
 func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter {
