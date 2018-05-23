@@ -35,7 +35,7 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	${GOBIN} test ./src/lib/ -v
+	${GOBIN} test ./src/lib/ -race -v
 
 lint:
 	gometalinter -t --disable-all \
@@ -45,7 +45,7 @@ lint:
 		--deadline=3m ./... 2>&1 | revgrep origin/master
 
 testv:
-	${GOBIN} test ./src/lib/ -v -debug
+	${GOBIN} test ./src/lib/ -race -v -debug
 
 coverage:
 	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/lib
