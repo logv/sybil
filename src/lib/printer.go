@@ -544,11 +544,11 @@ func (t *Table) PrintColInfo() {
 		return
 	}
 
-	fmt.Println("\nString Columns\n")
+	fmt.Printf("\nString Columns\n")
 	t.printColsOfType(STR_VAL)
-	fmt.Println("\nInteger Columns\n")
+	fmt.Printf("\nInteger Columns\n")
 	t.printColsOfType(INT_VAL)
-	fmt.Println("\nSet Columns\n")
+	fmt.Printf("\nSet Columns\n")
 	t.printColsOfType(SET_VAL)
 	fmt.Println("")
 	fmt.Println("Stats")

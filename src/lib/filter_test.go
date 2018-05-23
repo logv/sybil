@@ -6,41 +6,41 @@ import "strconv"
 import "math"
 import "strings"
 
-func TestFilters(test *testing.T) {
-	delete_test_db()
+func TestFilters(t *testing.T) {
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
-	block_count := 3
-	add_records(func(r *Record, i int) {
+	blockCount := 3
+	addRecords(tableName, func(r *Record, i int) {
 		age := int64(rand.Intn(20)) + 10
 
-		age_str := strconv.FormatInt(int64(age), 10)
+		ageStr := strconv.FormatInt(int64(age), 10)
 		r.AddIntField("id", int64(i))
 		r.AddIntField("age", age)
-		r.AddStrField("age_str", age_str)
-		r.AddSetField("age_set", []string{age_str})
+		r.AddStrField("age_str", ageStr)
+		r.AddSetField("age_set", []string{ageStr})
 
-	}, block_count)
+	}, blockCount)
 
-	save_and_reload_table(test, block_count)
+	saveAndReloadTable(t, tableName, blockCount)
 
 	DELETE_BLOCKS_AFTER_QUERY = false
 
-	testIntEq(test)
-	testIntNeq(test)
-	testIntLt(test)
-	testIntGt(test)
-	testStrEq(test)
-	testStrRe(test)
-	testStrNeq(test)
-	testSetIn(test)
-	testSetNin(test)
-
-	delete_test_db()
+	testIntEq(t, tableName)
+	testIntNeq(t, tableName)
+	testIntLt(t, tableName)
+	testIntGt(t, tableName)
+	testStrEq(t, tableName)
+	testStrRe(t, tableName)
+	testStrNeq(t, tableName)
+	testSetIn(t, tableName)
+	testSetNin(t, tableName)
 
 }
 
-func testIntLt(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testIntLt(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -53,20 +53,20 @@ func testIntLt(test *testing.T) {
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
-		test.Error("Int Filter for age 20 returned no results")
+		t.Error("Int Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(float64(v.Hists["age"].Mean())) > 20 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
 
-func testIntGt(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testIntGt(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "gt", 20))
 
@@ -79,20 +79,20 @@ func testIntGt(test *testing.T) {
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
-		test.Error("Int Filter for age 20 returned no results")
+		t.Error("Int Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(float64(v.Hists["age"].Mean())) < 20 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
 
-func testIntNeq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testIntNeq(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "neq", 20))
 
@@ -108,11 +108,11 @@ func testIntNeq(test *testing.T) {
 
 	// Test Filtering to !20 returns only 19 results (because we have rand(20) above)
 	if len(querySpec.Results) != 19 {
-		test.Error("Int Filter for age != 20 returned no results")
+		t.Error("Int Filter for age != 20 returned no results")
 	}
 
 	if len(querySpec.Results) <= 0 {
-		test.Error("Int Filter for age != 20 returned no results")
+		t.Error("Int Filter for age != 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
@@ -120,13 +120,13 @@ func testIntNeq(test *testing.T) {
 
 		Debug("TEST INT NEQ", k, v.Hists["age"].Mean())
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
 
-func testIntEq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testIntEq(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "eq", 20))
 
@@ -139,20 +139,20 @@ func testIntEq(test *testing.T) {
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
-		test.Error("Int Filter for age 20 returned no results")
+		t.Error("Int Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
 
-func testStrEq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testStrEq(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "re", "20"))
 
@@ -170,20 +170,20 @@ func testStrEq(test *testing.T) {
 	Debug("QUERY SPEC RESULTS", querySpec.Results)
 
 	if len(querySpec.Results) <= 0 {
-		test.Error("Str Filter for age 20 returned no results")
+		t.Error("Str Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) > 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
 
-func testStrNeq(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testStrNeq(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "nre", "20"))
 
@@ -198,21 +198,21 @@ func testStrNeq(test *testing.T) {
 	nt.MatchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) <= 0 {
-		test.Error("Str Filter for age 20 returned no results")
+		t.Error("Str Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if math.Abs(20-float64(v.Hists["age"].Mean())) < 0.1 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 
 }
 
-func testStrRe(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testStrRe(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "re", "^2"))
 
@@ -227,23 +227,23 @@ func testStrRe(test *testing.T) {
 	nt.MatchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) != 10 {
-		test.Error("Str Filter for re returned no results", len(querySpec.Results), querySpec.Results)
+		t.Error("Str Filter for re returned no results", len(querySpec.Results), querySpec.Results)
 	}
 	if len(querySpec.Results) <= 0 {
-		test.Error("Str Filter for age 20 returned no results")
+		t.Error("Str Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if v.Hists["age"].Mean()-20 < 0 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 }
 
-func testSetIn(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testSetIn(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.SetFilter("age_set", "in", "20"))
 
@@ -258,18 +258,18 @@ func testSetIn(test *testing.T) {
 	nt.MatchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) != 1 {
-		test.Error("Set Filter for in returned more (or less) than one results", len(querySpec.Results), querySpec.Results)
+		t.Error("Set Filter for in returned more (or less) than one results", len(querySpec.Results), querySpec.Results)
 	}
 
 	if len(querySpec.Results) <= 0 {
-		test.Error("Set Filter for age 20 returned no results")
+		t.Error("Set Filter for age 20 returned no results")
 	}
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
 		if v.Hists["age"].Mean()-20 < 0 {
-			test.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, 20, v.Hists["age"].Mean())
 		}
 	}
 
@@ -284,8 +284,8 @@ func testSetIn(test *testing.T) {
 
 }
 
-func testSetNin(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testSetNin(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.SetFilter("age_set", "nin", "20"))
 
@@ -300,11 +300,11 @@ func testSetNin(test *testing.T) {
 	nt.MatchAndAggregate(&querySpec)
 
 	if len(querySpec.Results) != 19 {
-		test.Error("Set Filter for in returned more (or less) than 19 results", len(querySpec.Results), querySpec.Results)
+		t.Error("Set Filter for in returned more (or less) than 19 results", len(querySpec.Results), querySpec.Results)
 	}
 
 	if len(querySpec.Results) <= 0 {
-		test.Error("Set Filter for age 20 returned no results")
+		t.Error("Set Filter for age 20 returned no results")
 	}
 
 }
