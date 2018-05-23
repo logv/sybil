@@ -3,7 +3,7 @@
 package sybil
 
 var PROFILER_ENABLED bool
-var PROFILE *bool = &PROFILER_ENABLED
+var PROFILE = &PROFILER_ENABLED
 
 type NoProfile struct{}
 

@@ -54,8 +54,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 	// {{{ variable decls and func setup
 	var ok bool
-	var binarybuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
-	var distinctbuffer []byte = make([]byte, GROUP_BY_WIDTH*len(querySpec.Distincts))
+	var binarybuffer = make([]byte, GROUP_BY_WIDTH*len(querySpec.Groups))
+	var distinctbuffer = make([]byte, GROUP_BY_WIDTH*len(querySpec.Distincts))
 	var slowdistinctbuffer bytes.Buffer
 
 	bs := make([]byte, GROUP_BY_WIDTH)
