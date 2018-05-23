@@ -35,7 +35,7 @@ bindir:
 	mkdir ${BINDIR} 2>/dev/null || true
 
 test:
-	${GOBIN} test ./src/lib/ -v
+	${GOBIN} test ./src/sybil/ -v
 
 lint:
 	gometalinter -t --disable-all \
@@ -45,10 +45,10 @@ lint:
 		--deadline=3m ./... 2>&1 | revgrep origin/master
 
 testv:
-	${GOBIN} test ./src/lib/ -v -debug
+	${GOBIN} test ./src/sybil/ -v -debug
 
 coverage:
-	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/lib
+	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/sybil
 	sed -i "s|_${ROOT_DIR}|.|"	cover.out
 	${GOBIN} tool cover -html=cover.out -o cover.html
 
@@ -70,7 +70,7 @@ luajit: bindir
 	make all
 
 tags:
-	ctags --languages=+Go src/lib/*.go
+	ctags --languages=+Go src/sybil/*.go
 	starscope -e cscope
 	starscope -e ctags
 
