@@ -34,7 +34,6 @@ func setupTestVars(chunkSize int) {
 
 // getTestTableName uses the caller as the test name to help provide test case isolation.
 func getTestTableName(t *testing.T) string {
-	t.Helper()
 	fpcs := make([]uintptr, 1)
 	n := runtime.Callers(2, fpcs)
 	if n == 0 {
@@ -64,8 +63,6 @@ func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
 }
 
 func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Table {
-	t.Helper()
-
 	expectedCount := CHUNK_SIZE * expectedBlocks
 	tbl := GetTable(tableName)
 
