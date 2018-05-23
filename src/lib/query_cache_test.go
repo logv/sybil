@@ -5,8 +5,9 @@ import "math/rand"
 import "math"
 import "strconv"
 
-func TestCachedQueries(test *testing.T) {
-	deleteTestDb()
+func TestCachedQueries(t *testing.T) {
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
 
 	blockCount := 5
 
@@ -14,7 +15,7 @@ func TestCachedQueries(test *testing.T) {
 	FLAGS.CACHED_QUERIES = NewTrueFlag()
 
 	var thisAddRecords = func(block_count int) {
-		addRecords(func(r *Record, i int) {
+		addRecords(tableName, func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
 
 			ageStr := strconv.FormatInt(int64(age), 10)
@@ -24,28 +25,27 @@ func TestCachedQueries(test *testing.T) {
 			r.AddSetField("age_set", []string{ageStr})
 
 		}, block_count)
-		saveAndReloadTable(test, block_count)
+		saveAndReloadTable(t, tableName, block_count)
 
 	}
 
 	thisAddRecords(blockCount)
-	testCachedQueryFiles(test)
-	deleteTestDb()
+	testCachedQueryFiles(t, tableName)
+	deleteTestDb(tableName)
 
 	thisAddRecords(blockCount)
-	testCachedQueryConsistency(test)
-	deleteTestDb()
+	testCachedQueryConsistency(t, tableName)
+	deleteTestDb(tableName)
 
 	thisAddRecords(blockCount)
-	testCachedBasicHist(test)
-	deleteTestDb()
+	testCachedBasicHist(t, tableName)
+	deleteTestDb(tableName)
 
 	FLAGS.CACHED_QUERIES = NewFalseFlag()
-
 }
 
-func testCachedQueryFiles(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testCachedQueryFiles(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -62,7 +62,7 @@ func testCachedQueryFiles(test *testing.T) {
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
-			test.Error("Test DB started with saved query results")
+			t.Error("Test DB started with saved query results")
 		}
 	}
 
@@ -71,7 +71,7 @@ func testCachedQueryFiles(test *testing.T) {
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded != true {
-			test.Error("Did not correctly save and load query results")
+			t.Error("Did not correctly save and load query results")
 		}
 	}
 
@@ -79,7 +79,7 @@ func testCachedQueryFiles(test *testing.T) {
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
-			test.Error("Used query cache when flag was not provided")
+			t.Error("Used query cache when flag was not provided")
 		}
 	}
 	FLAGS.CACHED_QUERIES = NewTrueFlag()
@@ -90,14 +90,14 @@ func testCachedQueryFiles(test *testing.T) {
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
-			test.Error("Test DB has query results for new query")
+			t.Error("Test DB has query results for new query")
 		}
 	}
 
 }
 
-func testCachedQueryConsistency(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testCachedQueryConsistency(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
@@ -112,7 +112,7 @@ func testCachedQueryConsistency(test *testing.T) {
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
 
-	nt = GetTable(TEST_TABLE_NAME)
+	nt = GetTable(tableName)
 
 	// clear the copied query spec result map and look
 	// at the cached query results
@@ -121,22 +121,22 @@ func testCachedQueryConsistency(test *testing.T) {
 	nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 	if len(querySpec.Results) == 0 {
-		test.Error("No Results for Query")
+		t.Error("No Results for Query")
 	}
 
 	for k, v := range querySpec.Results {
 		v2, ok := copySpec.Results[k]
 		if !ok {
-			test.Error("Result Mismatch!", k, v)
+			t.Error("Result Mismatch!", k, v)
 		}
 
 		if v.Count != v2.Count {
-			test.Error("Count Mismatch", v, v2, v.Count, v2.Count)
+			t.Error("Count Mismatch", v, v2, v.Count, v2.Count)
 		}
 
 		if v.Samples != v2.Samples {
 			Debug(v, v2)
-			test.Error("Samples Mismatch", v, v2, v.Samples, v2.Samples)
+			t.Error("Samples Mismatch", v, v2, v.Samples, v2.Samples)
 		}
 
 	}
@@ -144,14 +144,14 @@ func testCachedQueryConsistency(test *testing.T) {
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded != true {
-			test.Error("Did not correctly save and load query results")
+			t.Error("Did not correctly save and load query results")
 		}
 	}
 
 }
 
-func testCachedBasicHist(test *testing.T) {
-	nt := GetTable(TEST_TABLE_NAME)
+func testCachedBasicHist(t *testing.T, tableName string) {
+	nt := GetTable(tableName)
 
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
@@ -178,7 +178,7 @@ func testCachedBasicHist(test *testing.T) {
 		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)
 
-		nt = GetTable(TEST_TABLE_NAME)
+		nt = GetTable(tableName)
 
 		// clear the copied query spec result map and look
 		// at the cached query results
@@ -187,36 +187,36 @@ func testCachedBasicHist(test *testing.T) {
 		nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 		if len(querySpec.Results) == 0 {
-			test.Error("No Results for Query")
+			t.Error("No Results for Query")
 		}
 
 		for k, v := range querySpec.Results {
 			v2, ok := copySpec.Results[k]
 			if !ok {
-				test.Error("Result Mismatch!", histType, k, v)
+				t.Error("Result Mismatch!", histType, k, v)
 			}
 
 			if v.Count != v2.Count {
-				test.Error("Count Mismatch", histType, v, v2, v.Count, v2.Count)
+				t.Error("Count Mismatch", histType, v, v2, v.Count, v2.Count)
 			}
 
 			if v.Samples != v2.Samples {
 				Debug(v, v2)
-				test.Error("Samples Mismatch", histType, v, v2, v.Samples, v2.Samples)
+				t.Error("Samples Mismatch", histType, v, v2, v.Samples, v2.Samples)
 			}
 
 			for k, h := range v.Hists {
 				h2, ok := v2.Hists[k]
 				if !ok {
-					test.Error("Missing Histogram", histType, v, v2)
+					t.Error("Missing Histogram", histType, v, v2)
 				}
 
 				if h.StdDev() <= 0 {
-					test.Error("Missing StdDev", histType, h, h.StdDev())
+					t.Error("Missing StdDev", histType, h, h.StdDev())
 				}
 
 				if math.Abs(h.StdDev()-h2.StdDev()) > 0.1 {
-					test.Error("StdDev MisMatch", histType, h, h2)
+					t.Error("StdDev MisMatch", histType, h, h2)
 				}
 
 			}
@@ -226,7 +226,7 @@ func testCachedBasicHist(test *testing.T) {
 		for _, b := range nt.BlockList {
 			loaded := querySpec.LoadCachedResults(b.Name)
 			if loaded != true {
-				test.Error("Did not correctly save and load query results")
+				t.Error("Did not correctly save and load query results")
 			}
 		}
 	}

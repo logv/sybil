@@ -1,27 +1,29 @@
 package sybil
 
-import "os"
-import "fmt"
-import "testing"
-
-var TEST_TABLE_NAME = "__TEST0__"
+import (
+	"fmt"
+	"os"
+	"runtime"
+	"strings"
+	"testing"
+)
 
 type RecordSetupCB func(*Record, int)
 
 func TestMain(m *testing.M) {
 	runTests(m)
-	deleteTestDb()
 }
 
 func runTests(m *testing.M) {
 	setupTestVars(100)
-	m.Run()
+	os.Exit(m.Run())
 }
 
 var BLANK_STRING = ""
 
 func setupTestVars(chunkSize int) {
-	FLAGS.TABLE = &TEST_TABLE_NAME
+	//tableName := "unknown"
+	//FLAGS.TABLE = &tableName
 	FLAGS.OP = &BLANK_STRING
 
 	TEST_MODE = true
@@ -30,14 +32,29 @@ func setupTestVars(chunkSize int) {
 	LOCK_TRIES = 3
 }
 
-func addRecords(cb RecordSetupCB, blockCount int) []*Record {
+// getTestTableName uses the caller as the test name to help provide test case isolation.
+func getTestTableName(t *testing.T) string {
+	fpcs := make([]uintptr, 1)
+	n := runtime.Callers(2, fpcs)
+	if n == 0 {
+		return "default"
+	}
+	fun := runtime.FuncForPC(fpcs[0] - 1)
+	if fun == nil {
+		return "default"
+	}
+	parts := strings.Split(fun.Name(), ".")
+	return parts[len(parts)-1]
+}
+
+func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
 	count := CHUNK_SIZE * blockCount
 
 	ret := make([]*Record, 0)
-	t := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 
 	for i := 0; i < count; i++ {
-		r := t.NewRecord()
+		r := tbl.NewRecord()
 		cb(r, i)
 		ret = append(ret, r)
 	}
@@ -45,16 +62,15 @@ func addRecords(cb RecordSetupCB, blockCount int) []*Record {
 	return ret
 }
 
-func saveAndReloadTable(test *testing.T, expectedBlocks int) *Table {
-
+func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Table {
 	expectedCount := CHUNK_SIZE * expectedBlocks
-	t := GetTable(TEST_TABLE_NAME)
+	tbl := GetTable(tableName)
 
-	t.SaveRecordsToColumns()
+	tbl.SaveRecordsToColumns()
 
-	unloadTestTable()
+	unloadTestTable(tableName)
 
-	nt := GetTable(TEST_TABLE_NAME)
+	nt := GetTable(tableName)
 	nt.LoadTableInfo()
 
 	loadSpec := NewLoadSpec()
@@ -62,12 +78,12 @@ func saveAndReloadTable(test *testing.T, expectedBlocks int) *Table {
 	count := nt.LoadRecords(&loadSpec)
 
 	if count != expectedCount {
-		test.Error("Wrote", expectedCount, "records, but read back", count)
+		t.Error("Wrote", expectedCount, "records, but read back", count)
 	}
 
 	// +1 is the Row Store Block...
 	if len(nt.BlockList) != expectedBlocks {
-		test.Error("Wrote", expectedBlocks, "blocks, but came back with", len(nt.BlockList))
+		t.Error("Wrote", expectedBlocks, "blocks, but came back with", len(nt.BlockList))
 	}
 
 	return nt
@@ -85,11 +101,11 @@ func newQuerySpec() *QuerySpec {
 	return &querySpec
 }
 
-func unloadTestTable() {
-	delete(LOADED_TABLES, TEST_TABLE_NAME)
+func unloadTestTable(tableName string) {
+	delete(LOADED_TABLES, tableName)
 }
 
-func deleteTestDb() {
-	os.RemoveAll(fmt.Sprintf("db/%s", TEST_TABLE_NAME))
-	unloadTestTable()
+func deleteTestDb(tableName string) {
+	os.RemoveAll(fmt.Sprintf("db/%s", tableName))
+	unloadTestTable(tableName)
 }
