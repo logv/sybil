@@ -47,6 +47,7 @@ func recordValue(sameMap map[int16]ValueMap, index int32, name int16, value int6
 	s[vi] = append(s[vi], uint32(index))
 }
 
+// GetColumnInfo returns information given the string ID for the column name.
 func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
 	col, ok := tb.columns[nameID]
 	if !ok {
