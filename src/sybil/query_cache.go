@@ -88,7 +88,7 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 		return filters
 	}
 
-	for fieldName, _ := range info.StrInfoMap {
+	for fieldName := range info.StrInfoMap {
 		fieldID := t.getKeyID(fieldName)
 		minRecord.ResizeFields(fieldID)
 		maxRecord.ResizeFields(fieldID)

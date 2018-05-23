@@ -121,7 +121,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 		return true
 	}
 
-	for fieldName, _ := range info.StrInfoMap {
+	for fieldName := range info.StrInfoMap {
 		fieldID := t.getKeyID(fieldName)
 		minRecord.ResizeFields(fieldID)
 		maxRecord.ResizeFields(fieldID)

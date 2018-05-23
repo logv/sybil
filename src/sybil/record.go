@@ -177,7 +177,7 @@ func (r *Record) CopyRecord() *Record {
 		nr.Populated = r.Populated
 	} else {
 		nr.Populated = make([]int8, len(r.Populated))
-		for i, _ := range r.Populated {
+		for i := range r.Populated {
 			nr.Strs[i] = r.Strs[i]
 			nr.Ints[i] = r.Ints[i]
 			nr.Populated[i] = r.Populated[i]

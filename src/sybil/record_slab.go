@@ -45,7 +45,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	// determine if we need to allocate the different field containers inside
 	// each record
 	if loadSpec != nil && loadRecords == false {
-		for fieldName, _ := range loadSpec.columns {
+		for fieldName := range loadSpec.columns {
 			v := t.getKeyID(fieldName)
 
 			switch t.KeyTypes[v] {
