@@ -177,7 +177,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 
 	// If we are recovering the INFO lock, we won't necessarily have
 	// all fields filled out
-	if t.stringIDM != nil {
+	if t.stringIDMu != nil {
 		t.populateStringIDLookup()
 	}
 

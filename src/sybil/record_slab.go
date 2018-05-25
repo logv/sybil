@@ -5,8 +5,8 @@ import "time"
 func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
 
 	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && loadRecords == false {
-		loadSpec.slabM.Lock()
-		defer loadSpec.slabM.Unlock()
+		loadSpec.slabMu.Lock()
+		defer loadSpec.slabMu.Unlock()
 		if len(loadSpec.slabs) > 0 {
 			slab := loadSpec.slabs[0]
 			loadSpec.slabs = loadSpec.slabs[1:]
@@ -161,9 +161,9 @@ func (tb *TableBlock) RecycleSlab(loadSpec *LoadSpec) {
 		rl := tb.RecordList
 
 		if len(rl) == CHUNK_SIZE {
-			loadSpec.slabM.Lock()
+			loadSpec.slabMu.Lock()
 			loadSpec.slabs = append(loadSpec.slabs, &rl)
-			loadSpec.slabM.Unlock()
+			loadSpec.slabMu.Unlock()
 		}
 	}
 }

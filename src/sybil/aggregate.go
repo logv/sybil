@@ -367,7 +367,7 @@ func MultiCombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec)
 
 	allResults := make([]*QuerySpec, 0)
 	nextSpecs := make(map[string]*QuerySpec)
-	m := &sync.Mutex{}
+	mu := &sync.Mutex{}
 	var wg sync.WaitGroup
 
 	count := 0
@@ -384,9 +384,9 @@ func MultiCombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec)
 			wg.Add(1)
 			go func() {
 				resultSpec = CombineAndPrune(querySpec, thisSpecs)
-				m.Lock()
+				mu.Lock()
 				allResults = append(allResults, resultSpec)
-				m.Unlock()
+				mu.Unlock()
 				wg.Done()
 			}()
 		}
@@ -525,7 +525,7 @@ func SearchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[st
 	// DONE: why iterate through blocklist after loading it instead of filtering
 	// and aggregating while loading them? (and then releasing the blocks)
 	// That would mean pushing the call to 'FilterAndAggRecords' to the loading area
-	specLock := sync.Mutex{}
+	specMu := sync.Mutex{}
 	for _, block := range blockList {
 		wg.Add(1)
 		thisBlock := block
@@ -536,9 +536,9 @@ func SearchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[st
 
 			FilterAndAggRecords(blockQuery, &thisBlock.RecordList)
 
-			specLock.Lock()
+			specMu.Lock()
 			blockSpecs[thisBlock.Name] = blockQuery
-			specLock.Unlock()
+			specMu.Unlock()
 
 		}()
 	}

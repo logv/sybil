@@ -9,7 +9,7 @@ type TableColumn struct {
 
 	block *TableBlock
 
-	stringIDM         *sync.Mutex
+	stringIDMu        *sync.Mutex
 	valStringIDLookup []string
 }
 
@@ -17,7 +17,7 @@ func (tb *TableBlock) newTableColumn() *TableColumn {
 	tc := TableColumn{}
 	tc.StringTable = make(map[string]int32)
 	tc.valStringIDLookup = make([]string, CHUNK_SIZE+1)
-	tc.stringIDM = &sync.Mutex{}
+	tc.stringIDMu = &sync.Mutex{}
 	tc.block = tb
 	tc.RCache = make(map[int]bool)
 
@@ -32,7 +32,7 @@ func (tc *TableColumn) getValID(name string) int32 {
 		return int32(id)
 	}
 
-	tc.stringIDM.Lock()
+	tc.stringIDMu.Lock()
 	tc.StringTable[name] = int32(len(tc.StringTable))
 
 	// resize our string lookup if we need to
@@ -43,7 +43,7 @@ func (tc *TableColumn) getValID(name string) int32 {
 	}
 
 	tc.valStringIDLookup[tc.StringTable[name]] = name
-	tc.stringIDM.Unlock()
+	tc.stringIDMu.Unlock()
 	return tc.StringTable[name]
 }
 

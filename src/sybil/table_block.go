@@ -13,8 +13,8 @@ type TableBlock struct {
 	IntInfo IntInfoTable
 	StrInfo StrInfoTable
 
-	table     *Table
-	stringIDM *sync.Mutex
+	table      *Table
+	stringIDMu *sync.Mutex
 
 	valStringIDLookup map[int32]string
 	columns           map[int16]*TableColumn
@@ -26,7 +26,7 @@ func newTableBlock() TableBlock {
 	tb := TableBlock{}
 	tb.columns = make(map[int16]*TableColumn)
 	tb.valStringIDLookup = make(map[int32]string)
-	tb.stringIDM = &sync.Mutex{}
+	tb.stringIDMu = &sync.Mutex{}
 
 	return tb
 

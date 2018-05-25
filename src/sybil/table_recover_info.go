@@ -99,11 +99,11 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 	savedTable.initDataStructures()
 
 	thisBlock := 0
-	m := &sync.Mutex{}
+	mu := &sync.Mutex{}
 
 	typeCounts := make(map[string]map[int]int)
 
-	brokenMutex := sync.Mutex{}
+	brokenMu := sync.Mutex{}
 	brokenBlocks := make([]string, 0)
 	for f := range files {
 
@@ -118,13 +118,13 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 
 				info := t.ReadBlockInfoFromDir(filename)
 				if info == nil {
-					brokenMutex.Lock()
+					brokenMu.Lock()
 					brokenBlocks = append(brokenBlocks, filename)
-					brokenMutex.Unlock()
+					brokenMu.Unlock()
 					return
 				}
 
-				m.Lock()
+				mu.Lock()
 				for col := range info.IntInfoMap {
 					_, ok := typeCounts[col]
 					if !ok {
@@ -139,7 +139,7 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 					}
 					typeCounts[col][STR_VAL]++
 				}
-				m.Unlock()
+				mu.Unlock()
 
 			}()
 		}

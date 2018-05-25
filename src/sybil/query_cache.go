@@ -52,9 +52,9 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 	blockQuery := CopyQuerySpec(querySpec)
 	if blockQuery.LoadCachedResults(tb.Name) {
-		t.blockM.Lock()
+		t.blockMu.Lock()
 		t.BlockList[dirname] = &tb
-		t.blockM.Unlock()
+		t.blockMu.Unlock()
 
 		return &tb, blockQuery
 

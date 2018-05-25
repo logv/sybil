@@ -29,7 +29,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 
 	ret := make([]*TableBlock, 0)
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	for _, v := range t.BlockList {
 		if v.Name == ROW_STORE_BLOCK {
 			continue
@@ -39,7 +39,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 			ret = append(ret, v)
 		}
 	}
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 
 	return ret
 }
@@ -162,9 +162,9 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 		return &info
 	}
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	cachedInfo, ok := t.BlockInfoCache[dirname]
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 	if ok {
 		return cachedInfo
 	}
@@ -185,12 +185,12 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 		Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	t.BlockInfoCache[dirname] = &info
 	if info.NumRecords >= int32(CHUNK_SIZE) {
 		t.NewBlockInfos = append(t.NewBlockInfos, dirname)
 	}
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 
 	return &info
 }
@@ -214,9 +214,9 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 		return nil
 	}
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	t.BlockList[dirname] = &tb
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 
 	tb.allocateRecords(loadSpec, *info, loadRecords)
 	tb.Info = info

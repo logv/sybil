@@ -9,8 +9,8 @@ type LoadSpec struct {
 	LoadAllColumns bool
 	table          *Table
 
-	slabs []*RecordList
-	slabM *sync.Mutex
+	slabs  []*RecordList
+	slabMu *sync.Mutex
 }
 
 func NewLoadSpec() LoadSpec {
@@ -20,7 +20,7 @@ func NewLoadSpec() LoadSpec {
 
 	l.slabs = make([]*RecordList, 0)
 
-	l.slabM = &sync.Mutex{}
+	l.slabMu = &sync.Mutex{}
 	return l
 }
 
