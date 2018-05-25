@@ -9,6 +9,10 @@ import (
 
 type Server struct{}
 
+// statically assert that *Server implements SybilServer
+var _ pb.SybilServer = (*Server)(nil)
+
+// ServerOption describes options to customize Server implementations.
 type ServerOption func(*Server)
 
 func NewServer(opts ...ServerOption) (*Server, error) {
@@ -39,4 +43,6 @@ func (s *Server) GetTable(context.Context, *pb.GetTableRequest) (*pb.Table, erro
 	panic("not implemented")
 }
 
-var _ pb.SybilServer = (*Server)(nil)
+func (s *Server) Trim(context.Context, *pb.TrimRequest) (*pb.TrimResponse, error) {
+	panic("not implemented")
+}
