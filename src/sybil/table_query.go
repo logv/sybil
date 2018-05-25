@@ -105,7 +105,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 			thisBlock++
 
 			wg.Add(1)
-			go func() {
+			go func(t *Table) {
 				defer wg.Done()
 
 				start := time.Now()
@@ -214,7 +214,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					t.blockMu.Unlock()
 
 				}
-			}()
+			}(t)
 
 			if *FLAGS.SAMPLES {
 				wg.Wait()
@@ -289,12 +289,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		mu.Unlock()
 
 		wg.Add(1)
-		go func() {
+		go func(t *Table) {
 			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
 			mu.Lock()
 			logend = time.Now()
 			mu.Unlock()
-		}()
+		}(t)
 	}
 
 	wg.Wait()
