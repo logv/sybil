@@ -272,7 +272,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 	rowStoreQuery := AfterLoadQueryCB{}
 	var logend time.Time
 	logstart := time.Now()
-	if *flags.READ_INGESTION_LOG {
+	if loadSpec != nil && loadSpec.ReadIngestionLog {
 		if querySpec == nil {
 			rowStoreQuery.querySpec = &QuerySpec{}
 			rowStoreQuery.querySpec.Table = t
@@ -307,7 +307,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 		Debug("BLOCK", brokenBlockName, "IS BROKEN, SKIPPING")
 	}
 
-	if *flags.READ_INGESTION_LOG {
+	if loadSpec != nil && loadSpec.ReadIngestionLog {
 		mu.Lock()
 		Debug("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		Debug("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)

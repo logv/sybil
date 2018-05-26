@@ -9,6 +9,7 @@ type LoadSpec struct {
 	LoadAllColumns             bool
 	ReadRowsOnly               bool
 	SkipDeleteBlocksAfterQuery bool
+	ReadIngestionLog           bool
 
 	table *Table
 

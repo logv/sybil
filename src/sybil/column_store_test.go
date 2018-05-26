@@ -28,11 +28,11 @@ func TestTableDigestRowRecords(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	flags.TABLE = &tableName // TODO: eliminate global use
-	flags.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo(flags)
 	nt.LoadRecords(flags, &LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
 	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
@@ -85,11 +85,11 @@ func TestColumnStoreFileNames(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	flags.TABLE = &tableName // TODO: eliminate global use
-	flags.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo(flags)
 	nt.LoadRecords(flags, &LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
 	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
@@ -165,11 +165,11 @@ func TestBigIntColumns(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	flags.TABLE = &tableName // TODO: eliminate global use
-	flags.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo(flags)
 	nt.LoadRecords(flags, &LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
 	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {

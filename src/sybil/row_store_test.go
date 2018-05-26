@@ -30,6 +30,7 @@ func TestTableLoadRowRecords(t *testing.T) {
 	nt.LoadRecords(flags, &LoadSpec{
 		ReadRowsOnly:               true,
 		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
 	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
