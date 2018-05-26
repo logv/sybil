@@ -52,9 +52,9 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 	blockQuery := CopyQuerySpec(querySpec)
 	if blockQuery.LoadCachedResults(tb.Name) {
-		t.blockM.Lock()
+		t.blockMu.Lock()
 		t.BlockList[dirname] = &tb
-		t.blockM.Unlock()
+		t.blockMu.Unlock()
 
 		return &tb, blockQuery
 
@@ -66,14 +66,14 @@ func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*T
 
 // for a per block query cache, we exclude any trivial filters (that are true
 // for all records in the block) when creating our cache key
-func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
+func (qs *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 
 	filters := make([]Filter, 0)
-	if querySpec == nil {
+	if qs == nil {
 		return filters
 	}
 
-	t := querySpec.Table
+	t := qs.Table
 
 	info := t.LoadBlockInfo(blockname)
 
@@ -88,25 +88,25 @@ func (querySpec *QuerySpec) GetCacheRelevantFilters(blockname string) []Filter {
 		return filters
 	}
 
-	for fieldName, _ := range info.StrInfoMap {
-		fieldId := t.getKeyId(fieldName)
-		minRecord.ResizeFields(fieldId)
-		maxRecord.ResizeFields(fieldId)
+	for fieldName := range info.StrInfoMap {
+		fieldID := t.getKeyID(fieldName)
+		minRecord.ResizeFields(fieldID)
+		maxRecord.ResizeFields(fieldID)
 	}
 
 	for fieldName, fieldInfo := range info.IntInfoMap {
-		fieldId := t.getKeyId(fieldName)
-		minRecord.ResizeFields(fieldId)
-		maxRecord.ResizeFields(fieldId)
+		fieldID := t.getKeyID(fieldName)
+		minRecord.ResizeFields(fieldID)
+		maxRecord.ResizeFields(fieldID)
 
-		minRecord.Ints[fieldId] = IntField(fieldInfo.Min)
-		maxRecord.Ints[fieldId] = IntField(fieldInfo.Max)
+		minRecord.Ints[fieldID] = IntField(fieldInfo.Min)
+		maxRecord.Ints[fieldID] = IntField(fieldInfo.Max)
 
-		minRecord.Populated[fieldId] = INT_VAL
-		maxRecord.Populated[fieldId] = INT_VAL
+		minRecord.Populated[fieldID] = INT_VAL
+		maxRecord.Populated[fieldID] = INT_VAL
 	}
 
-	for _, f := range querySpec.Filters {
+	for _, f := range qs.Filters {
 		// make the minima record and the maxima records...
 		switch fil := f.(type) {
 		case IntFilter:

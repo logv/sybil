@@ -228,9 +228,9 @@ func RunQueryCmdLine() {
 		querySpec.TimeBucket = *sybil.FLAGS.TIME_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
 		loadSpec.Int(*sybil.FLAGS.TIME_COL)
-		timeColId, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
+		timeColID, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
 		if ok {
-			sybil.OPTS.TIME_COL_ID = timeColId
+			sybil.OPTS.TIME_COL_ID = timeColID
 		}
 	}
 

@@ -61,14 +61,14 @@ type Filter interface {
 
 type Grouping struct {
 	Name   string
-	nameId int16
+	nameID int16
 }
 
 type Aggregation struct {
 	Op       string
-	opId     int
+	opID     int
 	Name     string
-	nameId   int16
+	nameID   int16
 	HistType string
 }
 
@@ -182,17 +182,19 @@ func (rs *Result) Combine(nextResult *Result) {
 	rs.Count = totalCount
 }
 
-func (querySpec *QuerySpec) Punctuate() {
-	querySpec.Results = make(ResultMap)
-	querySpec.TimeResults = make(map[int]ResultMap)
+// Punctuate resets results on the QuerySpec.
+func (qs *QuerySpec) Punctuate() {
+	qs.Results = make(ResultMap)
+	qs.TimeResults = make(map[int]ResultMap)
 }
 
-func (querySpec *QuerySpec) ResetResults() {
-	querySpec.Punctuate()
+// ResetResults resets results on the QuerySpec and clears table caches.
+func (qs *QuerySpec) ResetResults() {
+	qs.Punctuate()
 
-	if querySpec.Table != nil && querySpec.Table.BlockList != nil {
+	if qs.Table != nil && qs.Table.BlockList != nil {
 		// Reach into all our table blocks and reset their REGEX CACHE
-		for _, b := range querySpec.Table.BlockList {
+		for _, b := range qs.Table.BlockList {
 			for _, c := range b.columns {
 				if len(c.RCache) > 0 {
 					c.RCache = make(map[int]bool)
@@ -202,20 +204,20 @@ func (querySpec *QuerySpec) ResetResults() {
 	}
 }
 func (t *Table) Grouping(name string) Grouping {
-	colId := t.getKeyId(name)
-	return Grouping{name, colId}
+	colID := t.getKeyID(name)
+	return Grouping{name, colID}
 }
 
 func (t *Table) Aggregation(name string, op string) Aggregation {
-	colId := t.getKeyId(name)
+	colID := t.getKeyID(name)
 
-	agg := Aggregation{Name: name, nameId: colId, Op: op}
+	agg := Aggregation{Name: name, nameID: colID, Op: op}
 	if op == "avg" {
-		agg.opId = OP_AVG
+		agg.opID = OP_AVG
 	}
 
 	if op == "hist" {
-		agg.opId = OP_HIST
+		agg.opID = OP_HIST
 		agg.HistType = "basic"
 		if *FLAGS.LOG_HIST {
 			agg.HistType = "multi"
@@ -228,10 +230,10 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	}
 
 	if op == DISTINCT_STR {
-		agg.opId = OP_DISTINCT
+		agg.opID = OP_DISTINCT
 	}
 
-	_, ok := t.IntInfo[colId]
+	_, ok := t.IntInfo[colID]
 	if !ok {
 		// TODO: tell our table we need to load all records!
 		Debug("MISSING CACHED INFO FOR", agg)

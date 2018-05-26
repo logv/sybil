@@ -63,7 +63,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		t.StrInfo = make(StrInfoTable)
 	}
 
-	m := &sync.Mutex{}
+	mu := &sync.Mutex{}
 
 	loadAll := false
 	if loadSpec != nil && loadSpec.LoadAllColumns {
@@ -81,7 +81,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	allResults := make([]*QuerySpec, 0)
 
-	brokenMutex := sync.Mutex{}
+	brokenMu := sync.Mutex{}
 	brokenBlocks := make([]string, 0)
 
 	var memstats runtime.MemStats
@@ -126,9 +126,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					// couldnt load the cached query results
 					block = t.LoadBlockFromDir(filename, loadSpec, loadAll)
 					if block == nil {
-						brokenMutex.Lock()
+						brokenMu.Lock()
 						brokenBlocks = append(brokenBlocks, filename)
-						brokenMutex.Unlock()
+						brokenMu.Unlock()
 						return
 					}
 				} else {
@@ -156,9 +156,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				if len(block.RecordList) > 0 || cachedSpec != nil {
 					if querySpec == nil {
-						m.Lock()
+						mu.Lock()
 						count += len(block.RecordList)
-						m.Unlock()
+						mu.Unlock()
 					} else { // Load and Query
 						blockQuery := cachedSpec
 						if blockQuery == nil {
@@ -172,20 +172,20 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						}
 
 						if blockQuery != nil {
-							m.Lock()
+							mu.Lock()
 							if cachedSpec != nil {
 								cachedCount += blockQuery.MatchedCount
-								cachedBlocks += 1
+								cachedBlocks++
 
 							} else {
 								count += blockQuery.MatchedCount
-								loadedCount += 1
+								loadedCount++
 								if block.Info.NumRecords == int32(CHUNK_SIZE) {
 									toCacheSpecs[block.Name] = blockQuery
 								}
 							}
 							blockSpecs[block.Name] = blockQuery
-							m.Unlock()
+							mu.Unlock()
 						}
 					}
 
@@ -201,14 +201,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				// don't delete when testing so we can verify block
 				// loading results
 				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
-					t.blockM.Lock()
+					t.blockMu.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
 						tb.RecycleSlab(loadSpec)
 
 						delete(t.BlockList, block.Name)
 					}
-					t.blockM.Unlock()
+					t.blockMu.Unlock()
 
 				}
 			}()
@@ -226,10 +226,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				start := time.Now()
 
 				if *FLAGS.RECYCLE_MEM == false {
-					m.Lock()
+					mu.Lock()
 					oldPercent := debug.SetGCPercent(100)
 					debug.SetGCPercent(oldPercent)
-					m.Unlock()
+					mu.Unlock()
 				}
 
 				if querySpec != nil {
@@ -240,9 +240,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					resultSpec := MultiCombineResults(querySpec, blockSpecs)
 					blockSpecs = make(map[string]*QuerySpec)
 
-					m.Lock()
+					mu.Lock()
 					allResults = append(allResults, resultSpec)
-					m.Unlock()
+					mu.Unlock()
 
 					runtime.ReadMemStats(&memstats)
 					alloced := memstats.Alloc / 1024 / 1024
@@ -281,16 +281,16 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 		// Entrust AfterLoadQueryCB to call Done on wg
 		rowStoreQuery.wg = &wg
-		m.Lock()
+		mu.Lock()
 		blockSpecs[INGEST_DIR] = rowStoreQuery.querySpec
-		m.Unlock()
+		mu.Unlock()
 
 		wg.Add(1)
 		go func() {
 			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
-			m.Lock()
+			mu.Lock()
 			logend = time.Now()
-			m.Unlock()
+			mu.Unlock()
 		}()
 	}
 
@@ -305,10 +305,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	if *FLAGS.READ_INGESTION_LOG {
-		m.Lock()
+		mu.Lock()
 		Debug("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		Debug("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
-		m.Unlock()
+		mu.Unlock()
 		count += rowStoreQuery.count
 
 		if DELETE_BLOCKS_AFTER_QUERY == false && t.RowBlock != nil {
@@ -324,7 +324,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
-	t.populateStringIdLookup()
+	t.populateStringIDLookup()
 
 	Debug("SKIPPED", skipped, "BLOCKS BASED ON PRE FILTERS")
 	Debug("SKIPPED", brokenCount, "BLOCKS BASED ON BROKEN INFO")

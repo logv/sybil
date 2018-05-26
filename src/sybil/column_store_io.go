@@ -47,11 +47,12 @@ func recordValue(sameMap map[int16]ValueMap, index int32, name int16, value int6
 	s[vi] = append(s[vi], uint32(index))
 }
 
-func (tb *TableBlock) GetColumnInfo(nameId int16) *TableColumn {
-	col, ok := tb.columns[nameId]
+// GetColumnInfo returns information given the string ID for the column name.
+func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
+	col, ok := tb.columns[nameID]
 	if !ok {
 		col = tb.newTableColumn()
-		tb.columns[nameId] = col
+		tb.columns[nameID] = col
 	}
 
 	return col
@@ -157,8 +158,8 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 		for bucket, records := range v {
 			// migrating string definitions from column definitions
 			strVal := tbCol.getStringForVal(int32(bucket))
-			strId := tempCol.getValId(strVal)
-			si := SavedSetBucket{Value: int32(strId), Records: records}
+			strID := tempCol.getValID(strVal)
+			si := SavedSetBucket{Value: int32(strID), Records: records}
 			setCol.Bins = append(setCol.Bins, si)
 			for _, r := range records {
 				_, ok := recordToValue[r]
@@ -171,7 +172,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 
 				}
 
-				recordToValue[r] = append(recordToValue[r], strId)
+				recordToValue[r] = append(recordToValue[r], strID)
 			}
 		}
 
@@ -237,12 +238,12 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]Value
 		for bucket, records := range v {
 
 			// migrating string definitions from column definitions
-			strId := tempCol.getValId(tbCol.getStringForVal(int32(bucket)))
+			strID := tempCol.getValID(tbCol.getStringForVal(int32(bucket)))
 
-			si := SavedStrBucket{Value: strId, Records: records}
+			si := SavedStrBucket{Value: strID, Records: records}
 			strCol.Bins = append(strCol.Bins, si)
 			for _, r := range records {
-				recordToValue[r] = strId
+				recordToValue[r] = strID
 				if r >= uint32(maxR) {
 					maxR = int(r) + 1
 				}
@@ -386,11 +387,11 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 			newCol := tb.GetColumnInfo(int16(k))
 
 			vName := col.getStringForVal(int32(v))
-			vId := newCol.getValId(vName)
+			vID := newCol.getValID(vName)
 
 			// record the transitioned key
 			if r.Populated[k] == STR_VAL {
-				recordValue(sameStrs, int32(i), int16(k), int64(vId))
+				recordValue(sameStrs, int32(i), int16(k), int64(vID))
 			}
 		}
 		for k, v := range r.SetMap {
@@ -399,8 +400,8 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 			if r.Populated[k] == SET_VAL {
 				for _, iv := range v {
 					vName := col.getStringForVal(int32(iv))
-					vId := newCol.getValId(vName)
-					recordValue(sameSets, int32(i), int16(k), int64(vId))
+					vID := newCol.getValID(vName)
+					recordValue(sameSets, int32(i), int16(k), int64(vID))
 				}
 			}
 		}
@@ -503,14 +504,14 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 
 	stringLookup := make([]string, info.NumRecords)
 	keyTableLen := len(tb.table.KeyTable)
-	colId := tb.table.getKeyId(into.Name)
+	colID := tb.table.getKeyID(into.Name)
 
-	if int(colId) >= keyTableLen {
+	if int(colID) >= keyTableLen {
 		Debug("IGNORING STR COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
-	col := tb.GetColumnInfo(colId)
+	col := tb.GetColumnInfo(colID)
 	// unpack the string table
 
 	// Run our replacements!
@@ -541,7 +542,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 		stringLookup[int32(k)] = v
 	}
 
-	col.valStringIdLookup = stringLookup
+	col.valStringIDLookup = stringLookup
 
 	isPathCol := false
 	if FLAGS.PATH_KEY != nil {
@@ -573,13 +574,13 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 				record = records[r]
 
 				if DEBUG_RECORD_CONSISTENCY {
-					if record.Populated[colId] != _NO_VAL {
-						Error("OVERWRITING RECORD VALUE", record, into.Name, colId, bucket.Value)
+					if record.Populated[colID] != _NO_VAL {
+						Error("OVERWRITING RECORD VALUE", record, into.Name, colID, bucket.Value)
 					}
 				}
 
-				records[r].Populated[colId] = STR_VAL
-				records[r].Strs[colId] = castValue
+				records[r].Populated[colID] = STR_VAL
+				records[r].Strs[colID] = castValue
 
 				if isPathCol {
 					record.Path = stringLookup[newValue]
@@ -594,8 +595,8 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 				v = newValue
 			}
 
-			records[r].Strs[colId] = StrField(v)
-			records[r].Populated[colId] = STR_VAL
+			records[r].Strs[colID] = StrField(v)
+			records[r].Populated[colID] = STR_VAL
 		}
 
 	}
@@ -612,15 +613,15 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 	}
 
 	keyTableLen := len(tb.table.KeyTable)
-	colId := tb.table.getKeyId(into.Name)
+	colID := tb.table.getKeyID(into.Name)
 	stringLookup := make(map[int32]string)
 
-	if int(colId) >= keyTableLen {
+	if int(colID) >= keyTableLen {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
 
-	col := tb.GetColumnInfo(colId)
+	col := tb.GetColumnInfo(colID)
 	// unpack the string table
 	for k, v := range into.StringTable {
 		col.StringTable[v] = int32(k)
@@ -632,7 +633,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 		trStringLookup[k] = v
 	}
 
-	col.valStringIdLookup = trStringLookup
+	col.valStringIDLookup = trStringLookup
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
@@ -643,29 +644,23 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 					r = r + prev
 				}
 
-				curSet, ok := records[r].SetMap[colId]
+				curSet, ok := records[r].SetMap[colID]
 				if !ok {
 					curSet = make(SetField, 0)
 				}
 
 				curSet = append(curSet, bucket.Value)
-				records[r].SetMap[colId] = curSet
+				records[r].SetMap[colID] = curSet
 
-				records[r].Populated[colId] = SET_VAL
+				records[r].Populated[colID] = SET_VAL
 				prev = r
 			}
 
 		}
 	} else {
 		for r, v := range into.Values {
-			curSet, ok := records[r].SetMap[colId]
-			if !ok {
-				curSet = make(SetField, 0)
-				records[r].SetMap[colId] = curSet
-			}
-
-			records[r].SetMap[colId] = SetField(v)
-			records[r].Populated[colId] = SET_VAL
+			records[r].SetMap[colID] = SetField(v)
+			records[r].Populated[colID] = SET_VAL
 		}
 	}
 }
@@ -680,8 +675,8 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	}
 
 	keyTableLen := len(tb.table.KeyTable)
-	colId := tb.table.getKeyId(into.Name)
-	if int(colId) >= keyTableLen {
+	colID := tb.table.getKeyID(into.Name)
+	if int(colID) >= keyTableLen {
 		Debug("IGNORING INT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
 		return
 	}
@@ -694,8 +689,8 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.updateIntInfo(colId, bucket.Value)
-				tb.table.updateIntInfo(colId, bucket.Value)
+				tb.updateIntInfo(colID, bucket.Value)
+				tb.table.updateIntInfo(colID, bucket.Value)
 			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -706,13 +701,13 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 				}
 
 				if DEBUG_RECORD_CONSISTENCY {
-					if records[r].Populated[colId] != _NO_VAL {
-						Error("OVERWRITING RECORD VALUE", records[r], into.Name, colId, bucket.Value)
+					if records[r].Populated[colID] != _NO_VAL {
+						Error("OVERWRITING RECORD VALUE", records[r], into.Name, colID, bucket.Value)
 					}
 				}
 
-				records[r].Ints[colId] = IntField(bucket.Value)
-				records[r].Populated[colId] = INT_VAL
+				records[r].Ints[colID] = IntField(bucket.Value)
+				records[r].Populated[colID] = INT_VAL
 				prev = r
 
 				if isTimeCol {
@@ -727,16 +722,16 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 		prev := int64(0)
 		for r, v := range into.Values {
 			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.updateIntInfo(colId, v)
-				tb.table.updateIntInfo(colId, v)
+				tb.updateIntInfo(colID, v)
+				tb.table.updateIntInfo(colID, v)
 			}
 
 			if into.ValueEncoded {
 				v = v + prev
 			}
 
-			records[r].Ints[colId] = IntField(v)
-			records[r].Populated[colId] = INT_VAL
+			records[r].Ints[colID] = IntField(v)
+			records[r].Populated[colID] = INT_VAL
 
 			if isTimeCol {
 				records[r].Timestamp = v

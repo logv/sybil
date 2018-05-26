@@ -29,7 +29,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 
 	ret := make([]*TableBlock, 0)
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	for _, v := range t.BlockList {
 		if v.Name == ROW_STORE_BLOCK {
 			continue
@@ -39,7 +39,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 			ret = append(ret, v)
 		}
 	}
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 
 	return ret
 }
@@ -121,22 +121,22 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 		return true
 	}
 
-	for fieldName, _ := range info.StrInfoMap {
-		fieldId := t.getKeyId(fieldName)
-		minRecord.ResizeFields(fieldId)
-		maxRecord.ResizeFields(fieldId)
+	for fieldName := range info.StrInfoMap {
+		fieldID := t.getKeyID(fieldName)
+		minRecord.ResizeFields(fieldID)
+		maxRecord.ResizeFields(fieldID)
 	}
 
 	for fieldName, fieldInfo := range info.IntInfoMap {
-		fieldId := t.getKeyId(fieldName)
-		minRecord.ResizeFields(fieldId)
-		maxRecord.ResizeFields(fieldId)
+		fieldID := t.getKeyID(fieldName)
+		minRecord.ResizeFields(fieldID)
+		maxRecord.ResizeFields(fieldID)
 
-		minRecord.Ints[fieldId] = IntField(fieldInfo.Min)
-		maxRecord.Ints[fieldId] = IntField(fieldInfo.Max)
+		minRecord.Ints[fieldID] = IntField(fieldInfo.Min)
+		maxRecord.Ints[fieldID] = IntField(fieldInfo.Max)
 
-		minRecord.Populated[fieldId] = INT_VAL
-		maxRecord.Populated[fieldId] = INT_VAL
+		minRecord.Populated[fieldID] = INT_VAL
+		maxRecord.Populated[fieldID] = INT_VAL
 	}
 
 	add := true
@@ -162,9 +162,9 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 		return &info
 	}
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	cachedInfo, ok := t.BlockInfoCache[dirname]
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 	if ok {
 		return cachedInfo
 	}
@@ -185,12 +185,12 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 		Debug("LOAD BLOCK INFO TOOK", iend.Sub(istart))
 	}
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	t.BlockInfoCache[dirname] = &info
 	if info.NumRecords >= int32(CHUNK_SIZE) {
 		t.NewBlockInfos = append(t.NewBlockInfos, dirname)
 	}
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 
 	return &info
 }
@@ -214,9 +214,9 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 		return nil
 	}
 
-	t.blockM.Lock()
+	t.blockMu.Lock()
 	t.BlockList[dirname] = &tb
-	t.blockM.Unlock()
+	t.blockMu.Unlock()
 
 	tb.allocateRecords(loadSpec, *info, loadRecords)
 	tb.Info = info

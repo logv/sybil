@@ -177,8 +177,8 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 
 	// If we are recovering the INFO lock, we won't necessarily have
 	// all fields filled out
-	if t.stringIdM != nil {
-		t.populateStringIdLookup()
+	if t.stringIDMu != nil {
+		t.populateStringIDLookup()
 	}
 
 	return true
@@ -289,7 +289,7 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 			thisName := blockName
 
 			wg.Add(1)
-			saved += 1
+			saved++
 			go func() {
 
 				thisQuery.SaveCachedResults(thisName)

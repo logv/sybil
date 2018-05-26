@@ -6,41 +6,50 @@ type HistCompat struct {
 	*BasicHist
 }
 
+// Min returns the minimum.
 func (hc *HistCompat) Min() int64 {
 
 	return hc.BasicHist.Min
 }
 
+// Max returns the maximum.
 func (hc *HistCompat) Max() int64 {
 	return hc.BasicHist.Max
 }
 
+// NewHist creates a new historgram using the same parameters.
 func (hc *HistCompat) NewHist() Histogram {
 	return hc.table.NewHist(&hc.Info)
 }
 
-func (h *HistCompat) Mean() float64 {
-	return h.Avg
+// Mean returns the arithmetic mean.
+func (hc *HistCompat) Mean() float64 {
+	return hc.Avg
 }
 
-func (h *HistCompat) GetMeanVariance() float64 {
-	return h.GetVariance() / float64(h.Count)
+// GetMeanVariance returns the mean variance.
+func (hc *HistCompat) GetMeanVariance() float64 {
+	return hc.GetVariance() / float64(hc.Count)
 }
 
-func (h *HistCompat) TotalCount() int64 {
-	return h.Count
+// TotalCount returns the total count.
+func (hc *HistCompat) TotalCount() int64 {
+	return hc.Count
 }
 
-func (h *HistCompat) StdDev() float64 {
-	return h.GetStdDev()
+// StdDev returns the standard deviation.
+func (hc *HistCompat) StdDev() float64 {
+	return hc.GetStdDev()
 }
 
-func (h *HistCompat) GetIntBuckets() map[int64]int64 {
-	return h.GetSparseBuckets()
+// GetIntBuckets returns the integer buckets.
+func (hc *HistCompat) GetIntBuckets() map[int64]int64 {
+	return hc.GetSparseBuckets()
 }
 
-func (h *HistCompat) Range() (int64, int64) {
-	return h.Info.Min, h.Info.Max
+// Range return the range.
+func (hc *HistCompat) Range() (int64, int64) {
+	return hc.Info.Min, hc.Info.Max
 }
 
 // }}}
@@ -53,41 +62,50 @@ type MultiHistCompat struct {
 	Histogram *MultiHist
 }
 
+// Min returns the minimum.
 func (hc *MultiHistCompat) Min() int64 {
 
 	return hc.Histogram.Min
 }
 
+// Max returns the maximum.
 func (hc *MultiHistCompat) Max() int64 {
 	return hc.Histogram.Max
 }
 
+// NewHist creates a new historgram using the same parameters.
 func (hc *MultiHistCompat) NewHist() Histogram {
 	return newMultiHist(hc.table, hc.Info)
 }
 
-func (h *MultiHistCompat) Mean() float64 {
-	return h.Avg
+// Mean returns the arithmetic mean.
+func (hc *MultiHistCompat) Mean() float64 {
+	return hc.Avg
 }
 
-func (h *MultiHistCompat) GetMeanVariance() float64 {
-	return h.GetVariance() / float64(h.Count)
+// GetMeanVariance returns the mean variance.
+func (hc *MultiHistCompat) GetMeanVariance() float64 {
+	return hc.GetVariance() / float64(hc.Count)
 }
 
-func (h *MultiHistCompat) TotalCount() int64 {
-	return h.Count
+// TotalCount returns the total count.
+func (hc *MultiHistCompat) TotalCount() int64 {
+	return hc.Count
 }
 
-func (h *MultiHistCompat) StdDev() float64 {
-	return h.GetStdDev()
+// StdDev returns the standard deviation.
+func (hc *MultiHistCompat) StdDev() float64 {
+	return hc.GetStdDev()
 }
 
-func (h *MultiHistCompat) GetIntBuckets() map[int64]int64 {
-	return h.GetSparseBuckets()
+// GetIntBuckets returns the integer buckets.
+func (hc *MultiHistCompat) GetIntBuckets() map[int64]int64 {
+	return hc.GetSparseBuckets()
 }
 
-func (h *MultiHistCompat) Range() (int64, int64) {
-	return h.Info.Min, h.Info.Max
+// Range return the range.
+func (hc *MultiHistCompat) Range() (int64, int64) {
+	return hc.Info.Min, hc.Info.Max
 }
 
 // }}}

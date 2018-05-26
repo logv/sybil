@@ -12,7 +12,7 @@ import "io/ioutil"
 import "text/tabwriter"
 import "time"
 
-func printJson(data interface{}) {
+func printJSON(data interface{}) {
 	b, err := json.Marshal(data)
 	if err == nil {
 		os.Stdout.Write(b)
@@ -37,7 +37,7 @@ func printTimeResults(querySpec *QuerySpec) {
 
 	keys := make([]int, 0)
 
-	for k, _ := range querySpec.TimeResults {
+	for k := range querySpec.TimeResults {
 		keys = append(keys, k)
 	}
 
@@ -59,7 +59,7 @@ func printTimeResults(querySpec *QuerySpec) {
 			}
 		}
 
-		printJson(marshalledResults)
+		printJSON(marshalledResults)
 		return
 	}
 
@@ -163,7 +163,7 @@ func printSortedResults(querySpec *QuerySpec) {
 			results = append(results, res)
 		}
 
-		printJson(results)
+		printJSON(results)
 		return
 	}
 
@@ -247,7 +247,7 @@ func printResults(querySpec *QuerySpec) {
 			results = append(results, res)
 		}
 
-		printJson(results)
+		printJSON(results)
 		return
 	}
 
@@ -332,13 +332,13 @@ func (r *Record) sampleHeader() []string {
 	}
 
 	header := make([]string, 0)
-	for name, _ := range r.Ints {
+	for name := range r.Ints {
 		if r.Populated[name] == INT_VAL {
 			col := r.block.GetColumnInfo(int16(name))
 			header = append(header, col.getStringForKey(name))
 		}
 	}
-	for name, _ := range r.Strs {
+	for name := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))
 			header = append(header, col.getStringForKey(name))
@@ -412,7 +412,7 @@ func (t *Table) PrintSamples() {
 
 	if *FLAGS.JSON {
 
-		printJson(samples)
+		printJSON(samples)
 		return
 	}
 
@@ -475,8 +475,8 @@ func printTablesToOutput(tables []string) {
 
 func (t *Table) getColsOfType(wantedType int8) []string {
 	printKeys := make([]string, 0)
-	for name, nameId := range t.KeyTable {
-		colType := t.KeyTypes[nameId]
+	for name, nameID := range t.KeyTable {
+		colType := t.KeyTypes[nameID]
 		if int8(colType) != wantedType {
 			continue
 		}
@@ -514,7 +514,7 @@ func (t *Table) PrintColInfo() {
 	smallSize := size
 
 	for ; smallSize > 1024; smallSize /= 1024 {
-		suffixIdx += 1
+		suffixIdx++
 
 	}
 
@@ -540,7 +540,7 @@ func (t *Table) PrintColInfo() {
 		tableInfo["avgObjSize"] = float64(size) / float64(count)
 		tableInfo["storageSize"] = size
 
-		printJson(tableInfo)
+		printJSON(tableInfo)
 		return
 	}
 
@@ -563,7 +563,7 @@ func PrintVersionInfo() {
 	versionInfo := GetVersionInfo()
 
 	if *FLAGS.JSON {
-		printJson(versionInfo)
+		printJSON(versionInfo)
 
 	} else {
 		for k, v := range versionInfo {

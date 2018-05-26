@@ -5,8 +5,8 @@ import "time"
 func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
 
 	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && loadRecords == false {
-		loadSpec.slabM.Lock()
-		defer loadSpec.slabM.Unlock()
+		loadSpec.slabMu.Lock()
+		defer loadSpec.slabMu.Unlock()
 		if len(loadSpec.slabs) > 0 {
 			slab := loadSpec.slabs[0]
 			loadSpec.slabs = loadSpec.slabs[1:]
@@ -35,18 +35,18 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	var hasSets = false
 	var hasStrs = false
 	var hasInts = false
-	maxKeyId := 0
+	maxKeyID := 0
 	for _, v := range t.KeyTable {
-		if maxKeyId <= int(v) {
-			maxKeyId = int(v) + 1
+		if maxKeyID <= int(v) {
+			maxKeyID = int(v) + 1
 		}
 	}
 
 	// determine if we need to allocate the different field containers inside
 	// each record
 	if loadSpec != nil && loadRecords == false {
-		for fieldName, _ := range loadSpec.columns {
-			v := t.getKeyId(fieldName)
+		for fieldName := range loadSpec.columns {
+			v := t.getKeyID(fieldName)
 
 			switch t.KeyTypes[v] {
 			case INT_VAL:
@@ -70,12 +70,12 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		records = make(RecordList, info.NumRecords)
 		alloced = make([]Record, info.NumRecords)
 		if hasInts {
-			bigIntArr = make(IntArr, maxKeyId*int(info.NumRecords))
+			bigIntArr = make(IntArr, maxKeyID*int(info.NumRecords))
 		}
 		if hasStrs {
-			bigStrArr = make(StrArr, maxKeyId*int(info.NumRecords))
+			bigStrArr = make(StrArr, maxKeyID*int(info.NumRecords))
 		}
-		bigPopArr = make([]int8, maxKeyId*int(info.NumRecords))
+		bigPopArr = make([]int8, maxKeyID*int(info.NumRecords))
 		mend := time.Now()
 
 		if DEBUG_TIMING {
@@ -86,11 +86,11 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		for i := range records {
 			r = &alloced[i]
 			if hasInts {
-				r.Ints = bigIntArr[i*maxKeyId : (i+1)*maxKeyId]
+				r.Ints = bigIntArr[i*maxKeyID : (i+1)*maxKeyID]
 			}
 
 			if hasStrs {
-				r.Strs = bigStrArr[i*maxKeyId : (i+1)*maxKeyId]
+				r.Strs = bigStrArr[i*maxKeyID : (i+1)*maxKeyID]
 			}
 
 			// TODO: move this allocation next to the allocations above
@@ -98,7 +98,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 				r.SetMap = make(SetMap)
 			}
 
-			r.Populated = bigPopArr[i*maxKeyId : (i+1)*maxKeyId]
+			r.Populated = bigPopArr[i*maxKeyID : (i+1)*maxKeyID]
 
 			r.block = tb
 			records[i] = r
@@ -161,9 +161,9 @@ func (tb *TableBlock) RecycleSlab(loadSpec *LoadSpec) {
 		rl := tb.RecordList
 
 		if len(rl) == CHUNK_SIZE {
-			loadSpec.slabM.Lock()
+			loadSpec.slabMu.Lock()
 			loadSpec.slabs = append(loadSpec.slabs, &rl)
-			loadSpec.slabM.Unlock()
+			loadSpec.slabMu.Unlock()
 		}
 	}
 }

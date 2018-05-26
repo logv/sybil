@@ -26,27 +26,27 @@ type Table struct {
 	// List of new records that haven't been saved to file yet
 	newRecords RecordList
 
-	keyStringIdLookup map[int16]string
-	valStringIdLookup map[int32]string
+	keyStringIDLookup map[int16]string
+	valStringIDLookup map[int32]string
 
 	// This is used for join tables
 	joinLookup map[string]*Record
 
-	stringIdM *sync.RWMutex
-	recordM   *sync.Mutex
-	blockM    *sync.Mutex
+	stringIDMu *sync.RWMutex
+	recordMu   *sync.Mutex
+	blockMu    *sync.Mutex
 }
 
 var LOADED_TABLES = make(map[string]*Table)
 var CHUNK_SIZE = 1024 * 8 * 8
 var CHUNK_THRESHOLD = CHUNK_SIZE / 8
 
-var tableM sync.Mutex
+var tableMu sync.Mutex
 
 // This is a singleton constructor for Tables
 func GetTable(name string) *Table {
-	tableM.Lock()
-	defer tableM.Unlock()
+	tableMu.Lock()
+	defer tableMu.Unlock()
 
 	t, ok := LOADED_TABLES[name]
 	if ok {
@@ -63,14 +63,14 @@ func GetTable(name string) *Table {
 
 // UnloadTable de-registers a table.
 func UnloadTable(name string) {
-	tableM.Lock()
+	tableMu.Lock()
 	delete(LOADED_TABLES, name)
-	tableM.Unlock()
+	tableMu.Unlock()
 }
 
 func (t *Table) initDataStructures() {
-	t.keyStringIdLookup = make(map[int16]string)
-	t.valStringIdLookup = make(map[int32]string)
+	t.keyStringIDLookup = make(map[int16]string)
+	t.valStringIDLookup = make(map[int32]string)
 
 	t.KeyTable = make(map[string]int16)
 	t.KeyTypes = make(map[int16]int8)
@@ -89,75 +89,74 @@ func (t *Table) initDataStructures() {
 }
 
 func (t *Table) initLocks() {
-	t.stringIdM = &sync.RWMutex{}
-	t.recordM = &sync.Mutex{}
-	t.blockM = &sync.Mutex{}
+	t.stringIDMu = &sync.RWMutex{}
+	t.recordMu = &sync.Mutex{}
+	t.blockMu = &sync.Mutex{}
 
 }
 
 func (t *Table) getStringForKey(id int) string {
-	val, _ := t.keyStringIdLookup[int16(id)]
-	return val
+	return t.keyStringIDLookup[int16(id)]
 }
 
-func (t *Table) populateStringIdLookup() {
-	t.stringIdM.Lock()
-	defer t.stringIdM.Unlock()
+func (t *Table) populateStringIDLookup() {
+	t.stringIDMu.Lock()
+	defer t.stringIDMu.Unlock()
 
-	t.keyStringIdLookup = make(map[int16]string)
-	t.valStringIdLookup = make(map[int32]string)
+	t.keyStringIDLookup = make(map[int16]string)
+	t.valStringIDLookup = make(map[int32]string)
 
 	for k, v := range t.KeyTable {
-		t.keyStringIdLookup[v] = k
+		t.keyStringIDLookup[v] = k
 	}
 
 	for _, b := range t.BlockList {
 		if b.columns == nil && b.Name != ROW_STORE_BLOCK {
 			Debug("WARNING, BLOCK", b.Name, "IS SUSPECT! REMOVING FROM BLOCKLIST")
-			t.blockM.Lock()
+			t.blockMu.Lock()
 			delete(t.BlockList, b.Name)
-			t.blockM.Unlock()
+			t.blockMu.Unlock()
 			continue
 		}
 		for _, c := range b.columns {
 			for k, v := range c.StringTable {
-				c.valStringIdLookup[v] = k
+				c.valStringIDLookup[v] = k
 			}
 		}
 
 	}
 }
 
-func (t *Table) getKeyId(name string) int16 {
-	t.stringIdM.RLock()
+func (t *Table) getKeyID(name string) int16 {
+	t.stringIDMu.RLock()
 	id, ok := t.KeyTable[name]
-	t.stringIdM.RUnlock()
+	t.stringIDMu.RUnlock()
 	if ok {
 		return int16(id)
 	}
 
-	t.stringIdM.Lock()
-	defer t.stringIdM.Unlock()
+	t.stringIDMu.Lock()
+	defer t.stringIDMu.Unlock()
 	existing, ok := t.KeyTable[name]
 	if ok {
 		return existing
 	}
 
 	t.KeyTable[name] = int16(len(t.KeyTable))
-	t.keyStringIdLookup[t.KeyTable[name]] = name
+	t.keyStringIDLookup[t.KeyTable[name]] = name
 
 	return int16(t.KeyTable[name])
 }
 
-func (t *Table) setKeyType(nameId int16, colType int8) bool {
-	curType, ok := t.KeyTypes[nameId]
+func (t *Table) setKeyType(nameID int16, colType int8) bool {
+	curType, ok := t.KeyTypes[nameID]
 	if !ok {
-		t.KeyTypes[nameId] = colType
+		t.KeyTypes[nameID] = colType
 	} else {
 		if curType != colType {
 			Debug("TABLE", t.KeyTable)
 			Debug("TYPES", t.KeyTypes)
-			Warn("trying to over-write column type for key ", nameId, t.getStringForKey(int(nameId)), " OLD TYPE", curType, " NEW TYPE", colType)
+			Warn("trying to over-write column type for key ", nameID, t.getStringForKey(int(nameID)), " OLD TYPE", curType, " NEW TYPE", colType)
 			return false
 		}
 	}
@@ -173,9 +172,9 @@ func (t *Table) NewRecord() *Record {
 	b.table = t
 	r.block = &b
 
-	t.recordM.Lock()
+	t.recordMu.Lock()
 	t.newRecords = append(t.newRecords, &r)
-	t.recordM.Unlock()
+	t.recordMu.Unlock()
 	return &r
 }
 
@@ -218,6 +217,6 @@ func (t *Table) PrintRecords(records RecordList) {
 }
 
 func (t *Table) GetColumnType(v string) int8 {
-	colId := t.getKeyId(v)
-	return t.KeyTypes[colId]
+	colID := t.getKeyID(v)
+	return t.KeyTypes[colID]
 }

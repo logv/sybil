@@ -62,7 +62,7 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 			}
 		}
 
-		h.NumBuckets += 1
+		h.NumBuckets++
 
 		h.Values = make([]int64, h.NumBuckets+1)
 		h.Averages = make([]float64, h.NumBuckets+1)
@@ -228,11 +228,11 @@ func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 	}
 
 	for _, v := range h.Outliers {
-		ret[int64(v)] += 1
+		ret[int64(v)]++
 	}
 
 	for _, v := range h.Underliers {
-		ret[int64(v)] += 1
+		ret[int64(v)]++
 	}
 
 	return ret
@@ -246,11 +246,11 @@ func (h *BasicHist) GetStrBuckets() map[string]int64 {
 	}
 
 	for _, v := range h.Outliers {
-		ret[strconv.FormatInt(int64(v), 10)] += 1
+		ret[strconv.FormatInt(int64(v), 10)]++
 	}
 
 	for _, v := range h.Underliers {
-		ret[strconv.FormatInt(int64(v), 10)] += 1
+		ret[strconv.FormatInt(int64(v), 10)]++
 	}
 
 	return ret

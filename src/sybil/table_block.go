@@ -13,10 +13,10 @@ type TableBlock struct {
 	IntInfo IntInfoTable
 	StrInfo StrInfoTable
 
-	table     *Table
-	stringIdM *sync.Mutex
+	table      *Table
+	stringIDMu *sync.Mutex
 
-	valStringIdLookup map[int32]string
+	valStringIDLookup map[int32]string
 	columns           map[int16]*TableColumn
 	brokenKeys        map[string]int16
 }
@@ -25,15 +25,15 @@ func newTableBlock() TableBlock {
 
 	tb := TableBlock{}
 	tb.columns = make(map[int16]*TableColumn)
-	tb.valStringIdLookup = make(map[int32]string)
-	tb.stringIdM = &sync.Mutex{}
+	tb.valStringIDLookup = make(map[int32]string)
+	tb.stringIDMu = &sync.Mutex{}
 
 	return tb
 
 }
 
-func (tb *TableBlock) getKeyId(name string) int16 {
-	return tb.table.getKeyId(name)
+func (tb *TableBlock) getKeyID(name string) int16 {
+	return tb.table.getKeyID(name)
 }
 
 func (tb *TableBlock) getStringForKey(id int16) string {
