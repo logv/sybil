@@ -1,0 +1,9 @@
+sign:
+  artifacts: all
+builds:
+  - binary: sybil
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
