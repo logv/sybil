@@ -6,9 +6,11 @@ type LoadSpec struct {
 	columns map[string]bool
 	files   map[string]bool
 
-	LoadAllColumns bool
-	ReadRowsOnly   bool
-	table          *Table
+	LoadAllColumns             bool
+	ReadRowsOnly               bool
+	SkipDeleteBlocksAfterQuery bool
+
+	table *Table
 
 	slabs  []*RecordList
 	slabMu *sync.Mutex

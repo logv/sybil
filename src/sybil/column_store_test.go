@@ -25,12 +25,13 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -79,12 +80,13 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -156,12 +158,13 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))

@@ -258,10 +258,10 @@ func RunQueryCmdLine() {
 
 	if *sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
-		sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
+		loadSpec.SkipDeleteBlocksAfterQuery = true
 		querySpec.Samples = true
 
 		t.LoadAndQueryRecords(&loadSpec, &querySpec)
