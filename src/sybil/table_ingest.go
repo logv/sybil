@@ -45,7 +45,6 @@ func (t *Table) IngestRecords(flags *FlagDefs, blockname string) {
 // collation inside a file somewhere
 func (t *Table) CompactRecords(flags *FlagDefs) {
 	flags.READ_INGESTION_LOG = NewTrueFlag()
-	DELETE_BLOCKS_AFTER_QUERY = false
 	HOLD_MATCHES = true
 
 	t.ResetBlockCache()

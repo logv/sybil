@@ -27,8 +27,6 @@ func TestFilters(t *testing.T) {
 
 	saveAndReloadTable(t, flags, tableName, blockCount)
 
-	DELETE_BLOCKS_AFTER_QUERY = false
-
 	testIntEq(t, flags, tableName)
 	testIntNeq(t, flags, tableName)
 	testIntLt(t, flags, tableName)

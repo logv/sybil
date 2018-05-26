@@ -20,8 +20,6 @@ func RunDigestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	sybil.DELETE_BLOCKS_AFTER_QUERY = false
-
 	t := sybil.GetTable(*flags.TABLE)
 	if !t.LoadTableInfo(flags) {
 		sybil.Warn("Couldn't read table info, exiting early")

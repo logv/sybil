@@ -203,7 +203,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 				}
 				// don't delete when testing so we can verify block
 				// loading results
-				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && !TEST_MODE {
+				if loadSpec != nil && !loadSpec.SkipDeleteBlocksAfterQuery && !TEST_MODE {
 					t.blockMu.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
@@ -224,7 +224,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 				}
 			}
 
-			if DELETE_BLOCKS_AFTER_QUERY && thisBlock%CHUNKS_BEFORE_GC == 0 && *flags.GC {
+			if loadSpec != nil && !loadSpec.SkipDeleteBlocksAfterQuery && thisBlock%CHUNKS_BEFORE_GC == 0 && *flags.GC {
 				wg.Wait()
 				start := time.Now()
 
@@ -314,7 +314,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 		mu.Unlock()
 		count += rowStoreQuery.count
 
-		if !DELETE_BLOCKS_AFTER_QUERY && t.RowBlock != nil {
+		if loadSpec != nil && loadSpec.SkipDeleteBlocksAfterQuery && t.RowBlock != nil {
 			Debug("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
 			t.RowBlock.RecordList = rowStoreQuery.records
 			t.RowBlock.Matched = rowStoreQuery.records

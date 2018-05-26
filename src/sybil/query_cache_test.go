@@ -13,7 +13,6 @@ func TestCachedQueries(t *testing.T) {
 
 	blockCount := 5
 
-	DELETE_BLOCKS_AFTER_QUERY = false
 	flags.CACHED_QUERIES = NewTrueFlag()
 
 	var thisAddRecords = func(block_count int) {
@@ -56,6 +55,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
+	loadSpec.SkipDeleteBlocksAfterQuery = true
 
 	// test that the cached query doesnt already exist
 	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
@@ -108,6 +108,7 @@ func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string)
 		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
+	loadSpec.SkipDeleteBlocksAfterQuery = true
 
 	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
@@ -174,6 +175,7 @@ func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 
 		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
+		loadSpec.SkipDeleteBlocksAfterQuery = true
 
 		nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)
