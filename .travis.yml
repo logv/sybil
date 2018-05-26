@@ -1,4 +1,4 @@
 language: go
 script: make testv
 before_script:
-  - go get github.com/logv/loglogbeta
+  - go get -v -t ./...
