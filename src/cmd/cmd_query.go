@@ -262,7 +262,11 @@ func RunQueryCmdLine() {
 
 		t.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 
-		t.PrintSamples(flags)
+		t.PrintSamples(sybil.PrintConfig{
+			Limit:         *flags.LIMIT,
+			EncodeResults: *flags.ENCODE_RESULTS,
+			JSON:          *flags.JSON,
+		})
 
 		return
 	}

@@ -219,7 +219,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 			if t.Options.SAMPLES {
 				wg.Wait()
 
-				if count > *flags.LIMIT {
+				if count > querySpec.Limit {
 					break
 				}
 			}

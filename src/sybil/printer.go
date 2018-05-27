@@ -366,9 +366,15 @@ func (r *Record) toSample() *Sample {
 	return &sample
 }
 
-func (t *Table) PrintSamples(flags *FlagDefs) {
+type PrintConfig struct {
+	Limit         int
+	EncodeResults bool
+	JSON          bool
+}
+
+func (t *Table) PrintSamples(printConfig PrintConfig) {
 	count := 0
-	records := make(RecordList, *flags.LIMIT)
+	records := make(RecordList, printConfig.Limit)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
@@ -376,7 +382,7 @@ func (t *Table) PrintSamples(flags *FlagDefs) {
 				break
 			}
 
-			if count >= *flags.LIMIT {
+			if count >= printConfig.Limit {
 				break
 			}
 
@@ -384,7 +390,7 @@ func (t *Table) PrintSamples(flags *FlagDefs) {
 			count++
 		}
 
-		if count >= *flags.LIMIT {
+		if count >= printConfig.Limit {
 			break
 		}
 	}
@@ -399,13 +405,13 @@ func (t *Table) PrintSamples(flags *FlagDefs) {
 		samples = append(samples, s)
 	}
 
-	if *flags.ENCODE_RESULTS {
+	if printConfig.EncodeResults {
 		Debug("NUMBER SAMPLES", len(samples))
 		PrintBytes(NodeResults{Samples: samples})
 		return
 	}
 
-	if *flags.JSON {
+	if printConfig.JSON {
 
 		printJSON(samples)
 		return

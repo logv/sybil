@@ -184,9 +184,7 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	flags.SAMPLES = NewTrueFlag()
-	limit := 1000
-	flags.LIMIT = &limit
+	nt.Options.SAMPLES = true
 	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
