@@ -293,7 +293,7 @@ func (t *Table) WriteQueryCache(flags *FlagDefs, toCacheSpecs map[string]*QueryS
 			go func() {
 
 				thisQuery.SaveCachedResults(flags, thisName)
-				if *flags.DEBUG {
+				if *DEBUG {
 					fmt.Fprint(os.Stderr, "s")
 				}
 
@@ -306,7 +306,7 @@ func (t *Table) WriteQueryCache(flags *FlagDefs, toCacheSpecs map[string]*QueryS
 		saveend := time.Now()
 
 		if saved > 0 {
-			if *flags.DEBUG {
+			if *DEBUG {
 				fmt.Fprint(os.Stderr, "\n")
 			}
 			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))

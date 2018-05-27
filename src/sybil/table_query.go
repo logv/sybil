@@ -139,7 +139,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 					block = cachedBlock
 				}
 
-				if *flags.DEBUG {
+				if *DEBUG {
 					if cachedSpec != nil {
 						fmt.Fprint(os.Stderr, "c")
 					} else {
@@ -259,7 +259,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 					}
 				}
 
-				if *flags.DEBUG {
+				if *DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
 				end := time.Now()
@@ -299,7 +299,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 
 	wg.Wait()
 
-	if *flags.DEBUG {
+	if *DEBUG {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 

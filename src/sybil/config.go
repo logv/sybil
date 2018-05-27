@@ -21,6 +21,7 @@ func NewTrueFlag() *bool {
 	return &r
 }
 
+var DEBUG = flag.Bool("debug", false, "enable debug logging")
 var TEST_MODE = false
 var ENABLE_LUA = false
 
@@ -74,9 +75,8 @@ type FlagDefs struct {
 
 	LIMIT *int
 
-	DEBUG *bool
-	JSON  *bool
-	GC    *bool
+	JSON *bool
+	GC   *bool
 
 	DIR        *string
 	SORT       *string
@@ -163,7 +163,6 @@ func DefaultFlags() *FlagDefs {
 		DIR:                flag.String("dir", "./db/", "Directory to store DB files"),
 		TABLE:              flag.String("table", "", "Table to operate on [REQUIRED]"),
 
-		DEBUG:            flag.Bool("debug", false, "enable debug logging"),
 		FIELD_SEPARATOR:  flag.String("field-separator", ",", "Field separator used in command line params"),
 		FILTER_SEPARATOR: flag.String("filter-separator", ":", "Filter separator used in filters"),
 

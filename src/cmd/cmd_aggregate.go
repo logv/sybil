@@ -15,7 +15,7 @@ func RunAggregateCmdLine() {
 	dirs := flag.Args()
 
 	var t, f = true, false
-	flags.DEBUG = &t
+	sybil.DEBUG = &t
 	sybil.Debug("AGGREGATING")
 
 	sybil.DecodeFlags(flags)
