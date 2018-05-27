@@ -7,7 +7,6 @@ type Record struct {
 	Populated []int8
 
 	Timestamp int64
-	Path      string
 
 	block *TableBlock
 }
@@ -185,7 +184,6 @@ func (r *Record) CopyRecord() *Record {
 	}
 
 	nr.Timestamp = r.Timestamp
-	nr.Path = r.Path
 
 	nr.block = r.block
 
