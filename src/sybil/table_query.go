@@ -121,7 +121,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 				var cachedBlock *TableBlock
 
 				if querySpec != nil {
-					cachedBlock, cachedSpec = t.getCachedQueryForBlock(flags, filename, querySpec)
+					cachedBlock, cachedSpec = t.getCachedQueryForBlock(filename, querySpec)
 				}
 
 				var block *TableBlock
@@ -216,7 +216,7 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 				}
 			}(t)
 
-			if *flags.SAMPLES {
+			if t.Options.SAMPLES {
 				wg.Wait()
 
 				if count > *flags.LIMIT {
@@ -237,7 +237,9 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 
 				if querySpec != nil {
 
-					t.WriteQueryCache(flags, toCacheSpecs)
+					if querySpec.CachedQueries {
+						t.WriteQueryCache(toCacheSpecs)
+					}
 					toCacheSpecs = make(map[string]*QuerySpec)
 
 					resultSpec := MultiCombineResults(flags, querySpec, blockSpecs)
@@ -341,7 +343,9 @@ func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySp
 
 	// NOTE: we have to write the query cache before we combine our results,
 	// bc combining results is not idempotent
-	t.WriteQueryCache(flags, toCacheSpecs)
+	if querySpec != nil && querySpec.CachedQueries {
+		t.WriteQueryCache(toCacheSpecs)
+	}
 
 	if flags.LOAD_AND_QUERY != nil && *flags.LOAD_AND_QUERY && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS

@@ -270,7 +270,7 @@ func (t *Table) ResetBlockCache() {
 	t.BlockInfoCache = make(map[string]*SavedColumnInfo)
 }
 
-func (t *Table) WriteQueryCache(flags *FlagDefs, toCacheSpecs map[string]*QuerySpec) {
+func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 
 	// NOW WE SAVE OUR QUERY CACHE HERE...
 	savestart := time.Now()
@@ -278,40 +278,37 @@ func (t *Table) WriteQueryCache(flags *FlagDefs, toCacheSpecs map[string]*QueryS
 
 	saved := 0
 
-	if *flags.CACHED_QUERIES {
-		for blockName, blockQuery := range toCacheSpecs {
+	for blockName, blockQuery := range toCacheSpecs {
 
-			if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
-				continue
-			}
-			thisQuery := blockQuery
-			thisName := blockName
-
-			wg.Add(1)
-			saved++
-			go func() {
-
-				thisQuery.SaveCachedResults(flags, thisName)
-				if *DEBUG {
-					fmt.Fprint(os.Stderr, "s")
-				}
-
-				wg.Done()
-			}()
+		if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
+			continue
 		}
+		thisQuery := blockQuery
+		thisName := blockName
 
-		wg.Wait()
+		wg.Add(1)
+		saved++
+		go func() {
 
-		saveend := time.Now()
-
-		if saved > 0 {
+			thisQuery.SaveCachedResults(thisName)
 			if *DEBUG {
-				fmt.Fprint(os.Stderr, "\n")
+				fmt.Fprint(os.Stderr, "s")
 			}
-			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
-		}
+
+			wg.Done()
+		}()
 	}
 
+	wg.Wait()
+
+	saveend := time.Now()
+
+	if saved > 0 {
+		if *DEBUG {
+			fmt.Fprint(os.Stderr, "\n")
+		}
+		Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
+	}
 	// END QUERY CACHE SAVING
 
 }

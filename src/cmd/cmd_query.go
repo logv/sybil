@@ -184,8 +184,14 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *flags.INT_FILTERS, Str: *flags.STR_FILTERS, Set: *flags.SET_FILTERS}
 	filters := sybil.BuildFilters(flags, t, &loadSpec, filterSpec)
 
-	queryParams := sybil.QueryParams{Groups: groupings, Filters: filters,
-		Aggregations: aggs, Distincts: distincts}
+	queryParams := sybil.QueryParams{
+		Groups:        groupings,
+		Filters:       filters,
+		Aggregations:  aggs,
+		Distincts:     distincts,
+		CachedQueries: *flags.CACHED_QUERIES,
+		Samples:       *flags.SAMPLES,
+	}
 
 	querySpec := sybil.QuerySpec{QueryParams: queryParams}
 

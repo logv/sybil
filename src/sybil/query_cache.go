@@ -27,9 +27,9 @@ func registerTypesForQueryCache() {
 	gob.Register(&MultiHistCompat{})
 }
 
-func (t *Table) getCachedQueryForBlock(flags *FlagDefs, dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
+func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
-	if !*flags.CACHED_QUERIES {
+	if !querySpec.CachedQueries {
 		return nil, nil
 	}
 
@@ -51,7 +51,7 @@ func (t *Table) getCachedQueryForBlock(flags *FlagDefs, dirname string, querySpe
 	tb.Info = info
 
 	blockQuery := CopyQuerySpec(querySpec)
-	if blockQuery.LoadCachedResults(flags, tb.Name) {
+	if blockQuery.LoadCachedResults(tb.Name) {
 		t.blockMu.Lock()
 		t.BlockList[dirname] = &tb
 		t.blockMu.Unlock()
@@ -157,14 +157,13 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 	return ret
 }
 
-func (qs *QuerySpec) LoadCachedResults(flags *FlagDefs, blockname string) bool {
-	if !*flags.CACHED_QUERIES {
+func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
+	if !qs.CachedQueries {
 		return false
 	}
 
-	if *flags.SAMPLES {
+	if qs.Samples {
 		return false
-
 	}
 
 	cacheKey := qs.GetCacheKey(blockname)
@@ -185,12 +184,12 @@ func (qs *QuerySpec) LoadCachedResults(flags *FlagDefs, blockname string) bool {
 	return true
 }
 
-func (qs *QuerySpec) SaveCachedResults(flags *FlagDefs, blockname string) {
-	if !*flags.CACHED_QUERIES {
+func (qs *QuerySpec) SaveCachedResults(blockname string) {
+	if !qs.CachedQueries {
 		return
 	}
 
-	if *flags.SAMPLES {
+	if qs.Samples {
 		return
 	}
 

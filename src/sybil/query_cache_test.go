@@ -1,19 +1,20 @@
 package sybil
 
-import "testing"
-import "math/rand"
-import "math"
-import "strconv"
+import (
+	"math"
+	"math/rand"
+	"strconv"
+	"testing"
+)
 
 func TestCachedQueries(t *testing.T) {
 	t.Parallel()
 	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 
 	blockCount := 5
-
-	flags.CACHED_QUERIES = NewTrueFlag()
 
 	var thisAddRecords = func(block_count int) {
 		addRecords(tableName, func(r *Record, i int) {
@@ -52,7 +53,12 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
-		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+		QueryParams: QueryParams{
+			Filters:       filters,
+			Aggregations:  aggs,
+			CachedQueries: true,
+		},
+	}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	loadSpec.SkipDeleteBlocksAfterQuery = true
@@ -60,8 +66,8 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	// test that the cached query doesnt already exist
 	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(flags, b.Name)
-		if loaded {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded == true {
 			t.Error("Test DB started with saved query results")
 		}
 	}
@@ -69,27 +75,27 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	// test that the cached query is saved
 	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(flags, b.Name)
-		if !loaded {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded != true {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
 
-	flags.CACHED_QUERIES = NewFalseFlag()
+	querySpec.CachedQueries = false
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(flags, b.Name)
-		if loaded {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded == true {
 			t.Error("Used query cache when flag was not provided")
 		}
 	}
-	flags.CACHED_QUERIES = NewTrueFlag()
+	querySpec.CachedQueries = true
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
 	querySpec.Aggregations = append(aggs, nt.Aggregation(flags, "id", "hist"))
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(flags, b.Name)
-		if loaded {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded == true {
 			t.Error("Test DB has query results for new query")
 		}
 	}
@@ -105,7 +111,12 @@ func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string)
 	aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
-		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+		QueryParams: QueryParams{
+			Filters:       filters,
+			Aggregations:  aggs,
+			CachedQueries: true,
+		},
+	}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 	loadSpec.SkipDeleteBlocksAfterQuery = true
@@ -143,8 +154,8 @@ func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string)
 	}
 
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(flags, b.Name)
-		if !loaded {
+		loaded := querySpec.LoadCachedResults(b.Name)
+		if loaded != true {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
@@ -171,7 +182,12 @@ func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 		aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
 
 		querySpec := QuerySpec{Table: nt,
-			QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+			QueryParams: QueryParams{
+				Filters:       filters,
+				Aggregations:  aggs,
+				CachedQueries: true,
+			},
+		}
 
 		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
@@ -226,8 +242,8 @@ func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 		}
 
 		for _, b := range nt.BlockList {
-			loaded := querySpec.LoadCachedResults(flags, b.Name)
-			if !loaded {
+			loaded := querySpec.LoadCachedResults(b.Name)
+			if loaded != true {
 				t.Error("Did not correctly save and load query results")
 			}
 		}

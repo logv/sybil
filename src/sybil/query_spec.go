@@ -27,6 +27,9 @@ type savedQueryParams struct {
 	PruneBy    string
 	Limit      int
 	TimeBucket int
+
+	Samples       bool
+	CachedQueries bool
 }
 
 func Min(x, y int64) int64 {
