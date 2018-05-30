@@ -27,7 +27,6 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
-	flags.TABLE = &tableName // TODO: eliminate global use
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(&LoadSpec{
@@ -84,7 +83,6 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
-	flags.TABLE = &tableName // TODO: eliminate global use
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(&LoadSpec{
@@ -164,7 +162,6 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
-	flags.TABLE = &tableName // TODO: eliminate global use
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(&LoadSpec{
