@@ -195,8 +195,6 @@ func LoadRowBlockCB(dir string, tableName string, digestname string, records Rec
 
 }
 
-var DELETE_BLOCKS = make([]string, 0)
-
 func (t *Table) RestoreUningestedFiles() {
 	if !t.GrabDigestLock() {
 		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
@@ -236,7 +234,8 @@ func (t *Table) RestoreUningestedFiles() {
 }
 
 type SaveBlockChunkCB struct {
-	digestdir string
+	digestDir    string
+	deleteBlocks []string
 }
 
 func (cb *SaveBlockChunkCB) CB(dir string, tableName string, params HistogramParameters, digestname string, records RecordList) {
@@ -248,17 +247,17 @@ func (cb *SaveBlockChunkCB) CB(dir string, tableName string, params HistogramPar
 			t.ReleaseRecords()
 		}
 
-		for _, file := range DELETE_BLOCKS {
+		for _, file := range cb.deleteBlocks {
 			Debug("REMOVING", file)
 			os.Remove(file)
 		}
 
-		dir, err := os.Open(cb.digestdir)
+		dir, err := os.Open(cb.digestDir)
 		if err == nil {
 			contents, err := dir.Readdir(0)
 
 			if err == nil && len(contents) == 0 {
-				os.RemoveAll(cb.digestdir)
+				os.RemoveAll(cb.digestDir)
 			}
 		}
 		t.ReleaseDigestLock()
@@ -269,7 +268,7 @@ func (cb *SaveBlockChunkCB) CB(dir string, tableName string, params HistogramPar
 	if len(records) > 0 {
 		t.newRecords = append(t.newRecords, records...)
 	}
-	DELETE_BLOCKS = append(DELETE_BLOCKS, digestname)
+	cb.deleteBlocks = append(cb.deleteBlocks, digestname)
 
 }
 
@@ -315,7 +314,7 @@ func (t *Table) DigestRecords(minFilesToDigest int) {
 		// ingestions...
 		os.MkdirAll(digestfile, 0777)
 		basename := path.Base(digesting)
-		cb := SaveBlockChunkCB{digesting}
+		cb := SaveBlockChunkCB{digestDir: digesting}
 		t.LoadRowStoreRecords(basename, nil, cb.CB)
 	} else {
 		t.ReleaseDigestLock()
