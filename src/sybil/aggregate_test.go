@@ -295,11 +295,13 @@ func TestOrderBy(t *testing.T) {
 		return
 	}
 
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	blockCount := 3
 
 	totalAge := int64(0)
 	count := 0
-	tableName := getTestTableName(t)
 	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
 		count++
 		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
