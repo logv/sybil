@@ -23,7 +23,7 @@ func TestTableDigestRowRecords(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	tbl.IngestRecords(flags, "ingest")
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
@@ -43,7 +43,7 @@ func TestTableDigestRowRecords(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords(flags)
+	nt.DigestRecords(minFilesToDigest)
 
 	unloadTestTable(tableName)
 
@@ -80,7 +80,7 @@ func TestColumnStoreFileNames(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	tbl.IngestRecords(flags, "ingest")
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
@@ -100,7 +100,7 @@ func TestColumnStoreFileNames(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords(flags)
+	nt.DigestRecords(minFilesToDigest)
 
 	unloadTestTable(tableName)
 
@@ -160,7 +160,7 @@ func TestBigIntColumns(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	tbl.IngestRecords(flags, "ingest")
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
@@ -180,7 +180,7 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords(flags)
+	nt.DigestRecords(minFilesToDigest)
 
 	unloadTestTable(tableName)
 

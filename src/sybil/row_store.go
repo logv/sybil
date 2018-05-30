@@ -135,14 +135,14 @@ func (t *Table) LoadRecordsFromLog(filename string, loadSpec *LoadSpec) RecordLi
 
 }
 
-func (t *Table) AppendRecordsToLog(flags *FlagDefs, records RecordList, blockname string) {
+func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	if len(records) == 0 {
 		return
 	}
 
 	// TODO: fix this up, so that we don't
-	ingestdir := path.Join(*flags.DIR, t.Name, INGEST_DIR)
-	tempingestdir := path.Join(*flags.DIR, t.Name, TEMP_INGEST_DIR)
+	ingestdir := path.Join(t.Dir, t.Name, INGEST_DIR)
+	tempingestdir := path.Join(t.Dir, t.Name, TEMP_INGEST_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(tempingestdir, 0777)

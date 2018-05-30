@@ -96,7 +96,7 @@ func TestOpenCompressedColumn(t *testing.T) {
 	}, blockCount)
 
 	nt := saveAndReloadTable(t, flags, tableName, blockCount)
-	nt.DigestRecords(flags)
+	nt.DigestRecords(0)
 	nt.LoadRecords(nil)
 
 	blocks := nt.BlockList

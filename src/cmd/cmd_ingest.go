@@ -284,5 +284,5 @@ func RunIngestCmdLine() {
 		importCsvRecords(flags)
 	}
 
-	t.IngestRecords(flags, digestfile)
+	t.IngestRecords(*flags.SKIP_COMPACT, digestfile)
 }

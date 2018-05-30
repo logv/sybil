@@ -10,8 +10,6 @@ import "strings"
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
 // to digest, make a new STOMACHE_DIR tempdir and move all files from ingest/ into it
 
-var MIN_FILES_TO_DIGEST = 0
-
 func (t *Table) getNewIngestBlockName() (string, error) {
 	Debug("GETTING INGEST BLOCK NAME", t.Dir, "TABLE", t.Name)
 	name, err := ioutil.TempDir(path.Join(t.Dir, t.Name), "block")
@@ -29,25 +27,28 @@ func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 }
 
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) IngestRecords(flags *FlagDefs, blockname string) {
+func (t *Table) IngestRecords(skipCompact bool, blockname string) (minFilesToDigest int) {
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 
-	t.AppendRecordsToLog(flags, t.newRecords[:], blockname)
+	t.AppendRecordsToLog(t.newRecords[:], blockname)
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
 	t.ReleaseRecords()
 
-	t.MaybeCompactRecords(flags)
+	if !skipCompact {
+		_, minFilesToDigest = t.MaybeCompactRecords()
+	}
+	return minFilesToDigest
 }
 
 // TODO: figure out how often we actually do a collation check by storing last
 // collation inside a file somewhere
-func (t *Table) CompactRecords(flags *FlagDefs) {
+func (t *Table) CompactRecords(minFilesToDigest int) {
 	HOLD_MATCHES = true
 
 	t.ResetBlockCache()
-	t.DigestRecords(flags)
+	t.DigestRecords(minFilesToDigest)
 
 }
 
@@ -56,14 +57,12 @@ func (t *Table) CompactRecords(flags *FlagDefs) {
 // we have over X megabytes of data
 // remember, there is no reason to actually read the data off disk
 // until we decide to compact
-func (t *Table) MaybeCompactRecords(flags *FlagDefs) {
-	if *flags.SKIP_COMPACT {
-		return
+func (t *Table) MaybeCompactRecords() (compacted bool, minFilesToDigest int) {
+	should, minFilesToDigest := t.ShouldCompactRowStore(INGEST_DIR)
+	if should {
+		t.CompactRecords(minFilesToDigest)
 	}
-
-	if t.ShouldCompactRowStore(INGEST_DIR) {
-		t.CompactRecords(flags)
-	}
+	return should, minFilesToDigest
 }
 
 var NO_MORE_BLOCKS = GROUP_DELIMITER
@@ -75,12 +74,12 @@ var KB = int64(1024)
 var SIZE_DIGEST_THRESHOLD = int64(1024) * 2
 var MAX_ROW_STORE_TRIES = 20
 
-func (t *Table) ShouldCompactRowStore(digest string) bool {
+func (t *Table) ShouldCompactRowStore(digest string) (should bool, minFilesToDigest int) {
 	dirname := path.Join(t.Dir, t.Name, digest)
 	// if the row store dir does not exist, skip the whole function
 	_, err := os.Stat(dirname)
 	if os.IsNotExist(err) {
-		return false
+		return false, 0
 	}
 
 	var file *os.File
@@ -90,7 +89,7 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 			Debug("Can't open the ingestion dir", dirname)
 			time.Sleep(LOCK_US)
 			if i > MAX_ROW_STORE_TRIES {
-				return false
+				return false, 0
 			}
 
 			continue
@@ -99,10 +98,10 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	}
 
 	files, _ := file.Readdir(0)
-	MIN_FILES_TO_DIGEST = len(files)
+	minFilesToDigest = len(files)
 
 	if len(files) > FILE_DIGEST_THRESHOLD {
-		return true
+		return true, minFilesToDigest
 	}
 
 	size := int64(0)
@@ -111,8 +110,11 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	}
 
 	// compact every MB or so
-	return size/KB > SIZE_DIGEST_THRESHOLD
+	if size/KB > SIZE_DIGEST_THRESHOLD {
+		return true, minFilesToDigest
+	}
 
+	return false, minFilesToDigest
 }
 
 func (t *Table) LoadRowStoreRecords(digest string, loadSpec *LoadSpec, afterBlockLoadCb AfterRowBlockLoad) {
@@ -274,7 +276,7 @@ func (cb *SaveBlockChunkCB) CB(dir string, tableName string, params HistogramPar
 var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
-func (t *Table) DigestRecords(flags *FlagDefs) {
+func (t *Table) DigestRecords(minFilesToDigest int) {
 	canDigest := t.GrabDigestLock()
 
 	if !canDigest {
@@ -299,8 +301,8 @@ func (t *Table) DigestRecords(flags *FlagDefs) {
 	file, _ := os.Open(digestfile)
 
 	files, err := file.Readdir(0)
-	if len(files) < MIN_FILES_TO_DIGEST {
-		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", MIN_FILES_TO_DIGEST)
+	if len(files) < minFilesToDigest {
+		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", minFilesToDigest)
 		t.ReleaseDigestLock()
 		return
 	}

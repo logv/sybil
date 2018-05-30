@@ -22,7 +22,7 @@ func TestTableLoadRowRecords(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	tbl.IngestRecords(flags, "ingest")
+	tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
