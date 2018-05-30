@@ -101,7 +101,7 @@ func RunQueryCmdLine() {
 	}
 
 	t := sybil.GetTable(*flags.DIR, table)
-	if t.IsNotExist(flags) {
+	if t.IsNotExist() {
 		sybil.Error(t.Name, "table can not be loaded or does not exist in", *flags.DIR)
 	}
 

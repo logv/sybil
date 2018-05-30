@@ -30,7 +30,7 @@ func RunRebuildCmdLine() {
 		return
 	}
 
-	t.DeduceTableInfoFromBlocks(flags)
+	t.DeduceTableInfoFromBlocks()
 
 	// TODO: prompt to see if this table info looks good and then write it to
 	// original info.db

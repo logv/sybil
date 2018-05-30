@@ -119,7 +119,7 @@ func importCsvRecords(flags *sybil.FlagDefs) {
 
 		}
 
-		t.ChunkAndSave(flags)
+		t.ChunkAndSave()
 	}
 
 }
@@ -198,7 +198,7 @@ func importJSONRecords(flags *sybil.FlagDefs) {
 				ingestDictionary(flags, r, &dict, "")
 
 			}
-			t.ChunkAndSave(flags)
+			t.ChunkAndSave()
 		}
 
 	}

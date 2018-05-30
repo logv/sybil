@@ -371,7 +371,7 @@ func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 	return t.LoadAndQueryRecords(loadSpec, nil)
 }
 
-func (t *Table) ChunkAndSave(flags *FlagDefs) {
+func (t *Table) ChunkAndSave() {
 
 	// TODO
 	skipOutliers, recycleMemory := false, false
@@ -390,7 +390,7 @@ func (t *Table) ChunkAndSave(flags *FlagDefs) {
 
 }
 
-func (t *Table) IsNotExist(flags *FlagDefs) bool {
+func (t *Table) IsNotExist() bool {
 	tableDir := path.Join(t.Dir, t.Name)
 	_, err := ioutil.ReadDir(tableDir)
 	return err != nil
