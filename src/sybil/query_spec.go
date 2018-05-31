@@ -30,6 +30,8 @@ type savedQueryParams struct {
 
 	Samples       bool
 	CachedQueries bool
+
+	ExportTSV bool
 }
 
 func Min(x, y int64) int64 {

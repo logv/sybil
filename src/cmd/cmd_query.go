@@ -278,6 +278,7 @@ func RunQueryCmdLine() {
 
 	if *flags.EXPORT {
 		loadSpec.LoadAllColumns = true
+		querySpec.ExportTSV = true
 	}
 
 	if !*flags.PRINT_INFO {
