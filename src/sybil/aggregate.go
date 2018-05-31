@@ -18,6 +18,7 @@ var GROUP_BY_WIDTH = 8 // bytes
 var DISTINCT_STR = "distinct"
 var HIST_STR = "hist"
 
+// SORT_COUNT is the pseudo-field that sorts results by count.
 const SORT_COUNT = "$COUNT"
 
 const (

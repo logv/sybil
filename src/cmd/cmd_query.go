@@ -15,15 +15,11 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var NO_RECYCLE_MEM *bool
 
-const (
-	SORT_COUNT = "$COUNT"
-)
-
 func addQueryFlags(flags *sybil.FlagDefs) {
 
 	flags.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	flags.SORT = flag.String("sort", SORT_COUNT, "Int Column to sort by")
-	flags.PRUNE_BY = flag.String("prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")
+	flags.SORT = flag.String("sort", sybil.SORT_COUNT, "Int Column to sort by")
+	flags.PRUNE_BY = flag.String("prune-sort", sybil.SORT_COUNT, "Int Column to prune intermediate results by")
 
 	flags.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
