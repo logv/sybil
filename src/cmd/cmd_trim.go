@@ -61,10 +61,11 @@ func RunTrimCmdLine() {
 	loadSpec.TimeColumn = *flags.TIME_COL
 
 	trimSpec := sybil.TrimSpec{}
+	trimSpec.TimeColumn = *flags.TIME_COL
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
 	trimSpec.MBLimit = int64(*MB_LIMIT)
 
-	toTrim := t.TrimTable(flags, &trimSpec)
+	toTrim := t.TrimTable(&trimSpec)
 
 	sybil.Debug("FOUND", len(toTrim), "CANDIDATE BLOCKS FOR TRIMMING")
 	if len(toTrim) > 0 {
