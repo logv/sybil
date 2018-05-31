@@ -15,11 +15,15 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var NO_RECYCLE_MEM *bool
 
+const (
+	SORT_COUNT = "$COUNT"
+)
+
 func addQueryFlags() {
 
 	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
-	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
+	sybil.FLAGS.SORT = flag.String("sort", SORT_COUNT, "Int Column to sort by")
+	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")
 
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
@@ -206,7 +210,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.SORT != "" {
-		if *sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
+		if *sybil.FLAGS.SORT != sybil.SORT_COUNT {
 			loadSpec.Int(*sybil.FLAGS.SORT)
 		}
 		querySpec.OrderBy = *sybil.FLAGS.SORT
@@ -215,12 +219,12 @@ func RunQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.PRUNE_BY != "" {
-		if *sybil.FLAGS.PRUNE_BY != sybil.OPTS.SORT_COUNT {
+		if *sybil.FLAGS.PRUNE_BY != sybil.SORT_COUNT {
 			loadSpec.Int(*sybil.FLAGS.PRUNE_BY)
 		}
 		querySpec.PruneBy = *sybil.FLAGS.PRUNE_BY
 	} else {
-		querySpec.PruneBy = sybil.OPTS.SORT_COUNT
+		querySpec.PruneBy = sybil.SORT_COUNT
 	}
 
 	if *sybil.FLAGS.TIME {

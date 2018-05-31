@@ -114,7 +114,6 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	SORT_COUNT              string
 	SAMPLES                 bool
 	STR_REPLACEMENTS        map[string]StrReplace
 	WEIGHT_COL              bool
@@ -137,7 +136,6 @@ var OPTS = OptionDefs{}
 var EMPTY = ""
 
 func setDefaults() {
-	OPTS.SORT_COUNT = "$COUNT"
 	OPTS.SAMPLES = false
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
