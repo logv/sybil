@@ -11,7 +11,7 @@ import "compress/gzip"
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
+func (t *Table) SaveRecordsToBlock(flags *FlagDefs, records RecordList, filename string) bool {
 	if len(records) == 0 {
 		return true
 	}
@@ -20,11 +20,11 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
 	tempBlock.RecordList = records
 	tempBlock.table = t
 
-	return tempBlock.SaveToColumns(filename)
+	return tempBlock.SaveToColumns(flags, filename)
 }
 
-func (t *Table) FindPartialBlocks() []*TableBlock {
-	t.LoadRecords(nil)
+func (t *Table) FindPartialBlocks(flags *FlagDefs) []*TableBlock {
+	t.LoadRecords(flags, nil)
 
 	ret := make([]*TableBlock, 0)
 
@@ -44,12 +44,12 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 }
 
 // TODO: find any open blocks and then fill them...
-func (t *Table) FillPartialBlock() bool {
+func (t *Table) FillPartialBlock(flags *FlagDefs) bool {
 	if len(t.newRecords) == 0 {
 		return false
 	}
 
-	openBlocks := t.FindPartialBlocks()
+	openBlocks := t.FindPartialBlocks(flags)
 
 	Debug("OPEN BLOCKS", openBlocks)
 	var filename string
@@ -64,17 +64,17 @@ func (t *Table) FillPartialBlock() bool {
 
 	Debug("OPENING PARTIAL BLOCK", filename)
 
-	if !t.GrabBlockLock(filename) {
+	if !t.GrabBlockLock(flags, filename) {
 		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
 
-	defer t.ReleaseBlockLock(filename)
+	defer t.ReleaseBlockLock(flags, filename)
 
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
 
-	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
+	block := t.LoadBlockFromDir(flags, filename, nil, true /* LOAD ALL RECORDS */)
 	if block == nil {
 		return true
 	}
@@ -90,7 +90,7 @@ func (t *Table) FillPartialBlock() bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if !t.SaveRecordsToBlock(partialRecords, filename) {
+		if !t.SaveRecordsToBlock(flags, partialRecords, filename) {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
 			return false
 		}
@@ -196,7 +196,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool) *TableBlock {
+func (t *Table) LoadBlockFromDir(flags *FlagDefs, dirname string, loadSpec *LoadSpec, loadRecords bool) *TableBlock {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -217,7 +217,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 	t.BlockList[dirname] = &tb
 	t.blockMu.Unlock()
 
-	tb.allocateRecords(loadSpec, *info, loadRecords)
+	tb.allocateRecords(flags, loadSpec, *info, loadRecords)
 	tb.Info = info
 
 	file, _ := os.Open(dirname)
@@ -273,10 +273,10 @@ type AfterLoadQueryCB struct {
 	count int
 }
 
-func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
+func (cb *AfterLoadQueryCB) CB(flags *FlagDefs, digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
 		// TODO: add sessionization call over here, too
-		count := FilterAndAggRecords(cb.querySpec, &cb.records)
+		count := FilterAndAggRecords(flags, cb.querySpec, &cb.records)
 		cb.count += count
 
 		cb.wg.Done()
@@ -304,7 +304,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, r)
 	}
 
-	if *FLAGS.DEBUG {
+	if *flags.DEBUG {
 		fmt.Fprint(os.Stderr, "+")
 	}
 }

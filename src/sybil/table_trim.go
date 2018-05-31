@@ -9,8 +9,8 @@ type TrimSpec struct {
 
 // List all the blocks that should be trimmed to keep the table within it's
 // memory limits
-func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
-	t.LoadRecords(nil)
+func (t *Table) TrimTable(flags *FlagDefs, trimSpec *TrimSpec) []*TableBlock {
+	t.LoadRecords(flags, nil)
 	Debug("TRIMMING TABLE, MEMORY LIMIT", trimSpec.MBLimit, "TIME LIMIT", trimSpec.DeleteBefore)
 
 	blocks := make([]*TableBlock, 0)
@@ -21,9 +21,9 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 			continue
 		}
 
-		block := t.LoadBlockFromDir(b.Name, nil, false)
+		block := t.LoadBlockFromDir(flags, b.Name, nil, false)
 		if block != nil {
-			if block.Info.IntInfoMap[*FLAGS.TIME_COL] != nil {
+			if block.Info.IntInfoMap[*flags.TIME_COL] != nil {
 				block.table = t
 				blocks = append(blocks, block)
 			}
@@ -31,13 +31,13 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 	}
 
 	// Sort the blocks by descending Max Time
-	sort.Sort(sort.Reverse(SortBlocksByEndTime(blocks)))
+	sort.Sort(sort.Reverse(SortBlocksByEndTime{blocks: blocks, timeCol: trimSpec.TimeColumn}))
 
 	size := int64(0)
 	bytesInMegabytes := int64(1024 * 1024)
 	for _, b := range blocks {
 
-		info := b.Info.IntInfoMap[*FLAGS.TIME_COL]
+		info := b.Info.IntInfoMap[*flags.TIME_COL]
 		trim := false
 		if trimSpec.MBLimit > 0 && size/bytesInMegabytes >= trimSpec.MBLimit {
 			trim = true

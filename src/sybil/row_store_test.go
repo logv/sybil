@@ -8,25 +8,26 @@ import "testing"
 
 func TestTableLoadRowRecords(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+		r.AddIntField(flags, "id", int64(index))
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField(flags, "age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 
-	nt.LoadRecords(&LoadSpec{
+	nt.LoadRecords(flags, &LoadSpec{
 		ReadRowsOnly: true,
 	})
 
@@ -41,9 +42,9 @@ func TestTableLoadRowRecords(t *testing.T) {
 	querySpec := newQuerySpec()
 
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(flags, "age", "avg"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(flags, querySpec)
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {

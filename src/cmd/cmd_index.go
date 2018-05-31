@@ -9,23 +9,24 @@ import (
 
 func RunIndexCmdLine() {
 	var fInts = flag.String("int", "", "Integer values to index")
+	flags := sybil.DefaultFlags()
 	flag.Parse()
-	if *sybil.FLAGS.TABLE == "" {
+	if *flags.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
 	var ints []string
 	if *fInts != "" {
-		ints = strings.Split(*fInts, *sybil.FLAGS.FIELD_SEPARATOR)
+		ints = strings.Split(*fInts, *flags.FIELD_SEPARATOR)
 	}
 
-	sybil.FLAGS.UPDATE_TABLE_INFO = sybil.NewTrueFlag()
+	flags.UPDATE_TABLE_INFO = sybil.NewTrueFlag()
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*flags.TABLE)
 
-	t.LoadRecords(nil)
-	t.SaveTableInfo("info")
+	t.LoadRecords(flags, nil)
+	t.SaveTableInfo(flags, "info")
 	sybil.DELETE_BLOCKS_AFTER_QUERY = true
 	sybil.OPTS.WRITE_BLOCK_INFO = true
 
@@ -33,6 +34,6 @@ func RunIndexCmdLine() {
 	for _, v := range ints {
 		loadSpec.Int(v)
 	}
-	t.LoadRecords(&loadSpec)
-	t.SaveTableInfo("info")
+	t.LoadRecords(flags, &loadSpec)
+	t.SaveTableInfo(flags, "info")
 }

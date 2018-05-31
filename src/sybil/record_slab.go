@@ -2,9 +2,9 @@ package sybil
 
 import "time"
 
-func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
+func (tb *TableBlock) allocateRecords(flags *FlagDefs, loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
 
-	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && !loadRecords {
+	if *flags.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && !loadRecords {
 		loadSpec.slabMu.Lock()
 		defer loadSpec.slabMu.Unlock()
 		if len(loadSpec.slabs) > 0 {
@@ -156,8 +156,8 @@ func (rl RecordList) ResetRecords(tb *TableBlock) {
 
 }
 
-func (tb *TableBlock) RecycleSlab(loadSpec *LoadSpec) {
-	if *FLAGS.RECYCLE_MEM {
+func (tb *TableBlock) RecycleSlab(flags *FlagDefs, loadSpec *LoadSpec) {
+	if *flags.RECYCLE_MEM {
 		rl := tb.RecordList
 
 		if len(rl) == CHUNK_SIZE {

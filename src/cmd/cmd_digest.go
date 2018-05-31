@@ -9,22 +9,23 @@ import (
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" {
+	flags := sybil.DefaultFlags()
+	if *flags.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
+	if *flags.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
 	sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
-	if !t.LoadTableInfo() {
+	t := sybil.GetTable(*flags.TABLE)
+	if !t.LoadTableInfo(flags) {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}
-	t.DigestRecords()
+	t.DigestRecords(flags)
 }

@@ -12,15 +12,15 @@ import "strings"
 
 var MIN_FILES_TO_DIGEST = 0
 
-func (t *Table) getNewIngestBlockName() (string, error) {
-	Debug("GETTING INGEST BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
-	name, err := ioutil.TempDir(path.Join(*FLAGS.DIR, t.Name), "block")
+func (t *Table) getNewIngestBlockName(flags *FlagDefs) (string, error) {
+	Debug("GETTING INGEST BLOCK NAME", *flags.DIR, "TABLE", t.Name)
+	name, err := ioutil.TempDir(path.Join(*flags.DIR, t.Name), "block")
 	return name, err
 }
 
-func (t *Table) getNewCacheBlockFile() (*os.File, error) {
-	Debug("GETTING CACHE BLOCK NAME", *FLAGS.DIR, "TABLE", t.Name)
-	tableCacheDir := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR)
+func (t *Table) getNewCacheBlockFile(flags *FlagDefs) (*os.File, error) {
+	Debug("GETTING CACHE BLOCK NAME", *flags.DIR, "TABLE", t.Name)
+	tableCacheDir := path.Join(*flags.DIR, t.Name, CACHE_DIR)
 	os.MkdirAll(tableCacheDir, 0755)
 
 	// this info block needs to be moved once its finished being written to
@@ -29,27 +29,27 @@ func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 }
 
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) IngestRecords(blockname string) {
+func (t *Table) IngestRecords(flags *FlagDefs, blockname string) {
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 
-	t.AppendRecordsToLog(t.newRecords[:], blockname)
+	t.AppendRecordsToLog(flags, t.newRecords[:], blockname)
 	t.newRecords = make(RecordList, 0)
-	t.SaveTableInfo("info")
+	t.SaveTableInfo(flags, "info")
 	t.ReleaseRecords()
 
-	t.MaybeCompactRecords()
+	t.MaybeCompactRecords(flags)
 }
 
 // TODO: figure out how often we actually do a collation check by storing last
 // collation inside a file somewhere
-func (t *Table) CompactRecords() {
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+func (t *Table) CompactRecords(flags *FlagDefs) {
+	flags.READ_INGESTION_LOG = NewTrueFlag()
 	DELETE_BLOCKS_AFTER_QUERY = false
 	HOLD_MATCHES = true
 
 	t.ResetBlockCache()
-	t.DigestRecords()
+	t.DigestRecords(flags)
 
 }
 
@@ -58,27 +58,27 @@ func (t *Table) CompactRecords() {
 // we have over X megabytes of data
 // remember, there is no reason to actually read the data off disk
 // until we decide to compact
-func (t *Table) MaybeCompactRecords() {
-	if *FLAGS.SKIP_COMPACT {
+func (t *Table) MaybeCompactRecords(flags *FlagDefs) {
+	if *flags.SKIP_COMPACT {
 		return
 	}
 
-	if t.ShouldCompactRowStore(INGEST_DIR) {
-		t.CompactRecords()
+	if t.ShouldCompactRowStore(flags, INGEST_DIR) {
+		t.CompactRecords(flags)
 	}
 }
 
 var NO_MORE_BLOCKS = GROUP_DELIMITER
 
-type AfterRowBlockLoad func(string, RecordList)
+type AfterRowBlockLoad func(*FlagDefs, string, RecordList)
 
 var FILE_DIGEST_THRESHOLD = 256
 var KB = int64(1024)
 var SIZE_DIGEST_THRESHOLD = int64(1024) * 2
 var MAX_ROW_STORE_TRIES = 20
 
-func (t *Table) ShouldCompactRowStore(digest string) bool {
-	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
+func (t *Table) ShouldCompactRowStore(flags *FlagDefs, digest string) bool {
+	dirname := path.Join(*flags.DIR, t.Name, digest)
 	// if the row store dir does not exist, skip the whole function
 	_, err := os.Stat(dirname)
 	if os.IsNotExist(err) {
@@ -116,16 +116,15 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	return size/KB > SIZE_DIGEST_THRESHOLD
 
 }
-
-func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBlockLoad) {
-	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
+func (t *Table) LoadRowStoreRecords(flags *FlagDefs, digest string, afterBlockLoadCb AfterRowBlockLoad) {
+	dirname := path.Join(*flags.DIR, t.Name, digest)
 	var err error
 
 	// if the row store dir does not exist, skip the whole function
 	_, err = os.Stat(dirname)
 	if os.IsNotExist(err) {
 		if afterBlockLoadCb != nil {
-			afterBlockLoadCb(NO_MORE_BLOCKS, nil)
+			afterBlockLoadCb(flags, NO_MORE_BLOCKS, nil)
 		}
 
 		return
@@ -168,24 +167,24 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 
 		filename = path.Join(dirname, file.Name())
 
-		records := t.LoadRecordsFromLog(filename)
+		records := t.LoadRecordsFromLog(flags, filename)
 		if afterBlockLoadCb != nil {
-			afterBlockLoadCb(filename, records)
+			afterBlockLoadCb(flags, filename, records)
 		}
 	}
 
 	if afterBlockLoadCb != nil {
-		afterBlockLoadCb(NO_MORE_BLOCKS, nil)
+		afterBlockLoadCb(flags, NO_MORE_BLOCKS, nil)
 	}
 
 }
 
-func LoadRowBlockCB(digestname string, records RecordList) {
+func LoadRowBlockCB(flags *FlagDefs, digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
 		return
 	}
 
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(*flags.TABLE)
 	block := t.RowBlock
 
 	if len(records) > 0 {
@@ -197,16 +196,16 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 
 var DELETE_BLOCKS = make([]string, 0)
 
-func (t *Table) RestoreUningestedFiles() {
-	if !t.GrabDigestLock() {
+func (t *Table) RestoreUningestedFiles(flags *FlagDefs) {
+	if !t.GrabDigestLock(flags) {
 		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
 		return
 	}
 
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(*flags.DIR, t.Name, INGEST_DIR)
 	os.MkdirAll(ingestdir, 0777)
 
-	digesting := path.Join(*FLAGS.DIR, t.Name)
+	digesting := path.Join(*flags.DIR, t.Name)
 	file, _ := os.Open(digesting)
 	dirs, _ := file.Readdir(0)
 
@@ -239,12 +238,12 @@ type SaveBlockChunkCB struct {
 	digestdir string
 }
 
-func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
+func (cb *SaveBlockChunkCB) CB(flags *FlagDefs, digestname string, records RecordList) {
 
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(*flags.TABLE)
 	if digestname == NO_MORE_BLOCKS {
 		if len(t.newRecords) > 0 {
-			t.SaveRecordsToColumns()
+			t.SaveRecordsToColumns(flags)
 			t.ReleaseRecords()
 		}
 
@@ -261,7 +260,7 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 				os.RemoveAll(cb.digestdir)
 			}
 		}
-		t.ReleaseDigestLock()
+		t.ReleaseDigestLock(flags)
 		return
 	}
 
@@ -276,23 +275,23 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
-func (t *Table) DigestRecords() {
-	canDigest := t.GrabDigestLock()
+func (t *Table) DigestRecords(flags *FlagDefs) {
+	canDigest := t.GrabDigestLock(flags)
 
 	if !canDigest {
-		t.ReleaseInfoLock()
+		t.ReleaseInfoLock(flags)
 		Debug("CANT GRAB LOCK FOR DIGEST RECORDS")
 		return
 	}
 
-	dirname := path.Join(*FLAGS.DIR, t.Name)
+	dirname := path.Join(*flags.DIR, t.Name)
 	digestfile := path.Join(dirname, INGEST_DIR)
 	digesting, err := ioutil.TempDir(dirname, STOMACHE_DIR)
 
 	// TODO: we need to figure a way out such that the STOMACHE_DIR isn't going
 	// to ruin us if it still exists (bc some proc didn't clean up after itself)
 	if err != nil {
-		t.ReleaseDigestLock()
+		t.ReleaseDigestLock(flags)
 		Debug("ERROR CREATING DIGESTION DIR", err)
 		time.Sleep(time.Millisecond * 50)
 		return
@@ -303,7 +302,7 @@ func (t *Table) DigestRecords() {
 	files, err := file.Readdir(0)
 	if len(files) < MIN_FILES_TO_DIGEST {
 		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", MIN_FILES_TO_DIGEST)
-		t.ReleaseDigestLock()
+		t.ReleaseDigestLock(flags)
 		return
 	}
 
@@ -316,8 +315,8 @@ func (t *Table) DigestRecords() {
 		os.MkdirAll(digestfile, 0777)
 		basename := path.Base(digesting)
 		cb := SaveBlockChunkCB{digesting}
-		t.LoadRowStoreRecords(basename, cb.CB)
+		t.LoadRowStoreRecords(flags, basename, cb.CB)
 	} else {
-		t.ReleaseDigestLock()
+		t.ReleaseDigestLock(flags)
 	}
 }

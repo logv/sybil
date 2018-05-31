@@ -89,8 +89,8 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 // How can I go about loading the TableInfo based off the blocks?
 // I think I go through each block and load the block, verifying the different
 // column types
-func (t *Table) DeduceTableInfoFromBlocks() {
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+func (t *Table) DeduceTableInfoFromBlocks(flags *FlagDefs) {
+	files, _ := ioutil.ReadDir(path.Join(*flags.DIR, t.Name))
 
 	var wg sync.WaitGroup
 	t.initDataStructures()
@@ -109,7 +109,7 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 
 		v := files[f]
 		if v.IsDir() && fileLooksLikeBlock(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
+			filename := path.Join(*flags.DIR, t.Name, v.Name())
 			thisBlock++
 
 			wg.Add(1)

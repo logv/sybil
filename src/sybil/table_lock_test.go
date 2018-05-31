@@ -6,14 +6,15 @@ import "testing"
 // appropriately
 func TestGrabInfoLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
 
-	tbl.MakeDir()
+	tbl.MakeDir(flags)
 
-	grabbed := tbl.GrabInfoLock()
+	grabbed := tbl.GrabInfoLock(flags)
 	if !grabbed {
 		t.Errorf("COULD NOT GRAB INFO LOCK, tried %v", tableName)
 	}
@@ -21,35 +22,37 @@ func TestGrabInfoLock(t *testing.T) {
 
 func TestRecoverInfoLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
-	tbl.MakeDir()
+	tbl.MakeDir(flags)
 	lock := Lock{Table: tbl, Name: "info"}
-	lock.ForceMakeFile(int64(0))
+	lock.ForceMakeFile(flags, int64(0))
 	infolock := InfoLock{lock}
 
-	tbl.MakeDir()
+	tbl.MakeDir(flags)
 
-	grabbed := tbl.GrabInfoLock()
+	grabbed := tbl.GrabInfoLock(flags)
 	if grabbed {
 		t.Error("GRABBED INFO LOCK WHEN IT ALREADY EXISTS AND BELONGS ELSEWHERE")
 	}
 
-	infolock.Recover()
+	infolock.Recover(flags)
 
 }
 
 func TestGrabDigestLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
 
-	tbl.MakeDir()
-	grabbed := tbl.GrabDigestLock()
+	tbl.MakeDir(flags)
+	grabbed := tbl.GrabDigestLock(flags)
 	if !grabbed {
 		t.Error("COULD NOT GRAB DIGEST LOCK")
 	}
@@ -57,22 +60,23 @@ func TestGrabDigestLock(t *testing.T) {
 
 func TestRecoverDigestLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 	tbl := GetTable(tableName)
-	tbl.MakeDir()
+	tbl.MakeDir(flags)
 
 	// first grab digest lock
-	if grabbed := tbl.GrabDigestLock(); !grabbed {
+	if grabbed := tbl.GrabDigestLock(flags); !grabbed {
 		t.Error("COULD NOT GRAB DIGEST LOCK")
 	}
 
 	lock := Lock{Table: tbl, Name: STOMACHE_DIR}
-	lock.ForceMakeFile(int64(0))
+	lock.ForceMakeFile(flags, int64(0))
 
-	tbl.MakeDir()
-	grabbed := tbl.GrabDigestLock()
+	tbl.MakeDir(flags)
+	grabbed := tbl.GrabDigestLock(flags)
 	if grabbed {
 		t.Error("COULD GRAB DIGEST LOCK WHEN IT ARLEADY EXISTS")
 	}

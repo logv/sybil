@@ -21,16 +21,16 @@ type Histogram interface {
 	Range() (int64, int64)
 	StdDev() float64
 
-	NewHist() Histogram
+	NewHist(*FlagDefs) Histogram
 	Combine(interface{})
 }
 
-func (t *Table) NewHist(info *IntInfo) Histogram {
+func (t *Table) NewHist(flags *FlagDefs, info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.LOG_HIST {
-		hist = newMultiHist(t, info)
+	if *flags.LOG_HIST {
+		hist = newMultiHist(flags, t, info)
 	} else {
-		hist = newBasicHist(t, info)
+		hist = newBasicHist(flags, t, info)
 	}
 
 	return hist

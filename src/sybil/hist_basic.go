@@ -31,7 +31,7 @@ type BasicHist struct {
 	table *Table
 }
 
-func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
+func (h *BasicHist) SetupBuckets(flags *FlagDefs, buckets int, min, max int64) {
 	// set up initial variables for max and min to be extrema in other
 	// direction
 	h.Avg = 0
@@ -48,8 +48,8 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 		h.NumBuckets = buckets
 		h.BucketSize = int(size / int64(buckets))
 
-		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-			h.BucketSize = *FLAGS.HIST_BUCKET
+		if flags.HIST_BUCKET != nil && *flags.HIST_BUCKET > 0 {
+			h.BucketSize = *flags.HIST_BUCKET
 		}
 
 		if h.BucketSize == 0 {
@@ -69,25 +69,25 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	}
 }
 
-func newBasicHist(t *Table, info *IntInfo) *HistCompat {
+func newBasicHist(flags *FlagDefs, t *Table, info *IntInfo) *HistCompat {
 
 	basicHist := BasicHist{}
 	compatHist := HistCompat{&basicHist}
 	compatHist.table = t
 	compatHist.Info = *info
 
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
-		compatHist.TrackPercentiles()
+	if flags.OP != nil && *flags.OP == "hist" {
+		compatHist.TrackPercentiles(flags)
 	}
 
 	return &compatHist
 
 }
 
-func (h *BasicHist) TrackPercentiles() {
+func (h *BasicHist) TrackPercentiles(flags *FlagDefs) {
 	h.PercentileMode = true
 
-	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
+	h.SetupBuckets(flags, NUM_BUCKETS, h.Info.Min, h.Info.Max)
 }
 
 func (h *BasicHist) AddValue(value int64) {

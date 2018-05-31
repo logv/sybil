@@ -7,51 +7,50 @@ import "strconv"
 
 func TestCachedQueries(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 
 	blockCount := 5
 
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.CACHED_QUERIES = NewTrueFlag()
+	flags.CACHED_QUERIES = NewTrueFlag()
 
 	var thisAddRecords = func(block_count int) {
 		addRecords(tableName, func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
 
 			ageStr := strconv.FormatInt(int64(age), 10)
-			r.AddIntField("id", int64(i))
-			r.AddIntField("age", age)
+			r.AddIntField(flags, "id", int64(i))
+			r.AddIntField(flags, "age", age)
 			r.AddStrField("age_str", ageStr)
 			r.AddSetField("age_set", []string{ageStr})
 
 		}, block_count)
-		saveAndReloadTable(t, tableName, block_count)
+		saveAndReloadTable(t, flags, tableName, block_count)
 
 	}
 
 	thisAddRecords(blockCount)
-	testCachedQueryFiles(t, tableName)
+	testCachedQueryFiles(t, flags, tableName)
 	deleteTestDb(tableName)
 
 	thisAddRecords(blockCount)
-	testCachedQueryConsistency(t, tableName)
+	testCachedQueryConsistency(t, flags, tableName)
 	deleteTestDb(tableName)
 
 	thisAddRecords(blockCount)
-	testCachedBasicHist(t, tableName)
+	testCachedBasicHist(t, flags, tableName)
 	deleteTestDb(tableName)
-
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
 }
 
-func testCachedQueryFiles(t *testing.T, tableName string) {
+func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "hist"))
+	aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
 		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
@@ -59,37 +58,37 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 	loadSpec.LoadAllColumns = true
 
 	// test that the cached query doesnt already exist
-	nt.LoadAndQueryRecords(&loadSpec, nil)
+	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(b.Name)
+		loaded := querySpec.LoadCachedResults(flags, b.Name)
 		if loaded {
 			t.Error("Test DB started with saved query results")
 		}
 	}
 
 	// test that the cached query is saved
-	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
+	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(b.Name)
+		loaded := querySpec.LoadCachedResults(flags, b.Name)
 		if !loaded {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
 
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
+	flags.CACHED_QUERIES = NewFalseFlag()
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(b.Name)
+		loaded := querySpec.LoadCachedResults(flags, b.Name)
 		if loaded {
 			t.Error("Used query cache when flag was not provided")
 		}
 	}
-	FLAGS.CACHED_QUERIES = NewTrueFlag()
+	flags.CACHED_QUERIES = NewTrueFlag()
 
 	// test that a new and slightly different query isnt cached for us
-	nt.LoadAndQueryRecords(&loadSpec, nil)
-	querySpec.Aggregations = append(aggs, nt.Aggregation("id", "hist"))
+	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
+	querySpec.Aggregations = append(aggs, nt.Aggregation(flags, "id", "hist"))
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(b.Name)
+		loaded := querySpec.LoadCachedResults(flags, b.Name)
 		if loaded {
 			t.Error("Test DB has query results for new query")
 		}
@@ -97,20 +96,20 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 
 }
 
-func testCachedQueryConsistency(t *testing.T, tableName string) {
+func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string) {
 	nt := GetTable(tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "hist"))
+	aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
 		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
-	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
+	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
 
 	nt = GetTable(tableName)
@@ -119,7 +118,7 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 	// at the cached query results
 
 	copySpec.Results = make(ResultMap)
-	nt.LoadAndQueryRecords(&loadSpec, copySpec)
+	nt.LoadAndQueryRecords(flags, &loadSpec, copySpec)
 
 	if len(querySpec.Results) == 0 {
 		t.Error("No Results for Query")
@@ -143,7 +142,7 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 	}
 
 	for _, b := range nt.BlockList {
-		loaded := querySpec.LoadCachedResults(b.Name)
+		loaded := querySpec.LoadCachedResults(flags, b.Name)
 		if !loaded {
 			t.Error("Did not correctly save and load query results")
 		}
@@ -151,24 +150,24 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 
 }
 
-func testCachedBasicHist(t *testing.T, tableName string) {
+func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 	nt := GetTable(tableName)
 
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
 		if histType == "loghist" {
-			FLAGS.LOG_HIST = NewTrueFlag()
+			flags.LOG_HIST = NewTrueFlag()
 		} else {
-			FLAGS.LOG_HIST = NewFalseFlag()
+			flags.LOG_HIST = NewFalseFlag()
 		}
 
 		HIST := "hist"
-		FLAGS.OP = &HIST
+		flags.OP = &HIST
 
 		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))
 		aggs := []Aggregation{}
-		aggs = append(aggs, nt.Aggregation("age", "hist"))
+		aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
 
 		querySpec := QuerySpec{Table: nt,
 			QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
@@ -176,7 +175,7 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
 
-		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
+		nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)
 
 		nt = GetTable(tableName)
@@ -185,7 +184,7 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 		// at the cached query results
 
 		copySpec.Results = make(ResultMap)
-		nt.LoadAndQueryRecords(&loadSpec, copySpec)
+		nt.LoadAndQueryRecords(flags, &loadSpec, copySpec)
 
 		if len(querySpec.Results) == 0 {
 			t.Error("No Results for Query")
@@ -225,7 +224,7 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 		}
 
 		for _, b := range nt.BlockList {
-			loaded := querySpec.LoadCachedResults(b.Name)
+			loaded := querySpec.LoadCachedResults(flags, b.Name)
 			if !loaded {
 				t.Error("Did not correctly save and load query results")
 			}

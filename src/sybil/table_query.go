@@ -12,13 +12,13 @@ import (
 	"time"
 )
 
-func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
+func (t *Table) LoadAndQueryRecords(flags *FlagDefs, loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
-	Debug("LOADING", *FLAGS.DIR, t.Name)
+	Debug("LOADING", *flags.DIR, t.Name)
 
 	readRowsOnly := loadSpec != nil && loadSpec.ReadRowsOnly
 
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(*flags.DIR, t.Name))
 
 	if readRowsOnly {
 		Debug("ONLY READING RECORDS FROM ROW STORE")
@@ -30,10 +30,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.Table = t
 	}
 
-	// Load and setup our OPTS.STR_REPLACEMENTS
+	// Load and setup our t.options.STR_REPLACEMENTS
 	OPTS.STR_REPLACEMENTS = make(map[string]StrReplace)
-	if FLAGS.STR_REPLACE != nil {
-		var replacements = strings.Split(*FLAGS.STR_REPLACE, *FLAGS.FIELD_SEPARATOR)
+	if flags.STR_REPLACE != nil {
+		var replacements = strings.Split(*flags.STR_REPLACE, *flags.FIELD_SEPARATOR)
 		for _, repl := range replacements {
 			tokens := strings.Split(repl, ":")
 			if len(tokens) > 2 {
@@ -53,14 +53,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	blockSpecs := make(map[string]*QuerySpec)
 	toCacheSpecs := make(map[string]*QuerySpec)
 
-	loadedInfo := t.LoadTableInfo()
+	loadedInfo := t.LoadTableInfo(flags)
 	if !loadedInfo {
-		if t.HasFlagFile() {
+		if t.HasFlagFile(flags) {
 			return 0
 		}
 	}
 
-	if *FLAGS.UPDATE_TABLE_INFO {
+	if *flags.UPDATE_TABLE_INFO {
 		Debug("RESETTING TABLE INFO FOR OVERWRITING")
 		t.IntInfo = make(IntInfoTable)
 		t.StrInfo = make(StrInfoTable)
@@ -101,7 +101,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		}
 
 		if v.IsDir() && fileLooksLikeBlock(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
+			filename := path.Join(*flags.DIR, t.Name, v.Name())
 			thisBlock++
 
 			wg.Add(1)
@@ -121,13 +121,13 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				var cachedBlock *TableBlock
 
 				if querySpec != nil {
-					cachedBlock, cachedSpec = t.getCachedQueryForBlock(filename, querySpec)
+					cachedBlock, cachedSpec = t.getCachedQueryForBlock(flags, filename, querySpec)
 				}
 
 				var block *TableBlock
 				if cachedSpec == nil {
 					// couldnt load the cached query results
-					block = t.LoadBlockFromDir(filename, loadSpec, loadAll)
+					block = t.LoadBlockFromDir(flags, filename, loadSpec, loadAll)
 					if block == nil {
 						brokenMu.Lock()
 						brokenBlocks = append(brokenBlocks, filename)
@@ -139,7 +139,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					block = cachedBlock
 				}
 
-				if *FLAGS.DEBUG {
+				if *flags.DEBUG {
 					if cachedSpec != nil {
 						fmt.Fprint(os.Stderr, "c")
 					} else {
@@ -166,7 +166,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						blockQuery := cachedSpec
 						if blockQuery == nil {
 							blockQuery = CopyQuerySpec(querySpec)
-							blockQuery.MatchedCount = FilterAndAggRecords(blockQuery, &block.RecordList)
+							blockQuery.MatchedCount = FilterAndAggRecords(flags, blockQuery, &block.RecordList)
 
 							if HOLD_MATCHES {
 								block.Matched = blockQuery.Matched
@@ -198,7 +198,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					block.SaveInfoToColumns(block.Name)
 				}
 
-				if *FLAGS.EXPORT {
+				if *flags.EXPORT {
 					block.ExportBlockData()
 				}
 				// don't delete when testing so we can verify block
@@ -207,7 +207,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					t.blockMu.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
-						tb.RecycleSlab(loadSpec)
+						tb.RecycleSlab(flags, loadSpec)
 
 						delete(t.BlockList, block.Name)
 					}
@@ -216,19 +216,19 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}(t)
 
-			if *FLAGS.SAMPLES {
+			if *flags.SAMPLES {
 				wg.Wait()
 
-				if count > *FLAGS.LIMIT {
+				if count > *flags.LIMIT {
 					break
 				}
 			}
 
-			if DELETE_BLOCKS_AFTER_QUERY && thisBlock%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
+			if DELETE_BLOCKS_AFTER_QUERY && thisBlock%CHUNKS_BEFORE_GC == 0 && *flags.GC {
 				wg.Wait()
 				start := time.Now()
 
-				if !*FLAGS.RECYCLE_MEM {
+				if !*flags.RECYCLE_MEM {
 					mu.Lock()
 					oldPercent := debug.SetGCPercent(100)
 					debug.SetGCPercent(oldPercent)
@@ -237,10 +237,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				if querySpec != nil {
 
-					t.WriteQueryCache(toCacheSpecs)
+					t.WriteQueryCache(flags, toCacheSpecs)
 					toCacheSpecs = make(map[string]*QuerySpec)
 
-					resultSpec := MultiCombineResults(querySpec, blockSpecs)
+					resultSpec := MultiCombineResults(flags, querySpec, blockSpecs)
 					blockSpecs = make(map[string]*QuerySpec)
 
 					mu.Lock()
@@ -259,7 +259,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 				}
 
-				if *FLAGS.DEBUG {
+				if *flags.DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
 				end := time.Now()
@@ -272,7 +272,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	rowStoreQuery := AfterLoadQueryCB{}
 	var logend time.Time
 	logstart := time.Now()
-	if *FLAGS.READ_INGESTION_LOG {
+	if *flags.READ_INGESTION_LOG {
 		if querySpec == nil {
 			rowStoreQuery.querySpec = &QuerySpec{}
 			rowStoreQuery.querySpec.Table = t
@@ -290,7 +290,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 		wg.Add(1)
 		go func(t *Table) {
-			t.LoadRowStoreRecords(INGEST_DIR, rowStoreQuery.CB)
+			t.LoadRowStoreRecords(flags, INGEST_DIR, rowStoreQuery.CB)
 			mu.Lock()
 			logend = time.Now()
 			mu.Unlock()
@@ -299,7 +299,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 
-	if *FLAGS.DEBUG {
+	if *flags.DEBUG {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 
@@ -307,7 +307,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		Debug("BLOCK", brokenBlockName, "IS BROKEN, SKIPPING")
 	}
 
-	if *FLAGS.READ_INGESTION_LOG {
+	if *flags.READ_INGESTION_LOG {
 		mu.Lock()
 		Debug("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		Debug("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
@@ -341,16 +341,16 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	// NOTE: we have to write the query cache before we combine our results,
 	// bc combining results is not idempotent
-	t.WriteQueryCache(toCacheSpecs)
+	t.WriteQueryCache(flags, toCacheSpecs)
 
-	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY && querySpec != nil {
+	if flags.LOAD_AND_QUERY != nil && *flags.LOAD_AND_QUERY && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
 		for k, v := range allResults {
 			blockSpecs[fmt.Sprintf("result_%v", k)] = v
 		}
 
-		resultSpec := MultiCombineResults(querySpec, blockSpecs)
+		resultSpec := MultiCombineResults(flags, querySpec, blockSpecs)
 
 		aend := time.Now()
 		Debug("AGGREGATING RESULT BLOCKS TOOK", aend.Sub(astart))
@@ -364,7 +364,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.SortResults(querySpec.OrderBy)
 	}
 
-	t.WriteBlockCache()
+	t.WriteBlockCache(flags)
 
 	return count
 

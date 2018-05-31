@@ -58,7 +58,7 @@ func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(flags *FlagDefs, dirname string, sameInts map[int16]ValueMap) {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
@@ -87,8 +87,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 			}
 
 			// bookkeeping for info.db
-			tb.updateIntInfo(k, bucket)
-			tb.table.updateIntInfo(k, bucket)
+			tb.updateIntInfo(flags, k, bucket)
+			tb.table.updateIntInfo(flags, k, bucket)
 		}
 
 		intCol.BucketEncoded = true
@@ -418,15 +418,15 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 }
 
-func (tb *TableBlock) SaveToColumns(filename string) bool {
+func (tb *TableBlock) SaveToColumns(flags *FlagDefs, filename string) bool {
 	dirname := filename
 
 	// Important to set the BLOCK's dirName so we can keep track
 	// of the various block infos
 	tb.Name = dirname
 
-	defer tb.table.ReleaseBlockLock(filename)
-	if !tb.table.GrabBlockLock(filename) {
+	defer tb.table.ReleaseBlockLock(flags, filename)
+	if !tb.table.GrabBlockLock(flags, filename) {
 		Debug("Can't grab lock to save block", filename)
 		return false
 	}
@@ -440,7 +440,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	end := time.Now()
 	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
-	tb.SaveIntsToColumns(partialname, separatedColumns.ints)
+	tb.SaveIntsToColumns(flags, partialname, separatedColumns.ints)
 	tb.SaveStrsToColumns(partialname, separatedColumns.strs)
 	tb.SaveSetsToColumns(partialname, separatedColumns.sets)
 	tb.SaveInfoToColumns(partialname)
@@ -454,7 +454,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	// For now, we load info.db and check NumRecords inside it to prevent
 	// catastrophics, but we could load everything potentially
 	start = time.Now()
-	nb := tb.table.LoadBlockFromDir(partialname, nil, false)
+	nb := tb.table.LoadBlockFromDir(flags, partialname, nil, false)
 	end = time.Now()
 
 	// TODO:
@@ -463,7 +463,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
-		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
+		nb = tb.table.LoadBlockFromDir(flags, partialname, nil, true)
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
 			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 		}
@@ -675,16 +675,22 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	}
 
 	isTimeCol := false
-	if FLAGS.TIME_COL != nil {
-		isTimeCol = into.Name == *FLAGS.TIME_COL
-	}
+	/*
+		// TODO
+		if FLAGS.TIME_COL != nil {
+			isTimeCol = into.Name == *FLAGS.TIME_COL
+		}
+	*/
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.updateIntInfo(colID, bucket.Value)
-				tb.table.updateIntInfo(colID, bucket.Value)
-			}
+			/*
+				// TODO
+				if *FLAGS.UPDATE_TABLE_INFO {
+					tb.updateIntInfo(colId, bucket.Value)
+					tb.table.updateIntInfo(colId, bucket.Value)
+				}
+			*/
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
 			prev := uint32(0)
@@ -714,10 +720,13 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 
 		prev := int64(0)
 		for r, v := range into.Values {
-			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.updateIntInfo(colID, v)
-				tb.table.updateIntInfo(colID, v)
-			}
+			/*
+				// TODO
+				if *FLAGS.UPDATE_TABLE_INFO {
+					tb.updateIntInfo(colId, v)
+					tb.table.updateIntInfo(colId, v)
+				}
+			*/
 
 			if into.ValueEncoded {
 				v = v + prev

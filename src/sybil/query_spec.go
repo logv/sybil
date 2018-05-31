@@ -25,7 +25,7 @@ type savedQueryParams struct {
 
 	OrderBy    string
 	PruneBy    string
-	Limit      int16
+	Limit      int
 	TimeBucket int
 }
 
@@ -94,24 +94,24 @@ func (qs *QuerySpec) NewResult() *Result {
 	return addedRecord
 }
 
-func (master_result *ResultMap) Combine(results *ResultMap) {
+func (master_result *ResultMap) Combine(flags *FlagDefs, mergeTable *Table, results *ResultMap) {
 	for k, v := range *results {
 		mval, ok := (*master_result)[k]
 		if !ok {
 			(*master_result)[k] = v
 		} else {
-			mval.Combine(v)
+			mval.Combine(flags, mergeTable, v)
 		}
 	}
 }
 
-func fullMergeHist(h, ph Histogram) Histogram {
+func fullMergeHist(mergeTable *Table, h, ph Histogram) Histogram {
 	l1, r1 := h.Range()
 	l2, r2 := ph.Range()
 
 	info := IntInfo{Min: Min(l1, l2), Max: Max(r1, r2)}
 
-	nh := OPTS.MERGE_TABLE.NewHist(&info)
+	nh := mergeTable.NewHist(nil, &info)
 
 	for bucket, count := range h.GetIntBuckets() {
 		nh.AddWeightedValue(bucket, count)
@@ -125,7 +125,7 @@ func fullMergeHist(h, ph Histogram) Histogram {
 }
 
 // This does an in place combine of the next_result into this one...
-func (rs *Result) Combine(nextResult *Result) {
+func (rs *Result) Combine(flags *FlagDefs, mergeTable *Table, nextResult *Result) {
 	if nextResult == nil {
 		return
 	}
@@ -149,7 +149,7 @@ func (rs *Result) Combine(nextResult *Result) {
 			ph, ok := rs.Hists[k]
 
 			if ok {
-				rs.Hists[k] = fullMergeHist(h, ph)
+				rs.Hists[k] = fullMergeHist(mergeTable, h, ph)
 			} else {
 				rs.Hists[k] = h
 			}
@@ -157,7 +157,7 @@ func (rs *Result) Combine(nextResult *Result) {
 		} else {
 			_, ok := rs.Hists[k]
 			if !ok {
-				nh := h.NewHist()
+				nh := h.NewHist(flags)
 
 				nh.Combine(h)
 				rs.Hists[k] = nh
@@ -208,7 +208,7 @@ func (t *Table) Grouping(name string) Grouping {
 	return Grouping{name, colID}
 }
 
-func (t *Table) Aggregation(name string, op string) Aggregation {
+func (t *Table) Aggregation(flags *FlagDefs, name string, op string) Aggregation {
 	colID := t.getKeyID(name)
 
 	agg := Aggregation{Name: name, nameID: colID, Op: op}
@@ -219,12 +219,12 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 	if op == "hist" {
 		agg.opID = OP_HIST
 		agg.HistType = "basic"
-		if *FLAGS.LOG_HIST {
+		if *flags.LOG_HIST {
 			agg.HistType = "multi"
 
 		}
 
-		if *FLAGS.HDR_HIST {
+		if *flags.HDR_HIST {
 			agg.HistType = "hdr"
 		}
 	}

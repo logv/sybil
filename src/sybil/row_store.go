@@ -29,7 +29,7 @@ type SavedRecord struct {
 	Sets []RowSavedSet
 }
 
-func (s SavedRecord) toRecord(t *Table) *Record {
+func (s SavedRecord) toRecord(flags *FlagDefs, t *Table) *Record {
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
@@ -53,7 +53,7 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	for _, v := range s.Ints {
 		r.Populated[v.Name] = INT_VAL
 		r.Ints[v.Name] = IntField(v.Value)
-		t.updateIntInfo(v.Name, v.Value)
+		t.updateIntInfo(flags, v.Name, v.Value)
 	}
 
 	for _, v := range s.Strs {
@@ -117,7 +117,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	return marshalledRecords
 }
 
-func (t *Table) LoadRecordsFromLog(filename string) RecordList {
+func (t *Table) LoadRecordsFromLog(flags *FlagDefs, filename string) RecordList {
 	var marshalledRecords []*SavedRecord
 
 	// Create an encoder and send a value.
@@ -129,20 +129,20 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	ret := make(RecordList, len(marshalledRecords))
 
 	for i, r := range marshalledRecords {
-		ret[i] = r.toRecord(t)
+		ret[i] = r.toRecord(flags, t)
 	}
 	return ret
 
 }
 
-func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
+func (t *Table) AppendRecordsToLog(flags *FlagDefs, records RecordList, blockname string) {
 	if len(records) == 0 {
 		return
 	}
 
 	// TODO: fix this up, so that we don't
-	ingestdir := path.Join(*FLAGS.DIR, t.Name, INGEST_DIR)
-	tempingestdir := path.Join(*FLAGS.DIR, t.Name, TEMP_INGEST_DIR)
+	ingestdir := path.Join(*flags.DIR, t.Name, INGEST_DIR)
+	tempingestdir := path.Join(*flags.DIR, t.Name, TEMP_INGEST_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(tempingestdir, 0777)

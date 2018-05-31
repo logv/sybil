@@ -52,7 +52,7 @@ func (a SortResultsByCol) Less(i, j int) bool {
 	return t1 > t2
 }
 
-func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
+func FilterAndAggRecords(flags *FlagDefs, querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 	// {{{ variable decls and func setup
 	var ok bool
@@ -250,7 +250,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist, ok := addedRecord.Hists[a.Name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.getIntInfo(a.nameID))
+					hist = r.block.table.NewHist(flags, r.block.table.getIntInfo(a.nameID))
 					addedRecord.Hists[a.Name] = hist
 				}
 
@@ -343,28 +343,28 @@ func CombineMatches(blockSpecs map[string]*QuerySpec) RecordList {
 
 }
 
-func CombineAndPrune(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
+func CombineAndPrune(flags *FlagDefs, querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
 
 	for _, spec := range blockSpecs {
 		spec.SortResults(spec.PruneBy)
-		spec.PruneResults(*FLAGS.LIMIT)
+		spec.PruneResults(querySpec.Limit)
 	}
 
-	resultSpec := CombineResults(querySpec, blockSpecs)
+	resultSpec := CombineResults(flags, querySpec, blockSpecs)
 	resultSpec.SortResults(resultSpec.PruneBy)
-	resultSpec.PruneResults(*FLAGS.LIMIT)
+	resultSpec.PruneResults(querySpec.Limit)
 
 	return resultSpec
 }
 
-func MultiCombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
+func MultiCombineResults(flags *FlagDefs, querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
 	numSpecs := len(blockSpecs)
 	numProcs := runtime.NumCPU()
 
 	perBlock := numSpecs / numProcs
 
 	if perBlock < 4 {
-		return CombineResults(querySpec, blockSpecs)
+		return CombineResults(flags, querySpec, blockSpecs)
 	}
 
 	allResults := make([]*QuerySpec, 0)
@@ -385,7 +385,7 @@ func MultiCombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec)
 			nextSpecs = make(map[string]*QuerySpec)
 			wg.Add(1)
 			go func() {
-				resultSpec = CombineAndPrune(querySpec, thisSpecs)
+				resultSpec = CombineAndPrune(flags, querySpec, thisSpecs)
 				mu.Lock()
 				allResults = append(allResults, resultSpec)
 				mu.Unlock()
@@ -399,18 +399,18 @@ func MultiCombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec)
 	aggSpecs := make(map[string]*QuerySpec)
 
 	if len(nextSpecs) > 0 {
-		aggSpecs["result_last"] = CombineAndPrune(querySpec, nextSpecs)
+		aggSpecs["result_last"] = CombineAndPrune(flags, querySpec, nextSpecs)
 	}
 
 	for k, v := range allResults {
 		aggSpecs[fmt.Sprintf("result_%v", k)] = v
 	}
 
-	return CombineResults(querySpec, aggSpecs)
+	return CombineResults(flags, querySpec, aggSpecs)
 
 }
 
-func CombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
+func CombineResults(flags *FlagDefs, querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *QuerySpec {
 
 	astart := time.Now()
 	resultSpec := *CopyQuerySpec(querySpec)
@@ -427,11 +427,11 @@ func CombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 	}
 
 	for _, spec := range blockSpecs {
-		masterResult.Combine(&spec.Results)
+		masterResult.Combine(flags, OPTS.MERGE_TABLE, &spec.Results)
 		resultSpec.MatchedCount += spec.MatchedCount
 
 		for _, result := range spec.Results {
-			cumulativeResult.Combine(result)
+			cumulativeResult.Combine(flags, OPTS.MERGE_TABLE, result)
 		}
 
 		for i, v := range spec.TimeResults {
@@ -443,7 +443,7 @@ func CombineResults(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Que
 				for k, r := range v {
 					mh, ok := mval[k]
 					if ok {
-						mh.Combine(r)
+						mh.Combine(flags, OPTS.MERGE_TABLE, r)
 					} else {
 						mval[k] = r
 					}
@@ -518,7 +518,7 @@ func (qs *QuerySpec) SortResults(orderBy string) {
 }
 
 // OLD SEARCHING FUNCTIONS BELOW HERE
-func SearchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[string]*QuerySpec {
+func SearchBlocks(flags *FlagDefs, querySpec *QuerySpec, blockList map[string]*TableBlock) map[string]*QuerySpec {
 	var wg sync.WaitGroup
 	// Each block gets its own querySpec (for locking and combining purposes)
 	// after all queries finish executing, the specs are combined
@@ -536,7 +536,7 @@ func SearchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[st
 
 			blockQuery := CopyQuerySpec(querySpec)
 
-			FilterAndAggRecords(blockQuery, &thisBlock.RecordList)
+			FilterAndAggRecords(flags, blockQuery, &thisBlock.RecordList)
 
 			specMu.Lock()
 			blockSpecs[thisBlock.Name] = blockQuery
@@ -550,15 +550,15 @@ func SearchBlocks(querySpec *QuerySpec, blockList map[string]*TableBlock) map[st
 	return blockSpecs
 }
 
-func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
+func (t *Table) MatchAndAggregate(flags *FlagDefs, querySpec *QuerySpec) {
 	start := time.Now()
 
 	querySpec.Table = t
-	blockSpecs := SearchBlocks(querySpec, t.BlockList)
+	blockSpecs := SearchBlocks(flags, querySpec, t.BlockList)
 	querySpec.ResetResults()
 
 	// COMBINE THE PER BLOCK RESULTS
-	resultSpec := CombineResults(querySpec, blockSpecs)
+	resultSpec := CombineResults(flags, querySpec, blockSpecs)
 
 	aend := time.Now()
 	Debug("AGGREGATING TOOK", aend.Sub(start))

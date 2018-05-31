@@ -56,11 +56,11 @@ func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
 
 }
 
-func (vt *VTable) AggregateSamples(dirs []string) {
+func (vt *VTable) AggregateSamples(flags *FlagDefs, dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 
-	limit := *FLAGS.LIMIT
+	limit := *flags.LIMIT
 
 	samples := make([]*Sample, 0)
 
@@ -78,7 +78,7 @@ func (vt *VTable) AggregateSamples(dirs []string) {
 
 }
 
-func (vt *VTable) AggregateTables(dirs []string) {
+func (vt *VTable) AggregateTables(flags *FlagDefs, dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 	Debug("FOUND", len(allResults), "SPECS TO AGG")
@@ -100,10 +100,10 @@ func (vt *VTable) AggregateTables(dirs []string) {
 		tableArr = append(tableArr, table)
 	}
 
-	printTablesToOutput(tableArr)
+	printTablesToOutput(flags, tableArr)
 }
 
-func (vt *VTable) AggregateInfo(dirs []string) {
+func (vt *VTable) AggregateInfo(flags *FlagDefs, dirs []string) {
 	// TODO: combine all result info
 	Debug("AGGREGATING TABLE INFO LIST")
 	allResults := vt.findResultsInDirs(dirs)
@@ -138,11 +138,11 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 
 	}
 
-	vt.PrintColInfo()
+	vt.PrintColInfo(flags)
 
 }
 
-func (vt *VTable) AggregateSpecs(dirs []string) {
+func (vt *VTable) AggregateSpecs(flags *FlagDefs, dirs []string) {
 	Debug("AGGREGATING QUERY RESULTS")
 
 	// TODO: verify all specs have the same md5 key
@@ -164,33 +164,33 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 	finalResult.Punctuate()
 	finalResult.QueryParams = qs.QueryParams
 
-	FLAGS.OP = &HIST_STR
+	flags.OP = &HIST_STR
 	OPTS.MERGE_TABLE = &vt.Table
 
-	combinedResult := CombineResults(&finalResult, allSpecs)
+	combinedResult := CombineResults(flags, &finalResult, allSpecs)
 	combinedResult.QueryParams = qs.QueryParams
 
 	combinedResult.SortResults(combinedResult.OrderBy)
-	combinedResult.PrintResults()
+	combinedResult.PrintResults(flags)
 }
 
-func (vt *VTable) StitchResults(dirs []string) {
+func (vt *VTable) StitchResults(flags *FlagDefs, dirs []string) {
 	vt.initDataStructures()
 
-	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES {
-		vt.AggregateTables(dirs)
+	if flags.LIST_TABLES != nil && *flags.LIST_TABLES {
+		vt.AggregateTables(flags, dirs)
 		return
 	}
 
-	if FLAGS.PRINT_INFO != nil && *FLAGS.PRINT_INFO {
-		vt.AggregateInfo(dirs)
+	if flags.PRINT_INFO != nil && *flags.PRINT_INFO {
+		vt.AggregateInfo(flags, dirs)
 		return
 	}
 
-	if FLAGS.SAMPLES != nil && *FLAGS.SAMPLES {
-		vt.AggregateSamples(dirs)
+	if flags.SAMPLES != nil && *flags.SAMPLES {
+		vt.AggregateSamples(flags, dirs)
 		return
 	}
 
-	vt.AggregateSpecs(dirs)
+	vt.AggregateSpecs(flags, dirs)
 }

@@ -19,13 +19,7 @@ func runTests(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var BLANK_STRING = ""
-
 func setupTestVars(chunkSize int) {
-	//tableName := "unknown"
-	//FLAGS.TABLE = &tableName
-	FLAGS.OP = &BLANK_STRING
-
 	TEST_MODE = true
 	CHUNK_SIZE = chunkSize
 	LOCK_US = 1
@@ -62,20 +56,20 @@ func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
 	return ret
 }
 
-func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Table {
+func saveAndReloadTable(t *testing.T, flags *FlagDefs, tableName string, expectedBlocks int) *Table {
 	expectedCount := CHUNK_SIZE * expectedBlocks
 	tbl := GetTable(tableName)
 
-	tbl.SaveRecordsToColumns()
+	tbl.SaveRecordsToColumns(flags)
 
 	unloadTestTable(tableName)
 
 	nt := GetTable(tableName)
-	nt.LoadTableInfo()
+	nt.LoadTableInfo(flags)
 
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	count := nt.LoadRecords(&loadSpec)
+	count := nt.LoadRecords(flags, &loadSpec)
 
 	if count != expectedCount {
 		t.Error("Wrote", expectedCount, "records, but read back", count)

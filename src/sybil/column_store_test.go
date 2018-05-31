@@ -9,29 +9,30 @@ import (
 
 func TestTableDigestRowRecords(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+		r.AddIntField(flags, "id", int64(index))
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField(flags, "age", age)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	flags.TABLE = &tableName // TODO: eliminate global use
+	flags.READ_INGESTION_LOG = NewTrueFlag()
 
-	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadTableInfo(flags)
+	nt.LoadRecords(flags, nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -41,12 +42,12 @@ func TestTableDigestRowRecords(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	nt.DigestRecords(flags)
 
 	unloadTestTable(tableName)
 
 	nt = GetTable(tableName)
-	nt.LoadRecords(nil)
+	nt.LoadRecords(flags, nil)
 
 	count := int32(0)
 	for _, b := range nt.BlockList {
@@ -63,30 +64,31 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 func TestColumnStoreFileNames(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+		r.AddIntField(flags, "id", int64(index))
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField(flags, "age", age)
 		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
 	}, blockCount)
 
 	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	flags.TABLE = &tableName // TODO: eliminate global use
+	flags.READ_INGESTION_LOG = NewTrueFlag()
 
-	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadTableInfo(flags)
+	nt.LoadRecords(flags, nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -96,12 +98,12 @@ func TestColumnStoreFileNames(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	nt.DigestRecords(flags)
 
 	unloadTestTable(tableName)
 
 	nt = GetTable(tableName)
-	nt.LoadRecords(nil)
+	nt.LoadRecords(flags, nil)
 
 	count := int32(0)
 
@@ -142,6 +144,7 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 func TestBigIntColumns(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -149,22 +152,22 @@ func TestBigIntColumns(t *testing.T) {
 	var minVal = int64(1 << 50)
 	blockCount := 3
 	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+		r.AddIntField(flags, "id", int64(index))
 		age := int64(rand.Intn(1 << 20))
-		r.AddIntField("time", minVal+age)
+		r.AddIntField(flags, "time", minVal+age)
 	}, blockCount)
 
 	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	flags.TABLE = &tableName // TODO: eliminate global use
+	flags.READ_INGESTION_LOG = NewTrueFlag()
 
-	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadTableInfo(flags)
+	nt.LoadRecords(flags, nil)
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -174,18 +177,18 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	nt.DigestRecords(flags)
 
 	unloadTestTable(tableName)
 
-	FLAGS.SAMPLES = NewTrueFlag()
+	flags.SAMPLES = NewTrueFlag()
 	limit := 1000
-	FLAGS.LIMIT = &limit
+	flags.LIMIT = &limit
 	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	nt.LoadRecords(&loadSpec)
+	nt.LoadRecords(flags, &loadSpec)
 
 	count := int32(0)
 	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
@@ -206,6 +209,6 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	FLAGS.SAMPLES = NewFalseFlag()
+	flags.SAMPLES = NewFalseFlag()
 
 }
