@@ -21,7 +21,7 @@ func printJSON(data interface{}) {
 	}
 }
 
-func printTimeResults(flags *FlagDefs, querySpec *QuerySpec) {
+func printTimeResults(op string, printConfig PrintConfig, querySpec *QuerySpec) {
 	Debug("PRINTING TIME RESULTS")
 	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
@@ -44,7 +44,7 @@ func printTimeResults(flags *FlagDefs, querySpec *QuerySpec) {
 	sort.Ints(keys)
 
 	Debug("RESULT COUNT", len(keys))
-	if *flags.JSON {
+	if printConfig.JSON {
 
 		marshalledResults := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
@@ -54,7 +54,7 @@ func printTimeResults(flags *FlagDefs, querySpec *QuerySpec) {
 			for _, r := range v {
 				_, ok := isTopResult[r.GroupByKey]
 				if ok {
-					marshalledResults[key] = append(marshalledResults[key], r.toResultJSON(flags, querySpec))
+					marshalledResults[key] = append(marshalledResults[key], r.toResultJSON(op, printConfig, querySpec))
 				}
 			}
 		}
@@ -101,11 +101,11 @@ func getSparseBuckets(buckets map[string]int64) map[string]int64 {
 	return nonZeroBuckets
 }
 
-func (r *Result) toResultJSON(flags *FlagDefs, querySpec *QuerySpec) ResultJSON {
+func (r *Result) toResultJSON(op string, printConfig PrintConfig, querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
-		if *flags.OP == "hist" {
+		if op == "hist" {
 			inner := make(ResultJSON)
 			res[agg.Name] = inner
 			h := r.Hists[agg.Name]
@@ -117,7 +117,7 @@ func (r *Result) toResultJSON(flags *FlagDefs, querySpec *QuerySpec) ResultJSON 
 			}
 		}
 
-		if *flags.OP == "avg" {
+		if op == "avg" {
 			result, ok := r.Hists[agg.Name]
 			if ok {
 				res[agg.Name] = result.Mean()
@@ -144,17 +144,17 @@ func (r *Result) toResultJSON(flags *FlagDefs, querySpec *QuerySpec) ResultJSON 
 
 }
 
-func printSortedResults(flags *FlagDefs, querySpec *QuerySpec) {
+func printSortedResults(op string, printConfig PrintConfig, querySpec *QuerySpec) {
 	sorted := querySpec.Sorted
 	if int(querySpec.Limit) < len(querySpec.Sorted) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
 
-	if *flags.JSON {
+	if printConfig.JSON {
 		var results = make([]ResultJSON, 0)
 
 		for _, r := range sorted {
-			var res = r.toResultJSON(flags, querySpec)
+			var res = r.toResultJSON(op, printConfig, querySpec)
 			results = append(results, res)
 		}
 
@@ -226,19 +226,19 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 type ResultJSON map[string]interface{}
 
-func printResults(flags *FlagDefs, querySpec *QuerySpec) {
+func printResults(op string, printConfig PrintConfig, querySpec *QuerySpec) {
 	if querySpec.TimeBucket > 0 {
-		printTimeResults(flags, querySpec)
+		printTimeResults(op, printConfig, querySpec)
 
 		return
 	}
 
-	if *flags.JSON {
+	if printConfig.JSON {
 		// Need to marshall
 		var results = make([]ResultJSON, 0)
 
 		for _, r := range querySpec.Results {
-			var res = r.toResultJSON(flags, querySpec)
+			var res = r.toResultJSON(op, printConfig, querySpec)
 			results = append(results, res)
 		}
 
@@ -281,22 +281,20 @@ func encodeResults(qs *QuerySpec) {
 	qs.Table = table
 }
 
-func (qs *QuerySpec) PrintResults(flags *FlagDefs) {
-	if *flags.ENCODE_RESULTS {
+func (qs *QuerySpec) PrintResults(op string, printConfig PrintConfig) {
+	if printConfig.EncodeResults {
 		Debug("ENCODING RESULTS")
 
 		encodeResults(qs)
 		return
 	}
 
-	if *flags.PRINT {
-		if qs.TimeBucket > 0 {
-			printTimeResults(flags, qs)
-		} else if qs.OrderBy != "" {
-			printSortedResults(flags, qs)
-		} else {
-			printResults(flags, qs)
-		}
+	if qs.TimeBucket > 0 {
+		printTimeResults(op, printConfig, qs)
+	} else if qs.OrderBy != "" {
+		printSortedResults(op, printConfig, qs)
+	} else {
+		printResults(op, printConfig, qs)
 	}
 }
 
@@ -426,8 +424,8 @@ func (t *Table) PrintSamples(printConfig PrintConfig) {
 	}
 }
 
-func ListTables(flags *FlagDefs) []string {
-	files, err := ioutil.ReadDir(*flags.DIR)
+func ListTables(dir string) []string {
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		Error("No tables found!")
 		return []string{}
@@ -443,20 +441,20 @@ func ListTables(flags *FlagDefs) []string {
 
 }
 
-func PrintTables(flags *FlagDefs) {
-	tables := ListTables(flags)
+func PrintTables(dir string, printConfig PrintConfig) {
+	tables := ListTables(dir)
 
-	printTablesToOutput(flags, tables)
+	printTablesToOutput(printConfig, tables)
 
 }
 
-func printTablesToOutput(flags *FlagDefs, tables []string) {
-	if *flags.ENCODE_RESULTS {
+func printTablesToOutput(printConfig PrintConfig, tables []string) {
+	if printConfig.EncodeResults {
 		PrintBytes(NodeResults{Tables: tables})
 		return
 	}
 
-	if *flags.JSON {
+	if printConfig.JSON {
 		b, err := json.Marshal(tables)
 		if err == nil {
 			os.Stdout.Write(b)
@@ -495,7 +493,7 @@ func (t *Table) printColsOfType(wantedType int8) {
 	}
 }
 
-func (t *Table) PrintColInfo(flags *FlagDefs) {
+func (t *Table) PrintColInfo(printConfig PrintConfig) {
 	// count: 3253,
 	// size: 908848,
 	// avgObjSize: 279.3876421764525,
@@ -519,12 +517,12 @@ func (t *Table) PrintColInfo(flags *FlagDefs) {
 
 	}
 
-	if *flags.ENCODE_RESULTS {
+	if printConfig.EncodeResults {
 		PrintBytes(NodeResults{Table: *t})
 		return
 	}
 
-	if *flags.JSON {
+	if printConfig.JSON {
 		tableCols := make(map[string][]string)
 		tableInfo := make(map[string]interface{})
 

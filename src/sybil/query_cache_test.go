@@ -67,7 +67,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded == true {
+		if loaded {
 			t.Error("Test DB started with saved query results")
 		}
 	}
@@ -76,7 +76,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded != true {
+		if !loaded {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
@@ -84,7 +84,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	querySpec.CachedQueries = false
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded == true {
+		if loaded {
 			t.Error("Used query cache when flag was not provided")
 		}
 	}
@@ -95,7 +95,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	querySpec.Aggregations = append(aggs, nt.Aggregation(flags, "id", "hist"))
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded == true {
+		if loaded {
 			t.Error("Test DB has query results for new query")
 		}
 	}
@@ -155,7 +155,7 @@ func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string)
 
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded != true {
+		if !loaded {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
@@ -243,7 +243,7 @@ func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 
 		for _, b := range nt.BlockList {
 			loaded := querySpec.LoadCachedResults(b.Name)
-			if loaded != true {
+			if !loaded {
 				t.Error("Did not correctly save and load query results")
 			}
 		}

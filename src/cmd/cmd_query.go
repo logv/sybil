@@ -84,8 +84,13 @@ func RunQueryCmdLine() {
 		return
 	}
 
+	printConfig := sybil.PrintConfig{
+		Limit:         *flags.LIMIT,
+		EncodeResults: *flags.ENCODE_RESULTS,
+		JSON:          *flags.JSON,
+	}
 	if *flags.LIST_TABLES {
-		sybil.PrintTables(flags)
+		sybil.PrintTables(*flags.DIR, printConfig)
 		return
 	}
 
@@ -203,7 +208,7 @@ func RunQueryCmdLine() {
 		case sybil.INT_VAL:
 			loadSpec.Int(v)
 		default:
-			t.PrintColInfo(flags)
+			t.PrintColInfo(printConfig)
 			fmt.Println("")
 			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
 		}
@@ -286,13 +291,11 @@ func RunQueryCmdLine() {
 
 		start := time.Now()
 		// We can load and query at the same time
-		if *flags.LOAD_AND_QUERY {
-			t.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
+		t.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
 
-			end := time.Now()
-			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
-			querySpec.PrintResults(flags)
-		}
+		end := time.Now()
+		sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
+		querySpec.PrintResults(*flags.OP, printConfig)
 
 	}
 
@@ -305,7 +308,7 @@ func RunQueryCmdLine() {
 		flags.LOAD_AND_QUERY = sybil.NewFalseFlag()
 
 		t.LoadRecords(flags, nil)
-		t.PrintColInfo(flags)
+		t.PrintColInfo(printConfig)
 	}
 
 }

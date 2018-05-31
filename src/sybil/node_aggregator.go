@@ -1,9 +1,11 @@
 package sybil
 
-import "io/ioutil"
-import "os"
-import "path"
-import "encoding/gob"
+import (
+	"encoding/gob"
+	"io/ioutil"
+	"os"
+	"path"
+)
 
 type NodeResults struct {
 	Table     Table
@@ -56,11 +58,9 @@ func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
 
 }
 
-func (vt *VTable) AggregateSamples(flags *FlagDefs, dirs []string) {
+func (vt *VTable) AggregateSamples(printConfig PrintConfig, dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
-
-	limit := *flags.LIMIT
 
 	samples := make([]*Sample, 0)
 
@@ -68,8 +68,8 @@ func (vt *VTable) AggregateSamples(flags *FlagDefs, dirs []string) {
 		samples = append(samples, res.Samples...)
 	}
 
-	if len(samples) > limit {
-		samples = samples[:limit]
+	if len(samples) > printConfig.Limit {
+		samples = samples[:printConfig.Limit]
 	}
 
 	// TODO: call into vt.PrintSamples later after adjusting how we store the samples
@@ -78,7 +78,7 @@ func (vt *VTable) AggregateSamples(flags *FlagDefs, dirs []string) {
 
 }
 
-func (vt *VTable) AggregateTables(flags *FlagDefs, dirs []string) {
+func (vt *VTable) AggregateTables(printConfig PrintConfig, dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 	Debug("FOUND", len(allResults), "SPECS TO AGG")
@@ -100,10 +100,10 @@ func (vt *VTable) AggregateTables(flags *FlagDefs, dirs []string) {
 		tableArr = append(tableArr, table)
 	}
 
-	printTablesToOutput(flags, tableArr)
+	printTablesToOutput(printConfig, tableArr)
 }
 
-func (vt *VTable) AggregateInfo(flags *FlagDefs, dirs []string) {
+func (vt *VTable) AggregateInfo(printConfig PrintConfig, dirs []string) {
 	// TODO: combine all result info
 	Debug("AGGREGATING TABLE INFO LIST")
 	allResults := vt.findResultsInDirs(dirs)
@@ -138,11 +138,11 @@ func (vt *VTable) AggregateInfo(flags *FlagDefs, dirs []string) {
 
 	}
 
-	vt.PrintColInfo(flags)
+	vt.PrintColInfo(printConfig)
 
 }
 
-func (vt *VTable) AggregateSpecs(flags *FlagDefs, dirs []string) {
+func (vt *VTable) AggregateSpecs(flags *FlagDefs, printConfig PrintConfig, dirs []string) {
 	Debug("AGGREGATING QUERY RESULTS")
 
 	// TODO: verify all specs have the same md5 key
@@ -164,33 +164,36 @@ func (vt *VTable) AggregateSpecs(flags *FlagDefs, dirs []string) {
 	finalResult.Punctuate()
 	finalResult.QueryParams = qs.QueryParams
 
-	flags.OP = &HIST_STR
 	OPTS.MERGE_TABLE = &vt.Table
 
 	combinedResult := CombineResults(flags, &finalResult, allSpecs)
 	combinedResult.QueryParams = qs.QueryParams
 
 	combinedResult.SortResults(combinedResult.OrderBy)
-	combinedResult.PrintResults(flags)
+	combinedResult.PrintResults(*flags.OP, printConfig)
 }
 
 func (vt *VTable) StitchResults(flags *FlagDefs, dirs []string) {
 	vt.initDataStructures()
-
+	printConfig := PrintConfig{
+		Limit:         *flags.LIMIT,
+		EncodeResults: *flags.ENCODE_RESULTS,
+		JSON:          *flags.JSON,
+	}
 	if flags.LIST_TABLES != nil && *flags.LIST_TABLES {
-		vt.AggregateTables(flags, dirs)
+		vt.AggregateTables(printConfig, dirs)
 		return
 	}
 
 	if flags.PRINT_INFO != nil && *flags.PRINT_INFO {
-		vt.AggregateInfo(flags, dirs)
+		vt.AggregateInfo(printConfig, dirs)
 		return
 	}
 
 	if flags.SAMPLES != nil && *flags.SAMPLES {
-		vt.AggregateSamples(flags, dirs)
+		vt.AggregateSamples(printConfig, dirs)
 		return
 	}
 
-	vt.AggregateSpecs(flags, dirs)
+	vt.AggregateSpecs(flags, printConfig, dirs)
 }

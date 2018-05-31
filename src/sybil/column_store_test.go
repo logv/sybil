@@ -184,7 +184,7 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	nt.Options.SAMPLES = true
+	OPTS.SAMPLES = true
 	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
