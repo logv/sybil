@@ -6,10 +6,18 @@ type LoadSpec struct {
 	columns map[string]bool
 	files   map[string]bool
 
+	WeightColumn string
+	TimeColumn   string
+
 	LoadAllColumns             bool
 	ReadRowsOnly               bool
 	SkipDeleteBlocksAfterQuery bool
 	ReadIngestionLog           bool
+	UpdateTableInfo            bool
+	WriteBlockInfo             bool
+
+	SkipOutliers  bool
+	RecycleMemory bool
 
 	table *Table
 

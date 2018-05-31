@@ -68,7 +68,7 @@ func printTimeResults(op string, printConfig PrintConfig, querySpec *QuerySpec) 
 
 	for _, timeBucket := range keys {
 
-		timeStr := time.Unix(int64(timeBucket), 0).Format(OPTS.TIME_FORMAT)
+		timeStr := time.Unix(int64(timeBucket), 0).Format(querySpec.TimeFormat)
 		results := querySpec.TimeResults[timeBucket]
 		for _, r := range results {
 			if len(querySpec.Distincts) > 0 {
@@ -188,7 +188,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Printf(fmt.Sprintf("%-20s", groupKey)[:20])
 
 	fmt.Printf("%.0d", v.Count)
-	if OPTS.WEIGHT_COL {
+	if querySpec.WeightColumn != "" {
 		fmt.Print(" (")
 		fmt.Print(v.Samples)
 		fmt.Print(")")
@@ -433,7 +433,7 @@ func ListTables(dir string) []string {
 
 	tables := make([]string, 0)
 	for _, db := range files {
-		t := GetTable(db.Name())
+		t := GetTable(dir, db.Name())
 		tables = append(tables, t.Name)
 	}
 

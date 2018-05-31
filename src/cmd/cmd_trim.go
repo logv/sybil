@@ -49,8 +49,8 @@ func RunTrimCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*flags.TABLE)
-	if !t.LoadTableInfo(flags) {
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
+	if !t.LoadTableInfo() {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}
@@ -58,6 +58,7 @@ func RunTrimCmdLine() {
 	loadSpec := t.NewLoadSpec()
 	loadSpec.SkipDeleteBlocksAfterQuery = true
 	loadSpec.Int(*flags.TIME_COL)
+	loadSpec.TimeColumn = *flags.TIME_COL
 
 	trimSpec := sybil.TrimSpec{}
 	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)

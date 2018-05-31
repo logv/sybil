@@ -100,7 +100,7 @@ func RunQueryCmdLine() {
 		return
 	}
 
-	t := sybil.GetTable(table)
+	t := sybil.GetTable(*flags.DIR, table)
 	if t.IsNotExist(flags) {
 		sybil.Error(t.Name, "table can not be loaded or does not exist in", *flags.DIR)
 	}
@@ -112,12 +112,10 @@ func RunQueryCmdLine() {
 
 	if *flags.GROUPS != "" {
 		groups = strings.Split(*flags.GROUPS, *flags.FIELD_SEPARATOR)
-		sybil.OPTS.GROUP_BY = groups
 	}
 
 	if *flags.DISTINCT != "" {
 		distinct = strings.Split(*flags.DISTINCT, *flags.FIELD_SEPARATOR)
-		sybil.OPTS.DISTINCT = distinct
 	}
 
 	if *NO_RECYCLE_MEM {
@@ -142,8 +140,8 @@ func RunQueryCmdLine() {
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
-	t.LoadTableInfo(flags)
-	t.LoadRecords(flags, nil)
+	t.LoadTableInfo()
+	t.LoadRecords(nil)
 
 	count := 0
 	for _, block := range t.BlockList {
@@ -159,7 +157,7 @@ func RunQueryCmdLine() {
 
 	aggs := []sybil.Aggregation{}
 	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(flags, agg, *flags.OP))
+		aggs = append(aggs, t.Aggregation(sybil.HistogramTypeBasic, agg, *flags.OP))
 	}
 
 	distincts := []sybil.Grouping{}
@@ -186,8 +184,11 @@ func RunQueryCmdLine() {
 	}
 
 	loadSpec := t.NewLoadSpec()
+	loadSpec.UpdateTableInfo = *flags.UPDATE_TABLE_INFO
 	filterSpec := sybil.FilterSpec{Int: *flags.INT_FILTERS, Str: *flags.STR_FILTERS, Set: *flags.SET_FILTERS}
 	filters := sybil.BuildFilters(flags, t, &loadSpec, filterSpec)
+
+	replacements := sybil.BuildReplacements(*flags.FIELD_SEPARATOR, *flags.STR_REPLACE)
 
 	queryParams := sybil.QueryParams{
 		Groups:        groupings,
@@ -196,6 +197,15 @@ func RunQueryCmdLine() {
 		Distincts:     distincts,
 		CachedQueries: *flags.CACHED_QUERIES,
 		Samples:       *flags.SAMPLES,
+		StrReplace:    replacements,
+	}
+	if *flags.LOG_HIST {
+		queryParams.HistogramParameters.Type = sybil.HistogramTypeLog
+		queryParams.HistogramParameters.BucketSize = *flags.HIST_BUCKET
+	}
+	if *flags.HDR_HIST {
+		queryParams.HistogramParameters.Type = sybil.HistogramTypeHDR
+		queryParams.HistogramParameters.BucketSize = *flags.HIST_BUCKET
 	}
 
 	querySpec := sybil.QuerySpec{QueryParams: queryParams}
@@ -222,7 +232,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *flags.SORT != "" {
-		if *flags.SORT != sybil.OPTS.SORT_COUNT {
+		if *flags.SORT != sybil.SORT_COUNT {
 			loadSpec.Int(*flags.SORT)
 		}
 		querySpec.OrderBy = *flags.SORT
@@ -231,29 +241,27 @@ func RunQueryCmdLine() {
 	}
 
 	if *flags.PRUNE_BY != "" {
-		if *flags.PRUNE_BY != sybil.OPTS.SORT_COUNT {
+		if *flags.PRUNE_BY != sybil.SORT_COUNT {
 			loadSpec.Int(*flags.PRUNE_BY)
 		}
 		querySpec.PruneBy = *flags.PRUNE_BY
 	} else {
-		querySpec.PruneBy = sybil.OPTS.SORT_COUNT
+		querySpec.PruneBy = sybil.SORT_COUNT
 	}
 
 	if *flags.TIME {
 		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = *flags.TIME_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
-		loadSpec.Int(*flags.TIME_COL)
-		timeColID, ok := t.KeyTable[*flags.TIME_COL]
-		if ok {
-			sybil.OPTS.TIME_COL_ID = timeColID
-		}
+		querySpec.TimeColumn = *flags.TIME_COL
+		loadSpec.TimeColumn = *flags.TIME_COL
+		loadSpec.Int(querySpec.TimeColumn)
 	}
 
 	if *flags.WEIGHT_COL != "" {
-		sybil.OPTS.WEIGHT_COL = true
-		loadSpec.Int(*flags.WEIGHT_COL)
-		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[*flags.WEIGHT_COL]
+		querySpec.WeightColumn = *flags.WEIGHT_COL
+		loadSpec.WeightColumn = *flags.WEIGHT_COL
+		loadSpec.Int(querySpec.WeightColumn)
 	}
 
 	querySpec.Limit = *flags.LIMIT
@@ -264,8 +272,9 @@ func RunQueryCmdLine() {
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
 		loadSpec.SkipDeleteBlocksAfterQuery = true
+		loadSpec.UpdateTableInfo = *flags.UPDATE_TABLE_INFO
 
-		t.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
+		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 		t.PrintSamples(sybil.PrintConfig{
 			Limit:         *flags.LIMIT,
@@ -278,7 +287,6 @@ func RunQueryCmdLine() {
 
 	if *flags.EXPORT {
 		loadSpec.LoadAllColumns = true
-		querySpec.ExportTSV = true
 	}
 
 	if !*flags.PRINT_INFO {
@@ -292,7 +300,7 @@ func RunQueryCmdLine() {
 
 		start := time.Now()
 		// We can load and query at the same time
-		t.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
+		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 		end := time.Now()
 		sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
@@ -305,10 +313,9 @@ func RunQueryCmdLine() {
 	}
 
 	if *flags.PRINT_INFO {
-		t := sybil.GetTable(table)
-		flags.LOAD_AND_QUERY = sybil.NewFalseFlag()
+		t := sybil.GetTable(*flags.DIR, table)
 
-		t.LoadRecords(flags, nil)
+		t.LoadRecords(nil)
 		t.PrintColInfo(printConfig)
 	}
 

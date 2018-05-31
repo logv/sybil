@@ -41,11 +41,11 @@ func getTestTableName(t *testing.T) string {
 	return parts[len(parts)-1]
 }
 
-func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
+func addRecords(dir string, tableName string, cb RecordSetupCB, blockCount int) []*Record {
 	count := CHUNK_SIZE * blockCount
 
 	ret := make([]*Record, 0)
-	tbl := GetTable(tableName)
+	tbl := GetTable(dir, tableName)
 
 	for i := 0; i < count; i++ {
 		r := tbl.NewRecord()
@@ -57,19 +57,20 @@ func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
 }
 
 func saveAndReloadTable(t *testing.T, flags *FlagDefs, tableName string, expectedBlocks int) *Table {
+	t.Helper()
 	expectedCount := CHUNK_SIZE * expectedBlocks
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 
-	tbl.SaveRecordsToColumns(flags)
+	tbl.SaveRecordsToColumns()
 
 	unloadTestTable(tableName)
 
-	nt := GetTable(tableName)
-	nt.LoadTableInfo(flags)
+	nt := GetTable(*flags.DIR, tableName)
+	nt.LoadTableInfo()
 
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	count := nt.LoadRecords(flags, &loadSpec)
+	count := nt.LoadRecords(&loadSpec)
 
 	if count != expectedCount {
 		t.Error("Wrote", expectedCount, "records, but read back", count)

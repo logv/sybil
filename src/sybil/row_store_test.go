@@ -14,20 +14,20 @@ func TestTableLoadRowRecords(t *testing.T) {
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 
-	nt.LoadRecords(flags, &LoadSpec{
+	nt.LoadRecords(&LoadSpec{
 		ReadRowsOnly:               true,
 		SkipDeleteBlocksAfterQuery: true,
 		ReadIngestionLog:           true,
@@ -44,9 +44,9 @@ func TestTableLoadRowRecords(t *testing.T) {
 	querySpec := newQuerySpec()
 
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(flags, "age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "avg"))
 
-	nt.MatchAndAggregate(flags, querySpec)
+	nt.MatchAndAggregate(HistogramParameters{}, querySpec)
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {

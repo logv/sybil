@@ -14,9 +14,9 @@ var MAX_LOCK_BREAKS = 5
 
 // Every LockFile should have a recovery plan
 type RecoverableLock interface {
-	Grab(flags *FlagDefs) bool
-	Release(flags *FlagDefs) bool
-	Recover(flags *FlagDefs) bool
+	Grab() bool
+	Release() bool
+	Recover() bool
 }
 
 var BREAK_MAP = make(map[string]int)
@@ -43,21 +43,21 @@ type DigestLock struct {
 	Lock
 }
 
-func RecoverLock(flags *FlagDefs, lock RecoverableLock) bool {
+func RecoverLock(lock RecoverableLock) bool {
 	// TODO: log the auto recovery into a recovery file
-	return lock.Recover(flags)
+	return lock.Recover()
 }
 
-func (l *InfoLock) Recover(flags *FlagDefs) bool {
+func (l *InfoLock) Recover() bool {
 	t := l.Lock.Table
 	Debug("INFO LOCK RECOVERY")
-	dirname := path.Join(*flags.DIR, t.Name)
+	dirname := path.Join(t.Dir, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
 	if t.LoadTableInfoFrom(infodb) {
 		Debug("LOADED REASONABLE TABLE INFO, DELETING LOCK")
-		l.ForceDeleteFile(flags)
+		l.ForceDeleteFile()
 		return true
 	}
 
@@ -65,8 +65,8 @@ func (l *InfoLock) Recover(flags *FlagDefs) bool {
 		Debug("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
 		os.Remove(infodb)
 		RenameAndMod(backup, infodb)
-		l.ForceDeleteFile(flags)
-		return l.Grab(flags)
+		l.ForceDeleteFile()
+		return l.Grab()
 	}
 
 	Debug("CANT READ info.db OR RECOVER info.bak")
@@ -75,51 +75,51 @@ func (l *InfoLock) Recover(flags *FlagDefs) bool {
 	return false
 }
 
-func (l *DigestLock) Recover(flags *FlagDefs) bool {
+func (l *DigestLock) Recover() bool {
 	Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
-	ingestdir := path.Join(*flags.DIR, t.Name, INGEST_DIR)
+	ingestdir := path.Join(t.Dir, t.Name, INGEST_DIR)
 
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
 	pid := int64(os.Getpid())
-	l.ForceMakeFile(flags, pid)
-	t.RestoreUningestedFiles(flags)
-	l.ForceDeleteFile(flags)
+	l.ForceMakeFile(pid)
+	t.RestoreUningestedFiles()
+	l.ForceDeleteFile()
 
 	return true
 }
 
-func (l *BlockLock) Recover(flags *FlagDefs) bool {
+func (l *BlockLock) Recover() bool {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	tb := t.LoadBlockFromDir(flags, l.Name, nil, true)
+	tb := t.LoadBlockFromDir(l.Name, nil, nil, true)
 	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
 		Debug("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...
 		RenameAndMod(l.Name, fmt.Sprint(l.Name, ".broke"))
-		l.ForceDeleteFile(flags)
+		l.ForceDeleteFile()
 	} else {
 		Debug("BLOCK IS FINE, TURNING IT BACK INTO A REAL BLOCK")
 		os.RemoveAll(fmt.Sprint(l.Name, ".partial"))
-		l.ForceDeleteFile(flags)
+		l.ForceDeleteFile()
 	}
 
 	return true
 }
 
-func (l *CacheLock) Recover(flags *FlagDefs) bool {
+func (l *CacheLock) Recover() bool {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	files, err := ioutil.ReadDir(path.Join(*flags.DIR, t.Name, CACHE_DIR))
+	files, err := ioutil.ReadDir(path.Join(t.Dir, t.Name, CACHE_DIR))
 
 	if err != nil {
-		l.ForceDeleteFile(flags)
+		l.ForceDeleteFile()
 		return true
 	}
 
 	for _, blockFile := range files {
-		filename := path.Join(*flags.DIR, t.Name, CACHE_DIR, blockFile.Name())
+		filename := path.Join(t.Dir, t.Name, CACHE_DIR, blockFile.Name())
 		blockCache := SavedBlockCache{}
 
 		err := decodeInto(filename, &blockCache)
@@ -136,7 +136,7 @@ func (l *CacheLock) Recover(flags *FlagDefs) bool {
 
 	}
 
-	l.ForceDeleteFile(flags)
+	l.ForceDeleteFile()
 
 	return true
 
@@ -147,25 +147,26 @@ func (l *Lock) Recover() bool {
 	return false
 }
 
-func (l *Lock) ForceDeleteFile(flags *FlagDefs) {
+func (l *Lock) ForceDeleteFile() {
 	t := l.Table
 	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*flags.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(t.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
+	Debug("FORCE DELETING", lockfile)
 	Debug("FORCE DELETING", lockfile)
 	os.RemoveAll(lockfile)
 }
 
-func (l *Lock) ForceMakeFile(flags *FlagDefs, pid int64) {
+func (l *Lock) ForceMakeFile(pid int64) {
 	t := l.Table
 	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*flags.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(t.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
@@ -280,13 +281,16 @@ func checkPid(lockfile string, l *Lock) bool {
 	return cangrab
 }
 
-func (l *Lock) Grab(flags *FlagDefs) bool {
+func (l *Lock) Grab() bool {
 	t := l.Table
 	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*flags.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(t.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
+	if t.Dir == "" {
+		panic(1)
+	}
 
 	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
@@ -312,7 +316,6 @@ func (l *Lock) Grab(flags *FlagDefs) bool {
 		nf.WriteString(strconv.FormatInt(pid, 10))
 		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
-
 		if !checkPid(lockfile, l) {
 			continue
 		}
@@ -327,13 +330,13 @@ func (l *Lock) Grab(flags *FlagDefs) bool {
 
 }
 
-func (l *Lock) Release(flags *FlagDefs) bool {
+func (l *Lock) Release() bool {
 	t := l.Table
 	digest := l.Name
 
 	digest = path.Base(digest)
 	// Check to see if this file is locked...
-	lockfile := path.Join(*flags.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
+	lockfile := path.Join(t.Dir, t.Name, fmt.Sprintf("%s.lock", digest))
 	for i := 0; i < LOCK_TRIES; i++ {
 		val, err := ioutil.ReadFile(lockfile)
 
@@ -352,74 +355,74 @@ func (l *Lock) Release(flags *FlagDefs) bool {
 	return true
 }
 
-func (t *Table) GrabInfoLock(flags *FlagDefs) bool {
+func (t *Table) GrabInfoLock() bool {
 	lock := Lock{Table: t, Name: "info"}
 	info := &InfoLock{lock}
-	ret := info.Grab(flags)
+	ret := info.Grab()
 	if !ret && info.broken {
-		ret = RecoverLock(flags, info)
+		ret = RecoverLock(info)
 	}
 
 	return ret
 }
 
-func (t *Table) ReleaseInfoLock(flags *FlagDefs) bool {
+func (t *Table) ReleaseInfoLock() bool {
 	lock := Lock{Table: t, Name: "info"}
 	info := &InfoLock{lock}
-	ret := info.Release(flags)
+	ret := info.Release()
 	return ret
 }
 
-func (t *Table) GrabDigestLock(flags *FlagDefs) bool {
+func (t *Table) GrabDigestLock() bool {
 	lock := Lock{Table: t, Name: STOMACHE_DIR}
 	info := &DigestLock{lock}
-	ret := info.Grab(flags)
+	ret := info.Grab()
 	if !ret && info.broken {
-		ret = RecoverLock(flags, info)
+		ret = RecoverLock(info)
 	}
 	return ret
 }
 
-func (t *Table) ReleaseDigestLock(flags *FlagDefs) bool {
+func (t *Table) ReleaseDigestLock() bool {
 	lock := Lock{Table: t, Name: STOMACHE_DIR}
 	info := &DigestLock{lock}
-	ret := info.Release(flags)
+	ret := info.Release()
 	return ret
 }
 
-func (t *Table) GrabBlockLock(flags *FlagDefs, name string) bool {
+func (t *Table) GrabBlockLock(name string) bool {
 	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
-	ret := info.Grab(flags)
+	ret := info.Grab()
 	// INFO RECOVER IS GOING TO HAVE TIMING ISSUES... WHEN MULTIPLE THREADS ARE
 	// AT PLAY
 	if !ret && info.broken {
-		ret = RecoverLock(flags, info)
+		ret = RecoverLock(info)
 	}
 	return ret
 
 }
 
-func (t *Table) ReleaseBlockLock(flags *FlagDefs, name string) bool {
+func (t *Table) ReleaseBlockLock(name string) bool {
 	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
-	ret := info.Release(flags)
+	ret := info.Release()
 	return ret
 }
 
-func (t *Table) GrabCacheLock(flags *FlagDefs) bool {
+func (t *Table) GrabCacheLock() bool {
 	lock := Lock{Table: t, Name: CACHE_DIR}
 	info := &CacheLock{lock}
-	ret := info.Grab(flags)
+	ret := info.Grab()
 	if !ret && info.broken {
-		ret = RecoverLock(flags, info)
+		ret = RecoverLock(info)
 	}
 	return ret
 }
 
-func (t *Table) ReleaseCacheLock(flags *FlagDefs) bool {
+func (t *Table) ReleaseCacheLock() bool {
 	lock := Lock{Table: t, Name: CACHE_DIR}
 	info := &CacheLock{lock}
-	ret := info.Release(flags)
+	ret := info.Release()
 	return ret
 }

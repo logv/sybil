@@ -20,12 +20,12 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	created := addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	created := addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-		r.AddIntField(flags, "time", int64(time.Now().Unix()))
+		r.AddIntField("time", int64(time.Now().Unix()), *flags.SKIP_OUTLIERS)
 		r.AddStrField("name", fmt.Sprint("user", index))
 	}, blockCount)
 
@@ -60,12 +60,12 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
-	loaded := nt.LoadTableInfo(flags)
+	loaded := nt.LoadTableInfo()
 	if !loaded {
 		t.Error("COULDNT LOAD ZIPPED TABLE INFO!")
 	}
 
-	nt.LoadRecords(flags, &loadSpec)
+	nt.LoadRecords(&loadSpec)
 
 	var records = make([]*Record, 0)
 	for _, b := range nt.BlockList {
@@ -86,18 +86,18 @@ func TestOpenCompressedColumn(t *testing.T) {
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	created := addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	created := addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-		r.AddIntField(flags, "time", int64(time.Now().Unix()))
+		r.AddIntField("time", int64(time.Now().Unix()), *flags.SKIP_OUTLIERS)
 		r.AddStrField("name", fmt.Sprint("user", index))
 	}, blockCount)
 
 	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 	nt.DigestRecords(flags)
-	nt.LoadRecords(flags, nil)
+	nt.LoadRecords(nil)
 
 	blocks := nt.BlockList
 
@@ -141,12 +141,12 @@ func TestOpenCompressedColumn(t *testing.T) {
 	loadSpec := bt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
-	loaded := bt.LoadTableInfo(flags)
+	loaded := bt.LoadTableInfo()
 	if !loaded {
 		t.Error("COULDNT LOAD ZIPPED TABLE INFO!")
 	}
 
-	bt.LoadRecords(flags, &loadSpec)
+	bt.LoadRecords(&loadSpec)
 
 	var records = make([]*Record, 0)
 	for _, b := range bt.BlockList {

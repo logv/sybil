@@ -12,17 +12,17 @@ func TestSets(t *testing.T) {
 	defer deleteTestDb(tableName)
 	totalAge := int64(0)
 
-	addRecords(tableName, func(r *Record, i int) {}, 0)
+	addRecords(*flags.DIR, tableName, func(r *Record, i int) {}, 0)
 	blockCount := 3
 	minCount := CHUNK_SIZE * blockCount
-	records := addRecords(tableName, func(r *Record, i int) {
+	records := addRecords(*flags.DIR, tableName, func(r *Record, i int) {
 		setID := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
-		r.AddIntField(flags, "id_int", int64(i))
+		r.AddIntField("id_int", int64(i), *flags.SKIP_OUTLIERS)
 		r.AddSetField("id_set", setID)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
 		age := int64(rand.Intn(20)) + int64(minCount)
 		totalAge += age
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 

@@ -23,16 +23,17 @@ func RunIndexCmdLine() {
 
 	flags.UPDATE_TABLE_INFO = sybil.NewTrueFlag()
 
-	t := sybil.GetTable(*flags.TABLE)
-
-	t.LoadRecords(flags, nil)
-	t.SaveTableInfo(flags, "info")
-	sybil.OPTS.WRITE_BLOCK_INFO = true
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
 	loadSpec := t.NewLoadSpec()
+	loadSpec.WriteBlockInfo = true
+	t.LoadRecords(&loadSpec)
+	t.SaveTableInfo("info")
+
+	loadSpec = t.NewLoadSpec()
 	for _, v := range ints {
 		loadSpec.Int(v)
 	}
-	t.LoadRecords(flags, &loadSpec)
-	t.SaveTableInfo(flags, "info")
+	t.LoadRecords(&loadSpec)
+	t.SaveTableInfo("info")
 }

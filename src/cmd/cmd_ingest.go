@@ -36,16 +36,16 @@ func ingestDictionary(flags *sybil.FlagDefs, r *sybil.Record, recordmap *Diction
 			if INT_CAST[keyName] {
 				val, err := strconv.ParseInt(iv, 10, 64)
 				if err == nil {
-					r.AddIntField(flags, keyName, int64(val))
+					r.AddIntField(keyName, int64(val), *flags.SKIP_OUTLIERS)
 				}
 			} else {
 				r.AddStrField(keyName, iv)
 
 			}
 		case int64:
-			r.AddIntField(flags, keyName, int64(iv))
+			r.AddIntField(keyName, int64(iv), *flags.SKIP_OUTLIERS)
 		case float64:
-			r.AddIntField(flags, keyName, int64(iv))
+			r.AddIntField(keyName, int64(iv), *flags.SKIP_OUTLIERS)
 		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
@@ -85,7 +85,7 @@ func importCsvRecords(flags *sybil.FlagDefs) {
 		sybil.Error("ERROR READING CSV HEADER", err)
 	}
 
-	t := sybil.GetTable(*flags.TABLE)
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
 	for {
 		fields, err := scanner.Read()
@@ -112,7 +112,7 @@ func importCsvRecords(flags *sybil.FlagDefs) {
 
 			val, err := strconv.ParseFloat(v, 64)
 			if err == nil {
-				r.AddIntField(flags, fieldName, int64(val))
+				r.AddIntField(fieldName, int64(val), *flags.SKIP_OUTLIERS)
 			} else {
 				r.AddStrField(fieldName, v)
 			}
@@ -166,7 +166,7 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 }
 
 func importJSONRecords(flags *sybil.FlagDefs) {
-	t := sybil.GetTable(*flags.TABLE)
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
 	sybil.Debug("PATH IS", path)
@@ -257,14 +257,14 @@ func RunIngestCmdLine() {
 		sybil.Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := sybil.GetTable(*flags.TABLE)
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else
 	var loadedTable = false
 	for i := 0; i < TABLE_INFO_GRABS; i++ {
-		loaded := t.LoadTableInfo(flags)
-		if loaded || !t.HasFlagFile(flags) {
+		loaded := t.LoadTableInfo()
+		if loaded || !t.HasFlagFile() {
 			loadedTable = true
 			break
 		}
@@ -272,7 +272,7 @@ func RunIngestCmdLine() {
 	}
 
 	if !loadedTable {
-		if t.HasFlagFile(flags) {
+		if t.HasFlagFile() {
 			sybil.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}

@@ -15,22 +15,22 @@ func TestTableDigestRowRecords(t *testing.T) {
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 	flags.TABLE = &tableName // TODO: eliminate global use
 
-	nt.LoadTableInfo(flags)
-	nt.LoadRecords(flags, &LoadSpec{
+	nt.LoadTableInfo()
+	nt.LoadRecords(&LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
 		ReadIngestionLog:           true,
 	})
@@ -47,8 +47,8 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	nt = GetTable(tableName)
-	nt.LoadRecords(flags, nil)
+	nt = GetTable(*flags.DIR, tableName)
+	nt.LoadRecords(nil)
 
 	count := int32(0)
 	for _, b := range nt.BlockList {
@@ -71,23 +71,23 @@ func TestColumnStoreFileNames(t *testing.T) {
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
 	}, blockCount)
 
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 	flags.TABLE = &tableName // TODO: eliminate global use
 
-	nt.LoadTableInfo(flags)
-	nt.LoadRecords(flags, &LoadSpec{
+	nt.LoadTableInfo()
+	nt.LoadRecords(&LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
 		ReadIngestionLog:           true,
 	})
@@ -104,8 +104,8 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	nt = GetTable(tableName)
-	nt.LoadRecords(flags, nil)
+	nt = GetTable(*flags.DIR, tableName)
+	nt.LoadRecords(nil)
 
 	count := int32(0)
 
@@ -153,21 +153,21 @@ func TestBigIntColumns(t *testing.T) {
 
 	var minVal = int64(1 << 50)
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(1 << 20))
-		r.AddIntField(flags, "time", minVal+age)
+		r.AddIntField("time", minVal+age, *flags.SKIP_OUTLIERS)
 	}, blockCount)
 
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 	tbl.IngestRecords(flags, "ingest")
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 	flags.TABLE = &tableName // TODO: eliminate global use
 
-	nt.LoadTableInfo(flags)
-	nt.LoadRecords(flags, &LoadSpec{
+	nt.LoadTableInfo()
+	nt.LoadRecords(&LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
 		ReadIngestionLog:           true,
 	})
@@ -184,12 +184,11 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	OPTS.SAMPLES = true
-	nt = GetTable(tableName)
+	nt = GetTable(*flags.DIR, tableName)
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	nt.LoadRecords(flags, &loadSpec)
+	nt.LoadRecords(&loadSpec)
 
 	count := int32(0)
 	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
@@ -210,6 +209,5 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	flags.SAMPLES = NewFalseFlag()
 
 }

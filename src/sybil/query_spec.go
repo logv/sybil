@@ -23,6 +23,10 @@ type savedQueryParams struct {
 	Distincts    []Grouping // list of columns we are creating a count distinct query on
 	StrReplace   map[string]StrReplace
 
+	WeightColumn string
+	TimeColumn   string
+	TimeFormat   string
+
 	OrderBy    string
 	PruneBy    string
 	Limit      int
@@ -32,6 +36,8 @@ type savedQueryParams struct {
 	CachedQueries bool
 
 	ExportTSV bool
+
+	HistogramParameters HistogramParameters
 }
 
 func Min(x, y int64) int64 {
@@ -99,24 +105,24 @@ func (qs *QuerySpec) NewResult() *Result {
 	return addedRecord
 }
 
-func (master_result *ResultMap) Combine(flags *FlagDefs, mergeTable *Table, results *ResultMap) {
+func (master_result *ResultMap) Combine(params HistogramParameters, mergeTable *Table, results *ResultMap) {
 	for k, v := range *results {
 		mval, ok := (*master_result)[k]
 		if !ok {
 			(*master_result)[k] = v
 		} else {
-			mval.Combine(flags, mergeTable, v)
+			mval.Combine(params, mergeTable, v)
 		}
 	}
 }
 
-func fullMergeHist(mergeTable *Table, h, ph Histogram) Histogram {
+func fullMergeHist(params HistogramParameters, mergeTable *Table, h, ph Histogram) Histogram {
 	l1, r1 := h.Range()
 	l2, r2 := ph.Range()
 
 	info := IntInfo{Min: Min(l1, l2), Max: Max(r1, r2)}
 
-	nh := mergeTable.NewHist(nil, &info)
+	nh := mergeTable.NewHist(params, &info, h.IsWeighted())
 
 	for bucket, count := range h.GetIntBuckets() {
 		nh.AddWeightedValue(bucket, count)
@@ -130,7 +136,7 @@ func fullMergeHist(mergeTable *Table, h, ph Histogram) Histogram {
 }
 
 // This does an in place combine of the next_result into this one...
-func (rs *Result) Combine(flags *FlagDefs, mergeTable *Table, nextResult *Result) {
+func (rs *Result) Combine(params HistogramParameters, mergeTable *Table, nextResult *Result) {
 	if nextResult == nil {
 		return
 	}
@@ -154,7 +160,7 @@ func (rs *Result) Combine(flags *FlagDefs, mergeTable *Table, nextResult *Result
 			ph, ok := rs.Hists[k]
 
 			if ok {
-				rs.Hists[k] = fullMergeHist(mergeTable, h, ph)
+				rs.Hists[k] = fullMergeHist(params, mergeTable, h, ph)
 			} else {
 				rs.Hists[k] = h
 			}
@@ -162,7 +168,7 @@ func (rs *Result) Combine(flags *FlagDefs, mergeTable *Table, nextResult *Result
 		} else {
 			_, ok := rs.Hists[k]
 			if !ok {
-				nh := h.NewHist(flags)
+				nh := h.NewHist(params)
 
 				nh.Combine(h)
 				rs.Hists[k] = nh
@@ -213,7 +219,7 @@ func (t *Table) Grouping(name string) Grouping {
 	return Grouping{name, colID}
 }
 
-func (t *Table) Aggregation(flags *FlagDefs, name string, op string) Aggregation {
+func (t *Table) Aggregation(histogramType HistogramType, name string, op string) Aggregation {
 	colID := t.getKeyID(name)
 
 	agg := Aggregation{Name: name, nameID: colID, Op: op}
@@ -224,12 +230,11 @@ func (t *Table) Aggregation(flags *FlagDefs, name string, op string) Aggregation
 	if op == "hist" {
 		agg.opID = OP_HIST
 		agg.HistType = "basic"
-		if *flags.LOG_HIST {
+		if histogramType == HistogramTypeLog {
 			agg.HistType = "multi"
-
 		}
 
-		if *flags.HDR_HIST {
+		if histogramType == HistogramTypeHDR {
 			agg.HistType = "hdr"
 		}
 	}

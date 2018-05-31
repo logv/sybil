@@ -11,7 +11,7 @@ import "compress/gzip"
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(flags *FlagDefs, records RecordList, filename string) bool {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string, skipOutliers bool, recycleMemory bool) bool {
 	if len(records) == 0 {
 		return true
 	}
@@ -20,11 +20,11 @@ func (t *Table) SaveRecordsToBlock(flags *FlagDefs, records RecordList, filename
 	tempBlock.RecordList = records
 	tempBlock.table = t
 
-	return tempBlock.SaveToColumns(flags, filename)
+	return tempBlock.SaveToColumns(filename, skipOutliers, recycleMemory)
 }
 
-func (t *Table) FindPartialBlocks(flags *FlagDefs) []*TableBlock {
-	t.LoadRecords(flags, nil)
+func (t *Table) FindPartialBlocks() []*TableBlock {
+	t.LoadRecords(nil)
 
 	ret := make([]*TableBlock, 0)
 
@@ -44,12 +44,12 @@ func (t *Table) FindPartialBlocks(flags *FlagDefs) []*TableBlock {
 }
 
 // TODO: find any open blocks and then fill them...
-func (t *Table) FillPartialBlock(flags *FlagDefs) bool {
+func (t *Table) FillPartialBlock(skipOutliers bool, recycleMemory bool) bool {
 	if len(t.newRecords) == 0 {
 		return false
 	}
 
-	openBlocks := t.FindPartialBlocks(flags)
+	openBlocks := t.FindPartialBlocks()
 
 	Debug("OPEN BLOCKS", openBlocks)
 	var filename string
@@ -64,17 +64,17 @@ func (t *Table) FillPartialBlock(flags *FlagDefs) bool {
 
 	Debug("OPENING PARTIAL BLOCK", filename)
 
-	if !t.GrabBlockLock(flags, filename) {
+	if !t.GrabBlockLock(filename) {
 		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
 
-	defer t.ReleaseBlockLock(flags, filename)
+	defer t.ReleaseBlockLock(filename)
 
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
 
-	block := t.LoadBlockFromDir(flags, filename, nil, true /* LOAD ALL RECORDS */)
+	block := t.LoadBlockFromDir(filename, nil, nil, true /* LOAD ALL RECORDS */)
 	if block == nil {
 		return true
 	}
@@ -90,7 +90,7 @@ func (t *Table) FillPartialBlock(flags *FlagDefs) bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if !t.SaveRecordsToBlock(flags, partialRecords, filename) {
+		if !t.SaveRecordsToBlock(partialRecords, filename, skipOutliers, recycleMemory) {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
 			return false
 		}
@@ -196,7 +196,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(flags *FlagDefs, dirname string, loadSpec *LoadSpec, loadRecords bool) *TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, replacements map[string]StrReplace, loadRecords bool) *TableBlock {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -217,7 +217,7 @@ func (t *Table) LoadBlockFromDir(flags *FlagDefs, dirname string, loadSpec *Load
 	t.BlockList[dirname] = &tb
 	t.blockMu.Unlock()
 
-	tb.allocateRecords(flags, loadSpec, *info, loadRecords)
+	tb.allocateRecords(loadSpec, *info, loadRecords)
 	tb.Info = info
 
 	file, _ := os.Open(dirname)
@@ -248,11 +248,11 @@ func (t *Table) LoadBlockFromDir(flags *FlagDefs, dirname string, loadSpec *Load
 
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, *info)
+			tb.unpackStrCol(dec, *info, replacements)
 		case strings.HasPrefix(fname, "set"):
 			tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, *info)
+			tb.unpackIntCol(dec, *info, loadSpec)
 		}
 
 		dec.CloseFile()
@@ -273,10 +273,10 @@ type AfterLoadQueryCB struct {
 	count int
 }
 
-func (cb *AfterLoadQueryCB) CB(flags *FlagDefs, digestname string, records RecordList) {
+func (cb *AfterLoadQueryCB) CB(dir string, tableName string, params HistogramParameters, digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
 		// TODO: add sessionization call over here, too
-		count := FilterAndAggRecords(flags, cb.querySpec, &cb.records)
+		count := FilterAndAggRecords(params, cb.querySpec, &cb.records)
 		cb.count += count
 
 		cb.wg.Done()

@@ -20,8 +20,8 @@ func RunDigestCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*flags.TABLE)
-	if !t.LoadTableInfo(flags) {
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
+	if !t.LoadTableInfo() {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}

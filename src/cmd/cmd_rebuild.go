@@ -22,9 +22,9 @@ func RunRebuildCmdLine() {
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*flags.TABLE)
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
-	loaded := t.LoadTableInfo(flags) && !*FORCE_UPDATE
+	loaded := t.LoadTableInfo() && !*FORCE_UPDATE
 	if loaded {
 		sybil.Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
 		return
@@ -37,10 +37,10 @@ func RunRebuildCmdLine() {
 	if *REPLACE_INFO {
 		sybil.Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
 		lock := sybil.Lock{Table: t, Name: "info"}
-		lock.ForceDeleteFile(flags)
-		t.SaveTableInfo(flags, "info")
+		lock.ForceDeleteFile()
+		t.SaveTableInfo("info")
 	} else {
 		sybil.Print("SAVING TO temp_info.db")
-		t.SaveTableInfo(flags, "temp_info")
+		t.SaveTableInfo("temp_info")
 	}
 }

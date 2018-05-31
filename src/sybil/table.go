@@ -8,6 +8,7 @@ var ROW_STORE_BLOCK = "ROW_STORE"
 var NULL_BLOCK = "NULL_BLOCK"
 
 type Table struct {
+	Dir       string
 	Name      string
 	BlockList map[string]*TableBlock
 	KeyTable  map[string]int16 // String Key Names
@@ -41,7 +42,7 @@ var CHUNK_THRESHOLD = CHUNK_SIZE / 8
 var tableMu sync.Mutex
 
 // This is a singleton constructor for Tables
-func GetTable(name string) *Table {
+func GetTable(dir string, name string) *Table {
 	tableMu.Lock()
 	defer tableMu.Unlock()
 
@@ -50,7 +51,7 @@ func GetTable(name string) *Table {
 		return t
 	}
 
-	t = &Table{Name: name}
+	t = &Table{Name: name, Dir: dir}
 	LOADED_TABLES[name] = t
 
 	t.initDataStructures()
@@ -202,8 +203,8 @@ func (t *Table) PrintRecord(r *Record) {
 	}
 }
 
-func (t *Table) MakeDir(flags *FlagDefs) {
-	tabledir := path.Join(*flags.DIR, t.Name)
+func (t *Table) MakeDir() {
+	tabledir := path.Join(t.Dir, t.Name)
 	os.MkdirAll(tabledir, 0755)
 }
 

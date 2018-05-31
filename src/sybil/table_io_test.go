@@ -15,12 +15,12 @@ func TestTableCreate(t *testing.T) {
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	created := addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField(flags, "id", int64(index))
+	created := addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField(flags, "age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
-		r.AddIntField(flags, "time", int64(time.Now().Unix()))
+		r.AddIntField("time", int64(time.Now().Unix()), *flags.SKIP_OUTLIERS)
 		r.AddStrField("name", fmt.Sprint("user", index))
 	}, blockCount)
 
@@ -30,7 +30,7 @@ func TestTableCreate(t *testing.T) {
 		t.Error("TEST TABLE NAME INCORRECT")
 	}
 
-	nt.LoadTableInfo(flags)
+	nt.LoadTableInfo()
 
 	_, err := os.Open(fmt.Sprintf("db/%s/info.db", tableName))
 	if err != nil {
@@ -41,7 +41,7 @@ func TestTableCreate(t *testing.T) {
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
-	nt.LoadRecords(flags, &loadSpec)
+	nt.LoadRecords(&loadSpec)
 
 	var records = make([]*Record, 0)
 	for _, b := range nt.BlockList {

@@ -29,7 +29,7 @@ type SavedRecord struct {
 	Sets []RowSavedSet
 }
 
-func (s SavedRecord) toRecord(flags *FlagDefs, t *Table) *Record {
+func (s SavedRecord) toRecord(skipOutliers bool, t *Table) *Record {
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
@@ -53,7 +53,7 @@ func (s SavedRecord) toRecord(flags *FlagDefs, t *Table) *Record {
 	for _, v := range s.Ints {
 		r.Populated[v.Name] = INT_VAL
 		r.Ints[v.Name] = IntField(v.Value)
-		t.updateIntInfo(flags, v.Name, v.Value)
+		t.updateIntInfo(v.Name, v.Value, skipOutliers)
 	}
 
 	for _, v := range s.Strs {
@@ -117,7 +117,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	return marshalledRecords
 }
 
-func (t *Table) LoadRecordsFromLog(flags *FlagDefs, filename string) RecordList {
+func (t *Table) LoadRecordsFromLog(filename string, loadSpec *LoadSpec) RecordList {
 	var marshalledRecords []*SavedRecord
 
 	// Create an encoder and send a value.
@@ -129,7 +129,7 @@ func (t *Table) LoadRecordsFromLog(flags *FlagDefs, filename string) RecordList 
 	ret := make(RecordList, len(marshalledRecords))
 
 	for i, r := range marshalledRecords {
-		ret[i] = r.toRecord(flags, t)
+		ret[i] = r.toRecord(loadSpec != nil && loadSpec.SkipOutliers, t)
 	}
 	return ret
 

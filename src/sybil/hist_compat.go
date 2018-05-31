@@ -17,8 +17,8 @@ func (hc *HistCompat) Max() int64 {
 	return hc.BasicHist.Max
 }
 
-func (hc *HistCompat) NewHist(flags *FlagDefs) Histogram {
-	return hc.table.NewHist(flags, &hc.Info)
+func (hc *HistCompat) NewHist(params HistogramParameters) Histogram {
+	return hc.table.NewHist(params, &hc.Info, hc.Weighted)
 }
 
 // Mean returns the arithmetic mean.
@@ -51,6 +51,11 @@ func (hc *HistCompat) Range() (int64, int64) {
 	return hc.Info.Min, hc.Info.Max
 }
 
+// IsWeighted returns if the histogram is weighted.
+func (hc *HistCompat) IsWeighted() bool {
+	return hc.Weighted
+}
+
 // }}}
 
 // {{{ HIST COMPAT WRAPPER FOR MULTI HIST
@@ -72,8 +77,8 @@ func (hc *MultiHistCompat) Max() int64 {
 	return hc.Histogram.Max
 }
 
-func (hc *MultiHistCompat) NewHist(flags *FlagDefs) Histogram {
-	return newMultiHist(flags, hc.table, hc.Info)
+func (hc *MultiHistCompat) NewHist(params HistogramParameters) Histogram {
+	return newMultiHist(params, hc.table, hc.Info, hc.Weighted)
 }
 
 // Mean returns the arithmetic mean.
@@ -104,6 +109,11 @@ func (hc *MultiHistCompat) GetIntBuckets() map[int64]int64 {
 // Range return the range.
 func (hc *MultiHistCompat) Range() (int64, int64) {
 	return hc.Info.Min, hc.Info.Max
+}
+
+// IsWeighted returns if the histogram is weighted.
+func (hc *MultiHistCompat) IsWeighted() bool {
+	return hc.Weighted
 }
 
 // }}}

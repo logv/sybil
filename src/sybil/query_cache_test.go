@@ -17,12 +17,12 @@ func TestCachedQueries(t *testing.T) {
 	blockCount := 5
 
 	var thisAddRecords = func(block_count int) {
-		addRecords(tableName, func(r *Record, i int) {
+		addRecords(*flags.DIR, tableName, func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
 
 			ageStr := strconv.FormatInt(int64(age), 10)
-			r.AddIntField(flags, "id", int64(i))
-			r.AddIntField(flags, "age", age)
+			r.AddIntField("id", int64(i), *flags.SKIP_OUTLIERS)
+			r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 			r.AddStrField("age_str", ageStr)
 			r.AddSetField("age_set", []string{ageStr})
 
@@ -45,12 +45,12 @@ func TestCachedQueries(t *testing.T) {
 }
 
 func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
+	aggs = append(aggs, nt.Aggregation(HistogramTypeBasic, "age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
 		QueryParams: QueryParams{
@@ -64,7 +64,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	loadSpec.SkipDeleteBlocksAfterQuery = true
 
 	// test that the cached query doesnt already exist
-	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
+	nt.LoadAndQueryRecords(&loadSpec, nil)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded {
@@ -73,7 +73,7 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	}
 
 	// test that the cached query is saved
-	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
+	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if !loaded {
@@ -91,8 +91,8 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 	querySpec.CachedQueries = true
 
 	// test that a new and slightly different query isnt cached for us
-	nt.LoadAndQueryRecords(flags, &loadSpec, nil)
-	querySpec.Aggregations = append(aggs, nt.Aggregation(flags, "id", "hist"))
+	nt.LoadAndQueryRecords(&loadSpec, nil)
+	querySpec.Aggregations = append(aggs, nt.Aggregation(HistogramTypeBasic, "id", "hist"))
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded {
@@ -103,12 +103,12 @@ func testCachedQueryFiles(t *testing.T, flags *FlagDefs, tableName string) {
 }
 
 func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string) {
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
+	aggs = append(aggs, nt.Aggregation(HistogramTypeBasic, "age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
 		QueryParams: QueryParams{
@@ -121,16 +121,16 @@ func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string)
 	loadSpec.LoadAllColumns = true
 	loadSpec.SkipDeleteBlocksAfterQuery = true
 
-	nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
+	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
 
-	nt = GetTable(tableName)
+	nt = GetTable(*flags.DIR, tableName)
 
 	// clear the copied query spec result map and look
 	// at the cached query results
 
 	copySpec.Results = make(ResultMap)
-	nt.LoadAndQueryRecords(flags, &loadSpec, copySpec)
+	nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 	if len(querySpec.Results) == 0 {
 		t.Error("No Results for Query")
@@ -163,7 +163,7 @@ func testCachedQueryConsistency(t *testing.T, flags *FlagDefs, tableName string)
 }
 
 func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
@@ -179,13 +179,16 @@ func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))
 		aggs := []Aggregation{}
-		aggs = append(aggs, nt.Aggregation(flags, "age", "hist"))
+		aggs = append(aggs, nt.Aggregation(HistogramTypeBasic, "age", "hist"))
 
 		querySpec := QuerySpec{Table: nt,
 			QueryParams: QueryParams{
 				Filters:       filters,
 				Aggregations:  aggs,
 				CachedQueries: true,
+				HistogramParameters: HistogramParameters{
+					Type: HistogramTypeBasic,
+				},
 			},
 		}
 
@@ -193,16 +196,16 @@ func testCachedBasicHist(t *testing.T, flags *FlagDefs, tableName string) {
 		loadSpec.LoadAllColumns = true
 		loadSpec.SkipDeleteBlocksAfterQuery = true
 
-		nt.LoadAndQueryRecords(flags, &loadSpec, &querySpec)
+		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)
 
-		nt = GetTable(tableName)
+		nt = GetTable(*flags.DIR, tableName)
 
 		// clear the copied query spec result map and look
 		// at the cached query results
 
 		copySpec.Results = make(ResultMap)
-		nt.LoadAndQueryRecords(flags, &loadSpec, copySpec)
+		nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 		if len(querySpec.Results) == 0 {
 			t.Error("No Results for Query")

@@ -59,7 +59,6 @@ type FlagDefs struct {
 	FIELD_SEPARATOR    *string
 	FILTER_SEPARATOR   *string
 	PRINT_KEYS         *bool
-	LOAD_AND_QUERY     *bool
 	LOAD_THEN_QUERY    *bool
 	READ_INGESTION_LOG *bool
 	READ_ROWSTORE      *bool
@@ -126,6 +125,8 @@ type OptionDefs struct {
 	GROUP_BY                []string
 	DISTINCT                []string
 	MERGE_TABLE             *Table
+	UPDATE_TABLE_INFO       bool
+	SKIP_OUTLIERS           bool
 }
 
 var EMPTY = ""
@@ -155,7 +156,6 @@ func DefaultFlags() *FlagDefs {
 		SKIP_COMPACT: NewFalseFlag(),
 
 		PRINT_KEYS:         &OPTS.TIMESERIES,
-		LOAD_AND_QUERY:     NewTrueFlag(),
 		LOAD_THEN_QUERY:    NewFalseFlag(),
 		READ_INGESTION_LOG: NewFalseFlag(),
 		READ_ROWSTORE:      NewFalseFlag(),
