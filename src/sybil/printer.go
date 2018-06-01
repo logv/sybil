@@ -63,11 +63,6 @@ func printTimeResults(querySpec *QuerySpec) {
 		return
 	}
 
-	topResults := make([]string, 0)
-	for _, r := range querySpec.Sorted {
-		topResults = append(topResults, r.GroupByKey)
-	}
-
 	w := new(tabwriter.Writer)
 	w.Init(os.Stdout, 0, 1, 0, ' ', tabwriter.AlignRight)
 

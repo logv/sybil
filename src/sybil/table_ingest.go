@@ -102,7 +102,7 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 		break
 	}
 
-	files, err := file.Readdir(0)
+	files, _ := file.Readdir(0)
 	MIN_FILES_TO_DIGEST = len(files)
 
 	if len(files) > FILE_DIGEST_THRESHOLD {
@@ -150,7 +150,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 		break
 	}
 
-	files, err := file.Readdir(0)
+	files, _ := file.Readdir(0)
 	if t.RowBlock == nil {
 		t.RowBlock = &TableBlock{}
 		(*t.RowBlock).RecordList = make(RecordList, 0)

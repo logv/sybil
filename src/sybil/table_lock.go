@@ -170,7 +170,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 	Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
 	if err != nil {
-		nf, err = os.OpenFile(lockfile, os.O_CREATE, 0666)
+		nf, _ = os.OpenFile(lockfile, os.O_CREATE, 0666)
 	}
 
 	defer nf.Close()
