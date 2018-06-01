@@ -40,9 +40,8 @@ test:
 lint:
 	gometalinter -t --disable-all \
 		--enable=vet \
-		--enable=golint \
 		--enable=megacheck \
-		--deadline=3m ./... 2>&1 | revgrep origin/master
+		--deadline=3m ./... 2>&1
 
 testv:
 	${GOBIN} test ./src/sybil/ -race -v -debug
