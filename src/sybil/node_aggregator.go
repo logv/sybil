@@ -83,7 +83,7 @@ func (vt *VTable) AggregateTables(dirs []string) {
 	allResults := vt.findResultsInDirs(dirs)
 	Debug("FOUND", len(allResults), "SPECS TO AGG")
 
-	allTables := make(map[string]int, 0)
+	allTables := make(map[string]int)
 
 	for _, res := range allResults {
 		for _, table := range res.Tables {
@@ -117,7 +117,7 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 			size += block.Size
 		}
 
-		res.Table.BlockList = make(map[string]*TableBlock, 0)
+		res.Table.BlockList = make(map[string]*TableBlock)
 
 		res.Table.initLocks()
 		res.Table.populateStringIDLookup()

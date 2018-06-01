@@ -72,9 +72,9 @@ func (t *Table) initDataStructures() {
 	t.KeyTable = make(map[string]int16)
 	t.KeyTypes = make(map[int16]int8)
 
-	t.BlockList = make(map[string]*TableBlock, 0)
+	t.BlockList = make(map[string]*TableBlock)
 
-	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
+	t.BlockInfoCache = make(map[string]*SavedColumnInfo)
 	t.NewBlockInfos = make([]string, 0)
 
 	t.StrInfo = make(StrInfoTable)

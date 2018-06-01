@@ -187,7 +187,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 // Remove our pointer to the blocklist so a GC is triggered and
 // a bunch of new memory becomes available
 func (t *Table) ReleaseRecords() {
-	t.BlockList = make(map[string]*TableBlock, 0)
+	t.BlockList = make(map[string]*TableBlock)
 	debug.FreeOSMemory()
 }
 
@@ -268,7 +268,7 @@ func (t *Table) LoadBlockCache() {
 }
 
 func (t *Table) ResetBlockCache() {
-	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
+	t.BlockInfoCache = make(map[string]*SavedColumnInfo)
 }
 
 func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {

@@ -19,7 +19,7 @@ type RecoverableLock interface {
 	Recover() bool
 }
 
-var BREAK_MAP = make(map[string]int, 0)
+var BREAK_MAP = make(map[string]int)
 
 type Lock struct {
 	Name   string

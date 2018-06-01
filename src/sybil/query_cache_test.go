@@ -117,7 +117,7 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 	// clear the copied query spec result map and look
 	// at the cached query results
 
-	copySpec.Results = make(ResultMap, 0)
+	copySpec.Results = make(ResultMap)
 	nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 	if len(querySpec.Results) == 0 {
@@ -183,7 +183,7 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 		// clear the copied query spec result map and look
 		// at the cached query results
 
-		copySpec.Results = make(ResultMap, 0)
+		copySpec.Results = make(ResultMap)
 		nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 		if len(querySpec.Results) == 0 {

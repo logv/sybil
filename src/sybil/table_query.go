@@ -77,7 +77,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	skipped := 0
 	brokenCount := 0
 	thisBlock := 0
-	blockGcTime := time.Now().Sub(time.Now())
+	var blockGcTime time.Duration
 
 	allResults := make([]*QuerySpec, 0)
 

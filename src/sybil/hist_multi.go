@@ -171,7 +171,7 @@ func (h *MultiHist) GetNonZeroBuckets() map[string]int64 {
 }
 
 func (h *MultiHist) GetStrBuckets() map[string]int64 {
-	allBuckets := make(map[string]int64, 0)
+	allBuckets := make(map[string]int64)
 	for _, subhist := range h.Subhists {
 		for key, count := range subhist.GetStrBuckets() {
 			allBuckets[key] = count
@@ -182,7 +182,7 @@ func (h *MultiHist) GetStrBuckets() map[string]int64 {
 }
 
 func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
-	allBuckets := make(map[int64]int64, 0)
+	allBuckets := make(map[int64]int64)
 	for _, subhist := range h.Subhists {
 		for key, count := range subhist.GetSparseBuckets() {
 			_, ok := allBuckets[key]

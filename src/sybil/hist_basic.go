@@ -219,7 +219,7 @@ func (h *BasicHist) GetStdDev() float64 {
 }
 
 func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
-	ret := make(map[int64]int64, 0)
+	ret := make(map[int64]int64)
 
 	for k, v := range h.Values {
 		if v > 0 {
@@ -239,7 +239,7 @@ func (h *BasicHist) GetSparseBuckets() map[int64]int64 {
 }
 
 func (h *BasicHist) GetStrBuckets() map[string]int64 {
-	ret := make(map[string]int64, 0)
+	ret := make(map[string]int64)
 
 	for k, v := range h.Values {
 		ret[strconv.FormatInt(int64(k)*int64(h.BucketSize)+h.Min, 10)] = v
