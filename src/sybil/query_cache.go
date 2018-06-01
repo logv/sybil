@@ -249,6 +249,4 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 		Warn("ERROR RENAMING", tempfile.Name())
 	}
 
-	return
-
 }

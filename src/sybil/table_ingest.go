@@ -115,13 +115,10 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	}
 
 	// compact every MB or so
-	if size/KB > SIZE_DIGEST_THRESHOLD {
-		return true
-	}
-
-	return false
+	return size/KB > SIZE_DIGEST_THRESHOLD
 
 }
+
 func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBlockLoad) {
 	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
 	var err error

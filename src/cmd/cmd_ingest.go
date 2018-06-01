@@ -125,9 +125,7 @@ func importCsvRecords() {
 }
 
 func jsonQuery(obj *interface{}, path []string) []interface{} {
-
-	var ret interface{}
-	ret = *obj
+	ret := *obj
 
 	for _, key := range path {
 		if key == "$" {
@@ -222,7 +220,7 @@ func RunIngestCmdLine() {
 
 	flag.Parse()
 
-	digestfile := fmt.Sprintf("%s", *ingestfile)
+	digestfile := *ingestfile
 
 	if *sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()

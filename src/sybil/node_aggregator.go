@@ -65,9 +65,7 @@ func (vt *VTable) AggregateSamples(dirs []string) {
 	samples := make([]*Sample, 0)
 
 	for _, res := range allResults {
-		for _, s := range res.Samples {
-			samples = append(samples, s)
-		}
+		samples = append(samples, res.Samples...)
 	}
 
 	if len(samples) > limit {

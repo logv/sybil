@@ -270,7 +270,7 @@ func PrintBytes(obj interface{}) {
 		Warn("COULDNT ENCODE BYTES", err)
 	}
 
-	Print(string(buf.Bytes()))
+	Print(buf.String())
 
 }
 
@@ -566,7 +566,5 @@ func PrintVersionInfo() {
 		}
 
 	}
-
-	return
 
 }

@@ -183,11 +183,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 func isActivePid(val []byte) bool {
 	// Check if its our PID or not...
 	pidStr := strconv.FormatInt(int64(os.Getpid()), 10)
-	if pidStr == string(val) {
-		return true
-	}
-
-	return false
+	return pidStr == string(val)
 }
 
 func checkIfBroken(lockfile string, l *Lock) bool {
