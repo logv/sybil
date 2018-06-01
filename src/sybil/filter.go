@@ -42,7 +42,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		op := tokens[1]
 		val, _ := strconv.ParseInt(tokens[2], 10, 64)
 
-		if checkTable(tokens, t) != true {
+		if !checkTable(tokens, t) {
 			continue
 		}
 
@@ -67,7 +67,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		op := tokens[1]
 		val := tokens[2]
 
-		if checkTable(tokens, t) != true {
+		if !checkTable(tokens, t) {
 			continue
 		}
 		loadSpec.Set(col)
@@ -82,7 +82,7 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		op := tokens[1]
 		val := tokens[2]
 
-		if checkTable(tokens, t) != true {
+		if !checkTable(tokens, t) {
 			continue
 		}
 

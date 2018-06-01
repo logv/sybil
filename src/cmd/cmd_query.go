@@ -110,7 +110,7 @@ func RunQueryCmdLine() {
 		sybil.OPTS.DISTINCT = distinct
 	}
 
-	if *NO_RECYCLE_MEM == true {
+	if *NO_RECYCLE_MEM {
 		sybil.FLAGS.RECYCLE_MEM = sybil.NewFalseFlag()
 	}
 

@@ -24,7 +24,7 @@ var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
 func (t *Table) saveTableInfo(fname string) {
-	if t.GrabInfoLock() == false {
+	if !t.GrabInfoLock() {
 		return
 	}
 
@@ -236,7 +236,7 @@ func fileLooksLikeBlock(v os.FileInfo) bool {
 }
 
 func (t *Table) LoadBlockCache() {
-	if t.GrabCacheLock() == false {
+	if !t.GrabCacheLock() {
 		return
 	}
 
@@ -322,7 +322,7 @@ func (t *Table) WriteBlockCache() {
 		return
 	}
 
-	if t.GrabCacheLock() == false {
+	if !t.GrabCacheLock() {
 		return
 	}
 

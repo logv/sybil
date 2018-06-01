@@ -177,17 +177,17 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 func (vt *VTable) StitchResults(dirs []string) {
 	vt.initDataStructures()
 
-	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES == true {
+	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES {
 		vt.AggregateTables(dirs)
 		return
 	}
 
-	if FLAGS.PRINT_INFO != nil && *FLAGS.PRINT_INFO == true {
+	if FLAGS.PRINT_INFO != nil && *FLAGS.PRINT_INFO {
 		vt.AggregateInfo(dirs)
 		return
 	}
 
-	if FLAGS.SAMPLES != nil && *FLAGS.SAMPLES == true {
+	if FLAGS.SAMPLES != nil && *FLAGS.SAMPLES {
 		vt.AggregateSamples(dirs)
 		return
 	}

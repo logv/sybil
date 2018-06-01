@@ -291,7 +291,7 @@ func (l *Lock) Grab() bool {
 	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
 		time.Sleep(LOCK_US)
-		if checkPid(lockfile, l) == false {
+		if !checkPid(lockfile, l) {
 			if l.broken {
 				Debug("MARKING BROKEN LOCKFILE", lockfile)
 				return false
@@ -313,7 +313,7 @@ func (l *Lock) Grab() bool {
 		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
 
-		if checkPid(lockfile, l) == false {
+		if !checkPid(lockfile, l) {
 			continue
 		}
 

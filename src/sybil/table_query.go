@@ -51,7 +51,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	toCacheSpecs := make(map[string]*QuerySpec)
 
 	loadedInfo := t.LoadTableInfo()
-	if loadedInfo == false {
+	if !loadedInfo {
 		if t.HasFlagFile() {
 			return 0
 		}
@@ -200,7 +200,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 				// don't delete when testing so we can verify block
 				// loading results
-				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && TEST_MODE == false {
+				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && !TEST_MODE {
 					t.blockMu.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
@@ -225,7 +225,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				wg.Wait()
 				start := time.Now()
 
-				if *FLAGS.RECYCLE_MEM == false {
+				if !*FLAGS.RECYCLE_MEM {
 					mu.Lock()
 					oldPercent := debug.SetGCPercent(100)
 					debug.SetGCPercent(oldPercent)
@@ -311,7 +311,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		mu.Unlock()
 		count += rowStoreQuery.count
 
-		if DELETE_BLOCKS_AFTER_QUERY == false && t.RowBlock != nil {
+		if !DELETE_BLOCKS_AFTER_QUERY && t.RowBlock != nil {
 			Debug("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
 			t.RowBlock.RecordList = rowStoreQuery.records
 			t.RowBlock.Matched = rowStoreQuery.records
@@ -340,7 +340,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	// bc combining results is not idempotent
 	t.WriteQueryCache(toCacheSpecs)
 
-	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY == true && querySpec != nil {
+	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
 		for k, v := range allResults {

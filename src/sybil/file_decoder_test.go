@@ -59,7 +59,7 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 	loadSpec.LoadAllColumns = true
 
 	loaded := nt.LoadTableInfo()
-	if loaded == false {
+	if !loaded {
 		t.Error("COULDNT LOAD ZIPPED TABLE INFO!")
 	}
 
@@ -138,7 +138,7 @@ func TestOpenCompressedColumn(t *testing.T) {
 	loadSpec.LoadAllColumns = true
 
 	loaded := bt.LoadTableInfo()
-	if loaded == false {
+	if !loaded {
 		t.Error("COULDNT LOAD ZIPPED TABLE INFO!")
 	}
 

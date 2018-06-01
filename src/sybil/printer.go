@@ -282,7 +282,7 @@ func encodeResults(qs *QuerySpec) {
 }
 
 func (qs *QuerySpec) PrintResults() {
-	if *FLAGS.ENCODE_RESULTS == true {
+	if *FLAGS.ENCODE_RESULTS {
 		Debug("ENCODING RESULTS")
 
 		encodeResults(qs)

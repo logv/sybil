@@ -61,7 +61,7 @@ func (t *Table) CompactRecords() {
 // remember, there is no reason to actually read the data off disk
 // until we decide to compact
 func (t *Table) MaybeCompactRecords() {
-	if *FLAGS.SKIP_COMPACT == true {
+	if *FLAGS.SKIP_COMPACT {
 		return
 	}
 
@@ -164,7 +164,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 		// we can open .gz files as well as regular .db files
 		cname := strings.TrimRight(filename, GZIP_EXT)
 
-		if strings.HasSuffix(cname, ".db") == false {
+		if !strings.HasSuffix(cname, ".db") {
 			continue
 		}
 
@@ -200,7 +200,7 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 var DELETE_BLOCKS = make([]string, 0)
 
 func (t *Table) RestoreUningestedFiles() {
-	if t.GrabDigestLock() == false {
+	if !t.GrabDigestLock() {
 		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
 		return
 	}

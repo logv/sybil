@@ -426,7 +426,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	tb.Name = dirname
 
 	defer tb.table.ReleaseBlockLock(filename)
-	if tb.table.GrabBlockLock(filename) == false {
+	if !tb.table.GrabBlockLock(filename) {
 		Debug("Can't grab lock to save block", filename)
 		return false
 	}

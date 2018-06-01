@@ -23,7 +23,7 @@ func RunRebuildCmdLine() {
 
 	t := sybil.GetTable(*sybil.FLAGS.TABLE)
 
-	loaded := t.LoadTableInfo() && *FORCE_UPDATE == false
+	loaded := t.LoadTableInfo() && !*FORCE_UPDATE
 	if loaded {
 		sybil.Print("TABLE INFO ALREADY EXISTS, NOTHING TO REBUILD!")
 		return
@@ -33,7 +33,7 @@ func RunRebuildCmdLine() {
 
 	// TODO: prompt to see if this table info looks good and then write it to
 	// original info.db
-	if *REPLACE_INFO == true {
+	if *REPLACE_INFO {
 		sybil.Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
 		lock := sybil.Lock{Table: t, Name: "info"}
 		lock.ForceDeleteFile()
