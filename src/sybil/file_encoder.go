@@ -17,14 +17,6 @@ type FileEncoder interface {
 	CloseFile() bool
 }
 
-func encodeInto(filename string, obj interface{}) error {
-	enc := GetFileEncoder(filename)
-	defer enc.CloseFile()
-
-	err := enc.Encode(obj)
-	return err
-}
-
 func GetFileEncoder(filename string) FileEncoder {
 	// otherwise, we just return vanilla decoder for this file
 
