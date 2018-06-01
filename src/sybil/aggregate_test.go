@@ -162,8 +162,7 @@ func TestHistograms(t *testing.T) {
 
 	prevCount := int64(math.MaxInt64)
 	// testing that a histogram with single value looks uniform
-	for k, v := range querySpec.Results {
-		strings.Replace(k, GROUP_DELIMITER, "", 1)
+	for _, v := range querySpec.Results {
 		percentiles := v.Hists["age"].GetPercentiles()
 
 		if v.Count > prevCount {
@@ -194,8 +193,7 @@ func TestHistograms(t *testing.T) {
 
 	prevAvg := float64(0)
 	// testing that a histogram with single value looks uniform
-	for k, v := range querySpec.Results {
-		strings.Replace(k, GROUP_DELIMITER, "", 1)
+	for _, v := range querySpec.Results {
 		avg := v.Hists["age"].Mean()
 
 		if avg < prevAvg {
@@ -322,8 +320,7 @@ func TestOrderBy(t *testing.T) {
 		t.Error("NO RESULTS RETURNED FOR QUERY!")
 	}
 
-	for k, v := range querySpec.Results {
-		strings.Replace(k, GROUP_DELIMITER, "", 1)
+	for _, v := range querySpec.Results {
 		avg := v.Hists["age"].Mean()
 
 		if avg < prevAvg {
