@@ -110,7 +110,7 @@ func RunQueryCmdLine() {
 		sybil.OPTS.DISTINCT = distinct
 	}
 
-	if *NO_RECYCLE_MEM == true {
+	if *NO_RECYCLE_MEM {
 		sybil.FLAGS.RECYCLE_MEM = sybil.NewFalseFlag()
 	}
 
@@ -272,7 +272,7 @@ func RunQueryCmdLine() {
 		start := time.Now()
 		// We can load and query at the same time
 		if *sybil.FLAGS.LOAD_AND_QUERY {
-			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
+			t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
 			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))

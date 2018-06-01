@@ -61,7 +61,7 @@ func (t *Table) CompactRecords() {
 // remember, there is no reason to actually read the data off disk
 // until we decide to compact
 func (t *Table) MaybeCompactRecords() {
-	if *FLAGS.SKIP_COMPACT == true {
+	if *FLAGS.SKIP_COMPACT {
 		return
 	}
 
@@ -102,7 +102,7 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 		break
 	}
 
-	files, err := file.Readdir(0)
+	files, _ := file.Readdir(0)
 	MIN_FILES_TO_DIGEST = len(files)
 
 	if len(files) > FILE_DIGEST_THRESHOLD {
@@ -115,13 +115,10 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 	}
 
 	// compact every MB or so
-	if size/KB > SIZE_DIGEST_THRESHOLD {
-		return true
-	}
-
-	return false
+	return size/KB > SIZE_DIGEST_THRESHOLD
 
 }
+
 func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBlockLoad) {
 	dirname := path.Join(*FLAGS.DIR, t.Name, digest)
 	var err error
@@ -150,7 +147,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 		break
 	}
 
-	files, err := file.Readdir(0)
+	files, _ := file.Readdir(0)
 	if t.RowBlock == nil {
 		t.RowBlock = &TableBlock{}
 		(*t.RowBlock).RecordList = make(RecordList, 0)
@@ -167,7 +164,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 		// we can open .gz files as well as regular .db files
 		cname := strings.TrimRight(filename, GZIP_EXT)
 
-		if strings.HasSuffix(cname, ".db") == false {
+		if !strings.HasSuffix(cname, ".db") {
 			continue
 		}
 
@@ -203,7 +200,7 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 var DELETE_BLOCKS = make([]string, 0)
 
 func (t *Table) RestoreUningestedFiles() {
-	if t.GrabDigestLock() == false {
+	if !t.GrabDigestLock() {
 		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
 		return
 	}

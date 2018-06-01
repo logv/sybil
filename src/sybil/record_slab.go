@@ -4,7 +4,7 @@ import "time"
 
 func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
 
-	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && loadRecords == false {
+	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && !loadRecords {
 		loadSpec.slabMu.Lock()
 		defer loadSpec.slabMu.Unlock()
 		if len(loadSpec.slabs) > 0 {
@@ -44,7 +44,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 
 	// determine if we need to allocate the different field containers inside
 	// each record
-	if loadSpec != nil && loadRecords == false {
+	if loadSpec != nil && !loadRecords {
 		for fieldName := range loadSpec.columns {
 			v := t.getKeyID(fieldName)
 

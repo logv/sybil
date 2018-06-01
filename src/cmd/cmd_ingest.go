@@ -33,7 +33,7 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 		prefixName := fmt.Sprint(keyName, "_")
 		switch iv := v.(type) {
 		case string:
-			if INT_CAST[keyName] == true {
+			if INT_CAST[keyName] {
 				val, err := strconv.ParseInt(iv, 10, 64)
 				if err == nil {
 					r.AddIntField(keyName, int64(val))
@@ -125,9 +125,7 @@ func importCsvRecords() {
 }
 
 func jsonQuery(obj *interface{}, path []string) []interface{} {
-
-	var ret interface{}
-	ret = *obj
+	ret := *obj
 
 	for _, key := range path {
 		if key == "$" {
@@ -222,7 +220,7 @@ func RunIngestCmdLine() {
 
 	flag.Parse()
 
-	digestfile := fmt.Sprintf("%s", *ingestfile)
+	digestfile := *ingestfile
 
 	if *sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
@@ -265,21 +263,21 @@ func RunIngestCmdLine() {
 	var loadedTable = false
 	for i := 0; i < TABLE_INFO_GRABS; i++ {
 		loaded := t.LoadTableInfo()
-		if loaded == true || t.HasFlagFile() == false {
+		if loaded || !t.HasFlagFile() {
 			loadedTable = true
 			break
 		}
 		time.Sleep(time.Millisecond * 10)
 	}
 
-	if loadedTable == false {
+	if !loadedTable {
 		if t.HasFlagFile() {
 			sybil.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
 			return
 		}
 	}
 
-	if *fCsv == false {
+	if !*fCsv {
 		importJSONRecords()
 	} else {
 		importCsvRecords()

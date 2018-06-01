@@ -19,7 +19,7 @@ type RecoverableLock interface {
 	Recover() bool
 }
 
-var BREAK_MAP = make(map[string]int, 0)
+var BREAK_MAP = make(map[string]int)
 
 type Lock struct {
 	Name   string
@@ -170,7 +170,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 	Debug("FORCE MAKING", lockfile)
 	nf, err := os.Create(lockfile)
 	if err != nil {
-		nf, err = os.OpenFile(lockfile, os.O_CREATE, 0666)
+		nf, _ = os.OpenFile(lockfile, os.O_CREATE, 0666)
 	}
 
 	defer nf.Close()
@@ -183,11 +183,7 @@ func (l *Lock) ForceMakeFile(pid int64) {
 func isActivePid(val []byte) bool {
 	// Check if its our PID or not...
 	pidStr := strconv.FormatInt(int64(os.Getpid()), 10)
-	if pidStr == string(val) {
-		return true
-	}
-
-	return false
+	return pidStr == string(val)
 }
 
 func checkIfBroken(lockfile string, l *Lock) bool {
@@ -295,7 +291,7 @@ func (l *Lock) Grab() bool {
 	var err error
 	for i := 0; i < LOCK_TRIES; i++ {
 		time.Sleep(LOCK_US)
-		if checkPid(lockfile, l) == false {
+		if !checkPid(lockfile, l) {
 			if l.broken {
 				Debug("MARKING BROKEN LOCKFILE", lockfile)
 				return false
@@ -317,7 +313,7 @@ func (l *Lock) Grab() bool {
 		Debug("WRITING PID", pid, "TO LOCK", lockfile)
 		nf.Sync()
 
-		if checkPid(lockfile, l) == false {
+		if !checkPid(lockfile, l) {
 			continue
 		}
 

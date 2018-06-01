@@ -18,7 +18,6 @@ type TableBlock struct {
 
 	valStringIDLookup map[int32]string
 	columns           map[int16]*TableColumn
-	brokenKeys        map[string]int16
 }
 
 func newTableBlock() TableBlock {

@@ -147,7 +147,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	os.MkdirAll(ingestdir, 0777)
 	os.MkdirAll(tempingestdir, 0777)
 
-	w, err := ioutil.TempFile(tempingestdir, fmt.Sprintf("%s_", blockname))
+	w, _ := ioutil.TempFile(tempingestdir, fmt.Sprintf("%s_", blockname))
 
 	marshalledRecords := make([]*SavedRecord, len(records))
 	for i, r := range records {
@@ -160,7 +160,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
-	err = enc.Encode(marshalledRecords)
+	err := enc.Encode(marshalledRecords)
 
 	if err != nil {
 		Error("encode:", err)

@@ -61,7 +61,7 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 	nt.LoadAndQueryRecords(&loadSpec, nil)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded == true {
+		if loaded {
 			t.Error("Test DB started with saved query results")
 		}
 	}
@@ -70,7 +70,7 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded != true {
+		if !loaded {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
@@ -78,7 +78,7 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 	FLAGS.CACHED_QUERIES = NewFalseFlag()
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded == true {
+		if loaded {
 			t.Error("Used query cache when flag was not provided")
 		}
 	}
@@ -89,7 +89,7 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 	querySpec.Aggregations = append(aggs, nt.Aggregation("id", "hist"))
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded == true {
+		if loaded {
 			t.Error("Test DB has query results for new query")
 		}
 	}
@@ -117,7 +117,7 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 	// clear the copied query spec result map and look
 	// at the cached query results
 
-	copySpec.Results = make(ResultMap, 0)
+	copySpec.Results = make(ResultMap)
 	nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 	if len(querySpec.Results) == 0 {
@@ -143,7 +143,7 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
-		if loaded != true {
+		if !loaded {
 			t.Error("Did not correctly save and load query results")
 		}
 	}
@@ -183,7 +183,7 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 		// clear the copied query spec result map and look
 		// at the cached query results
 
-		copySpec.Results = make(ResultMap, 0)
+		copySpec.Results = make(ResultMap)
 		nt.LoadAndQueryRecords(&loadSpec, copySpec)
 
 		if len(querySpec.Results) == 0 {
@@ -225,7 +225,7 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 
 		for _, b := range nt.BlockList {
 			loaded := querySpec.LoadCachedResults(b.Name)
-			if loaded != true {
+			if !loaded {
 				t.Error("Did not correctly save and load query results")
 			}
 		}

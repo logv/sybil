@@ -190,9 +190,6 @@ func testStrNeq(t *testing.T, tableName string) {
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
-	groupings := []Grouping{}
-	groupings = append(groupings, nt.Grouping("age"))
-
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
 	nt.MatchAndAggregate(&querySpec)

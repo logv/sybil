@@ -65,7 +65,7 @@ func (t *Table) FillPartialBlock() bool {
 
 	Debug("OPENING PARTIAL BLOCK", filename)
 
-	if t.GrabBlockLock(filename) == false {
+	if !t.GrabBlockLock(filename) {
 		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
 		return true
 	}
@@ -91,7 +91,7 @@ func (t *Table) FillPartialBlock() bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if t.SaveRecordsToBlock(partialRecords, filename) == false {
+		if !t.SaveRecordsToBlock(partialRecords, filename) {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
 			return false
 		}
@@ -145,7 +145,7 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 		switch fil := f.(type) {
 		case IntFilter:
 			if fil.Op == "gt" || fil.Op == "lt" {
-				if f.Filter(&minRecord) != true && f.Filter(&maxRecord) != true {
+				if !f.Filter(&minRecord) && !f.Filter(&maxRecord) {
 					add = false
 					break
 				}
@@ -236,10 +236,10 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 			// we cut off extensions to check our loadSpec
 			cname := strings.TrimRight(fname, GZIP_EXT)
 
-			if loadSpec.files[cname] != true && loadRecords == false {
+			if !loadSpec.files[cname] && !loadRecords {
 				continue
 			}
-		} else if loadRecords == false {
+		} else if !loadRecords {
 			continue
 		}
 
@@ -291,7 +291,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		// FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
 			// returns True if the record matches!
-			ret := querySpec.Filters[j].Filter(r) != true
+			ret := !querySpec.Filters[j].Filter(r)
 			if ret {
 				add = false
 				break

@@ -65,9 +65,7 @@ func (vt *VTable) AggregateSamples(dirs []string) {
 	samples := make([]*Sample, 0)
 
 	for _, res := range allResults {
-		for _, s := range res.Samples {
-			samples = append(samples, s)
-		}
+		samples = append(samples, res.Samples...)
 	}
 
 	if len(samples) > limit {
@@ -85,7 +83,7 @@ func (vt *VTable) AggregateTables(dirs []string) {
 	allResults := vt.findResultsInDirs(dirs)
 	Debug("FOUND", len(allResults), "SPECS TO AGG")
 
-	allTables := make(map[string]int, 0)
+	allTables := make(map[string]int)
 
 	for _, res := range allResults {
 		for _, table := range res.Tables {
@@ -119,7 +117,7 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 			size += block.Size
 		}
 
-		res.Table.BlockList = make(map[string]*TableBlock, 0)
+		res.Table.BlockList = make(map[string]*TableBlock)
 
 		res.Table.initLocks()
 		res.Table.populateStringIDLookup()
@@ -179,17 +177,17 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 func (vt *VTable) StitchResults(dirs []string) {
 	vt.initDataStructures()
 
-	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES == true {
+	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES {
 		vt.AggregateTables(dirs)
 		return
 	}
 
-	if FLAGS.PRINT_INFO != nil && *FLAGS.PRINT_INFO == true {
+	if FLAGS.PRINT_INFO != nil && *FLAGS.PRINT_INFO {
 		vt.AggregateInfo(dirs)
 		return
 	}
 
-	if FLAGS.SAMPLES != nil && *FLAGS.SAMPLES == true {
+	if FLAGS.SAMPLES != nil && *FLAGS.SAMPLES {
 		vt.AggregateSamples(dirs)
 		return
 	}

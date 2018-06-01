@@ -101,7 +101,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		// {{{ FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
 			// returns True if the record matches!
-			ret := querySpec.Filters[j].Filter(r) != true
+			ret := !querySpec.Filters[j].Filter(r)
 			if ret {
 				add = false
 				break

@@ -24,7 +24,7 @@ var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
 func (t *Table) saveTableInfo(fname string) {
-	if t.GrabInfoLock() == false {
+	if !t.GrabInfoLock() {
 		return
 	}
 
@@ -187,7 +187,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 // Remove our pointer to the blocklist so a GC is triggered and
 // a bunch of new memory becomes available
 func (t *Table) ReleaseRecords() {
-	t.BlockList = make(map[string]*TableBlock, 0)
+	t.BlockList = make(map[string]*TableBlock)
 	debug.FreeOSMemory()
 }
 
@@ -236,7 +236,7 @@ func fileLooksLikeBlock(v os.FileInfo) bool {
 }
 
 func (t *Table) LoadBlockCache() {
-	if t.GrabCacheLock() == false {
+	if !t.GrabCacheLock() {
 		return
 	}
 
@@ -268,7 +268,7 @@ func (t *Table) LoadBlockCache() {
 }
 
 func (t *Table) ResetBlockCache() {
-	t.BlockInfoCache = make(map[string]*SavedColumnInfo, 0)
+	t.BlockInfoCache = make(map[string]*SavedColumnInfo)
 }
 
 func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
@@ -322,7 +322,7 @@ func (t *Table) WriteBlockCache() {
 		return
 	}
 
-	if t.GrabCacheLock() == false {
+	if !t.GrabCacheLock() {
 		return
 	}
 

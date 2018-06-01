@@ -426,7 +426,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	tb.Name = dirname
 
 	defer tb.table.ReleaseBlockLock(filename)
-	if tb.table.GrabBlockLock(filename) == false {
+	if !tb.table.GrabBlockLock(filename) {
 		Debug("Can't grab lock to save block", filename)
 		return false
 	}
@@ -519,7 +519,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	bucketReplace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
-		re, err = regexp.Compile(strReplace.Pattern)
+		re, _ = regexp.Compile(strReplace.Pattern)
 	}
 
 	for k, v := range into.StringTable {

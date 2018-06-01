@@ -57,21 +57,6 @@ func (r *Record) GetSetVal(name string) ([]string, bool) {
 	return rets, ok
 }
 
-func (r *Record) getVal(name string) (int, bool) {
-	nameID := r.block.getKeyID(name)
-	switch r.Populated[nameID] {
-	case STR_VAL:
-		return int(r.Strs[nameID]), true
-
-	case INT_VAL:
-		return int(r.Ints[nameID]), true
-
-	default:
-		return 0, false
-	}
-
-}
-
 func (r *Record) ResizeFields(length int16) {
 	// dont get fooled by zeroes
 	if length <= 1 {

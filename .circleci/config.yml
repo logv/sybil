@@ -17,7 +17,6 @@ jobs:
       - run: make
 
       - run: go get github.com/alecthomas/gometalinter
-      - run: go get github.com/bradleyfalzon/revgrep/cmd/revgrep
       - run:
           name: Run linters
           command: |

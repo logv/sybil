@@ -14,7 +14,7 @@ func TestGrabInfoLock(t *testing.T) {
 	tbl.MakeDir()
 
 	grabbed := tbl.GrabInfoLock()
-	if grabbed != true {
+	if !grabbed {
 		t.Errorf("COULD NOT GRAB INFO LOCK, tried %v", tableName)
 	}
 }
@@ -33,7 +33,7 @@ func TestRecoverInfoLock(t *testing.T) {
 	tbl.MakeDir()
 
 	grabbed := tbl.GrabInfoLock()
-	if grabbed == true {
+	if grabbed {
 		t.Error("GRABBED INFO LOCK WHEN IT ALREADY EXISTS AND BELONGS ELSEWHERE")
 	}
 
@@ -50,7 +50,7 @@ func TestGrabDigestLock(t *testing.T) {
 
 	tbl.MakeDir()
 	grabbed := tbl.GrabDigestLock()
-	if grabbed != true {
+	if !grabbed {
 		t.Error("COULD NOT GRAB DIGEST LOCK")
 	}
 }
@@ -64,7 +64,7 @@ func TestRecoverDigestLock(t *testing.T) {
 	tbl.MakeDir()
 
 	// first grab digest lock
-	if grabbed := tbl.GrabDigestLock(); grabbed != true {
+	if grabbed := tbl.GrabDigestLock(); !grabbed {
 		t.Error("COULD NOT GRAB DIGEST LOCK")
 	}
 
@@ -73,7 +73,7 @@ func TestRecoverDigestLock(t *testing.T) {
 
 	tbl.MakeDir()
 	grabbed := tbl.GrabDigestLock()
-	if grabbed == true {
+	if grabbed {
 		t.Error("COULD GRAB DIGEST LOCK WHEN IT ARLEADY EXISTS")
 	}
 }
