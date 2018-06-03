@@ -57,7 +57,6 @@ func addRecords(dir string, tableName string, cb RecordSetupCB, blockCount int) 
 }
 
 func saveAndReloadTable(t *testing.T, flags *FlagDefs, tableName string, expectedBlocks int) *Table {
-	t.Helper()
 	expectedCount := CHUNK_SIZE * expectedBlocks
 	tbl := GetTable(*flags.DIR, tableName)
 
