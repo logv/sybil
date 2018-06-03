@@ -80,7 +80,7 @@ type Aggregation struct {
 	opID     int
 	Name     string
 	nameID   int16
-	HistType string
+	HistType HistogramType
 }
 
 type Result struct {
@@ -229,14 +229,7 @@ func (t *Table) Aggregation(histogramType HistogramType, name string, op string)
 
 	if op == "hist" {
 		agg.opID = OP_HIST
-		agg.HistType = "basic"
-		if histogramType == HistogramTypeLog {
-			agg.HistType = "multi"
-		}
-
-		if histogramType == HistogramTypeHDR {
-			agg.HistType = "hdr"
-		}
+		agg.HistType = histogramType
 	}
 
 	if op == DISTINCT_STR {
