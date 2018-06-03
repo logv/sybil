@@ -11,7 +11,7 @@ import "compress/gzip"
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string, skipOutliers bool, recycleMemory bool) bool {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string, digestSpec *DigestSpec) bool {
 	if len(records) == 0 {
 		return true
 	}
@@ -20,7 +20,7 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string, skipOutl
 	tempBlock.RecordList = records
 	tempBlock.table = t
 
-	return tempBlock.SaveToColumns(filename, skipOutliers, recycleMemory)
+	return tempBlock.SaveToColumns(filename, digestSpec)
 }
 
 func (t *Table) FindPartialBlocks() []*TableBlock {
@@ -44,7 +44,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 }
 
 // TODO: find any open blocks and then fill them...
-func (t *Table) FillPartialBlock(skipOutliers bool, recycleMemory bool) bool {
+func (t *Table) FillPartialBlock(digestSpec *DigestSpec) bool {
 	if len(t.newRecords) == 0 {
 		return false
 	}
@@ -90,7 +90,7 @@ func (t *Table) FillPartialBlock(skipOutliers bool, recycleMemory bool) bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if !t.SaveRecordsToBlock(partialRecords, filename, skipOutliers, recycleMemory) {
+		if !t.SaveRecordsToBlock(partialRecords, filename, digestSpec) {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
 			return false
 		}

@@ -74,7 +74,7 @@ func ingestDictionary(flags *sybil.FlagDefs, r *sybil.Record, recordmap *Diction
 
 var IMPORTED_COUNT = 0
 
-func importCsvRecords(flags *sybil.FlagDefs) {
+func importCsvRecords(flags *sybil.FlagDefs, digestSpec *sybil.DigestSpec) {
 	// For importing CSV records, we need to validate the headers, then we just
 	// read in and fill out record fields!
 	scanner := csv.NewReader(os.Stdin)
@@ -119,7 +119,7 @@ func importCsvRecords(flags *sybil.FlagDefs) {
 
 		}
 
-		t.ChunkAndSave()
+		t.ChunkAndSave(digestSpec)
 	}
 
 }
@@ -165,7 +165,7 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 	return nil
 }
 
-func importJSONRecords(flags *sybil.FlagDefs) {
+func importJSONRecords(flags *sybil.FlagDefs, digestSpec *sybil.DigestSpec) {
 	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
@@ -198,7 +198,7 @@ func importJSONRecords(flags *sybil.FlagDefs) {
 				ingestDictionary(flags, r, &dict, "")
 
 			}
-			t.ChunkAndSave()
+			t.ChunkAndSave(digestSpec)
 		}
 
 	}
@@ -278,11 +278,15 @@ func RunIngestCmdLine() {
 		}
 	}
 
+	digestSpec := &sybil.DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
 	if !*fCsv {
-		importJSONRecords(flags)
+		importJSONRecords(flags, digestSpec)
 	} else {
-		importCsvRecords(flags)
+		importCsvRecords(flags, digestSpec)
 	}
 
-	t.IngestRecords(*flags.SKIP_COMPACT, digestfile)
+	t.IngestRecords(*flags.SKIP_COMPACT, digestfile, digestSpec)
 }

@@ -59,7 +59,7 @@ func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(skipOutliers bool, dirname string, sameInts map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap, digestSpec *DigestSpec) {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
@@ -88,8 +88,8 @@ func (tb *TableBlock) SaveIntsToColumns(skipOutliers bool, dirname string, sameI
 			}
 
 			// bookkeeping for info.db
-			tb.updateIntInfo(k, bucket, skipOutliers)
-			tb.table.updateIntInfo(k, bucket, skipOutliers)
+			tb.updateIntInfo(k, bucket, digestSpec.SkipOutliers)
+			tb.table.updateIntInfo(k, bucket, digestSpec.SkipOutliers)
 		}
 
 		intCol.BucketEncoded = true
@@ -413,7 +413,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 }
 
-func (tb *TableBlock) SaveToColumns(filename string, skipOutliers bool, recycleMemory bool) bool {
+func (tb *TableBlock) SaveToColumns(filename string, digestSpec *DigestSpec) bool {
 	dirname := filename
 
 	// Important to set the BLOCK's dirName so we can keep track
@@ -435,7 +435,7 @@ func (tb *TableBlock) SaveToColumns(filename string, skipOutliers bool, recycleM
 	end := time.Now()
 	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
-	tb.SaveIntsToColumns(skipOutliers, partialname, separatedColumns.ints)
+	tb.SaveIntsToColumns(partialname, separatedColumns.ints, digestSpec)
 	tb.SaveStrsToColumns(partialname, separatedColumns.strs)
 	tb.SaveSetsToColumns(partialname, separatedColumns.sets)
 	tb.SaveInfoToColumns(partialname)

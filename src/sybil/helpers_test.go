@@ -60,7 +60,10 @@ func saveAndReloadTable(t *testing.T, flags *FlagDefs, tableName string, expecte
 	expectedCount := CHUNK_SIZE * expectedBlocks
 	tbl := GetTable(*flags.DIR, tableName)
 
-	tbl.SaveRecordsToColumns()
+	tbl.SaveRecordsToColumns(&DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	})
 
 	unloadTestTable(tableName)
 

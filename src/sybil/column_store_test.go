@@ -23,7 +23,11 @@ func TestTableDigestRowRecords(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
@@ -42,7 +46,7 @@ func TestTableDigestRowRecords(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords(minFilesToDigest)
+	nt.DigestRecords(minFilesToDigest, digestSpec)
 
 	unloadTestTable(tableName)
 
@@ -79,7 +83,11 @@ func TestColumnStoreFileNames(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
@@ -98,7 +106,7 @@ func TestColumnStoreFileNames(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords(minFilesToDigest)
+	nt.DigestRecords(minFilesToDigest, digestSpec)
 
 	unloadTestTable(tableName)
 
@@ -158,7 +166,11 @@ func TestBigIntColumns(t *testing.T) {
 	}, blockCount)
 
 	tbl := GetTable(*flags.DIR, tableName)
-	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest")
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
 	nt := GetTable(*flags.DIR, tableName)
@@ -177,7 +189,7 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords(minFilesToDigest)
+	nt.DigestRecords(minFilesToDigest, digestSpec)
 
 	unloadTestTable(tableName)
 

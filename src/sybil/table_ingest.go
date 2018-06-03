@@ -27,7 +27,7 @@ func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 }
 
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) IngestRecords(skipCompact bool, blockname string) (minFilesToDigest int) {
+func (t *Table) IngestRecords(skipCompact bool, blockname string, digestSpec *DigestSpec) (minFilesToDigest int) {
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 
@@ -37,18 +37,18 @@ func (t *Table) IngestRecords(skipCompact bool, blockname string) (minFilesToDig
 	t.ReleaseRecords()
 
 	if !skipCompact {
-		_, minFilesToDigest = t.MaybeCompactRecords()
+		_, minFilesToDigest = t.MaybeCompactRecords(digestSpec)
 	}
 	return minFilesToDigest
 }
 
 // TODO: figure out how often we actually do a collation check by storing last
 // collation inside a file somewhere
-func (t *Table) CompactRecords(minFilesToDigest int) {
+func (t *Table) CompactRecords(minFilesToDigest int, digestSpec *DigestSpec) {
 	HOLD_MATCHES = true
 
 	t.ResetBlockCache()
-	t.DigestRecords(minFilesToDigest)
+	t.DigestRecords(minFilesToDigest, digestSpec)
 
 }
 
@@ -57,10 +57,10 @@ func (t *Table) CompactRecords(minFilesToDigest int) {
 // we have over X megabytes of data
 // remember, there is no reason to actually read the data off disk
 // until we decide to compact
-func (t *Table) MaybeCompactRecords() (compacted bool, minFilesToDigest int) {
+func (t *Table) MaybeCompactRecords(digestSpec *DigestSpec) (compacted bool, minFilesToDigest int) {
 	should, minFilesToDigest := t.ShouldCompactRowStore(INGEST_DIR)
 	if should {
-		t.CompactRecords(minFilesToDigest)
+		t.CompactRecords(minFilesToDigest, digestSpec)
 	}
 	return should, minFilesToDigest
 }
@@ -234,6 +234,7 @@ func (t *Table) RestoreUningestedFiles() {
 }
 
 type SaveBlockChunkCB struct {
+	digestSpec   *DigestSpec
 	digestDir    string
 	deleteBlocks []string
 }
@@ -243,7 +244,7 @@ func (cb *SaveBlockChunkCB) CB(dir string, tableName string, params HistogramPar
 	t := GetTable(dir, tableName)
 	if digestname == NO_MORE_BLOCKS {
 		if len(t.newRecords) > 0 {
-			t.SaveRecordsToColumns()
+			t.SaveRecordsToColumns(cb.digestSpec)
 			t.ReleaseRecords()
 		}
 
@@ -275,7 +276,7 @@ func (cb *SaveBlockChunkCB) CB(dir string, tableName string, params HistogramPar
 var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
-func (t *Table) DigestRecords(minFilesToDigest int) {
+func (t *Table) DigestRecords(minFilesToDigest int, digestSpec *DigestSpec) {
 	canDigest := t.GrabDigestLock()
 
 	if !canDigest {
@@ -314,7 +315,10 @@ func (t *Table) DigestRecords(minFilesToDigest int) {
 		// ingestions...
 		os.MkdirAll(digestfile, 0777)
 		basename := path.Base(digesting)
-		cb := SaveBlockChunkCB{digestDir: digesting}
+		cb := SaveBlockChunkCB{
+			digestSpec: digestSpec,
+			digestDir:  digesting,
+		}
 		t.LoadRowStoreRecords(basename, nil, cb.CB)
 	} else {
 		t.ReleaseDigestLock()

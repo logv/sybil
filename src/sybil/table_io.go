@@ -79,7 +79,7 @@ func getSaveTable(t *Table) *Table {
 	}
 }
 
-func (t *Table) saveRecordList(records RecordList) bool {
+func (t *Table) saveRecordList(records RecordList, digestSpec *DigestSpec) bool {
 	if len(records) == 0 {
 		return false
 	}
@@ -88,21 +88,19 @@ func (t *Table) saveRecordList(records RecordList) bool {
 
 	chunkSize := CHUNK_SIZE
 	chunks := len(records) / chunkSize
-	// TODO
-	skipOutliers, recycleMemory := false, false
 	if chunks == 0 {
 		filename, err := t.getNewIngestBlockName()
 		if err != nil {
 			Error("ERR SAVING BLOCK", filename, err)
 		}
-		t.SaveRecordsToBlock(records, filename, skipOutliers, recycleMemory)
+		t.SaveRecordsToBlock(records, filename, digestSpec)
 	} else {
 		for j := 0; j < chunks; j++ {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
 				Error("ERR SAVING BLOCK", filename, err)
 			}
-			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename, skipOutliers, recycleMemory)
+			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename, digestSpec)
 		}
 
 		// SAVE THE REMAINDER
@@ -112,21 +110,19 @@ func (t *Table) saveRecordList(records RecordList) bool {
 				Error("Error creating new ingestion block", err)
 			}
 
-			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename, skipOutliers, recycleMemory)
+			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename, digestSpec)
 		}
 	}
 
 	return true
 }
 
-func (t *Table) SaveRecordsToColumns() bool {
+func (t *Table) SaveRecordsToColumns(digestSpec *DigestSpec) bool {
 	os.MkdirAll(path.Join(t.Dir, t.Name), 0777)
 	sort.Sort(SortRecordsByTime{t.newRecords})
 
-	// TODO
-	skipOutliers, recycleMemory := true, false
-	t.FillPartialBlock(skipOutliers, recycleMemory)
-	ret := t.saveRecordList(t.newRecords)
+	t.FillPartialBlock(digestSpec)
+	ret := t.saveRecordList(t.newRecords, digestSpec)
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
 
@@ -371,15 +367,13 @@ func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 	return t.LoadAndQueryRecords(loadSpec, nil)
 }
 
-func (t *Table) ChunkAndSave() {
+func (t *Table) ChunkAndSave(digestSpec *DigestSpec) {
 
-	// TODO
-	skipOutliers, recycleMemory := false, false
 	if len(t.newRecords) >= CHUNK_SIZE {
 		os.MkdirAll(path.Join(t.Dir, t.Name), 0777)
 		name, err := t.getNewIngestBlockName()
 		if err == nil {
-			t.SaveRecordsToBlock(t.newRecords, name, skipOutliers, recycleMemory)
+			t.SaveRecordsToBlock(t.newRecords, name, digestSpec)
 			t.SaveTableInfo("info")
 			t.newRecords = make(RecordList, 0)
 			t.ReleaseRecords()

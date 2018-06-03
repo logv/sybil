@@ -25,5 +25,8 @@ func RunDigestCmdLine() {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return
 	}
-	t.DigestRecords(0)
+	t.DigestRecords(0, &sybil.DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	})
 }
