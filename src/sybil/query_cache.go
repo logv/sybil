@@ -142,16 +142,8 @@ func (qs *QuerySpec) GetCacheStruct(blockname string) QueryParams {
 func (qs *QuerySpec) GetCacheKey(blockname string) string {
 	cacheSpec := qs.GetCacheStruct(blockname)
 
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(cacheSpec)
-	if err != nil {
-		Warn("encode:", err)
-		return ""
-	}
-
 	h := md5.New()
-	h.Write(buf.Bytes())
+	h.Write([]byte(fmt.Sprint(cacheSpec)))
 
 	ret := fmt.Sprintf("%x", h.Sum(nil))
 	return ret
