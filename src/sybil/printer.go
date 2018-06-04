@@ -68,7 +68,7 @@ func printTimeResults(op string, printSpec *PrintSpec, querySpec *QuerySpec) {
 
 	for _, timeBucket := range keys {
 
-		timeStr := time.Unix(int64(timeBucket), 0).Format(querySpec.TimeFormat)
+		timeStr := time.Unix(int64(timeBucket), 0).String()
 		results := querySpec.TimeResults[timeBucket]
 		for _, r := range results {
 			if len(querySpec.Distincts) > 0 {

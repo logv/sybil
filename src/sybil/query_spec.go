@@ -25,7 +25,6 @@ type savedQueryParams struct {
 
 	WeightColumn string
 	TimeColumn   string
-	TimeFormat   string
 
 	OrderBy    string
 	PruneBy    string
