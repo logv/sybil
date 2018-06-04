@@ -1,9 +1,8 @@
 package sybil
 
 import (
-	"bytes"
 	"crypto/md5"
-	"encoding/gob"
+	"encoding/json"
 	"fmt"
 
 	hll "github.com/logv/loglogbeta"
@@ -250,17 +249,15 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 
 // cacheKey returns a stable identifier.
 func (qp QueryParams) cacheKey() string {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(qp)
+	buf, err := json.Marshal(qp)
 	if err != nil {
-		Warn("encode:", err)
-		return ""
+		panic(err)
 	}
 
 	h := md5.New()
-	h.Write(buf.Bytes())
+	h.Write(buf)
 
 	ret := fmt.Sprintf("%x", h.Sum(nil))
 	return ret
+
 }
