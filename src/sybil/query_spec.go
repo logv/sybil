@@ -1,6 +1,13 @@
 package sybil
 
-import hll "github.com/logv/loglogbeta"
+import (
+	"bytes"
+	"crypto/md5"
+	"encoding/gob"
+	"fmt"
+
+	hll "github.com/logv/loglogbeta"
+)
 
 type ResultMap map[string]*Result
 
@@ -239,4 +246,21 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 		Debug("MISSING CACHED INFO FOR", agg)
 	}
 	return agg
+}
+
+// cacheKey returns a stable identifier.
+func (qp QueryParams) cacheKey() string {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(qp)
+	if err != nil {
+		Warn("encode:", err)
+		return ""
+	}
+
+	h := md5.New()
+	h.Write(buf.Bytes())
+
+	ret := fmt.Sprintf("%x", h.Sum(nil))
+	return ret
 }
