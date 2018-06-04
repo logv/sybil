@@ -58,7 +58,7 @@ func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
 
 }
 
-func (vt *VTable) AggregateSamples(printConfig PrintConfig, dirs []string) {
+func (vt *VTable) AggregateSamples(printSpec *PrintSpec, dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 
@@ -68,8 +68,8 @@ func (vt *VTable) AggregateSamples(printConfig PrintConfig, dirs []string) {
 		samples = append(samples, res.Samples...)
 	}
 
-	if len(samples) > printConfig.Limit {
-		samples = samples[:printConfig.Limit]
+	if len(samples) > printSpec.Limit {
+		samples = samples[:printSpec.Limit]
 	}
 
 	// TODO: call into vt.PrintSamples later after adjusting how we store the samples
@@ -78,7 +78,7 @@ func (vt *VTable) AggregateSamples(printConfig PrintConfig, dirs []string) {
 
 }
 
-func (vt *VTable) AggregateTables(printConfig PrintConfig, dirs []string) {
+func (vt *VTable) AggregateTables(printSpec *PrintSpec, dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 	Debug("FOUND", len(allResults), "SPECS TO AGG")
@@ -100,10 +100,10 @@ func (vt *VTable) AggregateTables(printConfig PrintConfig, dirs []string) {
 		tableArr = append(tableArr, table)
 	}
 
-	printTablesToOutput(printConfig, tableArr)
+	printTablesToOutput(printSpec, tableArr)
 }
 
-func (vt *VTable) AggregateInfo(printConfig PrintConfig, dirs []string) {
+func (vt *VTable) AggregateInfo(printSpec *PrintSpec, dirs []string) {
 	// TODO: combine all result info
 	Debug("AGGREGATING TABLE INFO LIST")
 	allResults := vt.findResultsInDirs(dirs)
@@ -138,11 +138,11 @@ func (vt *VTable) AggregateInfo(printConfig PrintConfig, dirs []string) {
 
 	}
 
-	vt.PrintColInfo(printConfig)
+	vt.PrintColInfo(printSpec)
 
 }
 
-func (vt *VTable) AggregateSpecs(flags *FlagDefs, printConfig PrintConfig, dirs []string) {
+func (vt *VTable) AggregateSpecs(flags *FlagDefs, printSpec *PrintSpec, dirs []string) {
 	Debug("AGGREGATING QUERY RESULTS")
 
 	// TODO: verify all specs have the same md5 key
@@ -170,30 +170,30 @@ func (vt *VTable) AggregateSpecs(flags *FlagDefs, printConfig PrintConfig, dirs 
 	combinedResult.QueryParams = qs.QueryParams
 
 	combinedResult.SortResults(combinedResult.OrderBy)
-	combinedResult.PrintResults(*flags.OP, printConfig)
+	combinedResult.PrintResults(*flags.OP, printSpec)
 }
 
 func (vt *VTable) StitchResults(flags *FlagDefs, dirs []string) {
 	vt.initDataStructures()
-	printConfig := PrintConfig{
+	printSpec := &PrintSpec{
 		Limit:         *flags.LIMIT,
 		EncodeResults: *flags.ENCODE_RESULTS,
 		JSON:          *flags.JSON,
 	}
 	if flags.LIST_TABLES != nil && *flags.LIST_TABLES {
-		vt.AggregateTables(printConfig, dirs)
+		vt.AggregateTables(printSpec, dirs)
 		return
 	}
 
 	if flags.PRINT_INFO != nil && *flags.PRINT_INFO {
-		vt.AggregateInfo(printConfig, dirs)
+		vt.AggregateInfo(printSpec, dirs)
 		return
 	}
 
 	if flags.SAMPLES != nil && *flags.SAMPLES {
-		vt.AggregateSamples(printConfig, dirs)
+		vt.AggregateSamples(printSpec, dirs)
 		return
 	}
 
-	vt.AggregateSpecs(flags, printConfig, dirs)
+	vt.AggregateSpecs(flags, printSpec, dirs)
 }
