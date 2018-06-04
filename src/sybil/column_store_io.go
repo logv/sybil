@@ -98,7 +98,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, maxR)
-			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
+			intCol.ValueEncoded = true
 
 			for r, val := range recordToValue {
 				intCol.Values[r] = val

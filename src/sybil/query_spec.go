@@ -151,12 +151,12 @@ func (rs *Result) Combine(params HistogramParameters, mergeTable *Table, nextRes
 	// combine histograms...
 	for k, h := range nextResult.Hists {
 
-		// If we are doing a node aggregation, we have a MERGE_TABLE
+		// If we are doing a node aggregation, we have a mergeTable
 		// set, which means we should go the slow route when merging
 		// histograms because we can't be sure they were created with
 		// the same extents (being that they may originate from different
 		// nodes)
-		if OPTS.MERGE_TABLE != nil {
+		if mergeTable != nil {
 			ph, ok := rs.Hists[k]
 
 			if ok {

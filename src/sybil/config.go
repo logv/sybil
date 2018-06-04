@@ -131,7 +131,6 @@ type OptionDefs struct {
 
 var EMPTY = ""
 
-var OPTS = defaultOptions()
 var df *FlagDefs
 var dfMu sync.Mutex
 
@@ -155,7 +154,7 @@ func DefaultFlags() *FlagDefs {
 
 		SKIP_COMPACT: NewFalseFlag(),
 
-		PRINT_KEYS:         &OPTS.TIMESERIES,
+		PRINT_KEYS:         NewFalseFlag(),
 		LOAD_THEN_QUERY:    NewFalseFlag(),
 		READ_INGESTION_LOG: NewFalseFlag(),
 		READ_ROWSTORE:      NewFalseFlag(),
@@ -188,20 +187,6 @@ func DefaultFlags() *FlagDefs {
 		df.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
 	}
 	return df
-}
-
-func defaultOptions() *OptionDefs {
-	return &OptionDefs{
-		SORT_COUNT:              "$COUNT",
-		SAMPLES:                 false,
-		WEIGHT_COL:              false,
-		WEIGHT_COL_ID:           int16(0),
-		DELTA_ENCODE_INT_VALUES: true,
-		DELTA_ENCODE_RECORD_IDS: true,
-		WRITE_BLOCK_INFO:        false,
-		TIMESERIES:              false,
-		TIME_FORMAT:             "2006-01-02 15:04:05.999999999 -0700 MST",
-	}
 }
 
 func EncodeFlags(flags *FlagDefs) {
