@@ -1,19 +1,22 @@
 package sybil
 
-import "fmt"
-
-import "sort"
-import "strconv"
-import "math"
-import "math/rand"
-import "testing"
-import "strings"
-import "time"
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"sort"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
 
 func TestTableLoadRecords(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
-	defer deleteTestDb(tableName)
+	//defer deleteTestDb(tableName)
 
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
@@ -22,21 +25,21 @@ func TestTableLoadRecords(t *testing.T) {
 
 	blockCount := 3
 
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	nt := saveAndReloadTable(t, tableName, blockCount)
+	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 
 	querySpec := newQuerySpec()
 
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "avg"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{}, querySpec)
 
 	// TEST THAT WE GOT BACK 20 GROUP BY VALUES
 	if len(querySpec.Results) != 20 {
@@ -57,6 +60,8 @@ func TestTableLoadRecords(t *testing.T) {
 
 // Tests that the average histogram works
 func TestAveraging(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 
@@ -69,23 +74,23 @@ func TestAveraging(t *testing.T) {
 
 	totalAge := int64(0)
 	count := 0
-	addRecords(tableName, func(r *Record, index int) {
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
 		count++
-		r.AddIntField("id", int64(index))
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
 		totalAge += age
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, tableName, blockCount)
+	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 
 	querySpec := newQuerySpec()
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "avg"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{}, querySpec)
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
@@ -100,6 +105,8 @@ func TestAveraging(t *testing.T) {
 
 // Tests that the histogram works
 func TestHistograms(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -115,27 +122,28 @@ func TestHistograms(t *testing.T) {
 	count := 0
 	ages := make([]int, 0)
 
-	addRecords(tableName, func(r *Record, index int) {
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
 		count++
-		r.AddIntField("id", int64(index))
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
 		ages = append(ages, int(age))
 		totalAge += age
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, tableName, blockCount)
+	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 	var HIST = "hist"
-	FLAGS.OP = &HIST
+	flags.OP = &HIST
 
 	querySpec := newQuerySpec()
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "hist"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{Type: HistogramTypeBasic}, querySpec)
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
@@ -154,9 +162,10 @@ func TestHistograms(t *testing.T) {
 	}
 
 	querySpec = newQuerySpec()
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "hist"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{Type: HistogramTypeBasic}, querySpec)
 
 	sort.Ints(ages)
 
@@ -187,7 +196,7 @@ func TestHistograms(t *testing.T) {
 	}
 
 	querySpec.OrderBy = "age"
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{}, querySpec)
 
 	sort.Ints(ages)
 
@@ -204,6 +213,8 @@ func TestHistograms(t *testing.T) {
 
 // Tests that the histogram works
 func TestTimeSeries(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
@@ -219,32 +230,32 @@ func TestTimeSeries(t *testing.T) {
 	count := 0
 	ages := make([]int, 0)
 
-	addRecords(tableName, func(r *Record, index int) {
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
 		count++
-		r.AddIntField("id", int64(index))
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		random := rand.Intn(50) * -1
 		duration := time.Hour * time.Duration(random)
 		td := time.Now().Add(duration).Second()
-		r.AddIntField("time", int64(td))
+		r.AddIntField("time", int64(td), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
 		ages = append(ages, int(age))
 		totalAge += age
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, tableName, blockCount)
+	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 
-	hist := "hist"
-	FLAGS.OP = &hist
 	querySpec := newQuerySpec()
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "hist"))
+	querySpec.TimeColumn = "time"
 	querySpec.TimeBucket = int(time.Duration(60) * time.Minute)
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{Type: HistogramTypeBasic}, querySpec)
 
 	if len(querySpec.TimeResults) <= 0 {
 		t.Error("Time Bucketing returned too little results")
@@ -258,10 +269,13 @@ func TestTimeSeries(t *testing.T) {
 		for k, v := range b {
 			k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 
-			kval, _ := strconv.ParseInt(k, 10, 64)
+			kval, err := strconv.ParseInt(k, 10, 64)
+			if err != nil {
+				t.Fatal(err)
+			}
 			percentiles := v.Hists["age"].GetPercentiles()
 			if int64(percentiles[25]) != kval {
-				t.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[25])
+				t.Fatal("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[25])
 			}
 			if int64(percentiles[50]) != kval {
 				t.Error("GROUP BY YIELDED UNEXPECTED HIST", k, avgAge, percentiles[50])
@@ -274,33 +288,39 @@ func TestTimeSeries(t *testing.T) {
 }
 
 func TestOrderBy(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
 		return
 	}
 
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+	defer deleteTestDb(tableName)
 	blockCount := 3
 
 	totalAge := int64(0)
 	count := 0
-	tableName := getTestTableName(t)
-	addRecords(tableName, func(r *Record, index int) {
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
 		count++
-		r.AddIntField("id", int64(index))
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
 		totalAge += age
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	avgAge := float64(totalAge) / float64(count)
 
-	nt := saveAndReloadTable(t, tableName, blockCount)
+	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 
 	querySpec := newQuerySpec()
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "avg"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{
+		Type: HistogramTypeBasic,
+	}, querySpec)
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
@@ -311,7 +331,7 @@ func TestOrderBy(t *testing.T) {
 	}
 
 	querySpec.OrderBy = "age"
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{}, querySpec)
 
 	prevAvg := float64(0)
 	// testing that a histogram with single value looks uniform

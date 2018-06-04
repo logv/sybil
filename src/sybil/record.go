@@ -100,9 +100,9 @@ func (r *Record) AddStrField(name string, val string) {
 	}
 }
 
-func (r *Record) AddIntField(name string, val int64) {
+func (r *Record) AddIntField(name string, val int64, skipOutliers bool) {
 	nameID := r.block.getKeyID(name)
-	r.block.table.updateIntInfo(nameID, val)
+	r.block.table.updateIntInfo(nameID, val, skipOutliers)
 
 	r.ResizeFields(nameID)
 	r.Ints[nameID] = IntField(val)

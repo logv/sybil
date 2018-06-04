@@ -7,6 +7,21 @@ var DEBUG_OUTLIERS = false
 // HDRHist (wrapper around github.com/codahale/hdrhistogram which implements Histogram interface)
 // BasicHist (which gets wrapped in HistCompat to implement the Histogram interface)
 
+type HistogramType string
+
+const (
+	HistogramTypeNone  HistogramType = ""
+	HistogramTypeBasic HistogramType = "basic"
+	HistogramTypeLog   HistogramType = "multi"
+	HistogramTypeHDR   HistogramType = "hdr"
+)
+
+type HistogramParameters struct {
+	Type       HistogramType
+	NumBuckets int
+	BucketSize int
+}
+
 type Histogram interface {
 	Mean() float64
 	Max() int64
@@ -17,20 +32,21 @@ type Histogram interface {
 	GetPercentiles() []int64
 	GetStrBuckets() map[string]int64
 	GetIntBuckets() map[int64]int64
+	IsWeighted() bool
 
 	Range() (int64, int64)
 	StdDev() float64
 
-	NewHist() Histogram
+	NewHist(HistogramParameters) Histogram
 	Combine(interface{})
 }
 
-func (t *Table) NewHist(info *IntInfo) Histogram {
+func (t *Table) NewHist(params HistogramParameters, info *IntInfo, weighted bool) Histogram {
 	var hist Histogram
-	if *FLAGS.LOG_HIST {
-		hist = newMultiHist(t, info)
+	if params.Type == HistogramTypeLog {
+		hist = newMultiHist(params, t, info, weighted)
 	} else {
-		hist = newBasicHist(t, info)
+		hist = newBasicHist(params, t, info, weighted)
 	}
 
 	return hist

@@ -1,13 +1,14 @@
 package sybil
 
-import "fmt"
-import "bytes"
-
-import "os"
-import "encoding/gob"
-import "runtime/debug"
-import "time"
-import "regexp"
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"os"
+	"regexp"
+	"runtime/debug"
+	"time"
+)
 
 type ValueMap map[int64][]uint32
 
@@ -58,7 +59,7 @@ func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap, digestSpec *DigestSpec) {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
@@ -72,7 +73,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 		intCol := NewSavedIntColumn()
 
 		intCol.Name = colName
-		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		intCol.DeltaEncodedIDs = true
 
 		maxR := 0
 		recordToValue := make(map[uint32]int64)
@@ -87,8 +88,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 			}
 
 			// bookkeeping for info.db
-			tb.updateIntInfo(k, bucket)
-			tb.table.updateIntInfo(k, bucket)
+			tb.updateIntInfo(k, bucket, digestSpec.SkipOutliers)
+			tb.table.updateIntInfo(k, bucket, digestSpec.SkipOutliers)
 		}
 
 		intCol.BucketEncoded = true
@@ -97,7 +98,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, maxR)
-			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
+			intCol.ValueEncoded = true
 
 			for r, val := range recordToValue {
 				intCol.Values[r] = val
@@ -105,12 +106,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 
 			prev := int64(0)
 			for r, val := range intCol.Values {
-				if OPTS.DELTA_ENCODE_INT_VALUES {
-					intCol.Values[r] = val - prev
-					prev = val
-				} else {
-					intCol.Values[r] = val
-				}
+				intCol.Values[r] = val - prev
+				prev = val
 			}
 		}
 
@@ -148,7 +145,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = colName
-		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		setCol.DeltaEncodedIDs = true
 		tempBlock := newTableBlock()
 
 		tbCol := tb.GetColumnInfo(k)
@@ -228,7 +225,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]Value
 		}
 		strCol := NewSavedStrColumn()
 		strCol.Name = colName
-		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		strCol.DeltaEncodedIDs = true
 		tempBlock := newTableBlock()
 
 		tempCol := tempBlock.GetColumnInfo(k)
@@ -407,18 +404,16 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		}
 	}
 
-	if OPTS.DELTA_ENCODE_RECORD_IDS {
-		deltaEncode(sameInts)
-		deltaEncode(sameStrs)
-		deltaEncode(sameSets)
-	}
+	deltaEncode(sameInts)
+	deltaEncode(sameStrs)
+	deltaEncode(sameSets)
 
 	ret := SeparatedColumns{ints: sameInts, strs: sameStrs, sets: sameSets}
 	return ret
 
 }
 
-func (tb *TableBlock) SaveToColumns(filename string) bool {
+func (tb *TableBlock) SaveToColumns(filename string, digestSpec *DigestSpec) bool {
 	dirname := filename
 
 	// Important to set the BLOCK's dirName so we can keep track
@@ -440,7 +435,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	end := time.Now()
 	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
-	tb.SaveIntsToColumns(partialname, separatedColumns.ints)
+	tb.SaveIntsToColumns(partialname, separatedColumns.ints, digestSpec)
 	tb.SaveStrsToColumns(partialname, separatedColumns.strs)
 	tb.SaveSetsToColumns(partialname, separatedColumns.sets)
 	tb.SaveInfoToColumns(partialname)
@@ -454,7 +449,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	// For now, we load info.db and check NumRecords inside it to prevent
 	// catastrophics, but we could load everything potentially
 	start = time.Now()
-	nb := tb.table.LoadBlockFromDir(partialname, nil, false)
+	nb := tb.table.LoadBlockFromDir(partialname, nil, nil, false)
 	end = time.Now()
 
 	// TODO:
@@ -463,7 +458,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
-		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
+		nb = tb.table.LoadBlockFromDir(partialname, nil, nil, true)
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
 			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 		}
@@ -492,7 +487,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replacements map[string]StrReplace) {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
@@ -515,7 +510,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	// unpack the string table
 
 	// Run our replacements!
-	strReplace, ok := OPTS.STR_REPLACEMENTS[into.Name]
+	strReplace, ok := replacements[into.Name]
 	bucketReplace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
@@ -658,7 +653,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 	}
 }
 
-func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo, loadSpec *LoadSpec) {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}
@@ -674,16 +669,13 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 		return
 	}
 
-	isTimeCol := false
-	if FLAGS.TIME_COL != nil {
-		isTimeCol = into.Name == *FLAGS.TIME_COL
-	}
+	isTimeCol := loadSpec != nil && into.Name == loadSpec.TimeColumn
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.updateIntInfo(colID, bucket.Value)
-				tb.table.updateIntInfo(colID, bucket.Value)
+			if loadSpec.UpdateTableInfo {
+				tb.updateIntInfo(colID, bucket.Value, loadSpec.SkipOutliers)
+				tb.table.updateIntInfo(colID, bucket.Value, loadSpec.SkipOutliers)
 			}
 
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -714,9 +706,9 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 
 		prev := int64(0)
 		for r, v := range into.Values {
-			if *FLAGS.UPDATE_TABLE_INFO {
-				tb.updateIntInfo(colID, v)
-				tb.table.updateIntInfo(colID, v)
+			if loadSpec.UpdateTableInfo {
+				tb.updateIntInfo(colID, v, loadSpec.SkipOutliers)
+				tb.table.updateIntInfo(colID, v, loadSpec.SkipOutliers)
 			}
 
 			if into.ValueEncoded {

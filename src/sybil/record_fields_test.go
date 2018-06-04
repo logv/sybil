@@ -5,29 +5,31 @@ import "math/rand"
 import "strconv"
 
 func TestSets(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 	totalAge := int64(0)
 
-	addRecords(tableName, func(r *Record, i int) {}, 0)
+	addRecords(*flags.DIR, tableName, func(r *Record, i int) {}, 0)
 	blockCount := 3
 	minCount := CHUNK_SIZE * blockCount
-	records := addRecords(tableName, func(r *Record, i int) {
+	records := addRecords(*flags.DIR, tableName, func(r *Record, i int) {
 		setID := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
-		r.AddIntField("id_int", int64(i))
+		r.AddIntField("id_int", int64(i), *flags.SKIP_OUTLIERS)
 		r.AddSetField("id_set", setID)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
 		age := int64(rand.Intn(20)) + int64(minCount)
 		totalAge += age
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
 	avgAge := float64(totalAge) / float64(len(records))
 	Debug("AVG AGE", avgAge-float64(minCount))
 
-	nt := saveAndReloadTable(t, tableName, blockCount)
+	nt := saveAndReloadTable(t, flags, tableName, blockCount)
 
 	for _, b := range nt.BlockList {
 		for _, r := range b.RecordList {

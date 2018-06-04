@@ -72,7 +72,7 @@ func updateStrInfo(strInfoTable map[int16]*StrInfo, name int16, val, increment i
 var STD_CUTOFF = 1000.0 // if value is 1000 SDs away, we ignore it
 var MIN_CUTOFF = 5      // need at least this many elements before we determine min/max
 
-func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
+func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64, skipOutliers bool) {
 	info, ok := intInfoTable[name]
 	if !ok {
 		info = &IntInfo{}
@@ -96,7 +96,7 @@ func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
 		// standard deviation and decide whether it is an extreme outlier or not
 		deltaInStddev := math.Abs(delta) / stddev
 
-		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !*FLAGS.SKIP_OUTLIERS {
+		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !skipOutliers {
 			info.Max = val
 		} else {
 			ignored = true
@@ -110,7 +110,7 @@ func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
 	if info.Min > val {
 		deltaInStddev := math.Abs(delta) / stddev
 
-		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !*FLAGS.SKIP_OUTLIERS {
+		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !skipOutliers {
 			info.Min = val
 		} else {
 			ignored = true
@@ -130,8 +130,8 @@ func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
 	info.Count++
 }
 
-func (t *Table) updateIntInfo(name int16, val int64) {
-	updateIntInfo(t.IntInfo, name, val)
+func (t *Table) updateIntInfo(name int16, val int64, skipOutliers bool) {
+	updateIntInfo(t.IntInfo, name, val, skipOutliers)
 }
 
 func (tb *TableBlock) updateStrInfo(name int16, val int, increment int) {
@@ -142,12 +142,12 @@ func (tb *TableBlock) updateStrInfo(name int16, val int, increment int) {
 	updateStrInfo(tb.StrInfo, name, val, increment)
 }
 
-func (tb *TableBlock) updateIntInfo(name int16, val int64) {
+func (tb *TableBlock) updateIntInfo(name int16, val int64, skipOutliers bool) {
 	if tb.IntInfo == nil {
 		tb.IntInfo = make(map[int16]*IntInfo)
 	}
 
-	updateIntInfo(tb.IntInfo, name, val)
+	updateIntInfo(tb.IntInfo, name, val, skipOutliers)
 }
 
 func (t *Table) getIntInfo(name int16) *IntInfo {

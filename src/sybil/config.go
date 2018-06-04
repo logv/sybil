@@ -1,13 +1,11 @@
 package sybil
 
-import "flag"
-
-import "os"
-import "encoding/gob"
-
-func init() {
-	setDefaults()
-}
+import (
+	"encoding/gob"
+	"flag"
+	"os"
+	"sync"
+)
 
 const FALSE = false
 const TRUE = true
@@ -23,6 +21,7 @@ func NewTrueFlag() *bool {
 	return &r
 }
 
+var DEBUG = flag.Bool("debug", false, "enable debug logging")
 var TEST_MODE = false
 var ENABLE_LUA = false
 
@@ -60,7 +59,6 @@ type FlagDefs struct {
 	FIELD_SEPARATOR    *string
 	FILTER_SEPARATOR   *string
 	PRINT_KEYS         *bool
-	LOAD_AND_QUERY     *bool
 	LOAD_THEN_QUERY    *bool
 	READ_INGESTION_LOG *bool
 	READ_ROWSTORE      *bool
@@ -76,9 +74,8 @@ type FlagDefs struct {
 
 	LIMIT *int
 
-	DEBUG *bool
-	JSON  *bool
-	GC    *bool
+	JSON *bool
+	GC   *bool
 
 	DIR        *string
 	SORT       *string
@@ -128,85 +125,81 @@ type OptionDefs struct {
 	GROUP_BY                []string
 	DISTINCT                []string
 	MERGE_TABLE             *Table
+	UPDATE_TABLE_INFO       bool
+	SKIP_OUTLIERS           bool
 }
 
-// TODO: merge these two into one thing
-// current problem is that FLAGS needs pointers
-var FLAGS = FlagDefs{}
-var OPTS = OptionDefs{}
 var EMPTY = ""
 
-func setDefaults() {
-	OPTS.SORT_COUNT = "$COUNT"
-	OPTS.SAMPLES = false
-	OPTS.WEIGHT_COL = false
-	OPTS.WEIGHT_COL_ID = int16(0)
-	OPTS.DELTA_ENCODE_INT_VALUES = true
-	OPTS.DELTA_ENCODE_RECORD_IDS = true
-	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TIMESERIES = false
-	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
+var df *FlagDefs
+var dfMu sync.Mutex
 
-	FLAGS.GC = NewTrueFlag()
-	FLAGS.JSON = NewFalseFlag()
-	FLAGS.PRINT = NewTrueFlag()
-	FLAGS.EXPORT = NewFalseFlag()
-	FLAGS.LIST_TABLES = NewFalseFlag()
-
-	FLAGS.ENCODE_RESULTS = NewFalseFlag()
-	FLAGS.ENCODE_FLAGS = NewFalseFlag()
-	FLAGS.DECODE_FLAGS = NewFalseFlag()
-
-	FLAGS.SKIP_COMPACT = NewFalseFlag()
-
-	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
-	FLAGS.LOAD_AND_QUERY = NewTrueFlag()
-	FLAGS.LOAD_THEN_QUERY = NewFalseFlag()
-	FLAGS.READ_INGESTION_LOG = NewFalseFlag()
-	FLAGS.READ_ROWSTORE = NewFalseFlag()
-	FLAGS.ANOVA_ICC = NewFalseFlag()
-	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
-	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
-
-	FLAGS.DEBUG = flag.Bool("debug", false, "enable debug logging")
-	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
-	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
-
-	FLAGS.UPDATE_TABLE_INFO = NewFalseFlag()
-	FLAGS.SKIP_OUTLIERS = NewTrueFlag()
-	FLAGS.SAMPLES = NewFalseFlag()
-	FLAGS.LUA = NewFalseFlag()
-	FLAGS.LUAFILE = &EMPTY
-
-	FLAGS.RECYCLE_MEM = NewTrueFlag()
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
-
-	FLAGS.HDR_HIST = NewFalseFlag()
-	FLAGS.LOG_HIST = NewFalseFlag()
-
-	DEFAULT_LIMIT := 100
-	FLAGS.LIMIT = &DEFAULT_LIMIT
-
-	FLAGS.PROFILE = NewFalseFlag()
-	FLAGS.PROFILE_MEM = NewFalseFlag()
-	if PROFILER_ENABLED {
-		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
-		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
+func DefaultFlags() *FlagDefs {
+	dfMu.Lock()
+	defer dfMu.Unlock()
+	if df != nil {
+		return df
 	}
+	DEFAULT_LIMIT := 100
+	df = &FlagDefs{
+		GC:          NewTrueFlag(),
+		JSON:        NewFalseFlag(),
+		PRINT:       NewTrueFlag(),
+		EXPORT:      NewFalseFlag(),
+		LIST_TABLES: NewFalseFlag(),
 
+		ENCODE_RESULTS: NewFalseFlag(),
+		ENCODE_FLAGS:   NewFalseFlag(),
+		DECODE_FLAGS:   NewFalseFlag(),
+
+		SKIP_COMPACT: NewFalseFlag(),
+
+		PRINT_KEYS:         NewFalseFlag(),
+		LOAD_THEN_QUERY:    NewFalseFlag(),
+		READ_INGESTION_LOG: NewFalseFlag(),
+		READ_ROWSTORE:      NewFalseFlag(),
+		ANOVA_ICC:          NewFalseFlag(),
+		DIR:                flag.String("dir", "./db/", "Directory to store DB files"),
+		TABLE:              flag.String("table", "", "Table to operate on [REQUIRED]"),
+
+		FIELD_SEPARATOR:  flag.String("field-separator", ",", "Field separator used in command line params"),
+		FILTER_SEPARATOR: flag.String("filter-separator", ":", "Filter separator used in filters"),
+
+		UPDATE_TABLE_INFO: NewFalseFlag(),
+		SKIP_OUTLIERS:     NewTrueFlag(),
+		SAMPLES:           NewFalseFlag(),
+		LUA:               NewFalseFlag(),
+		LUAFILE:           &EMPTY,
+
+		RECYCLE_MEM:    NewTrueFlag(),
+		CACHED_QUERIES: NewFalseFlag(),
+
+		HDR_HIST: NewFalseFlag(),
+		LOG_HIST: NewFalseFlag(),
+
+		LIMIT: &DEFAULT_LIMIT,
+
+		PROFILE:     NewFalseFlag(),
+		PROFILE_MEM: NewFalseFlag(),
+	}
+	if PROFILER_ENABLED {
+		df.PROFILE = flag.Bool("profile", false, "turn profiling on?")
+		df.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
+	}
+	return df
 }
 
-func EncodeFlags() {
-	oldEncode := *FLAGS.ENCODE_FLAGS
-	FLAGS.ENCODE_FLAGS = NewFalseFlag()
-	PrintBytes(FLAGS)
-	FLAGS.ENCODE_FLAGS = &oldEncode
+func EncodeFlags(flags *FlagDefs) {
+	oldEncode := flags.ENCODE_FLAGS
+	flags.ENCODE_FLAGS = NewFalseFlag()
+	PrintBytes(flags)
+	flags.ENCODE_FLAGS = oldEncode
 }
 
-func DecodeFlags() {
+func DecodeFlags(flags *FlagDefs) {
 	Debug("READING ENCODED FLAGS FROM STDIN")
 	dec := gob.NewDecoder(os.Stdin)
-	err := dec.Decode(&FLAGS)
+	err := dec.Decode(flags)
 	if err != nil {
 		Error("ERROR DECODING FLAGS", err)
 	}

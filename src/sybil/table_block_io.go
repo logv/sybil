@@ -11,7 +11,7 @@ import "compress/gzip"
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string, digestSpec *DigestSpec) bool {
 	if len(records) == 0 {
 		return true
 	}
@@ -20,11 +20,10 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
 	tempBlock.RecordList = records
 	tempBlock.table = t
 
-	return tempBlock.SaveToColumns(filename)
+	return tempBlock.SaveToColumns(filename, digestSpec)
 }
 
 func (t *Table) FindPartialBlocks() []*TableBlock {
-	READ_ROWS_ONLY = false
 	t.LoadRecords(nil)
 
 	ret := make([]*TableBlock, 0)
@@ -45,7 +44,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 }
 
 // TODO: find any open blocks and then fill them...
-func (t *Table) FillPartialBlock() bool {
+func (t *Table) FillPartialBlock(digestSpec *DigestSpec) bool {
 	if len(t.newRecords) == 0 {
 		return false
 	}
@@ -75,7 +74,7 @@ func (t *Table) FillPartialBlock() bool {
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
 
-	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
+	block := t.LoadBlockFromDir(filename, nil, nil, true /* LOAD ALL RECORDS */)
 	if block == nil {
 		return true
 	}
@@ -91,7 +90,7 @@ func (t *Table) FillPartialBlock() bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if !t.SaveRecordsToBlock(partialRecords, filename) {
+		if !t.SaveRecordsToBlock(partialRecords, filename, digestSpec) {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
 			return false
 		}
@@ -197,7 +196,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool) *TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, replacements map[string]StrReplace, loadRecords bool) *TableBlock {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -249,11 +248,11 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, *info)
+			tb.unpackStrCol(dec, *info, replacements)
 		case strings.HasPrefix(fname, "set"):
 			tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, *info)
+			tb.unpackIntCol(dec, *info, loadSpec)
 		}
 
 		dec.CloseFile()
@@ -274,10 +273,10 @@ type AfterLoadQueryCB struct {
 	count int
 }
 
-func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
+func (cb *AfterLoadQueryCB) CB(dir string, tableName string, params HistogramParameters, digestname string, records RecordList) {
 	if digestname == NO_MORE_BLOCKS {
 		// TODO: add sessionization call over here, too
-		count := FilterAndAggRecords(cb.querySpec, &cb.records)
+		count := FilterAndAggRecords(params, cb.querySpec, &cb.records)
 		cb.count += count
 
 		cb.wg.Done()
@@ -305,7 +304,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, r)
 	}
 
-	if *FLAGS.DEBUG {
+	if *DEBUG {
 		fmt.Fprint(os.Stderr, "+")
 	}
 }

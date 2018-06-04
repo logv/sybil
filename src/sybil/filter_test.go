@@ -7,49 +7,50 @@ import "math"
 import "strings"
 
 func TestFilters(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, i int) {
+	addRecords(*flags.DIR, tableName, func(r *Record, i int) {
 		age := int64(rand.Intn(20)) + 10
 
 		ageStr := strconv.FormatInt(int64(age), 10)
-		r.AddIntField("id", int64(i))
-		r.AddIntField("age", age)
+		r.AddIntField("id", int64(i), *flags.SKIP_OUTLIERS)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", ageStr)
 		r.AddSetField("age_set", []string{ageStr})
 
 	}, blockCount)
 
-	saveAndReloadTable(t, tableName, blockCount)
+	saveAndReloadTable(t, flags, tableName, blockCount)
 
-	DELETE_BLOCKS_AFTER_QUERY = false
-
-	testIntEq(t, tableName)
-	testIntNeq(t, tableName)
-	testIntLt(t, tableName)
-	testIntGt(t, tableName)
-	testStrEq(t, tableName)
-	testStrRe(t, tableName)
-	testStrNeq(t, tableName)
-	testSetIn(t, tableName)
-	testSetNin(t, tableName)
+	params := HistogramParameters{}
+	testIntEq(t, *flags.DIR, tableName, params)
+	testIntNeq(t, *flags.DIR, tableName, params)
+	testIntLt(t, *flags.DIR, tableName, params)
+	testIntGt(t, *flags.DIR, tableName, params)
+	testStrEq(t, *flags.DIR, tableName, params)
+	testStrRe(t, *flags.DIR, tableName, params)
+	testStrNeq(t, *flags.DIR, tableName, params)
+	testSetIn(t, *flags.DIR, tableName, params)
+	testSetNin(t, *flags.DIR, tableName, params)
 
 }
 
-func testIntLt(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testIntLt(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "lt", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
@@ -65,17 +66,17 @@ func testIntLt(t *testing.T, tableName string) {
 	}
 }
 
-func testIntGt(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testIntGt(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "gt", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
@@ -91,20 +92,20 @@ func testIntGt(t *testing.T, tableName string) {
 	}
 }
 
-func testIntNeq(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testIntNeq(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "neq", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	groupings := []Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	// Test Filtering to !20 returns only 19 results (because we have rand(20) above)
 	if len(querySpec.Results) != 19 {
@@ -125,17 +126,17 @@ func testIntNeq(t *testing.T, tableName string) {
 	}
 }
 
-func testIntEq(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testIntEq(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.IntFilter("age", "eq", 20))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	// Test Filtering to 20..
 	if len(querySpec.Results) <= 0 {
@@ -151,13 +152,13 @@ func testIntEq(t *testing.T, tableName string) {
 	}
 }
 
-func testStrEq(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testStrEq(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "re", "20"))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	groupings := []Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
@@ -166,7 +167,7 @@ func testStrEq(t *testing.T, tableName string) {
 
 	Debug("QUERY SPEC", querySpec.Results)
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 	Debug("QUERY SPEC RESULTS", querySpec.Results)
 
 	if len(querySpec.Results) <= 0 {
@@ -182,17 +183,17 @@ func testStrEq(t *testing.T, tableName string) {
 	}
 }
 
-func testStrNeq(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testStrNeq(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "nre", "20"))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	if len(querySpec.Results) <= 0 {
 		t.Error("Str Filter for age 20 returned no results")
@@ -208,20 +209,20 @@ func testStrNeq(t *testing.T, tableName string) {
 
 }
 
-func testStrRe(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testStrRe(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.StrFilter("age_str", "re", "^2"))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	groupings := []Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	if len(querySpec.Results) != 10 {
 		t.Error("Str Filter for re returned no results", len(querySpec.Results), querySpec.Results)
@@ -239,20 +240,20 @@ func testStrRe(t *testing.T, tableName string) {
 	}
 }
 
-func testSetIn(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testSetIn(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.SetFilter("age_set", "in", "20"))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	groupings := []Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	if len(querySpec.Results) != 1 {
 		t.Error("Set Filter for in returned more (or less) than one results", len(querySpec.Results), querySpec.Results)
@@ -281,20 +282,20 @@ func testSetIn(t *testing.T, tableName string) {
 
 }
 
-func testSetNin(t *testing.T, tableName string) {
-	nt := GetTable(tableName)
+func testSetNin(t *testing.T, dir string, tableName string, params HistogramParameters) {
+	nt := GetTable(dir, tableName)
 	filters := []Filter{}
 	filters = append(filters, nt.SetFilter("age_set", "nin", "20"))
 
 	aggs := []Aggregation{}
-	aggs = append(aggs, nt.Aggregation("age", "avg"))
+	aggs = append(aggs, nt.Aggregation(params.Type, "age", "avg"))
 
 	groupings := []Grouping{}
 	groupings = append(groupings, nt.Grouping("age"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs, Groups: groupings}}
 
-	nt.MatchAndAggregate(&querySpec)
+	nt.MatchAndAggregate(params, &querySpec)
 
 	if len(querySpec.Results) != 19 {
 		t.Error("Set Filter for in returned more (or less) than 19 results", len(querySpec.Results), querySpec.Results)

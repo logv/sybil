@@ -19,13 +19,7 @@ func runTests(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var BLANK_STRING = ""
-
 func setupTestVars(chunkSize int) {
-	//tableName := "unknown"
-	//FLAGS.TABLE = &tableName
-	FLAGS.OP = &BLANK_STRING
-
 	TEST_MODE = true
 	CHUNK_SIZE = chunkSize
 	LOCK_US = 1
@@ -47,11 +41,11 @@ func getTestTableName(t *testing.T) string {
 	return parts[len(parts)-1]
 }
 
-func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
+func addRecords(dir string, tableName string, cb RecordSetupCB, blockCount int) []*Record {
 	count := CHUNK_SIZE * blockCount
 
 	ret := make([]*Record, 0)
-	tbl := GetTable(tableName)
+	tbl := GetTable(dir, tableName)
 
 	for i := 0; i < count; i++ {
 		r := tbl.NewRecord()
@@ -62,15 +56,18 @@ func addRecords(tableName string, cb RecordSetupCB, blockCount int) []*Record {
 	return ret
 }
 
-func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Table {
+func saveAndReloadTable(t *testing.T, flags *FlagDefs, tableName string, expectedBlocks int) *Table {
 	expectedCount := CHUNK_SIZE * expectedBlocks
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 
-	tbl.SaveRecordsToColumns()
+	tbl.SaveRecordsToColumns(&DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	})
 
 	unloadTestTable(tableName)
 
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 	nt.LoadTableInfo()
 
 	loadSpec := NewLoadSpec()

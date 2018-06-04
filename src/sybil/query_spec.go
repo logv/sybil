@@ -23,10 +23,20 @@ type savedQueryParams struct {
 	Distincts    []Grouping // list of columns we are creating a count distinct query on
 	StrReplace   map[string]StrReplace
 
+	WeightColumn string
+	TimeColumn   string
+
 	OrderBy    string
 	PruneBy    string
-	Limit      int16
+	Limit      int
 	TimeBucket int
+
+	Samples       bool
+	CachedQueries bool
+
+	ExportTSV bool
+
+	HistogramParameters HistogramParameters
 }
 
 func Min(x, y int64) int64 {
@@ -69,7 +79,7 @@ type Aggregation struct {
 	opID     int
 	Name     string
 	nameID   int16
-	HistType string
+	HistType HistogramType
 }
 
 type Result struct {
@@ -94,24 +104,24 @@ func (qs *QuerySpec) NewResult() *Result {
 	return addedRecord
 }
 
-func (master_result *ResultMap) Combine(results *ResultMap) {
+func (master_result *ResultMap) Combine(params HistogramParameters, mergeTable *Table, results *ResultMap) {
 	for k, v := range *results {
 		mval, ok := (*master_result)[k]
 		if !ok {
 			(*master_result)[k] = v
 		} else {
-			mval.Combine(v)
+			mval.Combine(params, mergeTable, v)
 		}
 	}
 }
 
-func fullMergeHist(h, ph Histogram) Histogram {
+func fullMergeHist(params HistogramParameters, mergeTable *Table, h, ph Histogram) Histogram {
 	l1, r1 := h.Range()
 	l2, r2 := ph.Range()
 
 	info := IntInfo{Min: Min(l1, l2), Max: Max(r1, r2)}
 
-	nh := OPTS.MERGE_TABLE.NewHist(&info)
+	nh := mergeTable.NewHist(params, &info, h.IsWeighted())
 
 	for bucket, count := range h.GetIntBuckets() {
 		nh.AddWeightedValue(bucket, count)
@@ -125,7 +135,7 @@ func fullMergeHist(h, ph Histogram) Histogram {
 }
 
 // This does an in place combine of the next_result into this one...
-func (rs *Result) Combine(nextResult *Result) {
+func (rs *Result) Combine(params HistogramParameters, mergeTable *Table, nextResult *Result) {
 	if nextResult == nil {
 		return
 	}
@@ -140,16 +150,16 @@ func (rs *Result) Combine(nextResult *Result) {
 	// combine histograms...
 	for k, h := range nextResult.Hists {
 
-		// If we are doing a node aggregation, we have a MERGE_TABLE
+		// If we are doing a node aggregation, we have a mergeTable
 		// set, which means we should go the slow route when merging
 		// histograms because we can't be sure they were created with
 		// the same extents (being that they may originate from different
 		// nodes)
-		if OPTS.MERGE_TABLE != nil {
+		if mergeTable != nil {
 			ph, ok := rs.Hists[k]
 
 			if ok {
-				rs.Hists[k] = fullMergeHist(h, ph)
+				rs.Hists[k] = fullMergeHist(params, mergeTable, h, ph)
 			} else {
 				rs.Hists[k] = h
 			}
@@ -157,7 +167,7 @@ func (rs *Result) Combine(nextResult *Result) {
 		} else {
 			_, ok := rs.Hists[k]
 			if !ok {
-				nh := h.NewHist()
+				nh := h.NewHist(params)
 
 				nh.Combine(h)
 				rs.Hists[k] = nh
@@ -208,7 +218,7 @@ func (t *Table) Grouping(name string) Grouping {
 	return Grouping{name, colID}
 }
 
-func (t *Table) Aggregation(name string, op string) Aggregation {
+func (t *Table) Aggregation(histogramType HistogramType, name string, op string) Aggregation {
 	colID := t.getKeyID(name)
 
 	agg := Aggregation{Name: name, nameID: colID, Op: op}
@@ -218,15 +228,7 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 
 	if op == "hist" {
 		agg.opID = OP_HIST
-		agg.HistType = "basic"
-		if *FLAGS.LOG_HIST {
-			agg.HistType = "multi"
-
-		}
-
-		if *FLAGS.HDR_HIST {
-			agg.HistType = "hdr"
-		}
+		agg.HistType = histogramType
 	}
 
 	if op == DISTINCT_STR {

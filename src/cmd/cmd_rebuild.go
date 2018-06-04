@@ -9,19 +9,20 @@ import (
 func RunRebuildCmdLine() {
 	REPLACE_INFO := flag.Bool("replace", false, "Replace broken info.db if it exists")
 	FORCE_UPDATE := flag.Bool("force", false, "Force re-calculation of info.db, even if it exists")
+	flags := sybil.DefaultFlags()
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" {
+	if *flags.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
+	if *flags.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(*flags.DIR, *flags.TABLE)
 
 	loaded := t.LoadTableInfo() && !*FORCE_UPDATE
 	if loaded {

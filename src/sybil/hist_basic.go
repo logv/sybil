@@ -8,8 +8,7 @@ import "strconv"
 // {{{ BASIC HIST
 
 type BasicHistCachedInfo struct {
-	NumBuckets     int
-	BucketSize     int
+	HistogramParameters
 	Values         []int64
 	Averages       []float64
 	PercentileMode bool
@@ -28,10 +27,11 @@ type BasicHistCachedInfo struct {
 type BasicHist struct {
 	BasicHistCachedInfo
 
-	table *Table
+	table    *Table
+	Weighted bool
 }
 
-func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
+func (h *BasicHist) SetupBuckets(bucketSize, buckets int, min, max int64) {
 	// set up initial variables for max and min to be extrema in other
 	// direction
 	h.Avg = 0
@@ -46,10 +46,13 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 
 		size := int64(max - min)
 		h.NumBuckets = buckets
-		h.BucketSize = int(size / int64(buckets))
+		if h.NumBuckets == 0 {
+			h.NumBuckets = NUM_BUCKETS
+		}
+		h.BucketSize = int(size / int64(h.NumBuckets))
 
-		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-			h.BucketSize = *FLAGS.HIST_BUCKET
+		if bucketSize > 0 {
+			h.BucketSize = bucketSize
 		}
 
 		if h.BucketSize == 0 {
@@ -69,25 +72,26 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	}
 }
 
-func newBasicHist(t *Table, info *IntInfo) *HistCompat {
+func newBasicHist(params HistogramParameters, table *Table, info *IntInfo, weighted bool) *HistCompat {
 
 	basicHist := BasicHist{}
 	compatHist := HistCompat{&basicHist}
-	compatHist.table = t
+	compatHist.table = table
+	compatHist.Weighted = weighted
 	compatHist.Info = *info
 
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
-		compatHist.TrackPercentiles()
+	if params.Type != HistogramTypeNone {
+		compatHist.TrackPercentiles(params)
 	}
 
 	return &compatHist
 
 }
 
-func (h *BasicHist) TrackPercentiles() {
+func (h *BasicHist) TrackPercentiles(params HistogramParameters) {
 	h.PercentileMode = true
 
-	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
+	h.SetupBuckets(params.BucketSize, params.NumBuckets, h.Info.Min, h.Info.Max)
 }
 
 func (h *BasicHist) AddValue(value int64) {
@@ -108,7 +112,7 @@ func (h *BasicHist) AddWeightedValue(value int64, weight int64) {
 		return
 	}
 
-	if OPTS.WEIGHT_COL || weight > 1 {
+	if h.Weighted || weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {

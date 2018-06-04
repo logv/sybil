@@ -3,6 +3,7 @@ package sybil
 import "sort"
 
 type TrimSpec struct {
+	TimeColumn   string
 	MBLimit      int64 // size limit of DB in megabytes
 	DeleteBefore int64 // delete records older than DeleteBefore in seconds
 }
@@ -21,9 +22,9 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 			continue
 		}
 
-		block := t.LoadBlockFromDir(b.Name, nil, false)
+		block := t.LoadBlockFromDir(b.Name, nil, nil, false)
 		if block != nil {
-			if block.Info.IntInfoMap[*FLAGS.TIME_COL] != nil {
+			if block.Info.IntInfoMap[trimSpec.TimeColumn] != nil {
 				block.table = t
 				blocks = append(blocks, block)
 			}
@@ -31,13 +32,13 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 	}
 
 	// Sort the blocks by descending Max Time
-	sort.Sort(sort.Reverse(SortBlocksByEndTime(blocks)))
+	sort.Sort(sort.Reverse(SortBlocksByEndTime{blocks: blocks, timeCol: trimSpec.TimeColumn}))
 
 	size := int64(0)
 	bytesInMegabytes := int64(1024 * 1024)
 	for _, b := range blocks {
 
-		info := b.Info.IntInfoMap[*FLAGS.TIME_COL]
+		info := b.Info.IntInfoMap[trimSpec.TimeColumn]
 		trim := false
 		if trimSpec.MBLimit > 0 && size/bytesInMegabytes >= trimSpec.MBLimit {
 			trim = true

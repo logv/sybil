@@ -7,9 +7,10 @@ import (
 )
 
 func RunVersionCmdLine() {
-	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
+	flags := sybil.DefaultFlags()
+	flags.JSON = flag.Bool("json", false, "Print results in JSON format")
 	flag.Parse()
 
-	sybil.PrintVersionInfo()
+	sybil.PrintVersionInfo(flags)
 
 }

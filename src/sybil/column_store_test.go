@@ -8,29 +8,35 @@ import (
 )
 
 func TestTableDigestRowRecords(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl := GetTable(*flags.DIR, tableName)
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	nt := GetTable(*flags.DIR, tableName)
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -40,12 +46,11 @@ func TestTableDigestRowRecords(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	nt.DigestRecords(minFilesToDigest, digestSpec)
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
-	nt = GetTable(tableName)
+	nt = GetTable(*flags.DIR, tableName)
 	nt.LoadRecords(nil)
 
 	count := int32(0)
@@ -62,30 +67,36 @@ func TestTableDigestRowRecords(t *testing.T) {
 }
 
 func TestColumnStoreFileNames(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("ageStr", strconv.FormatInt(int64(age), 10))
 		r.AddSetField("ageSet", []string{strconv.FormatInt(int64(age), 10)})
 	}, blockCount)
 
-	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl := GetTable(*flags.DIR, tableName)
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	nt := GetTable(*flags.DIR, tableName)
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -95,12 +106,11 @@ func TestColumnStoreFileNames(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	nt.DigestRecords(minFilesToDigest, digestSpec)
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
-	nt = GetTable(tableName)
+	nt = GetTable(*flags.DIR, tableName)
 	nt.LoadRecords(nil)
 
 	count := int32(0)
@@ -141,29 +151,35 @@ func TestColumnStoreFileNames(t *testing.T) {
 }
 
 func TestBigIntColumns(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	var minVal = int64(1 << 50)
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(1 << 20))
-		r.AddIntField("time", minVal+age)
+		r.AddIntField("time", minVal+age, *flags.SKIP_OUTLIERS)
 	}, blockCount)
 
-	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl := GetTable(*flags.DIR, tableName)
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	minFilesToDigest := tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	nt := GetTable(*flags.DIR, tableName)
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -173,15 +189,11 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	nt.DigestRecords(minFilesToDigest, digestSpec)
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
-	FLAGS.SAMPLES = NewTrueFlag()
-	limit := 1000
-	FLAGS.LIMIT = &limit
-	nt = GetTable(tableName)
+	nt = GetTable(*flags.DIR, tableName)
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
@@ -206,6 +218,5 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	FLAGS.SAMPLES = NewFalseFlag()
 
 }

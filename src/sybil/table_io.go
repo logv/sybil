@@ -19,7 +19,6 @@ var INGEST_DIR = "ingest"
 var TEMP_INGEST_DIR = ".ingest.temp"
 var CACHE_DIR = "cache"
 
-var DELETE_BLOCKS_AFTER_QUERY = true
 var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
@@ -30,7 +29,7 @@ func (t *Table) saveTableInfo(fname string) {
 
 	defer t.ReleaseInfoLock()
 	var network bytes.Buffer // Stand-in for the network.
-	dirname := path.Join(*FLAGS.DIR, t.Name)
+	dirname := path.Join(t.Dir, t.Name)
 	filename := path.Join(dirname, fmt.Sprintf("%s.db", fname))
 	backup := path.Join(dirname, fmt.Sprintf("%s.bak", fname))
 
@@ -70,14 +69,17 @@ func (t *Table) SaveTableInfo(fname string) {
 }
 
 func getSaveTable(t *Table) *Table {
-	return &Table{Name: t.Name,
+	return &Table{
+		Dir:      t.Dir,
+		Name:     t.Name,
 		KeyTable: t.KeyTable,
 		KeyTypes: t.KeyTypes,
 		IntInfo:  t.IntInfo,
-		StrInfo:  t.StrInfo}
+		StrInfo:  t.StrInfo,
+	}
 }
 
-func (t *Table) saveRecordList(records RecordList) bool {
+func (t *Table) saveRecordList(records RecordList, digestSpec *DigestSpec) bool {
 	if len(records) == 0 {
 		return false
 	}
@@ -86,20 +88,19 @@ func (t *Table) saveRecordList(records RecordList) bool {
 
 	chunkSize := CHUNK_SIZE
 	chunks := len(records) / chunkSize
-
 	if chunks == 0 {
 		filename, err := t.getNewIngestBlockName()
 		if err != nil {
 			Error("ERR SAVING BLOCK", filename, err)
 		}
-		t.SaveRecordsToBlock(records, filename)
+		t.SaveRecordsToBlock(records, filename, digestSpec)
 	} else {
 		for j := 0; j < chunks; j++ {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
 				Error("ERR SAVING BLOCK", filename, err)
 			}
-			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename)
+			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename, digestSpec)
 		}
 
 		// SAVE THE REMAINDER
@@ -109,19 +110,19 @@ func (t *Table) saveRecordList(records RecordList) bool {
 				Error("Error creating new ingestion block", err)
 			}
 
-			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename)
+			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename, digestSpec)
 		}
 	}
 
 	return true
 }
 
-func (t *Table) SaveRecordsToColumns() bool {
-	os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
+func (t *Table) SaveRecordsToColumns(digestSpec *DigestSpec) bool {
+	os.MkdirAll(path.Join(t.Dir, t.Name), 0777)
 	sort.Sort(SortRecordsByTime{t.newRecords})
 
-	t.FillPartialBlock()
-	ret := t.saveRecordList(t.newRecords)
+	t.FillPartialBlock(digestSpec)
+	ret := t.saveRecordList(t.newRecords, digestSpec)
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
 
@@ -131,7 +132,7 @@ func (t *Table) SaveRecordsToColumns() bool {
 
 func (t *Table) LoadTableInfo() bool {
 	tablename := t.Name
-	filename := path.Join(*FLAGS.DIR, tablename, "info.db")
+	filename := path.Join(t.Dir, tablename, "info.db")
 	if t.GrabInfoLock() {
 		defer t.ReleaseInfoLock()
 	} else {
@@ -194,7 +195,7 @@ func (t *Table) ReleaseRecords() {
 func (t *Table) HasFlagFile() bool {
 	// Make a determination of whether this is a new table or not. if it is a
 	// new table, we are fine, but if it's not - we are in trouble!
-	flagfile := path.Join(*FLAGS.DIR, t.Name, "info.db.exists")
+	flagfile := path.Join(t.Dir, t.Name, "info.db.exists")
 	_, err := os.Open(flagfile)
 	// If the flagfile exists and we couldn't read the file info, we are in trouble!
 	if err == nil {
@@ -241,14 +242,14 @@ func (t *Table) LoadBlockCache() {
 	}
 
 	defer t.ReleaseCacheLock()
-	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
+	files, err := ioutil.ReadDir(path.Join(t.Dir, t.Name, CACHE_DIR))
 
 	if err != nil {
 		return
 	}
 
 	for _, blockFile := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
+		filename := path.Join(t.Dir, t.Name, CACHE_DIR, blockFile.Name())
 		blockCache := SavedBlockCache{}
 		if err != nil {
 			continue
@@ -279,40 +280,37 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 
 	saved := 0
 
-	if *FLAGS.CACHED_QUERIES {
-		for blockName, blockQuery := range toCacheSpecs {
+	for blockName, blockQuery := range toCacheSpecs {
 
-			if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
-				continue
-			}
-			thisQuery := blockQuery
-			thisName := blockName
-
-			wg.Add(1)
-			saved++
-			go func() {
-
-				thisQuery.SaveCachedResults(thisName)
-				if *FLAGS.DEBUG {
-					fmt.Fprint(os.Stderr, "s")
-				}
-
-				wg.Done()
-			}()
+		if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
+			continue
 		}
+		thisQuery := blockQuery
+		thisName := blockName
 
-		wg.Wait()
+		wg.Add(1)
+		saved++
+		go func() {
 
-		saveend := time.Now()
-
-		if saved > 0 {
-			if *FLAGS.DEBUG {
-				fmt.Fprint(os.Stderr, "\n")
+			thisQuery.SaveCachedResults(thisName)
+			if *DEBUG {
+				fmt.Fprint(os.Stderr, "s")
 			}
-			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
-		}
+
+			wg.Done()
+		}()
 	}
 
+	wg.Wait()
+
+	saveend := time.Now()
+
+	if saved > 0 {
+		if *DEBUG {
+			fmt.Fprint(os.Stderr, "\n")
+		}
+		Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
+	}
 	// END QUERY CACHE SAVING
 
 }
@@ -369,13 +367,13 @@ func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 	return t.LoadAndQueryRecords(loadSpec, nil)
 }
 
-func (t *Table) ChunkAndSave() {
+func (t *Table) ChunkAndSave(digestSpec *DigestSpec) {
 
 	if len(t.newRecords) >= CHUNK_SIZE {
-		os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
+		os.MkdirAll(path.Join(t.Dir, t.Name), 0777)
 		name, err := t.getNewIngestBlockName()
 		if err == nil {
-			t.SaveRecordsToBlock(t.newRecords, name)
+			t.SaveRecordsToBlock(t.newRecords, name, digestSpec)
 			t.SaveTableInfo("info")
 			t.newRecords = make(RecordList, 0)
 			t.ReleaseRecords()
@@ -387,7 +385,7 @@ func (t *Table) ChunkAndSave() {
 }
 
 func (t *Table) IsNotExist() bool {
-	tableDir := path.Join(*FLAGS.DIR, t.Name)
+	tableDir := path.Join(t.Dir, t.Name)
 	_, err := ioutil.ReadDir(tableDir)
 	return err != nil
 }

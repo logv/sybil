@@ -6,10 +6,11 @@ import "testing"
 // appropriately
 func TestGrabInfoLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 
 	tbl.MakeDir()
 
@@ -21,10 +22,11 @@ func TestGrabInfoLock(t *testing.T) {
 
 func TestRecoverInfoLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 	tbl.MakeDir()
 	lock := Lock{Table: tbl, Name: "info"}
 	lock.ForceMakeFile(int64(0))
@@ -43,10 +45,11 @@ func TestRecoverInfoLock(t *testing.T) {
 
 func TestGrabDigestLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 
 	tbl.MakeDir()
 	grabbed := tbl.GrabDigestLock()
@@ -57,10 +60,11 @@ func TestGrabDigestLock(t *testing.T) {
 
 func TestRecoverDigestLock(t *testing.T) {
 	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
-	tbl := GetTable(tableName)
+	tbl := GetTable(*flags.DIR, tableName)
 	tbl.MakeDir()
 
 	// first grab digest lock

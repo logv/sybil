@@ -7,25 +7,35 @@ import "math/rand"
 import "testing"
 
 func TestTableLoadRowRecords(t *testing.T) {
+	t.Parallel()
+	flags := DefaultFlags()
 	tableName := getTestTableName(t)
 	deleteTestDb(tableName)
 	defer deleteTestDb(tableName)
 
 	blockCount := 3
-	addRecords(tableName, func(r *Record, index int) {
-		r.AddIntField("id", int64(index))
+	addRecords(*flags.DIR, tableName, func(r *Record, index int) {
+		r.AddIntField("id", int64(index), *flags.SKIP_OUTLIERS)
 		age := int64(rand.Intn(20)) + 10
-		r.AddIntField("age", age)
+		r.AddIntField("age", age, *flags.SKIP_OUTLIERS)
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
-	tbl := GetTable(tableName)
-	tbl.IngestRecords("ingest")
+	tbl := GetTable(*flags.DIR, tableName)
+	digestSpec := &DigestSpec{
+		SkipOutliers:  *flags.SKIP_OUTLIERS,
+		RecycleMemory: *flags.RECYCLE_MEM,
+	}
+	tbl.IngestRecords(*flags.SKIP_COMPACT, "ingest", digestSpec)
 
 	unloadTestTable(tableName)
-	nt := GetTable(tableName)
+	nt := GetTable(*flags.DIR, tableName)
 
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		ReadRowsOnly:               true,
+		SkipDeleteBlocksAfterQuery: true,
+		ReadIngestionLog:           true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -38,9 +48,9 @@ func TestTableLoadRowRecords(t *testing.T) {
 	querySpec := newQuerySpec()
 
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
-	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation(HistogramTypeBasic, "age", "avg"))
 
-	nt.MatchAndAggregate(querySpec)
+	nt.MatchAndAggregate(HistogramParameters{}, querySpec)
 
 	// Test that the group by and int keys are correctly re-assembled
 	for k, v := range querySpec.Results {
