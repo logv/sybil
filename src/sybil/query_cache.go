@@ -1,7 +1,7 @@
 package sybil
 
 import "encoding/gob"
-import "crypto/md5"
+
 import "bytes"
 import "fmt"
 import "path"
@@ -140,21 +140,7 @@ func (qs *QuerySpec) GetCacheStruct(blockname string) QueryParams {
 }
 
 func (qs *QuerySpec) GetCacheKey(blockname string) string {
-	cacheSpec := qs.GetCacheStruct(blockname)
-
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(cacheSpec)
-	if err != nil {
-		Warn("encode:", err)
-		return ""
-	}
-
-	h := md5.New()
-	h.Write(buf.Bytes())
-
-	ret := fmt.Sprintf("%x", h.Sum(nil))
-	return ret
+	return qs.GetCacheStruct(blockname).cacheKey()
 }
 
 func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
