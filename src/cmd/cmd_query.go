@@ -15,11 +15,15 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var NO_RECYCLE_MEM *bool
 
+const (
+	SORT_COUNT = "$COUNT"
+)
+
 func addQueryFlags() {
 
 	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
-	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
+	sybil.FLAGS.SORT = flag.String("sort", SORT_COUNT, "Int Column to sort by")
+	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")
 
 	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
@@ -79,8 +83,18 @@ func RunQueryCmdLine() {
 		return
 	}
 
+	printSpec := &sybil.PrintSpec{
+		ListTables: *sybil.FLAGS.LIST_TABLES,
+		PrintInfo:  *sybil.FLAGS.PRINT_INFO,
+		Samples:    *sybil.FLAGS.SAMPLES,
+
+		Op:            *sybil.FLAGS.OP,
+		Limit:         *sybil.FLAGS.LIMIT,
+		EncodeResults: *sybil.FLAGS.ENCODE_RESULTS,
+		JSON:          *sybil.FLAGS.JSON,
+	}
 	if *sybil.FLAGS.LIST_TABLES {
-		sybil.PrintTables()
+		sybil.PrintTables(printSpec)
 		return
 	}
 
@@ -179,8 +193,14 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
-	queryParams := sybil.QueryParams{Groups: groupings, Filters: filters,
-		Aggregations: aggs, Distincts: distincts}
+	queryParams := sybil.QueryParams{
+		Groups:       groupings,
+		Filters:      filters,
+		Aggregations: aggs,
+		Distincts:    distincts,
+
+		CachedQueries: *sybil.FLAGS.CACHED_QUERIES,
+	}
 
 	querySpec := sybil.QuerySpec{QueryParams: queryParams}
 
@@ -192,7 +212,7 @@ func RunQueryCmdLine() {
 		case sybil.INT_VAL:
 			loadSpec.Int(v)
 		default:
-			t.PrintColInfo()
+			t.PrintColInfo(printSpec)
 			fmt.Println("")
 			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
 		}
@@ -206,7 +226,7 @@ func RunQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.SORT != "" {
-		if *sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
+		if *sybil.FLAGS.SORT != sybil.SORT_COUNT {
 			loadSpec.Int(*sybil.FLAGS.SORT)
 		}
 		querySpec.OrderBy = *sybil.FLAGS.SORT
@@ -215,12 +235,12 @@ func RunQueryCmdLine() {
 	}
 
 	if *sybil.FLAGS.PRUNE_BY != "" {
-		if *sybil.FLAGS.PRUNE_BY != sybil.OPTS.SORT_COUNT {
+		if *sybil.FLAGS.PRUNE_BY != sybil.SORT_COUNT {
 			loadSpec.Int(*sybil.FLAGS.PRUNE_BY)
 		}
 		querySpec.PruneBy = *sybil.FLAGS.PRUNE_BY
 	} else {
-		querySpec.PruneBy = sybil.OPTS.SORT_COUNT
+		querySpec.PruneBy = sybil.SORT_COUNT
 	}
 
 	if *sybil.FLAGS.TIME {
@@ -240,18 +260,19 @@ func RunQueryCmdLine() {
 		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[*sybil.FLAGS.WEIGHT_COL]
 	}
 
-	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = *sybil.FLAGS.LIMIT
 
 	if *sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
-		sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
+		loadSpec.SkipDeleteBlocksAfterQuery = true
+		querySpec.Samples = true
 
 		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
-		t.PrintSamples()
+		t.PrintSamples(printSpec)
 
 		return
 	}
@@ -270,13 +291,13 @@ func RunQueryCmdLine() {
 		sybil.Debug("USING QUERY SPEC", querySpec)
 
 		start := time.Now()
-		// We can load and query at the same time
+
 		if *sybil.FLAGS.LOAD_AND_QUERY {
 			t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
 			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
-			querySpec.PrintResults()
+			querySpec.PrintResults(printSpec)
 		}
 
 	}
@@ -290,7 +311,7 @@ func RunQueryCmdLine() {
 		sybil.FLAGS.LOAD_AND_QUERY = sybil.NewFalseFlag()
 
 		t.LoadRecords(nil)
-		t.PrintColInfo()
+		t.PrintColInfo(printSpec)
 	}
 
 }

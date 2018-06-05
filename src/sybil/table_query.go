@@ -1,23 +1,26 @@
 package sybil
 
-import "fmt"
-
-import "os"
-import "path"
-import "strings"
-import "sync"
-import "time"
-import "io/ioutil"
-import "runtime"
-import "runtime/debug"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"runtime"
+	"runtime/debug"
+	"strings"
+	"sync"
+	"time"
+)
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	Debug("LOADING", *FLAGS.DIR, t.Name)
 
+	readRowsOnly := loadSpec != nil && loadSpec.ReadRowsOnly
+
 	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
 
-	if READ_ROWS_ONLY {
+	if readRowsOnly {
 		Debug("ONLY READING RECORDS FROM ROW STORE")
 		files = nil
 	}
@@ -200,7 +203,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 				// don't delete when testing so we can verify block
 				// loading results
-				if loadSpec != nil && DELETE_BLOCKS_AFTER_QUERY && !TEST_MODE {
+				if loadSpec != nil && !loadSpec.SkipDeleteBlocksAfterQuery && !TEST_MODE {
 					t.blockMu.Lock()
 					tb, ok := t.BlockList[block.Name]
 					if ok {
@@ -213,15 +216,15 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}()
 
-			if *FLAGS.SAMPLES {
+			if querySpec != nil && querySpec.Samples {
 				wg.Wait()
 
-				if count > *FLAGS.LIMIT {
+				if count > querySpec.Limit {
 					break
 				}
 			}
 
-			if DELETE_BLOCKS_AFTER_QUERY && thisBlock%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
+			if loadSpec != nil && !loadSpec.SkipDeleteBlocksAfterQuery && thisBlock%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
 				wg.Wait()
 				start := time.Now()
 
@@ -234,7 +237,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				if querySpec != nil {
 
-					t.WriteQueryCache(toCacheSpecs)
+					if querySpec.CachedQueries {
+						t.WriteQueryCache(toCacheSpecs)
+					}
 					toCacheSpecs = make(map[string]*QuerySpec)
 
 					resultSpec := MultiCombineResults(querySpec, blockSpecs)
@@ -311,7 +316,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		mu.Unlock()
 		count += rowStoreQuery.count
 
-		if !DELETE_BLOCKS_AFTER_QUERY && t.RowBlock != nil {
+		if loadSpec != nil && loadSpec.SkipDeleteBlocksAfterQuery && t.RowBlock != nil {
 			Debug("ROW STORE RECORD LENGTH IS", len(rowStoreQuery.records))
 			t.RowBlock.RecordList = rowStoreQuery.records
 			t.RowBlock.Matched = rowStoreQuery.records

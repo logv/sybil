@@ -31,8 +31,11 @@ type savedQueryParams struct {
 
 	OrderBy    string `json:"order_by,omitempty"`
 	PruneBy    string `json:"prune_by,omitempty"`
-	Limit      int16  `json:"limit,omitempty"`
+	Limit      int    `json:"limit,omitempty"`
 	TimeBucket int    `json:"time_bucket,omitempty"`
+
+	Samples       bool `json:"samples,omitempty"`
+	CachedQueries bool `json:"cached_queries,omitempty"`
 }
 
 func Min(x, y int64) int64 {

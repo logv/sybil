@@ -22,7 +22,10 @@ func RunAggregateCmdLine() {
 	sybil.FLAGS.ENCODE_RESULTS = &f
 	sybil.Debug("AGGREGATING DIRS", dirs)
 
+	printSpec := &sybil.PrintSpec{
+		EncodeResults: *sybil.FLAGS.ENCODE_RESULTS,
+	}
 	vt := sybil.VTable{}
-	vt.StitchResults(dirs)
+	vt.StitchResults(printSpec, dirs)
 
 }

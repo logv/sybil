@@ -17,6 +17,8 @@ var GROUP_BY_WIDTH = 8 // bytes
 var DISTINCT_STR = "distinct"
 var HIST_STR = "hist"
 
+const SORT_COUNT = "$COUNT"
+
 const (
 	NO_OP       = iota
 	OP_AVG      = iota
@@ -38,7 +40,7 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
-	if a.Col == OPTS.SORT_COUNT {
+	if a.Col == SORT_COUNT {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 
@@ -345,12 +347,12 @@ func CombineAndPrune(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Qu
 
 	for _, spec := range blockSpecs {
 		spec.SortResults(spec.PruneBy)
-		spec.PruneResults(*FLAGS.LIMIT)
+		spec.PruneResults(querySpec.Limit)
 	}
 
 	resultSpec := CombineResults(querySpec, blockSpecs)
 	resultSpec.SortResults(resultSpec.PruneBy)
-	resultSpec.PruneResults(*FLAGS.LIMIT)
+	resultSpec.PruneResults(querySpec.Limit)
 
 	return resultSpec
 }

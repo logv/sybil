@@ -25,12 +25,13 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -44,7 +45,6 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
 	nt = GetTable(tableName)
 	nt.LoadRecords(nil)
 
@@ -80,12 +80,13 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -99,7 +100,6 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
 	nt = GetTable(tableName)
 	nt.LoadRecords(nil)
 
@@ -158,12 +158,13 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	DELETE_BLOCKS_AFTER_QUERY = false
 	FLAGS.TABLE = &tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
 
 	nt.LoadTableInfo()
-	nt.LoadRecords(nil)
+	nt.LoadRecords(&LoadSpec{
+		SkipDeleteBlocksAfterQuery: true,
+	})
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -177,15 +178,14 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	READ_ROWS_ONLY = false
-	FLAGS.SAMPLES = NewTrueFlag()
-	limit := 1000
-	FLAGS.LIMIT = &limit
 	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	nt.LoadRecords(&loadSpec)
+	querySpec := newQuerySpec()
+	querySpec.Samples = true
+	querySpec.Limit = 1000
+	nt.LoadAndQueryRecords(&loadSpec, querySpec)
 
 	count := int32(0)
 	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
@@ -203,9 +203,8 @@ func TestBigIntColumns(t *testing.T) {
 	}
 
 	if count != int32(blockCount*CHUNK_SIZE) {
-		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count, "vs", blockCount*CHUNK_SIZE)
 
 	}
-	FLAGS.SAMPLES = NewFalseFlag()
 
 }

@@ -26,7 +26,6 @@ func RunIndexCmdLine() {
 
 	t.LoadRecords(nil)
 	t.SaveTableInfo("info")
-	sybil.DELETE_BLOCKS_AFTER_QUERY = true
 	sybil.OPTS.WRITE_BLOCK_INFO = true
 
 	loadSpec := t.NewLoadSpec()

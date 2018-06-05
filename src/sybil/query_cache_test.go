@@ -11,9 +11,6 @@ func TestCachedQueries(t *testing.T) {
 
 	blockCount := 5
 
-	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.CACHED_QUERIES = NewTrueFlag()
-
 	var thisAddRecords = func(block_count int) {
 		addRecords(tableName, func(r *Record, i int) {
 			age := int64(rand.Intn(20)) + 10
@@ -40,8 +37,6 @@ func TestCachedQueries(t *testing.T) {
 	thisAddRecords(blockCount)
 	testCachedBasicHist(t, tableName)
 	deleteTestDb(tableName)
-
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
 }
 
 func testCachedQueryFiles(t *testing.T, tableName string) {
@@ -53,9 +48,15 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
-		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+		QueryParams: QueryParams{
+			Filters:       filters,
+			Aggregations:  aggs,
+			CachedQueries: true,
+		},
+	}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
+	loadSpec.SkipDeleteBlocksAfterQuery = true
 
 	// test that the cached query doesnt already exist
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -75,14 +76,14 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 		}
 	}
 
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
+	querySpec.CachedQueries = false
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded {
 			t.Error("Used query cache when flag was not provided")
 		}
 	}
-	FLAGS.CACHED_QUERIES = NewTrueFlag()
+	querySpec.CachedQueries = true
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -105,9 +106,15 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 	aggs = append(aggs, nt.Aggregation("age", "hist"))
 
 	querySpec := QuerySpec{Table: nt,
-		QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+		QueryParams: QueryParams{
+			Filters:       filters,
+			Aggregations:  aggs,
+			CachedQueries: true,
+		},
+	}
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
+	loadSpec.SkipDeleteBlocksAfterQuery = true
 
 	nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 	copySpec := CopyQuerySpec(&querySpec)
@@ -170,10 +177,16 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 		aggs = append(aggs, nt.Aggregation("age", "hist"))
 
 		querySpec := QuerySpec{Table: nt,
-			QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+			QueryParams: QueryParams{
+				Filters:       filters,
+				Aggregations:  aggs,
+				CachedQueries: true,
+			},
+		}
 
 		loadSpec := NewLoadSpec()
 		loadSpec.LoadAllColumns = true
+		loadSpec.SkipDeleteBlocksAfterQuery = true
 
 		nt.LoadAndQueryRecords(&loadSpec, &querySpec)
 		copySpec := CopyQuerySpec(&querySpec)

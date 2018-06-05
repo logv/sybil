@@ -21,7 +21,7 @@ func printJSON(data interface{}) {
 	}
 }
 
-func printTimeResults(querySpec *QuerySpec) {
+func printTimeResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 	Debug("PRINTING TIME RESULTS")
 	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
@@ -44,7 +44,7 @@ func printTimeResults(querySpec *QuerySpec) {
 	sort.Ints(keys)
 
 	Debug("RESULT COUNT", len(keys))
-	if *FLAGS.JSON {
+	if printSpec.JSON {
 
 		marshalledResults := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
@@ -54,7 +54,7 @@ func printTimeResults(querySpec *QuerySpec) {
 			for _, r := range v {
 				_, ok := isTopResult[r.GroupByKey]
 				if ok {
-					marshalledResults[key] = append(marshalledResults[key], r.toResultJSON(querySpec))
+					marshalledResults[key] = append(marshalledResults[key], r.toResultJSON(printSpec, querySpec))
 				}
 			}
 		}
@@ -101,11 +101,11 @@ func getSparseBuckets(buckets map[string]int64) map[string]int64 {
 	return nonZeroBuckets
 }
 
-func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
+func (r *Result) toResultJSON(printSpec *PrintSpec, querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
-		if *FLAGS.OP == "hist" {
+		if printSpec.Op == "hist" {
 			inner := make(ResultJSON)
 			res[agg.Name] = inner
 			h := r.Hists[agg.Name]
@@ -117,7 +117,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			}
 		}
 
-		if *FLAGS.OP == "avg" {
+		if printSpec.Op == "avg" {
 			result, ok := r.Hists[agg.Name]
 			if ok {
 				res[agg.Name] = result.Mean()
@@ -144,17 +144,17 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 }
 
-func printSortedResults(querySpec *QuerySpec) {
+func printSortedResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 	sorted := querySpec.Sorted
 	if int(querySpec.Limit) < len(querySpec.Sorted) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
 
-	if *FLAGS.JSON {
+	if printSpec.JSON {
 		var results = make([]ResultJSON, 0)
 
 		for _, r := range sorted {
-			var res = r.toResultJSON(querySpec)
+			var res = r.toResultJSON(printSpec, querySpec)
 			results = append(results, res)
 		}
 
@@ -226,19 +226,19 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 type ResultJSON map[string]interface{}
 
-func printResults(querySpec *QuerySpec) {
+func printResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 	if querySpec.TimeBucket > 0 {
-		printTimeResults(querySpec)
+		printTimeResults(printSpec, querySpec)
 
 		return
 	}
 
-	if *FLAGS.JSON {
+	if printSpec.JSON {
 		// Need to marshall
 		var results = make([]ResultJSON, 0)
 
 		for _, r := range querySpec.Results {
-			var res = r.toResultJSON(querySpec)
+			var res = r.toResultJSON(printSpec, querySpec)
 			results = append(results, res)
 		}
 
@@ -281,22 +281,20 @@ func encodeResults(qs *QuerySpec) {
 	qs.Table = table
 }
 
-func (qs *QuerySpec) PrintResults() {
-	if *FLAGS.ENCODE_RESULTS {
+func (qs *QuerySpec) PrintResults(printSpec *PrintSpec) {
+	if printSpec.EncodeResults {
 		Debug("ENCODING RESULTS")
 
 		encodeResults(qs)
 		return
 	}
 
-	if *FLAGS.PRINT {
-		if qs.TimeBucket > 0 {
-			printTimeResults(qs)
-		} else if qs.OrderBy != "" {
-			printSortedResults(qs)
-		} else {
-			printResults(qs)
-		}
+	if qs.TimeBucket > 0 {
+		printTimeResults(printSpec, qs)
+	} else if qs.OrderBy != "" {
+		printSortedResults(printSpec, qs)
+	} else {
+		printResults(printSpec, qs)
 	}
 }
 
@@ -366,9 +364,20 @@ func (r *Record) toSample() *Sample {
 	return &sample
 }
 
-func (t *Table) PrintSamples() {
+type PrintSpec struct {
+	ListTables bool
+	PrintInfo  bool
+	Samples    bool
+
+	Op            string
+	Limit         int
+	EncodeResults bool
+	JSON          bool
+}
+
+func (t *Table) PrintSamples(printSpec *PrintSpec) {
 	count := 0
-	records := make(RecordList, *FLAGS.LIMIT)
+	records := make(RecordList, printSpec.Limit)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
@@ -376,7 +385,7 @@ func (t *Table) PrintSamples() {
 				break
 			}
 
-			if count >= *FLAGS.LIMIT {
+			if count >= printSpec.Limit {
 				break
 			}
 
@@ -384,7 +393,7 @@ func (t *Table) PrintSamples() {
 			count++
 		}
 
-		if count >= *FLAGS.LIMIT {
+		if count >= printSpec.Limit {
 			break
 		}
 	}
@@ -399,13 +408,13 @@ func (t *Table) PrintSamples() {
 		samples = append(samples, s)
 	}
 
-	if *FLAGS.ENCODE_RESULTS {
+	if printSpec.EncodeResults {
 		Debug("NUMBER SAMPLES", len(samples))
 		PrintBytes(NodeResults{Samples: samples})
 		return
 	}
 
-	if *FLAGS.JSON {
+	if printSpec.JSON {
 
 		printJSON(samples)
 		return
@@ -437,20 +446,20 @@ func ListTables() []string {
 
 }
 
-func PrintTables() {
+func PrintTables(printSpec *PrintSpec) {
 	tables := ListTables()
 
-	printTablesToOutput(tables)
+	printTablesToOutput(printSpec, tables)
 
 }
 
-func printTablesToOutput(tables []string) {
-	if *FLAGS.ENCODE_RESULTS {
+func printTablesToOutput(printSpec *PrintSpec, tables []string) {
+	if printSpec.EncodeResults {
 		PrintBytes(NodeResults{Tables: tables})
 		return
 	}
 
-	if *FLAGS.JSON {
+	if printSpec.JSON {
 		b, err := json.Marshal(tables)
 		if err == nil {
 			os.Stdout.Write(b)
@@ -489,7 +498,7 @@ func (t *Table) printColsOfType(wantedType int8) {
 	}
 }
 
-func (t *Table) PrintColInfo() {
+func (t *Table) PrintColInfo(printSpec *PrintSpec) {
 	// count: 3253,
 	// size: 908848,
 	// avgObjSize: 279.3876421764525,
@@ -513,12 +522,12 @@ func (t *Table) PrintColInfo() {
 
 	}
 
-	if *FLAGS.ENCODE_RESULTS {
+	if printSpec.EncodeResults {
 		PrintBytes(NodeResults{Table: *t})
 		return
 	}
 
-	if *FLAGS.JSON {
+	if printSpec.JSON {
 		tableCols := make(map[string][]string)
 		tableInfo := make(map[string]interface{})
 
