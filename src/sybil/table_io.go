@@ -278,27 +278,25 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 
 	saved := 0
 
-	if *FLAGS.CACHED_QUERIES {
-		for blockName, blockQuery := range toCacheSpecs {
+	for blockName, blockQuery := range toCacheSpecs {
 
-			if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
-				continue
-			}
-			thisQuery := blockQuery
-			thisName := blockName
-
-			wg.Add(1)
-			saved++
-			go func() {
-
-				thisQuery.SaveCachedResults(thisName)
-				if *FLAGS.DEBUG {
-					fmt.Fprint(os.Stderr, "s")
-				}
-
-				wg.Done()
-			}()
+		if blockName == INGEST_DIR || len(blockQuery.Results) > 5000 {
+			continue
 		}
+		thisQuery := blockQuery
+		thisName := blockName
+
+		wg.Add(1)
+		saved++
+		go func() {
+
+			thisQuery.SaveCachedResults(thisName)
+			if *FLAGS.DEBUG {
+				fmt.Fprint(os.Stderr, "s")
+			}
+
+			wg.Done()
+		}()
 
 		wg.Wait()
 

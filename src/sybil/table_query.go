@@ -237,7 +237,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				if querySpec != nil {
 
-					t.WriteQueryCache(toCacheSpecs)
+					if querySpec.CachedQueries {
+						t.WriteQueryCache(toCacheSpecs)
+					}
 					toCacheSpecs = make(map[string]*QuerySpec)
 
 					resultSpec := MultiCombineResults(querySpec, blockSpecs)

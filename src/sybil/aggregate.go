@@ -347,12 +347,12 @@ func CombineAndPrune(querySpec *QuerySpec, blockSpecs map[string]*QuerySpec) *Qu
 
 	for _, spec := range blockSpecs {
 		spec.SortResults(spec.PruneBy)
-		spec.PruneResults(*FLAGS.LIMIT)
+		spec.PruneResults(querySpec.Limit)
 	}
 
 	resultSpec := CombineResults(querySpec, blockSpecs)
 	resultSpec.SortResults(resultSpec.PruneBy)
-	resultSpec.PruneResults(*FLAGS.LIMIT)
+	resultSpec.PruneResults(querySpec.Limit)
 
 	return resultSpec
 }
