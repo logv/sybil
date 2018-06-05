@@ -1,6 +1,12 @@
 package sybil
 
-import hll "github.com/logv/loglogbeta"
+import (
+	"crypto/md5"
+	"encoding/json"
+	"fmt"
+
+	hll "github.com/logv/loglogbeta"
+)
 
 type ResultMap map[string]*Result
 
@@ -17,16 +23,16 @@ type savedQueryResults struct {
 }
 
 type savedQueryParams struct {
-	Filters      []Filter
-	Groups       []Grouping
-	Aggregations []Aggregation
-	Distincts    []Grouping // list of columns we are creating a count distinct query on
-	StrReplace   map[string]StrReplace
+	Filters      []Filter              `json:"filters,omitempty"`
+	Groups       []Grouping            `json:"groups,omitempty"`
+	Aggregations []Aggregation         `json:"aggregations,omitempty"`
+	Distincts    []Grouping            `json:"distincts,omitempty"` // list of columns we are creating a count distinct query on
+	StrReplace   map[string]StrReplace `json:"str_replace,omitempty"`
 
-	OrderBy    string
-	PruneBy    string
-	Limit      int16
-	TimeBucket int
+	OrderBy    string `json:"order_by,omitempty"`
+	PruneBy    string `json:"prune_by,omitempty"`
+	Limit      int16  `json:"limit,omitempty"`
+	TimeBucket int    `json:"time_bucket,omitempty"`
 }
 
 func Min(x, y int64) int64 {
@@ -237,4 +243,19 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 		Debug("MISSING CACHED INFO FOR", agg)
 	}
 	return agg
+}
+
+// cacheKey returns a stable identifier.
+func (qp QueryParams) cacheKey() string {
+	buf, err := json.Marshal(qp)
+	if err != nil {
+		panic(err)
+	}
+
+	h := md5.New()
+	h.Write(buf)
+
+	ret := fmt.Sprintf("%x", h.Sum(nil))
+	return ret
+
 }

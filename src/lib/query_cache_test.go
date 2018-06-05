@@ -232,3 +232,33 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 	}
 
 }
+
+func TestCacheKeyGeneration(t *testing.T) {
+	tests := []struct {
+		name string
+		qp   QueryParams
+		want string
+	}{
+		{
+			"empty",
+			QueryParams{},
+			"99914b932bd37a50b983c5e7c90ae93b",
+		},
+		{
+			"with-replacements",
+			QueryParams{StrReplace: map[string]StrReplace{
+				"a": StrReplace{},
+				"b": StrReplace{},
+			}},
+			"8c12c47bf78c427eae2be2abd2a65c73",
+		},
+	}
+
+	// TODO: once we're on go1.7 use t.Run
+	for _, tt := range tests {
+		if got := tt.qp.cacheKey(); got != tt.want {
+			t.Errorf("%q. cacheKey = \n%v, want \n%v", tt.name, got, tt.want)
+
+		}
+	}
+}
