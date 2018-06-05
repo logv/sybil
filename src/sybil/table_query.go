@@ -216,10 +216,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}()
 
-			if *FLAGS.SAMPLES {
+			if querySpec != nil && querySpec.Samples {
 				wg.Wait()
 
-				if count > *FLAGS.LIMIT {
+				if count > querySpec.Limit {
 					break
 				}
 			}

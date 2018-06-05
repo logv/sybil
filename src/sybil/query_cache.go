@@ -148,7 +148,7 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 		return false
 	}
 
-	if *FLAGS.SAMPLES {
+	if qs.Samples {
 		return false
 
 	}
@@ -176,7 +176,7 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 		return
 	}
 
-	if *FLAGS.SAMPLES {
+	if qs.Samples {
 		return
 	}
 

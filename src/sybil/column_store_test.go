@@ -175,14 +175,14 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 
-	FLAGS.SAMPLES = NewTrueFlag()
-	limit := 1000
-	FLAGS.LIMIT = &limit
 	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	nt.LoadRecords(&loadSpec)
+	querySpec := newQuerySpec()
+	querySpec.Samples = true
+	querySpec.Limit = 1000
+	nt.LoadAndQueryRecords(&loadSpec, querySpec)
 
 	count := int32(0)
 	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
@@ -200,9 +200,8 @@ func TestBigIntColumns(t *testing.T) {
 	}
 
 	if count != int32(blockCount*CHUNK_SIZE) {
-		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
+		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count, "vs", blockCount*CHUNK_SIZE)
 
 	}
-	FLAGS.SAMPLES = NewFalseFlag()
 
 }

@@ -244,7 +244,7 @@ func RunQueryCmdLine() {
 		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[*sybil.FLAGS.WEIGHT_COL]
 	}
 
-	querySpec.Limit = int16(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = *sybil.FLAGS.LIMIT
 
 	if *sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
@@ -252,6 +252,7 @@ func RunQueryCmdLine() {
 
 		loadSpec := t.NewLoadSpec()
 		loadSpec.LoadAllColumns = true
+		querySpec.Samples = true
 
 		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
