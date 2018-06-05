@@ -11,25 +11,27 @@ type MultiHist struct {
 	Avg     float64
 
 	PercentileMode bool
+	Weighted       bool `json:",omitempty"`
+
+	HistogramParameters HistogramParameters
 
 	Subhists []*HistCompat
 	Info     *IntInfo
-	table    *Table
 }
 
 var HIST_FACTOR_POW = uint(1)
 
-func newMultiHist(t *Table, info *IntInfo) *MultiHistCompat {
+func newMultiHist(params HistogramParameters, info *IntInfo) *MultiHistCompat {
 
 	h := &MultiHist{}
-	h.table = t
+	h.HistogramParameters = params
 	h.Info = info
 
 	h.Avg = 0
 	h.Count = 0
 	h.Min = info.Min
 	h.Max = info.Max
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if params.Type != HistogramTypeNone {
 		h.TrackPercentiles()
 	}
 
@@ -57,7 +59,7 @@ func (h *MultiHist) AddWeightedValue(value int64, weight int64) {
 		}
 	}
 
-	if OPTS.WEIGHT_COL || weight > 1 {
+	if h.Weighted || weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {
@@ -199,7 +201,7 @@ func (h *MultiHist) GetSparseBuckets() map[int64]int64 {
 
 }
 
-func (h *MultiHist) Combine(oh interface{}) {
+func (h *MultiHist) Combine(oh Histogram) {
 	nextHist := oh.(*MultiHistCompat)
 	for i, subhist := range h.Subhists {
 		subhist.Combine(nextHist.Subhists[i])
@@ -242,8 +244,7 @@ func (h *MultiHist) TrackPercentiles() {
 		info.Max = rightEdge
 
 		rightEdge = info.Min
-		h.Subhists[i] = newBasicHist(h.table, &info)
-		h.Subhists[i].TrackPercentiles()
+		h.Subhists[i] = newBasicHist(h.HistogramParameters, &info)
 	}
 
 	// Add the smallest hist to the end from h.Min -> the last bucket
@@ -251,8 +252,7 @@ func (h *MultiHist) TrackPercentiles() {
 	info.Min = h.Min
 	info.Max = rightEdge
 
-	h.Subhists[numHists] = newBasicHist(h.table, &info)
-	h.Subhists[numHists].TrackPercentiles()
+	h.Subhists[numHists] = newBasicHist(h.HistogramParameters, &info)
 
 }
 

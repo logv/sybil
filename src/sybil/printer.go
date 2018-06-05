@@ -202,7 +202,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 
 	for _, agg := range querySpec.Aggregations {
 		colName := fmt.Sprintf("  %5s", agg.Name)
-		if agg.Op == "hist" {
+		if agg.Op == OP_HIST {
 			h, ok := v.Hists[agg.Name]
 			if !ok {
 				Debug("NO HIST AROUND FOR KEY", agg.Name, v.GroupByKey)
@@ -217,7 +217,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 			} else {
 				fmt.Println(colName, "No Data")
 			}
-		} else if agg.Op == "avg" {
+		} else if agg.Op == OP_AVG {
 			fmt.Println(colName, fmt.Sprintf("%.2f", v.Hists[agg.Name].Mean()))
 		}
 	}

@@ -1,15 +1,16 @@
 package sybil
 
-import "log"
-import "math"
-import "sort"
-import "strconv"
+import (
+	"log"
+	"math"
+	"sort"
+	"strconv"
+)
 
 // {{{ BASIC HIST
 
 type BasicHistCachedInfo struct {
-	NumBuckets     int
-	BucketSize     int
+	HistogramParameters
 	Values         []int64
 	Averages       []float64
 	PercentileMode bool
@@ -25,32 +26,29 @@ type BasicHistCachedInfo struct {
 	Info    IntInfo
 }
 
+// TODO: consider elimination
 type BasicHist struct {
 	BasicHistCachedInfo
-
-	table *Table
 }
 
-func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
+func (h *BasicHist) SetupBuckets() {
 	// set up initial variables for max and min to be extrema in other
 	// direction
 	h.Avg = 0
 	h.Count = 0
-	h.Min = min
-	h.Max = max
+	h.Min = h.Info.Min
+	h.Max = h.Info.Max
 
 	if h.PercentileMode {
 
 		h.Outliers = make([]int64, 0)
 		h.Underliers = make([]int64, 0)
 
-		size := int64(max - min)
-		h.NumBuckets = buckets
-		h.BucketSize = int(size / int64(buckets))
-
-		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-			h.BucketSize = *FLAGS.HIST_BUCKET
+		size := int64(h.Max - h.Min)
+		if h.NumBuckets == 0 {
+			h.NumBuckets = NUM_BUCKETS
 		}
+		h.BucketSize = int(size / int64(h.NumBuckets))
 
 		if h.BucketSize == 0 {
 			if size < 100 {
@@ -69,14 +67,14 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 	}
 }
 
-func newBasicHist(t *Table, info *IntInfo) *HistCompat {
+func newBasicHist(params HistogramParameters, info *IntInfo) *HistCompat {
 
 	basicHist := BasicHist{}
 	compatHist := HistCompat{&basicHist}
-	compatHist.table = t
+	compatHist.HistogramParameters = params
 	compatHist.Info = *info
 
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if params.Type != HistogramTypeNone {
 		compatHist.TrackPercentiles()
 	}
 
@@ -84,10 +82,11 @@ func newBasicHist(t *Table, info *IntInfo) *HistCompat {
 
 }
 
+// TrackPercentiles sets up the percentile buckets.
 func (h *BasicHist) TrackPercentiles() {
 	h.PercentileMode = true
 
-	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
+	h.SetupBuckets()
 }
 
 func (h *BasicHist) AddValue(value int64) {
@@ -108,7 +107,7 @@ func (h *BasicHist) AddWeightedValue(value int64, weight int64) {
 		return
 	}
 
-	if OPTS.WEIGHT_COL || weight > 1 {
+	if h.Weighted || weight > 1 {
 		h.Samples++
 		h.Count += weight
 	} else {
@@ -256,7 +255,7 @@ func (h *BasicHist) GetStrBuckets() map[string]int64 {
 	return ret
 }
 
-func (h *BasicHist) Combine(oh interface{}) {
+func (h *BasicHist) Combine(oh Histogram) {
 	nextHist := oh.(*HistCompat)
 
 	for k, v := range nextHist.Values {

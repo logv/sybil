@@ -72,6 +72,7 @@ func testIntGt(t *testing.T, tableName string) {
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 
 	nt.MatchAndAggregate(&querySpec)
 
@@ -132,6 +133,7 @@ func testIntEq(t *testing.T, tableName string) {
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
 
 	querySpec := QuerySpec{QueryParams: QueryParams{Filters: filters, Aggregations: aggs}}
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 
 	nt.MatchAndAggregate(&querySpec)
 

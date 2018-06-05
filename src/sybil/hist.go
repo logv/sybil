@@ -4,8 +4,22 @@ var NUM_BUCKETS = 1000
 var DEBUG_OUTLIERS = false
 
 // histogram types:
-// HDRHist (wrapper around github.com/codahale/hdrhistogram which implements Histogram interface)
 // BasicHist (which gets wrapped in HistCompat to implement the Histogram interface)
+
+type HistogramType string
+
+const (
+	HistogramTypeNone  HistogramType = ""
+	HistogramTypeBasic HistogramType = "basic"
+	HistogramTypeLog   HistogramType = "multi"
+)
+
+type HistogramParameters struct {
+	Type       HistogramType `json:",omitempty"`
+	NumBuckets int           `json:",omitempty"`
+	BucketSize int           `json:",omitempty"`
+	Weighted   bool          `json:",omitempty"`
+}
 
 type Histogram interface {
 	Mean() float64
@@ -21,17 +35,16 @@ type Histogram interface {
 	Range() (int64, int64)
 	StdDev() float64
 
-	NewHist() Histogram
-	Combine(interface{})
+	NewHist(*IntInfo) Histogram
+	Combine(Histogram)
 }
 
-func (t *Table) NewHist(info *IntInfo) Histogram {
+func NewHist(params HistogramParameters, info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.LOG_HIST {
-		hist = newMultiHist(t, info)
+	if params.Type == HistogramTypeLog {
+		hist = newMultiHist(params, info)
 	} else {
-		hist = newBasicHist(t, info)
+		hist = newBasicHist(params, info)
 	}
-
 	return hist
 }

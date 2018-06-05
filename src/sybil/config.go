@@ -54,7 +54,6 @@ type FlagDefs struct {
 	TIME_COL    *string
 	TIME_BUCKET *int
 	HIST_BUCKET *int
-	HDR_HIST    *bool
 	LOG_HIST    *bool
 
 	FIELD_SEPARATOR    *string
@@ -126,7 +125,6 @@ type OptionDefs struct {
 	TIME_FORMAT             string
 	GROUP_BY                []string
 	DISTINCT                []string
-	MERGE_TABLE             *Table
 }
 
 // TODO: merge these two into one thing
@@ -179,7 +177,6 @@ func setDefaults() {
 	FLAGS.RECYCLE_MEM = NewTrueFlag()
 	FLAGS.CACHED_QUERIES = NewFalseFlag()
 
-	FLAGS.HDR_HIST = NewFalseFlag()
 	FLAGS.LOG_HIST = NewFalseFlag()
 
 	DEFAULT_LIMIT := 100

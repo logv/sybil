@@ -160,17 +160,7 @@ func testCachedQueryConsistency(t *testing.T, tableName string) {
 func testCachedBasicHist(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
 
-	for _, histType := range []string{"basic", "loghist"} {
-		// set query flags as early as possible
-		if histType == "loghist" {
-			FLAGS.LOG_HIST = NewTrueFlag()
-		} else {
-			FLAGS.LOG_HIST = NewFalseFlag()
-		}
-
-		HIST := "hist"
-		FLAGS.OP = &HIST
-
+	for _, histType := range []HistogramType{HistogramTypeBasic, HistogramTypeLog} {
 		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))
 		aggs := []Aggregation{}
@@ -181,6 +171,9 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 				Filters:       filters,
 				Aggregations:  aggs,
 				CachedQueries: true,
+				HistogramParameters: HistogramParameters{
+					Type: histType,
+				},
 			},
 		}
 

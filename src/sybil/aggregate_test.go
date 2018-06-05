@@ -128,10 +128,9 @@ func TestHistograms(t *testing.T) {
 	avgAge := float64(totalAge) / float64(count)
 
 	nt := saveAndReloadTable(t, tableName, blockCount)
-	var HIST = "hist"
-	FLAGS.OP = &HIST
 
 	querySpec := newQuerySpec()
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 
@@ -154,6 +153,7 @@ func TestHistograms(t *testing.T) {
 	}
 
 	querySpec = newQuerySpec()
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 
 	nt.MatchAndAggregate(querySpec)
@@ -237,9 +237,8 @@ func TestTimeSeries(t *testing.T) {
 
 	nt := saveAndReloadTable(t, tableName, blockCount)
 
-	hist := "hist"
-	FLAGS.OP = &hist
 	querySpec := newQuerySpec()
+	querySpec.HistogramParameters.Type = HistogramTypeBasic
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 	querySpec.TimeBucket = int(time.Duration(60) * time.Minute)

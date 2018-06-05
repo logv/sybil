@@ -17,9 +17,12 @@ func (hc *HistCompat) Max() int64 {
 	return hc.BasicHist.Max
 }
 
-// NewHist creates a new historgram using the same parameters.
-func (hc *HistCompat) NewHist() Histogram {
-	return hc.table.NewHist(&hc.Info)
+func (hc *HistCompat) NewHist(info *IntInfo) Histogram {
+	i := hc.Info
+	if info != nil {
+		i = *info
+	}
+	return NewHist(hc.HistogramParameters, &i)
 }
 
 // Mean returns the arithmetic mean.
@@ -73,9 +76,12 @@ func (hc *MultiHistCompat) Max() int64 {
 	return hc.Histogram.Max
 }
 
-// NewHist creates a new historgram using the same parameters.
-func (hc *MultiHistCompat) NewHist() Histogram {
-	return newMultiHist(hc.table, hc.Info)
+func (hc *MultiHistCompat) NewHist(info *IntInfo) Histogram {
+	i := *hc.Info
+	if info != nil {
+		i = *info
+	}
+	return newMultiHist(hc.HistogramParameters, &i)
 }
 
 // Mean returns the arithmetic mean.

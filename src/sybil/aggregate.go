@@ -1,15 +1,16 @@
 package sybil
 
-import "fmt"
-import "time"
-import "bytes"
-import "sort"
-import "strconv"
-import "sync"
-import "math"
-import "runtime"
-
-import "encoding/binary"
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"math"
+	"runtime"
+	"sort"
+	"strconv"
+	"sync"
+	"time"
+)
 
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
@@ -19,11 +20,13 @@ var HIST_STR = "hist"
 
 const SORT_COUNT = "$COUNT"
 
+type Op string
+
 const (
-	NO_OP       = iota
-	OP_AVG      = iota
-	OP_HIST     = iota
-	OP_DISTINCT = iota
+	NO_OP       Op = ""
+	OP_AVG         = "avg"
+	OP_HIST        = "hist"
+	OP_DISTINCT    = "distinct"
 )
 
 var GROUP_DELIMITER = "\t"
@@ -250,7 +253,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist, ok := addedRecord.Hists[a.Name]
 
 				if !ok {
-					hist = r.block.table.NewHist(r.block.table.getIntInfo(a.nameID))
+					hist = NewHist(querySpec.HistogramParameters, r.block.table.getIntInfo(a.nameID))
 					addedRecord.Hists[a.Name] = hist
 				}
 
