@@ -250,7 +250,7 @@ func TestCacheKeyGeneration(t *testing.T) {
 				"a": StrReplace{},
 				"b": StrReplace{},
 			}},
-			"8c12c47bf78c427eae2be2abd2a65c73",
+			"756ffe5df4c1293316de80ac7b0977ab",
 		},
 	}
 

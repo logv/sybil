@@ -23,16 +23,19 @@ type savedQueryResults struct {
 }
 
 type savedQueryParams struct {
-	Filters      []Filter              `json:"filters,omitempty"`
-	Groups       []Grouping            `json:"groups,omitempty"`
-	Aggregations []Aggregation         `json:"aggregations,omitempty"`
-	Distincts    []Grouping            `json:"distincts,omitempty"` // list of columns we are creating a count distinct query on
-	StrReplace   map[string]StrReplace `json:"str_replace,omitempty"`
+	Filters      []Filter              `json:",omitempty"`
+	Groups       []Grouping            `json:",omitempty"`
+	Aggregations []Aggregation         `json:",omitempty"`
+	Distincts    []Grouping            `json:",omitempty"` // list of columns we are creating a count distinct query on
+	StrReplace   map[string]StrReplace `json:",omitempty"`
 
-	OrderBy    string `json:"order_by,omitempty"`
-	PruneBy    string `json:"prune_by,omitempty"`
-	Limit      int16  `json:"limit,omitempty"`
-	TimeBucket int    `json:"time_bucket,omitempty"`
+	OrderBy    string `json:",omitempty"`
+	PruneBy    string `json:",omitempty"`
+	Limit      int    `json:",omitempty"`
+	TimeBucket int    `json:",omitempty"`
+
+	Samples       bool `json:",omitempty"`
+	CachedQueries bool `json:",omitempty"`
 }
 
 func Min(x, y int64) int64 {
