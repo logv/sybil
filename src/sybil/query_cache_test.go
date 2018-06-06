@@ -248,7 +248,7 @@ func TestCacheKeyGeneration(t *testing.T) {
 		{
 			"empty",
 			QueryParams{},
-			"99914b932bd37a50b983c5e7c90ae93b",
+			"f34409debd75d424ca268a26bc517440",
 		},
 		{
 			"with-replacements",
@@ -256,7 +256,7 @@ func TestCacheKeyGeneration(t *testing.T) {
 				"a": StrReplace{},
 				"b": StrReplace{},
 			}},
-			"756ffe5df4c1293316de80ac7b0977ab",
+			"3e260f59f6db10b9e96ca8c05319985d",
 		},
 	}
 
