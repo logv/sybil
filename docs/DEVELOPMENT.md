@@ -26,3 +26,8 @@ running from source
     # importing a mongo collection (can take a while...)
     ./bin/sybil ingest -table my_test_db --exclude a_nested_key < mongoexport -db my_test -collection test_collection
 
+
+regenerating golden files
+-------------------
+
+    Some tests use golden files to store expected output. To regenerate golden files run tests with the addition flag `-update-golden`.
