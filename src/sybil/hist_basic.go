@@ -67,12 +67,12 @@ func (h *BasicHist) SetupBuckets() {
 	}
 }
 
-func newBasicHist(params HistogramParameters, info *IntInfo) *HistCompat {
+func newBasicHist(params HistogramParameters, info IntInfo) *HistCompat {
 
 	basicHist := BasicHist{}
 	compatHist := HistCompat{&basicHist}
 	compatHist.HistogramParameters = params
-	compatHist.Info = *info
+	compatHist.Info = info
 
 	if params.Type != HistogramTypeNone {
 		compatHist.TrackPercentiles()
@@ -253,6 +253,10 @@ func (h *BasicHist) GetStrBuckets() map[string]int64 {
 	}
 
 	return ret
+}
+
+func (h *BasicHist) GetIntInfo() IntInfo {
+	return h.Info
 }
 
 func (h *BasicHist) Combine(oh Histogram) {

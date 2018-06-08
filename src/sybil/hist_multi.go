@@ -16,12 +16,12 @@ type MultiHist struct {
 	HistogramParameters HistogramParameters
 
 	Subhists []*HistCompat
-	Info     *IntInfo
+	Info     IntInfo
 }
 
 var HIST_FACTOR_POW = uint(1)
 
-func newMultiHist(params HistogramParameters, info *IntInfo) *MultiHistCompat {
+func newMultiHist(params HistogramParameters, info IntInfo) *MultiHistCompat {
 
 	h := &MultiHist{}
 	h.HistogramParameters = params
@@ -50,13 +50,11 @@ func (h *MultiHist) Sum() int64 {
 func (h *MultiHist) AddWeightedValue(value int64, weight int64) {
 	// TODO: use more appropriate discard method for .Min to express an order of
 	// magnitude
-	if h.Info != nil {
-		if value > h.Info.Max*10 || value < h.Info.Min {
-			if DEBUG_OUTLIERS {
-				Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
-			}
-			return
+	if value > h.Info.Max*10 || value < h.Info.Min {
+		if DEBUG_OUTLIERS {
+			Debug("IGNORING OUTLIER VALUE", value, "MIN IS", h.Info.Min, "MAX IS", h.Info.Max)
 		}
+		return
 	}
 
 	if h.Weighted || weight > 1 {
@@ -244,7 +242,7 @@ func (h *MultiHist) TrackPercentiles() {
 		info.Max = rightEdge
 
 		rightEdge = info.Min
-		h.Subhists[i] = newBasicHist(h.HistogramParameters, &info)
+		h.Subhists[i] = newBasicHist(h.HistogramParameters, info)
 	}
 
 	// Add the smallest hist to the end from h.Min -> the last bucket
@@ -252,7 +250,7 @@ func (h *MultiHist) TrackPercentiles() {
 	info.Min = h.Min
 	info.Max = rightEdge
 
-	h.Subhists[numHists] = newBasicHist(h.HistogramParameters, &info)
+	h.Subhists[numHists] = newBasicHist(h.HistogramParameters, info)
 
 }
 

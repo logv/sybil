@@ -253,7 +253,7 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				hist, ok := addedRecord.Hists[a.Name]
 
 				if !ok {
-					hist = NewHist(querySpec.HistogramParameters, r.block.table.getIntInfo(a.nameID))
+					hist = NewHist(querySpec.HistogramParameters, *r.block.table.getIntInfo(a.nameID))
 					addedRecord.Hists[a.Name] = hist
 				}
 

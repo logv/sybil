@@ -31,15 +31,16 @@ type Histogram interface {
 	GetPercentiles() []int64
 	GetStrBuckets() map[string]int64
 	GetIntBuckets() map[int64]int64
+	GetIntInfo() IntInfo
 
 	Range() (int64, int64)
 	StdDev() float64
 
-	NewHist(*IntInfo) Histogram
+	NewHist(IntInfo) Histogram
 	Combine(Histogram)
 }
 
-func NewHist(params HistogramParameters, info *IntInfo) Histogram {
+func NewHist(params HistogramParameters, info IntInfo) Histogram {
 	var hist Histogram
 	if params.Type == HistogramTypeLog {
 		hist = newMultiHist(params, info)

@@ -120,7 +120,7 @@ func fullMergeHist(h, ph Histogram) Histogram {
 
 	info := IntInfo{Min: Min(l1, l2), Max: Max(r1, r2)}
 
-	nh := h.NewHist(&info)
+	nh := h.NewHist(info)
 
 	for bucket, count := range h.GetIntBuckets() {
 		nh.AddWeightedValue(bucket, count)
@@ -158,7 +158,7 @@ func (rs *Result) Combine(nextResult *Result) {
 		ph, ok := rs.Hists[k]
 
 		if !ok {
-			nh := h.NewHist(nil)
+			nh := h.NewHist(h.GetIntInfo())
 			nh.Combine(h)
 			rs.Hists[k] = nh
 			continue

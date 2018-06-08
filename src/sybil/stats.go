@@ -58,7 +58,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		info.Min = int64(minAvg)
 		info.Max = int64(maxAvg)
 
-		betweenGroups := newBasicHist(querySpec.HistogramParameters, &info)
+		betweenGroups := newBasicHist(querySpec.HistogramParameters, info)
 		betweenGroups.TrackPercentiles()
 
 		sumOfSquaresWithin := float64(0.0)
