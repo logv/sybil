@@ -72,7 +72,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 		intCol := NewSavedIntColumn()
 
 		intCol.Name = colName
-		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		intCol.DeltaEncodedIDs = true
 
 		maxR := 0
 		recordToValue := make(map[uint32]int64)
@@ -97,7 +97,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, maxR)
-			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
+			intCol.ValueEncoded = true
 
 			for r, val := range recordToValue {
 				intCol.Values[r] = val
@@ -105,12 +105,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 
 			prev := int64(0)
 			for r, val := range intCol.Values {
-				if OPTS.DELTA_ENCODE_INT_VALUES {
-					intCol.Values[r] = val - prev
-					prev = val
-				} else {
-					intCol.Values[r] = val
-				}
+				intCol.Values[r] = val - prev
+				prev = val
 			}
 		}
 
@@ -148,7 +144,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = colName
-		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		setCol.DeltaEncodedIDs = true
 		tempBlock := newTableBlock()
 
 		tbCol := tb.GetColumnInfo(k)
@@ -228,7 +224,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]Value
 		}
 		strCol := NewSavedStrColumn()
 		strCol.Name = colName
-		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		strCol.DeltaEncodedIDs = true
 		tempBlock := newTableBlock()
 
 		tempCol := tempBlock.GetColumnInfo(k)
@@ -407,11 +403,9 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		}
 	}
 
-	if OPTS.DELTA_ENCODE_RECORD_IDS {
-		deltaEncode(sameInts)
-		deltaEncode(sameStrs)
-		deltaEncode(sameSets)
-	}
+	deltaEncode(sameInts)
+	deltaEncode(sameStrs)
+	deltaEncode(sameSets)
 
 	ret := SeparatedColumns{ints: sameInts, strs: sameStrs, sets: sameSets}
 	return ret

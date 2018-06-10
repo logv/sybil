@@ -112,15 +112,13 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	WEIGHT_COL              bool
-	WEIGHT_COL_ID           int16
-	DELTA_ENCODE_INT_VALUES bool
-	DELTA_ENCODE_RECORD_IDS bool
-	WRITE_BLOCK_INFO        bool
-	TIME_COL_ID             int16
-	TIME_FORMAT             string
-	GROUP_BY                []string
-	DISTINCT                []string
+	WEIGHT_COL       bool
+	WEIGHT_COL_ID    int16
+	WRITE_BLOCK_INFO bool
+	TIME_COL_ID      int16
+	TIME_FORMAT      string
+	GROUP_BY         []string
+	DISTINCT         []string
 }
 
 // TODO: merge these two into one thing
@@ -132,8 +130,6 @@ var EMPTY = ""
 func setDefaults() {
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
-	OPTS.DELTA_ENCODE_INT_VALUES = true
-	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
 	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
