@@ -113,7 +113,6 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	SAMPLES                 bool
 	STR_REPLACEMENTS        map[string]StrReplace
 	WEIGHT_COL              bool
 	WEIGHT_COL_ID           int16
@@ -134,7 +133,6 @@ var OPTS = OptionDefs{}
 var EMPTY = ""
 
 func setDefaults() {
-	OPTS.SAMPLES = false
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
 	OPTS.DELTA_ENCODE_INT_VALUES = true

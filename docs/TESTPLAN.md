@@ -14,8 +14,8 @@ Test Plan:
     * [x] Int: gt, lt, !eq, ne
     * [x] Str: !eq, ne, re, nre
     * [x] Set: in nin
-    * [ ] Work with samples
-      * [ ] migrate f_SAMPLES into querySpec
+    * [x] Work with samples
+      * [x] migrate f_SAMPLES into querySpec
   * [x] Aggregation Line
     * [x] Histograms
       * [ ] Outliers
