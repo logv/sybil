@@ -21,7 +21,7 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 			continue
 		}
 
-		block := t.LoadBlockFromDir(b.Name, nil, false)
+		block := t.LoadBlockFromDir(b.Name, nil, false, nil)
 		if block != nil {
 			if block.Info.IntInfoMap[*FLAGS.TIME_COL] != nil {
 				block.table = t

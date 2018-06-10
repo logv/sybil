@@ -112,7 +112,6 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	STR_REPLACEMENTS        map[string]StrReplace
 	WEIGHT_COL              bool
 	WEIGHT_COL_ID           int16
 	DELTA_ENCODE_INT_VALUES bool

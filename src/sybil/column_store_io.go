@@ -454,7 +454,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	// For now, we load info.db and check NumRecords inside it to prevent
 	// catastrophics, but we could load everything potentially
 	start = time.Now()
-	nb := tb.table.LoadBlockFromDir(partialname, nil, false)
+	nb := tb.table.LoadBlockFromDir(partialname, nil, false, nil)
 	end = time.Now()
 
 	// TODO:
@@ -463,7 +463,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
-		nb = tb.table.LoadBlockFromDir(partialname, nil, true)
+		nb = tb.table.LoadBlockFromDir(partialname, nil, true, nil)
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
 			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 		}
@@ -492,7 +492,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replacements map[string]StrReplace) {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
@@ -515,7 +515,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	// unpack the string table
 
 	// Run our replacements!
-	strReplace, ok := OPTS.STR_REPLACEMENTS[into.Name]
+	strReplace, ok := replacements[into.Name]
 	bucketReplace := make(map[int32]int32)
 	var re *regexp.Regexp
 	if ok {
