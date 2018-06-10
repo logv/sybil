@@ -58,7 +58,6 @@ type FlagDefs struct {
 
 	FIELD_SEPARATOR    *string
 	FILTER_SEPARATOR   *string
-	PRINT_KEYS         *bool
 	LOAD_AND_QUERY     *bool
 	LOAD_THEN_QUERY    *bool
 	READ_INGESTION_LOG *bool
@@ -119,7 +118,6 @@ type OptionDefs struct {
 	DELTA_ENCODE_INT_VALUES bool
 	DELTA_ENCODE_RECORD_IDS bool
 	WRITE_BLOCK_INFO        bool
-	TIMESERIES              bool
 	TIME_COL_ID             int16
 	TIME_FORMAT             string
 	GROUP_BY                []string
@@ -138,7 +136,6 @@ func setDefaults() {
 	OPTS.DELTA_ENCODE_INT_VALUES = true
 	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TIMESERIES = false
 	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 	FLAGS.GC = NewTrueFlag()
@@ -153,7 +150,6 @@ func setDefaults() {
 
 	FLAGS.SKIP_COMPACT = NewFalseFlag()
 
-	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
 	FLAGS.LOAD_AND_QUERY = NewTrueFlag()
 	FLAGS.LOAD_THEN_QUERY = NewFalseFlag()
 	FLAGS.READ_INGESTION_LOG = NewFalseFlag()
