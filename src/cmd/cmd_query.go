@@ -19,27 +19,31 @@ const (
 	SORT_COUNT = "$COUNT"
 )
 
+func addPrintFlags() {
+	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
+	sybil.FLAGS.LIST_TABLES = flag.Bool("tables", false, "List tables")
+	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
+	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
+	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
+	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
+}
+
 func addQueryFlags() {
 
-	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
 	sybil.FLAGS.SORT = flag.String("sort", SORT_COUNT, "Int Column to sort by")
 	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")
-
-	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
 
 	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
 	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	sybil.FLAGS.TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
 	sybil.FLAGS.WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
 
-	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	sybil.FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
 
-	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
 	sybil.FLAGS.ENCODE_RESULTS = flag.Bool("encode-results", false, "Print the results in binary format")
 	sybil.FLAGS.ENCODE_FLAGS = flag.Bool("encode-flags", false, "Print the query flags in binary format")
 	sybil.FLAGS.DECODE_FLAGS = flag.Bool("decode-flags", false, "Use the query flags supplied on stdin")
-	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
 	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
 
 	sybil.FLAGS.HIST_BUCKET = flag.Int("int-bucket", 0, "Int hist bucket size")
@@ -58,10 +62,7 @@ func addQueryFlags() {
 
 	sybil.FLAGS.READ_ROWSTORE = flag.Bool("read-log", false, "read the ingestion log (can take longer!)")
 
-	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
 	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
-
-	sybil.FLAGS.LIST_TABLES = flag.Bool("tables", false, "List tables")
 
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
@@ -71,6 +72,7 @@ func addQueryFlags() {
 
 func RunQueryCmdLine() {
 	addQueryFlags()
+	addPrintFlags()
 	flag.Parse()
 
 	if *sybil.FLAGS.DECODE_FLAGS {

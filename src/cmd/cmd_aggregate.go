@@ -10,6 +10,7 @@ import (
 // verify all their query specs match the same md5 result and then combine them
 
 func RunAggregateCmdLine() {
+	addPrintFlags()
 	flag.Parse()
 	dirs := flag.Args()
 
@@ -23,7 +24,13 @@ func RunAggregateCmdLine() {
 	sybil.Debug("AGGREGATING DIRS", dirs)
 
 	printSpec := &sybil.PrintSpec{
-		EncodeResults: *sybil.FLAGS.ENCODE_RESULTS,
+		ListTables: *sybil.FLAGS.LIST_TABLES,
+		PrintInfo:  *sybil.FLAGS.PRINT_INFO,
+		Samples:    *sybil.FLAGS.SAMPLES,
+
+		Op:    *sybil.FLAGS.OP,
+		Limit: *sybil.FLAGS.LIMIT,
+		JSON:  *sybil.FLAGS.JSON,
 	}
 	vt := sybil.VTable{}
 	vt.StitchResults(printSpec, dirs)
