@@ -15,9 +15,6 @@ import (
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
 
-var DISTINCT_STR = "distinct"
-var HIST_STR = "hist"
-
 const SORT_COUNT = "$COUNT"
 
 type Op string

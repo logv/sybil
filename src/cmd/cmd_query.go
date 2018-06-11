@@ -56,7 +56,7 @@ func addQueryFlags() {
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
 	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
 	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
-	sybil.FLAGS.DISTINCT = flag.String(sybil.DISTINCT_STR, "", "distinct group by")
+	sybil.FLAGS.DISTINCT = flag.String(sybil.OP_DISTINCT, "", "distinct group by")
 
 	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
 
