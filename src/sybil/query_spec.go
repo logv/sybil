@@ -134,10 +134,14 @@ func fullMergeHist(h, ph Histogram) Histogram {
 	return nh
 }
 
-func extentsMatch(l, r Histogram) bool {
+// fastMergeable indicates if two histograms can be merged on the fast path vs a full merge.
+func fastMergeable(l, r Histogram) bool {
 	l1, r1 := l.Range()
 	l2, r2 := r.Range()
-	return l1 == l2 && r1 == r2
+	pl, pr := l.GetParameters(), r.GetParameters()
+	bl, br := pl.BucketSize, pr.BucketSize
+	nl, nr := pl.NumBuckets, pr.NumBuckets
+	return l1 == l2 && r1 == r2 && bl == br && nl == nr
 }
 
 // This does an in place combine of the next_result into this one...
@@ -168,10 +172,10 @@ func (rs *Result) Combine(nextResult *Result) {
 		// when merging histograms because we can't be sure they were created
 		// with the same extents (being that they may originate from different
 		// nodes)
-		if !extentsMatch(h, ph) {
-			rs.Hists[k] = fullMergeHist(h, ph)
-		} else {
+		if fastMergeable(h, ph) {
 			rs.Hists[k].Combine(h)
+		} else {
+			rs.Hists[k] = fullMergeHist(h, ph)
 		}
 	}
 

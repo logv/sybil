@@ -50,6 +50,10 @@ func (hc *HistCompat) GetIntInfo() IntInfo {
 	return hc.Info
 }
 
+func (hc *HistCompat) GetParameters() HistogramParameters {
+	return hc.HistogramParameters
+}
+
 // Range return the range.
 func (hc *HistCompat) Range() (int64, int64) {
 	return hc.Info.Min, hc.Info.Max
@@ -107,6 +111,10 @@ func (hc *MultiHistCompat) GetIntBuckets() map[int64]int64 {
 
 func (hc *MultiHistCompat) GetIntInfo() IntInfo {
 	return hc.Info
+}
+
+func (hc *MultiHistCompat) GetParameters() HistogramParameters {
+	return hc.HistogramParameters
 }
 
 // Range return the range.

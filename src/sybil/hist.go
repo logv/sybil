@@ -32,6 +32,7 @@ type Histogram interface {
 	GetStrBuckets() map[string]int64
 	GetIntBuckets() map[int64]int64
 	GetIntInfo() IntInfo
+	GetParameters() HistogramParameters
 
 	Range() (int64, int64)
 	StdDev() float64
