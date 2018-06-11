@@ -116,9 +116,6 @@ type OptionDefs struct {
 	WEIGHT_COL_ID    int16
 	WRITE_BLOCK_INFO bool
 	TIME_COL_ID      int16
-	TIME_FORMAT      string
-	GROUP_BY         []string
-	DISTINCT         []string
 }
 
 // TODO: merge these two into one thing
@@ -131,7 +128,6 @@ func setDefaults() {
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
 	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 	FLAGS.GC = NewTrueFlag()
 	FLAGS.JSON = NewFalseFlag()

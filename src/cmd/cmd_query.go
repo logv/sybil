@@ -118,12 +118,10 @@ func RunQueryCmdLine() {
 
 	if *sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.GROUP_BY = groups
 	}
 
 	if *sybil.FLAGS.DISTINCT != "" {
 		distinct = strings.Split(*sybil.FLAGS.DISTINCT, *sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.DISTINCT = distinct
 	}
 
 	if *NO_RECYCLE_MEM {
