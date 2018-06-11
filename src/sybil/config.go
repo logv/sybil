@@ -24,7 +24,6 @@ func NewTrueFlag() *bool {
 }
 
 var TEST_MODE = false
-var ENABLE_LUA = false
 
 type FlagDefs struct {
 	OP          *string
@@ -42,13 +41,10 @@ type FlagDefs struct {
 	STR_REPLACE *string // regex replacement for strings
 	SET_FILTERS *string
 
-	SESSION_COL *string
-	INTS        *string
-	STRS        *string
-	GROUPS      *string
-	DISTINCT    *string
-
-	ADD_RECORDS *int
+	INTS     *string
+	STRS     *string
+	GROUPS   *string
+	DISTINCT *string
 
 	TIME        *bool
 	TIME_COL    *string
@@ -85,22 +81,8 @@ type FlagDefs struct {
 	PRINT_INFO *bool
 	SAMPLES    *bool
 
-	LUA     *bool
-	LUAFILE *string
-
 	UPDATE_TABLE_INFO *bool
 	SKIP_OUTLIERS     *bool
-
-	// Join keys
-	JOIN_TABLE *string
-	JOIN_KEY   *string
-	JOIN_GROUP *string
-
-	// Sessionization stuff
-	SESSION_CUTOFF *int
-	RETENTION      *bool
-	PATH_KEY       *string
-	PATH_LENGTH    *int
 
 	// STATS
 	ANOVA_ICC *bool
@@ -122,7 +104,6 @@ type OptionDefs struct {
 // current problem is that FLAGS needs pointers
 var FLAGS = FlagDefs{}
 var OPTS = OptionDefs{}
-var EMPTY = ""
 
 func setDefaults() {
 	OPTS.WEIGHT_COL = false
@@ -156,8 +137,6 @@ func setDefaults() {
 	FLAGS.UPDATE_TABLE_INFO = NewFalseFlag()
 	FLAGS.SKIP_OUTLIERS = NewTrueFlag()
 	FLAGS.SAMPLES = NewFalseFlag()
-	FLAGS.LUA = NewFalseFlag()
-	FLAGS.LUAFILE = &EMPTY
 
 	FLAGS.RECYCLE_MEM = NewTrueFlag()
 	FLAGS.CACHED_QUERIES = NewFalseFlag()
