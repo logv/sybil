@@ -9,16 +9,16 @@ import (
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if *sybil.FLAGS.TABLE == "" {
+	if sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
-	if *sybil.FLAGS.PROFILE {
+	if sybil.FLAGS.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(sybil.FLAGS.TABLE)
 	if !t.LoadTableInfo() {
 		sybil.Warn("Couldn't read table info, exiting early")
 		return

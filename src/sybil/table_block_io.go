@@ -304,7 +304,7 @@ func (cb *AfterLoadQueryCB) CB(digestname string, records RecordList) {
 		cb.records = append(cb.records, r)
 	}
 
-	if *FLAGS.DEBUG {
+	if FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "+")
 	}
 }

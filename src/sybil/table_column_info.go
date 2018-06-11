@@ -96,7 +96,7 @@ func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
 		// standard deviation and decide whether it is an extreme outlier or not
 		deltaInStddev := math.Abs(delta) / stddev
 
-		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !*FLAGS.SKIP_OUTLIERS {
+		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !FLAGS.SKIP_OUTLIERS {
 			info.Max = val
 		} else {
 			ignored = true
@@ -110,7 +110,7 @@ func updateIntInfo(intInfoTable map[int16]*IntInfo, name int16, val int64) {
 	if info.Min > val {
 		deltaInStddev := math.Abs(delta) / stddev
 
-		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !*FLAGS.SKIP_OUTLIERS {
+		if (deltaInStddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || !FLAGS.SKIP_OUTLIERS {
 			info.Min = val
 		} else {
 			ignored = true

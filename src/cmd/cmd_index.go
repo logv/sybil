@@ -10,19 +10,19 @@ import (
 func RunIndexCmdLine() {
 	var fInts = flag.String("int", "", "Integer values to index")
 	flag.Parse()
-	if *sybil.FLAGS.TABLE == "" {
+	if sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
 
 	var ints []string
 	if *fInts != "" {
-		ints = strings.Split(*fInts, *sybil.FLAGS.FIELD_SEPARATOR)
+		ints = strings.Split(*fInts, sybil.FLAGS.FIELD_SEPARATOR)
 	}
 
-	sybil.FLAGS.UPDATE_TABLE_INFO = sybil.NewTrueFlag()
+	sybil.FLAGS.UPDATE_TABLE_INFO = true
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
 	t.LoadRecords(nil)
 	t.SaveTableInfo("info")

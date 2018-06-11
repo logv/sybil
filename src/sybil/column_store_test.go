@@ -25,8 +25,8 @@ func TestTableDigestRowRecords(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	FLAGS.TABLE = tableName // TODO: eliminate global use
+	FLAGS.READ_INGESTION_LOG = true
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(&LoadSpec{
@@ -80,8 +80,8 @@ func TestColumnStoreFileNames(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	FLAGS.TABLE = tableName // TODO: eliminate global use
+	FLAGS.READ_INGESTION_LOG = true
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(&LoadSpec{
@@ -158,8 +158,8 @@ func TestBigIntColumns(t *testing.T) {
 
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	FLAGS.TABLE = tableName // TODO: eliminate global use
+	FLAGS.READ_INGESTION_LOG = true
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(&LoadSpec{

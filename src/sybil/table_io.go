@@ -29,7 +29,7 @@ func (t *Table) saveTableInfo(fname string) {
 
 	defer t.ReleaseInfoLock()
 	var network bytes.Buffer // Stand-in for the network.
-	dirname := path.Join(*FLAGS.DIR, t.Name)
+	dirname := path.Join(FLAGS.DIR, t.Name)
 	filename := path.Join(dirname, fmt.Sprintf("%s.db", fname))
 	backup := path.Join(dirname, fmt.Sprintf("%s.bak", fname))
 
@@ -116,7 +116,7 @@ func (t *Table) saveRecordList(records RecordList) bool {
 }
 
 func (t *Table) SaveRecordsToColumns() bool {
-	os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
+	os.MkdirAll(path.Join(FLAGS.DIR, t.Name), 0777)
 	sort.Sort(SortRecordsByTime{t.newRecords})
 
 	t.FillPartialBlock()
@@ -130,7 +130,7 @@ func (t *Table) SaveRecordsToColumns() bool {
 
 func (t *Table) LoadTableInfo() bool {
 	tablename := t.Name
-	filename := path.Join(*FLAGS.DIR, tablename, "info.db")
+	filename := path.Join(FLAGS.DIR, tablename, "info.db")
 	if t.GrabInfoLock() {
 		defer t.ReleaseInfoLock()
 	} else {
@@ -193,7 +193,7 @@ func (t *Table) ReleaseRecords() {
 func (t *Table) HasFlagFile() bool {
 	// Make a determination of whether this is a new table or not. if it is a
 	// new table, we are fine, but if it's not - we are in trouble!
-	flagfile := path.Join(*FLAGS.DIR, t.Name, "info.db.exists")
+	flagfile := path.Join(FLAGS.DIR, t.Name, "info.db.exists")
 	_, err := os.Open(flagfile)
 	// If the flagfile exists and we couldn't read the file info, we are in trouble!
 	if err == nil {
@@ -240,14 +240,14 @@ func (t *Table) LoadBlockCache() {
 	}
 
 	defer t.ReleaseCacheLock()
-	files, err := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name, CACHE_DIR))
+	files, err := ioutil.ReadDir(path.Join(FLAGS.DIR, t.Name, CACHE_DIR))
 
 	if err != nil {
 		return
 	}
 
 	for _, blockFile := range files {
-		filename := path.Join(*FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
+		filename := path.Join(FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
 		blockCache := SavedBlockCache{}
 		if err != nil {
 			continue
@@ -291,7 +291,7 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 		go func() {
 
 			thisQuery.SaveCachedResults(thisName)
-			if *FLAGS.DEBUG {
+			if FLAGS.DEBUG {
 				fmt.Fprint(os.Stderr, "s")
 			}
 
@@ -303,7 +303,7 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 		saveend := time.Now()
 
 		if saved > 0 {
-			if *FLAGS.DEBUG {
+			if FLAGS.DEBUG {
 				fmt.Fprint(os.Stderr, "\n")
 			}
 			Debug("SAVING CACHED QUERIES TOOK", saveend.Sub(savestart))
@@ -369,7 +369,7 @@ func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
 func (t *Table) ChunkAndSave() {
 
 	if len(t.newRecords) >= CHUNK_SIZE {
-		os.MkdirAll(path.Join(*FLAGS.DIR, t.Name), 0777)
+		os.MkdirAll(path.Join(FLAGS.DIR, t.Name), 0777)
 		name, err := t.getNewIngestBlockName()
 		if err == nil {
 			t.SaveRecordsToBlock(t.newRecords, name)
@@ -384,7 +384,7 @@ func (t *Table) ChunkAndSave() {
 }
 
 func (t *Table) IsNotExist() bool {
-	tableDir := path.Join(*FLAGS.DIR, t.Name)
+	tableDir := path.Join(FLAGS.DIR, t.Name)
 	_, err := ioutil.ReadDir(tableDir)
 	return err != nil
 }
