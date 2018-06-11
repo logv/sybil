@@ -13,29 +13,36 @@ var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
 var NO_RECYCLE_MEM *bool
 
+const (
+	SORT_COUNT = "$COUNT"
+)
+
+func addPrintFlags() {
+	flag.StringVar(&sybil.FLAGS.OP, "op", "avg", "metric to calculate, either 'avg' or 'hist'")
+	flag.BoolVar(&sybil.FLAGS.LIST_TABLES, "tables", false, "List tables")
+	flag.BoolVar(&sybil.FLAGS.PRINT_INFO, "info", false, "Print table info")
+	flag.IntVar(&sybil.FLAGS.LIMIT, "limit", 100, "Number of results to return")
+	flag.BoolVar(&sybil.FLAGS.PRINT, "print", true, "Print some records")
+	flag.BoolVar(&sybil.FLAGS.SAMPLES, "samples", false, "Grab samples")
+	flag.BoolVar(&sybil.FLAGS.JSON, "json", false, "Print results in JSON format")
+}
+
 func addQueryFlags() {
 
-	flag.BoolVar(&sybil.FLAGS.PRINT_INFO, "info", false, "Print table info")
 	flag.StringVar(&sybil.FLAGS.SORT, "sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
 	flag.StringVar(&sybil.FLAGS.PRUNE_BY, "prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
-
-	flag.IntVar(&sybil.FLAGS.LIMIT, "limit", 100, "Number of results to return")
 
 	flag.BoolVar(&sybil.FLAGS.TIME, "time", false, "make a time rollup")
 	flag.StringVar(&sybil.FLAGS.TIME_COL, "time-col", "time", "which column to treat as a timestamp (use with -time flag)")
 	flag.IntVar(&sybil.FLAGS.TIME_BUCKET, "time-bucket", 60*60, "time bucket (in seconds)")
 	flag.StringVar(&sybil.FLAGS.WEIGHT_COL, "weight-col", "", "Which column to treat as an optional weighting column")
 
-	flag.StringVar(&sybil.FLAGS.OP, "op", "avg", "metric to calculate, either 'avg' or 'hist'")
 	flag.BoolVar(&sybil.FLAGS.LOG_HIST, "loghist", false, "Use nested logarithmic histograms")
 
-	flag.BoolVar(&sybil.FLAGS.PRINT, "print", true, "Print some records")
 	flag.BoolVar(&sybil.FLAGS.ENCODE_RESULTS, "encode-results", false, "Print the results in binary format")
 	flag.BoolVar(&sybil.FLAGS.ENCODE_FLAGS, "encode-flags", false, "Print the query flags in binary format")
 	flag.BoolVar(&sybil.FLAGS.DECODE_FLAGS, "decode-flags", false, "Use the query flags supplied on stdin")
-	flag.BoolVar(&sybil.FLAGS.SAMPLES, "samples", false, "Grab samples")
 	flag.StringVar(&sybil.FLAGS.INT_FILTERS, "int-filter", "", "Int filters, format: col:op:val")
-
 	flag.IntVar(&sybil.FLAGS.HIST_BUCKET, "int-bucket", 0, "Int hist bucket size")
 
 	flag.StringVar(&sybil.FLAGS.STR_REPLACE, "str-replace", "", "Str replacement, format: col:find:replace")
@@ -52,10 +59,6 @@ func addQueryFlags() {
 
 	flag.BoolVar(&sybil.FLAGS.READ_ROWSTORE, "read-log", false, "read the ingestion log (can take longer!)")
 
-	flag.BoolVar(&sybil.FLAGS.JSON, "json", false, "Print results in JSON format")
-
-	flag.BoolVar(&sybil.FLAGS.LIST_TABLES, "tables", false, "List tables")
-
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
 	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
@@ -64,6 +67,7 @@ func addQueryFlags() {
 
 func RunQueryCmdLine() {
 	addQueryFlags()
+	addPrintFlags()
 	flag.Parse()
 
 	if sybil.FLAGS.DECODE_FLAGS {

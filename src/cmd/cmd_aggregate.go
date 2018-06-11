@@ -8,6 +8,7 @@ import "flag"
 // verify all their query specs match the same md5 result and then combine them
 
 func RunAggregateCmdLine() {
+	addPrintFlags()
 	flag.Parse()
 	dirs := flag.Args()
 
