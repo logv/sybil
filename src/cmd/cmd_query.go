@@ -90,7 +90,7 @@ func RunQueryCmdLine() {
 		PrintInfo:  *sybil.FLAGS.PRINT_INFO,
 		Samples:    *sybil.FLAGS.SAMPLES,
 
-		Op:            *sybil.FLAGS.OP,
+		Op:            sybil.Op(*sybil.FLAGS.OP),
 		Limit:         *sybil.FLAGS.LIMIT,
 		EncodeResults: *sybil.FLAGS.ENCODE_RESULTS,
 		JSON:          *sybil.FLAGS.JSON,
@@ -212,7 +212,7 @@ func RunQueryCmdLine() {
 
 		CachedQueries: *sybil.FLAGS.CACHED_QUERIES,
 	}
-	if *sybil.FLAGS.OP == "hist" {
+	if op == sybil.OP_HIST {
 		histType := sybil.HistogramTypeBasic
 		if *sybil.FLAGS.LOG_HIST {
 			histType = sybil.HistogramTypeLog

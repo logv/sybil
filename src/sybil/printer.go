@@ -369,7 +369,7 @@ type PrintSpec struct {
 	PrintInfo  bool
 	Samples    bool
 
-	Op            string
+	Op            Op
 	Limit         int
 	EncodeResults bool
 	JSON          bool
