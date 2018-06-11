@@ -23,6 +23,8 @@ function testagg() {
 testagg -info | grep avg
 testagg -int ping -group host -op avg
 testagg -int ping -group host -op hist
+testagg -int time -group host -op hist
+testagg -int time -group host -op hist -loghist
 
 # cleanup
 rm -rf db-{1,2} f{1,2}.gob results

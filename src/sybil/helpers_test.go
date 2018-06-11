@@ -19,13 +19,7 @@ func runTests(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var BLANK_STRING = ""
-
 func setupTestVars(chunkSize int) {
-	//tableName := "unknown"
-	//FLAGS.TABLE = &tableName
-	FLAGS.OP = &BLANK_STRING
-
 	TEST_MODE = true
 	CHUNK_SIZE = chunkSize
 	LOCK_US = 1
@@ -96,7 +90,13 @@ func newQuerySpec() *QuerySpec {
 	aggs := []Aggregation{}
 	groupings := []Grouping{}
 
-	querySpec := QuerySpec{QueryParams: QueryParams{Groups: groupings, Filters: filters, Aggregations: aggs}}
+	querySpec := QuerySpec{
+		QueryParams: QueryParams{
+			Groups:       groupings,
+			Filters:      filters,
+			Aggregations: aggs,
+		},
+	}
 
 	return &querySpec
 }

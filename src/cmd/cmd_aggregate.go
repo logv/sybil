@@ -28,7 +28,7 @@ func RunAggregateCmdLine() {
 		PrintInfo:  *sybil.FLAGS.PRINT_INFO,
 		Samples:    *sybil.FLAGS.SAMPLES,
 
-		Op:    *sybil.FLAGS.OP,
+		Op:    sybil.Op(*sybil.FLAGS.OP),
 		Limit: *sybil.FLAGS.LIMIT,
 		JSON:  *sybil.FLAGS.JSON,
 	}

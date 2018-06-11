@@ -56,7 +56,7 @@ func addQueryFlags() {
 	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
 	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
 	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
-	sybil.FLAGS.DISTINCT = flag.String(sybil.DISTINCT_STR, "", "distinct group by")
+	sybil.FLAGS.DISTINCT = flag.String(sybil.OP_DISTINCT, "", "distinct group by")
 
 	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
 
@@ -90,7 +90,7 @@ func RunQueryCmdLine() {
 		PrintInfo:  *sybil.FLAGS.PRINT_INFO,
 		Samples:    *sybil.FLAGS.SAMPLES,
 
-		Op:            *sybil.FLAGS.OP,
+		Op:            sybil.Op(*sybil.FLAGS.OP),
 		Limit:         *sybil.FLAGS.LIMIT,
 		EncodeResults: *sybil.FLAGS.ENCODE_RESULTS,
 		JSON:          *sybil.FLAGS.JSON,
@@ -164,8 +164,17 @@ func RunQueryCmdLine() {
 	}
 
 	aggs := []sybil.Aggregation{}
+	var op sybil.Op
+	switch sybil.Op(*sybil.FLAGS.OP) {
+	case sybil.OP_HIST:
+		op = sybil.OP_HIST
+	case sybil.OP_AVG:
+		op = sybil.OP_AVG
+	case sybil.OP_DISTINCT:
+		op = sybil.OP_DISTINCT
+	}
 	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(agg, *sybil.FLAGS.OP))
+		aggs = append(aggs, t.Aggregation(agg, op))
 	}
 
 	distincts := []sybil.Grouping{}
@@ -173,7 +182,7 @@ func RunQueryCmdLine() {
 		distincts = append(distincts, t.Grouping(g))
 	}
 
-	if *sybil.FLAGS.OP == sybil.DISTINCT_STR {
+	if op == sybil.OP_DISTINCT {
 		distincts = groupings
 		groupings = make([]sybil.Grouping, 0)
 	}
@@ -202,6 +211,17 @@ func RunQueryCmdLine() {
 		Distincts:    distincts,
 
 		CachedQueries: *sybil.FLAGS.CACHED_QUERIES,
+	}
+	if op == sybil.OP_HIST {
+		histType := sybil.HistogramTypeBasic
+		if *sybil.FLAGS.LOG_HIST {
+			histType = sybil.HistogramTypeLog
+		}
+		queryParams.HistogramParameters = sybil.HistogramParameters{
+			Type:       histType,
+			BucketSize: *sybil.FLAGS.HIST_BUCKET,
+			Weighted:   *sybil.FLAGS.WEIGHT_COL != "",
+		}
 	}
 
 	querySpec := sybil.QuerySpec{QueryParams: queryParams}

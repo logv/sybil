@@ -162,9 +162,6 @@ func (vt *VTable) AggregateSpecs(printSpec *PrintSpec, dirs []string) {
 	finalResult.Punctuate()
 	finalResult.QueryParams = qs.QueryParams
 
-	FLAGS.OP = &HIST_STR
-	OPTS.MERGE_TABLE = &vt.Table
-
 	combinedResult := CombineResults(&finalResult, allSpecs)
 	combinedResult.QueryParams = qs.QueryParams
 

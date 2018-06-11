@@ -36,6 +36,8 @@ type savedQueryParams struct {
 
 	Samples       bool `json:",omitempty"`
 	CachedQueries bool `json:",omitempty"`
+
+	HistogramParameters HistogramParameters `json:",omitempty"`
 }
 
 func Min(x, y int64) int64 {
@@ -74,11 +76,9 @@ type Grouping struct {
 }
 
 type Aggregation struct {
-	Op       string
-	opID     int
-	Name     string
-	nameID   int16
-	HistType string
+	Op     Op
+	Name   string
+	nameID int16
 }
 
 type Result struct {
@@ -120,7 +120,7 @@ func fullMergeHist(h, ph Histogram) Histogram {
 
 	info := IntInfo{Min: Min(l1, l2), Max: Max(r1, r2)}
 
-	nh := OPTS.MERGE_TABLE.NewHist(&info)
+	nh := h.NewHist(info)
 
 	for bucket, count := range h.GetIntBuckets() {
 		nh.AddWeightedValue(bucket, count)
@@ -129,8 +129,19 @@ func fullMergeHist(h, ph Histogram) Histogram {
 	for bucket, count := range ph.GetIntBuckets() {
 		nh.AddWeightedValue(bucket, count)
 	}
+	//spew.Dump(nh)
 
 	return nh
+}
+
+// fastMergeable indicates if two histograms can be merged on the fast path vs a full merge.
+func fastMergeable(l, r Histogram) bool {
+	l1, r1 := l.Range()
+	l2, r2 := r.Range()
+	pl, pr := l.GetParameters(), r.GetParameters()
+	bl, br := pl.BucketSize, pr.BucketSize
+	nl, nr := pl.NumBuckets, pr.NumBuckets
+	return l1 == l2 && r1 == r2 && bl == br && nl == nr
 }
 
 // This does an in place combine of the next_result into this one...
@@ -148,31 +159,23 @@ func (rs *Result) Combine(nextResult *Result) {
 
 	// combine histograms...
 	for k, h := range nextResult.Hists {
+		ph, ok := rs.Hists[k]
 
-		// If we are doing a node aggregation, we have a MERGE_TABLE
-		// set, which means we should go the slow route when merging
-		// histograms because we can't be sure they were created with
-		// the same extents (being that they may originate from different
+		if !ok {
+			nh := h.NewHist(h.GetIntInfo())
+			nh.Combine(h)
+			rs.Hists[k] = nh
+			continue
+		}
+
+		// If we are doing a node aggregation, we need to go the slow route
+		// when merging histograms because we can't be sure they were created
+		// with the same extents (being that they may originate from different
 		// nodes)
-		if OPTS.MERGE_TABLE != nil {
-			ph, ok := rs.Hists[k]
-
-			if ok {
-				rs.Hists[k] = fullMergeHist(h, ph)
-			} else {
-				rs.Hists[k] = h
-			}
-
+		if fastMergeable(h, ph) {
+			rs.Hists[k].Combine(h)
 		} else {
-			_, ok := rs.Hists[k]
-			if !ok {
-				nh := h.NewHist()
-
-				nh.Combine(h)
-				rs.Hists[k] = nh
-			} else {
-				rs.Hists[k].Combine(h)
-			}
+			rs.Hists[k] = fullMergeHist(h, ph)
 		}
 	}
 
@@ -217,30 +220,10 @@ func (t *Table) Grouping(name string) Grouping {
 	return Grouping{name, colID}
 }
 
-func (t *Table) Aggregation(name string, op string) Aggregation {
+func (t *Table) Aggregation(name string, op Op) Aggregation {
 	colID := t.getKeyID(name)
 
 	agg := Aggregation{Name: name, nameID: colID, Op: op}
-	if op == "avg" {
-		agg.opID = OP_AVG
-	}
-
-	if op == "hist" {
-		agg.opID = OP_HIST
-		agg.HistType = "basic"
-		if *FLAGS.LOG_HIST {
-			agg.HistType = "multi"
-
-		}
-
-		if *FLAGS.HDR_HIST {
-			agg.HistType = "hdr"
-		}
-	}
-
-	if op == DISTINCT_STR {
-		agg.opID = OP_DISTINCT
-	}
 
 	_, ok := t.IntInfo[colID]
 	if !ok {

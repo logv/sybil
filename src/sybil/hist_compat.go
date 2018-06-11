@@ -17,9 +17,8 @@ func (hc *HistCompat) Max() int64 {
 	return hc.BasicHist.Max
 }
 
-// NewHist creates a new historgram using the same parameters.
-func (hc *HistCompat) NewHist() Histogram {
-	return hc.table.NewHist(&hc.Info)
+func (hc *HistCompat) NewHist(info IntInfo) Histogram {
+	return NewHist(hc.HistogramParameters, info)
 }
 
 // Mean returns the arithmetic mean.
@@ -45,6 +44,14 @@ func (hc *HistCompat) StdDev() float64 {
 // GetIntBuckets returns the integer buckets.
 func (hc *HistCompat) GetIntBuckets() map[int64]int64 {
 	return hc.GetSparseBuckets()
+}
+
+func (hc *HistCompat) GetIntInfo() IntInfo {
+	return hc.Info
+}
+
+func (hc *HistCompat) GetParameters() HistogramParameters {
+	return hc.HistogramParameters
 }
 
 // Range return the range.
@@ -73,9 +80,8 @@ func (hc *MultiHistCompat) Max() int64 {
 	return hc.Histogram.Max
 }
 
-// NewHist creates a new historgram using the same parameters.
-func (hc *MultiHistCompat) NewHist() Histogram {
-	return newMultiHist(hc.table, hc.Info)
+func (hc *MultiHistCompat) NewHist(info IntInfo) Histogram {
+	return newMultiHist(hc.HistogramParameters, info)
 }
 
 // Mean returns the arithmetic mean.
@@ -101,6 +107,14 @@ func (hc *MultiHistCompat) StdDev() float64 {
 // GetIntBuckets returns the integer buckets.
 func (hc *MultiHistCompat) GetIntBuckets() map[int64]int64 {
 	return hc.GetSparseBuckets()
+}
+
+func (hc *MultiHistCompat) GetIntInfo() IntInfo {
+	return hc.Info
+}
+
+func (hc *MultiHistCompat) GetParameters() HistogramParameters {
+	return hc.HistogramParameters
 }
 
 // Range return the range.
