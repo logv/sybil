@@ -74,7 +74,7 @@ func (t *Table) FillPartialBlock() bool {
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
 
-	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */)
+	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */, nil)
 	if block == nil {
 		return true
 	}
@@ -196,7 +196,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool) *TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool, replacements map[string]StrReplace) *TableBlock {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -248,7 +248,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, *info)
+			tb.unpackStrCol(dec, *info, replacements)
 		case strings.HasPrefix(fname, "set"):
 			tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):

@@ -93,7 +93,7 @@ func (l *DigestLock) Recover() bool {
 func (l *BlockLock) Recover() bool {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	tb := t.LoadBlockFromDir(l.Name, nil, true)
+	tb := t.LoadBlockFromDir(l.Name, nil, true, nil)
 	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
 		Debug("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...

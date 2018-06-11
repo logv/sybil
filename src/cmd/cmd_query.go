@@ -118,12 +118,10 @@ func RunQueryCmdLine() {
 
 	if *sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.GROUP_BY = groups
 	}
 
 	if *sybil.FLAGS.DISTINCT != "" {
 		distinct = strings.Split(*sybil.FLAGS.DISTINCT, *sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.DISTINCT = distinct
 	}
 
 	if *NO_RECYCLE_MEM {
@@ -204,6 +202,7 @@ func RunQueryCmdLine() {
 	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
+	replacements := sybil.BuildReplacements(*sybil.FLAGS.FIELD_SEPARATOR, *sybil.FLAGS.STR_REPLACE)
 	queryParams := sybil.QueryParams{
 		Groups:       groupings,
 		Filters:      filters,
@@ -211,6 +210,7 @@ func RunQueryCmdLine() {
 		Distincts:    distincts,
 
 		CachedQueries: *sybil.FLAGS.CACHED_QUERIES,
+		StrReplace:    replacements,
 	}
 	if op == sybil.OP_HIST {
 		histType := sybil.HistogramTypeBasic
