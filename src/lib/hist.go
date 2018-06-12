@@ -27,7 +27,7 @@ type Histogram interface {
 
 func (t *Table) NewHist(info *IntInfo) Histogram {
 	var hist Histogram
-	if *FLAGS.LOG_HIST {
+	if FLAGS.LOG_HIST {
 		hist = newMultiHist(t, info)
 	} else {
 		hist = newBasicHist(t, info)

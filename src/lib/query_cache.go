@@ -29,7 +29,7 @@ func registerTypesForQueryCache() {
 
 func (t *Table) getCachedQueryForBlock(dirname string, querySpec *QuerySpec) (*TableBlock, *QuerySpec) {
 
-	if *FLAGS.CACHED_QUERIES == false {
+	if FLAGS.CACHED_QUERIES == false {
 		return nil, nil
 	}
 
@@ -144,11 +144,11 @@ func (qs *QuerySpec) GetCacheKey(blockname string) string {
 }
 
 func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
-	if *FLAGS.CACHED_QUERIES == false {
+	if FLAGS.CACHED_QUERIES == false {
 		return false
 	}
 
-	if *FLAGS.SAMPLES {
+	if FLAGS.SAMPLES {
 		return false
 
 	}
@@ -172,11 +172,11 @@ func (qs *QuerySpec) LoadCachedResults(blockname string) bool {
 }
 
 func (qs *QuerySpec) SaveCachedResults(blockname string) {
-	if *FLAGS.CACHED_QUERIES == false {
+	if FLAGS.CACHED_QUERIES == false {
 		return
 	}
 
-	if *FLAGS.SAMPLES {
+	if FLAGS.SAMPLES {
 		return
 	}
 

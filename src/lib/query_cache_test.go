@@ -12,7 +12,7 @@ func TestCachedQueries(t *testing.T) {
 	blockCount := 5
 
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.CACHED_QUERIES = NewTrueFlag()
+	FLAGS.CACHED_QUERIES = true
 
 	var thisAddRecords = func(block_count int) {
 		addRecords(tableName, func(r *Record, i int) {
@@ -41,7 +41,7 @@ func TestCachedQueries(t *testing.T) {
 	testCachedBasicHist(t, tableName)
 	deleteTestDb(tableName)
 
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
+	FLAGS.CACHED_QUERIES = false
 }
 
 func testCachedQueryFiles(t *testing.T, tableName string) {
@@ -75,14 +75,14 @@ func testCachedQueryFiles(t *testing.T, tableName string) {
 		}
 	}
 
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
+	FLAGS.CACHED_QUERIES = false
 	for _, b := range nt.BlockList {
 		loaded := querySpec.LoadCachedResults(b.Name)
 		if loaded == true {
 			t.Error("Used query cache when flag was not provided")
 		}
 	}
-	FLAGS.CACHED_QUERIES = NewTrueFlag()
+	FLAGS.CACHED_QUERIES = true
 
 	// test that a new and slightly different query isnt cached for us
 	nt.LoadAndQueryRecords(&loadSpec, nil)
@@ -156,13 +156,13 @@ func testCachedBasicHist(t *testing.T, tableName string) {
 	for _, histType := range []string{"basic", "loghist"} {
 		// set query flags as early as possible
 		if histType == "loghist" {
-			FLAGS.LOG_HIST = NewTrueFlag()
+			FLAGS.LOG_HIST = true
 		} else {
-			FLAGS.LOG_HIST = NewFalseFlag()
+			FLAGS.LOG_HIST = false
 		}
 
 		HIST := "hist"
-		FLAGS.OP = &HIST
+		FLAGS.OP = HIST
 
 		filters := []Filter{}
 		filters = append(filters, nt.IntFilter("age", "lt", 20))

@@ -3,7 +3,6 @@ package sybil
 import "sort"
 import "math"
 
-
 // THIS FILE HAS BOOKKEEPING FOR COLUMN DATA ON A TABLE AND BLOCK BASIS
 // it adds update_int_info and update_str_info to Table/TableBlock
 
@@ -97,7 +96,7 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 		// standard deviation and decide whether it is an extreme outlier or not
 		delta_in_stddev := math.Abs(delta) / stddev
 
-		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *FLAGS.SKIP_OUTLIERS == false {
+		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || FLAGS.SKIP_OUTLIERS == false {
 			info.Max = val
 		} else {
 			ignored = true
@@ -111,7 +110,7 @@ func update_int_info(int_info_table map[int16]*IntInfo, name int16, val int64) {
 	if info.Min > val {
 		delta_in_stddev := math.Abs(delta) / stddev
 
-		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || *FLAGS.SKIP_OUTLIERS == false {
+		if (delta_in_stddev < STD_CUTOFF && info.Count > MIN_CUTOFF) || FLAGS.SKIP_OUTLIERS == false {
 			info.Min = val
 		} else {
 			ignored = true

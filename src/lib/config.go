@@ -27,84 +27,67 @@ var TEST_MODE = false
 var ENABLE_LUA = false
 
 type FlagDefs struct {
-	OP          *string
-	PRINT       *bool // print results out
-	EXPORT      *bool // save records that match filter to tsv files
-	LIST_TABLES *bool // list the tables in the db dir
+	OP          string
+	PRINT       bool // print results out
+	EXPORT      bool // save records that match filter to tsv files
+	LIST_TABLES bool // list the tables in the db dir
 
 	// for usage with distributed queries
-	DECODE_FLAGS   *bool // load query flags from stdin as gob encoded data
-	ENCODE_FLAGS   *bool // print the query flags to stdout as binary
-	ENCODE_RESULTS *bool // print the querySpec results to stdout as binary
+	DECODE_FLAGS   bool // load query flags from stdin as gob encoded data
+	ENCODE_FLAGS   bool // print the query flags to stdout as binary
+	ENCODE_RESULTS bool // print the querySpec results to stdout as binary
 
-	INT_FILTERS *string
-	STR_FILTERS *string
-	STR_REPLACE *string // regex replacement for strings
-	SET_FILTERS *string
+	INT_FILTERS string
+	STR_FILTERS string
+	STR_REPLACE string // regex replacement for strings
+	SET_FILTERS string
 
-	SESSION_COL *string
-	INTS        *string
-	STRS        *string
-	GROUPS      *string
-	DISTINCT    *string
+	INTS     string
+	STRS     string
+	GROUPS   string
+	DISTINCT string
 
-	ADD_RECORDS *int
+	ADD_RECORDS int
 
-	TIME        *bool
-	TIME_COL    *string
-	TIME_BUCKET *int
-	HIST_BUCKET *int
-	HDR_HIST    *bool
-	LOG_HIST    *bool
+	TIME        bool
+	TIME_COL    string
+	TIME_BUCKET int
+	HIST_BUCKET int
+	HDR_HIST    bool
+	LOG_HIST    bool
 
-	FIELD_SEPARATOR    *string
-	FILTER_SEPARATOR   *string
-	PRINT_KEYS         *bool
-	LOAD_AND_QUERY     *bool
-	LOAD_THEN_QUERY    *bool
-	READ_INGESTION_LOG *bool
-	READ_ROWSTORE      *bool
-	SKIP_COMPACT       *bool
+	FIELD_SEPARATOR    string
+	FILTER_SEPARATOR   string
+	PRINT_KEYS         bool
+	LOAD_AND_QUERY     bool
+	LOAD_THEN_QUERY    bool
+	READ_INGESTION_LOG bool
+	READ_ROWSTORE      bool
+	SKIP_COMPACT       bool
 
-	PROFILE     *bool
-	PROFILE_MEM *bool
+	PROFILE     bool
+	PROFILE_MEM bool
 
-	RECYCLE_MEM    *bool
-	CACHED_QUERIES *bool
+	RECYCLE_MEM    bool
+	CACHED_QUERIES bool
 
-	WEIGHT_COL *string
+	WEIGHT_COL string
 
-	LIMIT *int
+	LIMIT int
 
-	DEBUG *bool
-	JSON  *bool
-	GC    *bool
+	DEBUG bool
+	JSON  bool
+	GC    bool
 
-	DIR        *string
-	SORT       *string
-	PRUNE_BY   *string
-	TABLE      *string
-	PRINT_INFO *bool
-	SAMPLES    *bool
+	DIR        string
+	SORT       string
+	PRUNE_BY   string
+	TABLE      string
+	PRINT_INFO bool
+	SAMPLES    bool
 
-	LUA     *bool
-	LUAFILE *string
-
-	UPDATE_TABLE_INFO *bool
-	SKIP_OUTLIERS     *bool
-
-	// Join keys
-	JOIN_TABLE *string
-	JOIN_KEY   *string
-	JOIN_GROUP *string
-
-	// Sessionization stuff
-	SESSION_CUTOFF *int
-	RETENTION      *bool
-	PATH_LENGTH    *int
-
-	// STATS
-	ANOVA_ICC *bool
+	UPDATE_TABLE_INFO bool
+	SKIP_OUTLIERS     bool
 }
 
 type StrReplace struct {
@@ -146,60 +129,57 @@ func setDefaults() {
 	OPTS.TIMESERIES = false
 	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
-	FLAGS.GC = NewTrueFlag()
-	FLAGS.JSON = NewFalseFlag()
-	FLAGS.PRINT = NewTrueFlag()
-	FLAGS.EXPORT = NewFalseFlag()
-	FLAGS.LIST_TABLES = NewFalseFlag()
+	FLAGS.GC = true
+	FLAGS.JSON = false
+	FLAGS.PRINT = true
+	FLAGS.EXPORT = false
+	FLAGS.LIST_TABLES = false
 
-	FLAGS.ENCODE_RESULTS = NewFalseFlag()
-	FLAGS.ENCODE_FLAGS = NewFalseFlag()
-	FLAGS.DECODE_FLAGS = NewFalseFlag()
+	FLAGS.ENCODE_RESULTS = false
+	FLAGS.ENCODE_FLAGS = false
+	FLAGS.DECODE_FLAGS = false
 
-	FLAGS.SKIP_COMPACT = NewFalseFlag()
+	FLAGS.SKIP_COMPACT = false
 
-	FLAGS.PRINT_KEYS = &OPTS.TIMESERIES
-	FLAGS.LOAD_AND_QUERY = NewTrueFlag()
-	FLAGS.LOAD_THEN_QUERY = NewFalseFlag()
-	FLAGS.READ_INGESTION_LOG = NewFalseFlag()
-	FLAGS.READ_ROWSTORE = NewFalseFlag()
-	FLAGS.ANOVA_ICC = NewFalseFlag()
-	FLAGS.DIR = flag.String("dir", "./db/", "Directory to store DB files")
-	FLAGS.TABLE = flag.String("table", "", "Table to operate on [REQUIRED]")
+	FLAGS.PRINT_KEYS = OPTS.TIMESERIES
+	FLAGS.LOAD_AND_QUERY = true
+	FLAGS.LOAD_THEN_QUERY = false
+	FLAGS.READ_INGESTION_LOG = false
+	FLAGS.READ_ROWSTORE = false
+	flag.StringVar(&FLAGS.DIR, "dir", "./db/", "Directory to store DB files")
+	flag.StringVar(&FLAGS.TABLE, "table", "", "Table to operate on [REQUIRED]")
 
-	FLAGS.DEBUG = flag.Bool("debug", false, "enable debug logging")
-	FLAGS.FIELD_SEPARATOR = flag.String("field-separator", ",", "Field separator used in command line params")
-	FLAGS.FILTER_SEPARATOR = flag.String("filter-separator", ":", "Filter separator used in filters")
+	flag.BoolVar(&FLAGS.DEBUG, "debug", false, "enable debug logging")
+	flag.StringVar(&FLAGS.FIELD_SEPARATOR, "field-separator", ",", "Field separator used in command line params")
+	flag.StringVar(&FLAGS.FILTER_SEPARATOR, "filter-separator", ":", "Filter separator used in filters")
 
-	FLAGS.UPDATE_TABLE_INFO = NewFalseFlag()
-	FLAGS.SKIP_OUTLIERS = NewTrueFlag()
-	FLAGS.SAMPLES = NewFalseFlag()
-	FLAGS.LUA = NewFalseFlag()
-	FLAGS.LUAFILE = &EMPTY
+	FLAGS.UPDATE_TABLE_INFO = false
+	FLAGS.SKIP_OUTLIERS = true
+	FLAGS.SAMPLES = false
 
-	FLAGS.RECYCLE_MEM = NewTrueFlag()
-	FLAGS.CACHED_QUERIES = NewFalseFlag()
+	FLAGS.RECYCLE_MEM = true
+	FLAGS.CACHED_QUERIES = false
 
-	FLAGS.HDR_HIST = NewFalseFlag()
-	FLAGS.LOG_HIST = NewFalseFlag()
+	FLAGS.HDR_HIST = false
+	FLAGS.LOG_HIST = false
 
 	DEFAULT_LIMIT := 100
-	FLAGS.LIMIT = &DEFAULT_LIMIT
+	FLAGS.LIMIT = DEFAULT_LIMIT
 
-	FLAGS.PROFILE = NewFalseFlag()
-	FLAGS.PROFILE_MEM = NewFalseFlag()
+	FLAGS.PROFILE = false
+	FLAGS.PROFILE_MEM = false
 	if PROFILER_ENABLED {
-		FLAGS.PROFILE = flag.Bool("profile", false, "turn profiling on?")
-		FLAGS.PROFILE_MEM = flag.Bool("mem", false, "turn memory profiling on")
+		flag.BoolVar(&FLAGS.PROFILE, "profile", false, "turn profiling on?")
+		flag.BoolVar(&FLAGS.PROFILE_MEM, "mem", false, "turn memory profiling on")
 	}
 
 }
 
 func EncodeFlags() {
-	old_encode := *FLAGS.ENCODE_FLAGS
-	FLAGS.ENCODE_FLAGS = NewFalseFlag()
+	old_encode := FLAGS.ENCODE_FLAGS
+	FLAGS.ENCODE_FLAGS = false
 	PrintBytes(FLAGS)
-	FLAGS.ENCODE_FLAGS = &old_encode
+	FLAGS.ENCODE_FLAGS = old_encode
 }
 
 func DecodeFlags() {

@@ -21,7 +21,7 @@ import "math"
 // variance against the overall average.
 func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 	iccs := make(map[string]float64)
-	t := GetTable(*FLAGS.TABLE)
+	t := GetTable(FLAGS.TABLE)
 	for _, agg := range querySpec.Aggregations {
 		cumulative, ok := querySpec.Cumulative.Hists[agg.Name]
 		if !ok {

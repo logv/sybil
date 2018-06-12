@@ -680,13 +680,13 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	}
 
 	is_time_col := false
-	if FLAGS.TIME_COL != nil {
-		is_time_col = into.Name == *FLAGS.TIME_COL
+	if FLAGS.TIME_COL != "" {
+		is_time_col = into.Name == FLAGS.TIME_COL
 	}
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
-			if *FLAGS.UPDATE_TABLE_INFO {
+			if FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, bucket.Value)
 				tb.table.update_int_info(col_id, bucket.Value)
 			}
@@ -719,7 +719,7 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 
 		prev := int64(0)
 		for r, v := range into.Values {
-			if *FLAGS.UPDATE_TABLE_INFO {
+			if FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, v)
 				tb.table.update_int_info(col_id, v)
 			}

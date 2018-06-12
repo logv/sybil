@@ -24,7 +24,7 @@ var BLANK_STRING = ""
 func setupTestVars(chunkSize int) {
 	//tableName := "unknown"
 	//FLAGS.TABLE = &tableName
-	FLAGS.OP = &BLANK_STRING
+	FLAGS.OP = BLANK_STRING
 
 	TEST_MODE = true
 	CHUNK_SIZE = chunkSize

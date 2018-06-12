@@ -18,7 +18,7 @@ func Warn(args ...interface{}) {
 }
 
 func Debug(args ...interface{}) {
-	if *FLAGS.DEBUG || ENV_FLAG != "" {
+	if FLAGS.DEBUG || ENV_FLAG != "" {
 		log.Println(args...)
 	}
 }

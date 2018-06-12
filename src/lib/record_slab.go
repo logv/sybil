@@ -1,11 +1,10 @@
 package sybil
 
-
 import "time"
 
 func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, load_records bool) RecordList {
 
-	if *FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && load_records == false {
+	if FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && load_records == false {
 		loadSpec.slab_m.Lock()
 		defer loadSpec.slab_m.Unlock()
 		if len(loadSpec.slabs) > 0 {
@@ -158,7 +157,7 @@ func (rl RecordList) ResetRecords(tb *TableBlock) {
 }
 
 func (tb *TableBlock) RecycleSlab(loadSpec *LoadSpec) {
-	if *FLAGS.RECYCLE_MEM {
+	if FLAGS.RECYCLE_MEM {
 		rl := tb.RecordList
 
 		if len(rl) == CHUNK_SIZE {

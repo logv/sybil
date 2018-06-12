@@ -26,8 +26,8 @@ func TestTableDigestRowRecords(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	FLAGS.TABLE = tableName // TODO: eliminate global use
+	FLAGS.READ_INGESTION_LOG = true
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -81,8 +81,8 @@ func TestColumnStoreFileNames(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	FLAGS.TABLE = tableName // TODO: eliminate global use
+	FLAGS.READ_INGESTION_LOG = true
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -159,8 +159,8 @@ func TestBigIntColumns(t *testing.T) {
 	unloadTestTable(tableName)
 	nt := GetTable(tableName)
 	DELETE_BLOCKS_AFTER_QUERY = false
-	FLAGS.TABLE = &tableName // TODO: eliminate global use
-	FLAGS.READ_INGESTION_LOG = NewTrueFlag()
+	FLAGS.TABLE = tableName // TODO: eliminate global use
+	FLAGS.READ_INGESTION_LOG = true
 
 	nt.LoadTableInfo()
 	nt.LoadRecords(nil)
@@ -178,9 +178,9 @@ func TestBigIntColumns(t *testing.T) {
 	unloadTestTable(tableName)
 
 	READ_ROWS_ONLY = false
-	FLAGS.SAMPLES = NewTrueFlag()
+	FLAGS.SAMPLES = true
 	limit := 1000
-	FLAGS.LIMIT = &limit
+	FLAGS.LIMIT = limit
 	nt = GetTable(tableName)
 
 	loadSpec := nt.NewLoadSpec()
@@ -206,6 +206,6 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("COLUMN STORE RETURNED TOO FEW COLUMNS", count)
 
 	}
-	FLAGS.SAMPLES = NewFalseFlag()
+	FLAGS.SAMPLES = false
 
 }

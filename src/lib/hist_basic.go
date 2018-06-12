@@ -48,8 +48,8 @@ func (h *BasicHist) SetupBuckets(buckets int, min, max int64) {
 		h.NumBuckets = buckets
 		h.BucketSize = int(size / int64(buckets))
 
-		if FLAGS.HIST_BUCKET != nil && *FLAGS.HIST_BUCKET > 0 {
-			h.BucketSize = *FLAGS.HIST_BUCKET
+		if FLAGS.HIST_BUCKET > 0 {
+			h.BucketSize = FLAGS.HIST_BUCKET
 		}
 
 		if h.BucketSize == 0 {
@@ -76,7 +76,7 @@ func newBasicHist(t *Table, info *IntInfo) *HistCompat {
 	compat_hist.table = t
 	compat_hist.Info = *info
 
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if FLAGS.OP == "hist" {
 		compat_hist.TrackPercentiles()
 	}
 

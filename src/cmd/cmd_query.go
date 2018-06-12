@@ -15,51 +15,50 @@ var NO_RECYCLE_MEM *bool
 
 func addQueryFlags() {
 
-	sybil.FLAGS.PRINT_INFO = flag.Bool("info", false, "Print table info")
-	sybil.FLAGS.SORT = flag.String("sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
-	sybil.FLAGS.PRUNE_BY = flag.String("prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
+	flag.BoolVar(&sybil.FLAGS.PRINT_INFO, "info", false, "Print table info")
+	flag.StringVar(&sybil.FLAGS.SORT, "sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
+	flag.StringVar(&sybil.FLAGS.PRUNE_BY, "prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
 
-	sybil.FLAGS.LIMIT = flag.Int("limit", 100, "Number of results to return")
+	flag.IntVar(&sybil.FLAGS.LIMIT, "limit", 100, "Number of results to return")
 
-	sybil.FLAGS.TIME = flag.Bool("time", false, "make a time rollup")
-	sybil.FLAGS.TIME_COL = flag.String("time-col", "time", "which column to treat as a timestamp (use with -time flag)")
-	sybil.FLAGS.TIME_BUCKET = flag.Int("time-bucket", 60*60, "time bucket (in seconds)")
-	sybil.FLAGS.WEIGHT_COL = flag.String("weight-col", "", "Which column to treat as an optional weighting column")
+	flag.BoolVar(&sybil.FLAGS.TIME, "time", false, "make a time rollup")
+	flag.StringVar(&sybil.FLAGS.TIME_COL, "time-col", "time", "which column to treat as a timestamp (use with -time flag)")
+	flag.IntVar(&sybil.FLAGS.TIME_BUCKET, "time-bucket", 60*60, "time bucket (in seconds)")
+	flag.StringVar(&sybil.FLAGS.WEIGHT_COL, "weight-col", "", "Which column to treat as an optional weighting column")
 
-	sybil.FLAGS.OP = flag.String("op", "avg", "metric to calculate, either 'avg' or 'hist'")
-	sybil.FLAGS.LOG_HIST = flag.Bool("loghist", false, "Use nested logarithmic histograms")
+	flag.StringVar(&sybil.FLAGS.OP, "op", "avg", "metric to calculate, either 'avg' or 'hist'")
+	flag.BoolVar(&sybil.FLAGS.LOG_HIST, "loghist", false, "Use nested logarithmic histograms")
 
-	sybil.FLAGS.PRINT = flag.Bool("print", true, "Print some records")
-	sybil.FLAGS.ENCODE_RESULTS = flag.Bool("encode-results", false, "Print the results in binary format")
-	sybil.FLAGS.ENCODE_FLAGS = flag.Bool("encode-flags", false, "Print the query flags in binary format")
-	sybil.FLAGS.DECODE_FLAGS = flag.Bool("decode-flags", false, "Use the query flags supplied on stdin")
-	sybil.FLAGS.SAMPLES = flag.Bool("samples", false, "Grab samples")
-	sybil.FLAGS.INT_FILTERS = flag.String("int-filter", "", "Int filters, format: col:op:val")
+	flag.BoolVar(&sybil.FLAGS.PRINT, "print", true, "Print some records")
+	flag.BoolVar(&sybil.FLAGS.ENCODE_RESULTS, "encode-results", false, "Print the results in binary format")
+	flag.BoolVar(&sybil.FLAGS.ENCODE_FLAGS, "encode-flags", false, "Print the query flags in binary format")
+	flag.BoolVar(&sybil.FLAGS.DECODE_FLAGS, "decode-flags", false, "Use the query flags supplied on stdin")
+	flag.BoolVar(&sybil.FLAGS.SAMPLES, "samples", false, "Grab samples")
+	flag.StringVar(&sybil.FLAGS.INT_FILTERS, "int-filter", "", "Int filters, format: col:op:val")
 
-	sybil.FLAGS.HIST_BUCKET = flag.Int("int-bucket", 0, "Int hist bucket size")
+	flag.IntVar(&sybil.FLAGS.HIST_BUCKET, "int-bucket", 0, "Int hist bucket size")
 
-	sybil.FLAGS.STR_REPLACE = flag.String("str-replace", "", "Str replacement, format: col:find:replace")
-	sybil.FLAGS.STR_FILTERS = flag.String("str-filter", "", "Str filters, format: col:op:val")
-	sybil.FLAGS.SET_FILTERS = flag.String("set-filter", "", "Set filters, format: col:op:val")
-	sybil.FLAGS.UPDATE_TABLE_INFO = flag.Bool("update-info", false, "Re-compute cached column data")
+	flag.StringVar(&sybil.FLAGS.STR_REPLACE, "str-replace", "", "Str replacement, format: col:find:replace")
+	flag.StringVar(&sybil.FLAGS.STR_FILTERS, "str-filter", "", "Str filters, format: col:op:val")
+	flag.StringVar(&sybil.FLAGS.SET_FILTERS, "set-filter", "", "Set filters, format: col:op:val")
+	flag.BoolVar(&sybil.FLAGS.UPDATE_TABLE_INFO, "update-info", false, "Re-compute cached column data")
 
-	sybil.FLAGS.INTS = flag.String("int", "", "Integer values to aggregate")
-	sybil.FLAGS.STRS = flag.String("str", "", "String values to load")
-	sybil.FLAGS.GROUPS = flag.String("group", "", "values group by")
-	sybil.FLAGS.DISTINCT = flag.String(sybil.DISTINCT_STR, "", "distinct group by")
+	flag.StringVar(&sybil.FLAGS.INTS, "int", "", "Integer values to aggregate")
+	flag.StringVar(&sybil.FLAGS.STRS, "str", "", "String values to load")
+	flag.StringVar(&sybil.FLAGS.GROUPS, "group", "", "values group by")
+	flag.StringVar(&sybil.FLAGS.DISTINCT, sybil.DISTINCT_STR, "", "distinct group by")
 
-	sybil.FLAGS.EXPORT = flag.Bool("export", false, "export data to TSV")
+	flag.BoolVar(&sybil.FLAGS.EXPORT, "export", false, "export data to TSV")
 
-	sybil.FLAGS.READ_ROWSTORE = flag.Bool("read-log", false, "read the ingestion log (can take longer!)")
+	flag.BoolVar(&sybil.FLAGS.READ_ROWSTORE, "read-log", false, "read the ingestion log (can take longer!)")
 
-	sybil.FLAGS.JSON = flag.Bool("json", false, "Print results in JSON format")
-	sybil.FLAGS.ANOVA_ICC = flag.Bool("icc", false, "Calculate intraclass co-efficient (ANOVA)")
+	flag.BoolVar(&sybil.FLAGS.JSON, "json", false, "Print results in JSON format")
 
-	sybil.FLAGS.LIST_TABLES = flag.Bool("tables", false, "List tables")
+	flag.BoolVar(&sybil.FLAGS.LIST_TABLES, "tables", false, "List tables")
 
 	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
 
-	sybil.FLAGS.CACHED_QUERIES = flag.Bool("cache-queries", false, "Cache query results per block")
+	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
 
 }
 
@@ -67,22 +66,22 @@ func RunQueryCmdLine() {
 	addQueryFlags()
 	flag.Parse()
 
-	if *sybil.FLAGS.DECODE_FLAGS {
+	if sybil.FLAGS.DECODE_FLAGS {
 		sybil.DecodeFlags()
 	}
 
-	if *sybil.FLAGS.ENCODE_FLAGS {
+	if sybil.FLAGS.ENCODE_FLAGS {
 		sybil.Debug("PRINTING ENCODED FLAGS")
 		sybil.EncodeFlags()
 		return
 	}
 
-	if *sybil.FLAGS.LIST_TABLES {
+	if sybil.FLAGS.LIST_TABLES {
 		sybil.PrintTables()
 		return
 	}
 
-	table := *sybil.FLAGS.TABLE
+	table := sybil.FLAGS.TABLE
 	if table == "" {
 		flag.PrintDefaults()
 		return
@@ -90,7 +89,7 @@ func RunQueryCmdLine() {
 
 	t := sybil.GetTable(table)
 	if t.IsNotExist() {
-		sybil.Error(t.Name, "table can not be loaded or does not exist in", *sybil.FLAGS.DIR)
+		sybil.Error(t.Name, "table can not be loaded or does not exist in", sybil.FLAGS.DIR)
 	}
 
 	ints := make([]string, 0)
@@ -98,34 +97,34 @@ func RunQueryCmdLine() {
 	strs := make([]string, 0)
 	distinct := make([]string, 0)
 
-	if *sybil.FLAGS.GROUPS != "" {
-		groups = strings.Split(*sybil.FLAGS.GROUPS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if sybil.FLAGS.GROUPS != "" {
+		groups = strings.Split(sybil.FLAGS.GROUPS, sybil.FLAGS.FIELD_SEPARATOR)
 		sybil.OPTS.GROUP_BY = groups
 	}
 
-	if *sybil.FLAGS.DISTINCT != "" {
-		distinct = strings.Split(*sybil.FLAGS.DISTINCT, *sybil.FLAGS.FIELD_SEPARATOR)
+	if sybil.FLAGS.DISTINCT != "" {
+		distinct = strings.Split(sybil.FLAGS.DISTINCT, sybil.FLAGS.FIELD_SEPARATOR)
 		sybil.OPTS.DISTINCT = distinct
 	}
 
 	if *NO_RECYCLE_MEM == true {
-		sybil.FLAGS.RECYCLE_MEM = sybil.NewFalseFlag()
+		sybil.FLAGS.RECYCLE_MEM = false
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
-	if *sybil.FLAGS.STRS != "" {
-		strs = strings.Split(*sybil.FLAGS.STRS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if sybil.FLAGS.STRS != "" {
+		strs = strings.Split(sybil.FLAGS.STRS, sybil.FLAGS.FIELD_SEPARATOR)
 	}
-	if *sybil.FLAGS.INTS != "" {
-		ints = strings.Split(*sybil.FLAGS.INTS, *sybil.FLAGS.FIELD_SEPARATOR)
+	if sybil.FLAGS.INTS != "" {
+		ints = strings.Split(sybil.FLAGS.INTS, sybil.FLAGS.FIELD_SEPARATOR)
 	}
-	if *sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
+	if sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	if *sybil.FLAGS.READ_ROWSTORE {
-		sybil.FLAGS.READ_INGESTION_LOG = sybil.NewTrueFlag()
+	if sybil.FLAGS.READ_ROWSTORE {
+		sybil.FLAGS.READ_INGESTION_LOG = true
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -147,7 +146,7 @@ func RunQueryCmdLine() {
 
 	aggs := []sybil.Aggregation{}
 	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(agg, *sybil.FLAGS.OP))
+		aggs = append(aggs, t.Aggregation(agg, sybil.FLAGS.OP))
 	}
 
 	distincts := []sybil.Grouping{}
@@ -155,7 +154,7 @@ func RunQueryCmdLine() {
 		distincts = append(distincts, t.Grouping(g))
 	}
 
-	if *sybil.FLAGS.OP == sybil.DISTINCT_STR {
+	if sybil.FLAGS.OP == sybil.DISTINCT_STR {
 		distincts = groupings
 		groupings = make([]sybil.Grouping, 0)
 	}
@@ -174,7 +173,7 @@ func RunQueryCmdLine() {
 	}
 
 	loadSpec := t.NewLoadSpec()
-	filterSpec := sybil.FilterSpec{Int: *sybil.FLAGS.INT_FILTERS, Str: *sybil.FLAGS.STR_FILTERS, Set: *sybil.FLAGS.SET_FILTERS}
+	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters,
@@ -203,44 +202,44 @@ func RunQueryCmdLine() {
 		loadSpec.Int(v)
 	}
 
-	if *sybil.FLAGS.SORT != "" {
-		if *sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
-			loadSpec.Int(*sybil.FLAGS.SORT)
+	if sybil.FLAGS.SORT != "" {
+		if sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
+			loadSpec.Int(sybil.FLAGS.SORT)
 		}
-		querySpec.OrderBy = *sybil.FLAGS.SORT
+		querySpec.OrderBy = sybil.FLAGS.SORT
 	} else {
 		querySpec.OrderBy = ""
 	}
 
-	if *sybil.FLAGS.PRUNE_BY != "" {
-		if *sybil.FLAGS.PRUNE_BY != sybil.OPTS.SORT_COUNT {
-			loadSpec.Int(*sybil.FLAGS.PRUNE_BY)
+	if sybil.FLAGS.PRUNE_BY != "" {
+		if sybil.FLAGS.PRUNE_BY != sybil.OPTS.SORT_COUNT {
+			loadSpec.Int(sybil.FLAGS.PRUNE_BY)
 		}
-		querySpec.PruneBy = *sybil.FLAGS.PRUNE_BY
+		querySpec.PruneBy = sybil.FLAGS.PRUNE_BY
 	} else {
 		querySpec.PruneBy = sybil.OPTS.SORT_COUNT
 	}
 
-	if *sybil.FLAGS.TIME {
+	if sybil.FLAGS.TIME {
 		// TODO: infer the TimeBucket size
-		querySpec.TimeBucket = *sybil.FLAGS.TIME_BUCKET
+		querySpec.TimeBucket = sybil.FLAGS.TIME_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
-		loadSpec.Int(*sybil.FLAGS.TIME_COL)
-		time_col_id, ok := t.KeyTable[*sybil.FLAGS.TIME_COL]
+		loadSpec.Int(sybil.FLAGS.TIME_COL)
+		time_col_id, ok := t.KeyTable[sybil.FLAGS.TIME_COL]
 		if ok {
 			sybil.OPTS.TIME_COL_ID = time_col_id
 		}
 	}
 
-	if *sybil.FLAGS.WEIGHT_COL != "" {
+	if sybil.FLAGS.WEIGHT_COL != "" {
 		sybil.OPTS.WEIGHT_COL = true
-		loadSpec.Int(*sybil.FLAGS.WEIGHT_COL)
-		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[*sybil.FLAGS.WEIGHT_COL]
+		loadSpec.Int(sybil.FLAGS.WEIGHT_COL)
+		sybil.OPTS.WEIGHT_COL_ID = t.KeyTable[sybil.FLAGS.WEIGHT_COL]
 	}
 
-	querySpec.Limit = int(*sybil.FLAGS.LIMIT)
+	querySpec.Limit = int(sybil.FLAGS.LIMIT)
 
-	if *sybil.FLAGS.SAMPLES {
+	if sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
 		sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
@@ -254,11 +253,11 @@ func RunQueryCmdLine() {
 		return
 	}
 
-	if *sybil.FLAGS.EXPORT {
+	if sybil.FLAGS.EXPORT {
 		loadSpec.LoadAllColumns = true
 	}
 
-	if !*sybil.FLAGS.PRINT_INFO {
+	if !sybil.FLAGS.PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
 		sybil.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		debug.SetGCPercent(-1)
@@ -269,7 +268,7 @@ func RunQueryCmdLine() {
 
 		start := time.Now()
 		// We can load and query at the same time
-		if *sybil.FLAGS.LOAD_AND_QUERY {
+		if sybil.FLAGS.LOAD_AND_QUERY {
 			count = t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
@@ -279,13 +278,13 @@ func RunQueryCmdLine() {
 
 	}
 
-	if *sybil.FLAGS.EXPORT {
+	if sybil.FLAGS.EXPORT {
 		sybil.Print("EXPORTED RECORDS TO", path.Join(t.Name, "export"))
 	}
 
-	if *sybil.FLAGS.PRINT_INFO {
+	if sybil.FLAGS.PRINT_INFO {
 		t := sybil.GetTable(table)
-		sybil.FLAGS.LOAD_AND_QUERY = sybil.NewFalseFlag()
+		sybil.FLAGS.LOAD_AND_QUERY = false
 
 		t.LoadRecords(nil)
 		t.PrintColInfo()

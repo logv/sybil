@@ -129,7 +129,7 @@ func TestHistograms(t *testing.T) {
 
 	nt := saveAndReloadTable(t, tableName, blockCount)
 	var HIST = "hist"
-	FLAGS.OP = &HIST
+	FLAGS.OP = HIST
 
 	querySpec := newQuerySpec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
@@ -243,7 +243,7 @@ func TestTimeSeries(t *testing.T) {
 	nt := saveAndReloadTable(t, tableName, blockCount)
 
 	hist := "hist"
-	FLAGS.OP = &hist
+	FLAGS.OP = hist
 	querySpec := newQuerySpec()
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))

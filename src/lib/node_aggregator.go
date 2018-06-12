@@ -60,7 +60,7 @@ func (vt *VTable) AggregateSamples(dirs []string) {
 	Debug("AGGREGATING TABLE LIST")
 	all_results := vt.findResultsInDirs(dirs)
 
-	limit := *FLAGS.LIMIT
+	limit := FLAGS.LIMIT
 
 	samples := make([]*Sample, 0)
 
@@ -166,7 +166,7 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 	final_result.Punctuate()
 	final_result.QueryParams = qs.QueryParams
 
-	FLAGS.OP = &HIST_STR
+	FLAGS.OP = HIST_STR
 	OPTS.MERGE_TABLE = &vt.Table
 
 	combined_result := CombineResults(&final_result, all_specs)
@@ -179,17 +179,17 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 func (vt *VTable) StitchResults(dirs []string) {
 	vt.init_data_structures()
 
-	if FLAGS.LIST_TABLES != nil && *FLAGS.LIST_TABLES == true {
+	if FLAGS.LIST_TABLES == true {
 		vt.AggregateTables(dirs)
 		return
 	}
 
-	if FLAGS.PRINT_INFO != nil && *FLAGS.PRINT_INFO == true {
+	if FLAGS.PRINT_INFO {
 		vt.AggregateInfo(dirs)
 		return
 	}
 
-	if FLAGS.SAMPLES != nil && *FLAGS.SAMPLES == true {
+	if FLAGS.SAMPLES {
 		vt.AggregateSamples(dirs)
 		return
 	}

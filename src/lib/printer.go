@@ -44,7 +44,7 @@ func printTimeResults(querySpec *QuerySpec) {
 	sort.Ints(keys)
 
 	Debug("RESULT COUNT", len(keys))
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 
 		marshalled_results := make(map[string][]ResultJSON)
 		for k, v := range querySpec.TimeResults {
@@ -110,7 +110,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 
 	var res = make(ResultJSON)
 	for _, agg := range querySpec.Aggregations {
-		if *FLAGS.OP == "hist" {
+		if FLAGS.OP == "hist" {
 			inner := make(ResultJSON)
 			res[agg.Name] = inner
 			h := r.Hists[agg.Name]
@@ -122,7 +122,7 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 			}
 		}
 
-		if *FLAGS.OP == "avg" {
+		if FLAGS.OP == "avg" {
 			result, ok := r.Hists[agg.Name]
 			if ok {
 				res[agg.Name] = result.Mean()
@@ -155,7 +155,7 @@ func printSortedResults(querySpec *QuerySpec) {
 		sorted = querySpec.Sorted[:querySpec.Limit]
 	}
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 		var results = make([]ResultJSON, 0)
 
 		for _, r := range sorted {
@@ -238,7 +238,7 @@ func printResults(querySpec *QuerySpec) {
 		return
 	}
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 		// Need to marshall
 		var results = make([]ResultJSON, 0)
 
@@ -287,14 +287,14 @@ func encodeResults(qs *QuerySpec) {
 }
 
 func (qs *QuerySpec) PrintResults() {
-	if *FLAGS.ENCODE_RESULTS == true {
+	if FLAGS.ENCODE_RESULTS == true {
 		Debug("ENCODING RESULTS")
 
 		encodeResults(qs)
 		return
 	}
 
-	if *FLAGS.PRINT {
+	if FLAGS.PRINT {
 		if qs.TimeBucket > 0 {
 			printTimeResults(qs)
 		} else if qs.OrderBy != "" {
@@ -373,7 +373,7 @@ func (r *Record) toSample() *Sample {
 
 func (t *Table) PrintSamples() {
 	count := 0
-	records := make(RecordList, *FLAGS.LIMIT)
+	records := make(RecordList, FLAGS.LIMIT)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
@@ -381,7 +381,7 @@ func (t *Table) PrintSamples() {
 				break
 			}
 
-			if count >= *FLAGS.LIMIT {
+			if count >= FLAGS.LIMIT {
 				break
 			}
 
@@ -389,7 +389,7 @@ func (t *Table) PrintSamples() {
 			count++
 		}
 
-		if count >= *FLAGS.LIMIT {
+		if count >= FLAGS.LIMIT {
 			break
 		}
 	}
@@ -404,13 +404,13 @@ func (t *Table) PrintSamples() {
 		samples = append(samples, s)
 	}
 
-	if *FLAGS.ENCODE_RESULTS {
+	if FLAGS.ENCODE_RESULTS {
 		Debug("NUMBER SAMPLES", len(samples))
 		PrintBytes(NodeResults{Samples: samples})
 		return
 	}
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 
 		printJson(samples)
 		return
@@ -426,7 +426,7 @@ func (t *Table) PrintSamples() {
 }
 
 func ListTables() []string {
-	files, err := ioutil.ReadDir(*FLAGS.DIR)
+	files, err := ioutil.ReadDir(FLAGS.DIR)
 	if err != nil {
 		Error("No tables found!")
 		return []string{}
@@ -450,12 +450,12 @@ func PrintTables() {
 }
 
 func printTablesToOutput(tables []string) {
-	if *FLAGS.ENCODE_RESULTS {
+	if FLAGS.ENCODE_RESULTS {
 		PrintBytes(NodeResults{Tables: tables})
 		return
 	}
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 		b, err := json.Marshal(tables)
 		if err == nil {
 			os.Stdout.Write(b)
@@ -518,12 +518,12 @@ func (t *Table) PrintColInfo() {
 
 	}
 
-	if *FLAGS.ENCODE_RESULTS {
+	if FLAGS.ENCODE_RESULTS {
 		PrintBytes(NodeResults{Table: *t})
 		return
 	}
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 		table_cols := make(map[string][]string)
 		table_info := make(map[string]interface{})
 
@@ -562,7 +562,7 @@ func PrintVersionInfo() {
 
 	version_info := GetVersionInfo()
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 		printJson(version_info)
 
 	} else {

@@ -90,7 +90,7 @@ func (t *Table) ReadBlockInfoFromDir(dirname string) *SavedColumnInfo {
 // I think I go through each block and load the block, verifying the different
 // column types
 func (t *Table) DeduceTableInfoFromBlocks() {
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(FLAGS.DIR, t.Name))
 
 	var wg sync.WaitGroup
 	t.init_data_structures()
@@ -109,7 +109,7 @@ func (t *Table) DeduceTableInfoFromBlocks() {
 
 		v := files[f]
 		if v.IsDir() && file_looks_like_block(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
+			filename := path.Join(FLAGS.DIR, t.Name, v.Name())
 			this_block++
 
 			wg.Add(1)

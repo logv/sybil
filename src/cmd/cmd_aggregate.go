@@ -11,13 +11,12 @@ func RunAggregateCmdLine() {
 	flag.Parse()
 	dirs := flag.Args()
 
-	var t, f = true, false
-	sybil.FLAGS.DEBUG = &t
+	sybil.FLAGS.DEBUG = true
 	sybil.Debug("AGGREGATING")
 
 	sybil.DecodeFlags()
-	sybil.FLAGS.PRINT = &t
-	sybil.FLAGS.ENCODE_RESULTS = &f
+	sybil.FLAGS.PRINT = true
+	sybil.FLAGS.ENCODE_RESULTS = false
 	sybil.Debug("AGGREGATING DIRS", dirs)
 
 	vt := sybil.VTable{}

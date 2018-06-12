@@ -29,7 +29,7 @@ func newMultiHist(t *Table, info *IntInfo) *MultiHistCompat {
 	h.Count = 0
 	h.Min = info.Min
 	h.Max = info.Max
-	if FLAGS.OP != nil && *FLAGS.OP == "hist" {
+	if FLAGS.OP == "hist" {
 		h.TrackPercentiles()
 	}
 
