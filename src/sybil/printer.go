@@ -430,7 +430,7 @@ func (t *Table) PrintSamples(printSpec *PrintSpec) {
 }
 
 func ListTables() []string {
-	files, err := ioutil.ReadDir(*FLAGS.DIR)
+	files, err := ioutil.ReadDir(FLAGS.DIR)
 	if err != nil {
 		Error("No tables found!")
 		return []string{}
@@ -566,7 +566,7 @@ func PrintVersionInfo() {
 
 	versionInfo := GetVersionInfo()
 
-	if *FLAGS.JSON {
+	if FLAGS.JSON {
 		printJSON(versionInfo)
 
 	} else {

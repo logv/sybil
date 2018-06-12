@@ -13,11 +13,11 @@ import (
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
-	Debug("LOADING", *FLAGS.DIR, t.Name)
+	Debug("LOADING", FLAGS.DIR, t.Name)
 
 	readRowsOnly := loadSpec != nil && loadSpec.ReadRowsOnly
 
-	files, _ := ioutil.ReadDir(path.Join(*FLAGS.DIR, t.Name))
+	files, _ := ioutil.ReadDir(path.Join(FLAGS.DIR, t.Name))
 
 	if readRowsOnly {
 		Debug("ONLY READING RECORDS FROM ROW STORE")
@@ -40,7 +40,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		}
 	}
 
-	if *FLAGS.UPDATE_TABLE_INFO {
+	if FLAGS.UPDATE_TABLE_INFO {
 		Debug("RESETTING TABLE INFO FOR OVERWRITING")
 		t.IntInfo = make(IntInfoTable)
 		t.StrInfo = make(StrInfoTable)
@@ -81,7 +81,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		}
 
 		if v.IsDir() && fileLooksLikeBlock(v) {
-			filename := path.Join(*FLAGS.DIR, t.Name, v.Name())
+			filename := path.Join(FLAGS.DIR, t.Name, v.Name())
 			thisBlock++
 
 			wg.Add(1)
@@ -123,7 +123,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					block = cachedBlock
 				}
 
-				if *FLAGS.DEBUG {
+				if FLAGS.DEBUG {
 					if cachedSpec != nil {
 						fmt.Fprint(os.Stderr, "c")
 					} else {
@@ -182,7 +182,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					block.SaveInfoToColumns(block.Name)
 				}
 
-				if *FLAGS.EXPORT {
+				if FLAGS.EXPORT {
 					block.ExportBlockData()
 				}
 				// don't delete when testing so we can verify block
@@ -208,11 +208,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 				}
 			}
 
-			if loadSpec != nil && !loadSpec.SkipDeleteBlocksAfterQuery && thisBlock%CHUNKS_BEFORE_GC == 0 && *FLAGS.GC {
+			if loadSpec != nil && !loadSpec.SkipDeleteBlocksAfterQuery && thisBlock%CHUNKS_BEFORE_GC == 0 && FLAGS.GC {
 				wg.Wait()
 				start := time.Now()
 
-				if !*FLAGS.RECYCLE_MEM {
+				if !FLAGS.RECYCLE_MEM {
 					mu.Lock()
 					oldPercent := debug.SetGCPercent(100)
 					debug.SetGCPercent(oldPercent)
@@ -245,7 +245,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 				}
 
-				if *FLAGS.DEBUG {
+				if FLAGS.DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
 				end := time.Now()
@@ -258,7 +258,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	rowStoreQuery := AfterLoadQueryCB{}
 	var logend time.Time
 	logstart := time.Now()
-	if *FLAGS.READ_INGESTION_LOG {
+	if FLAGS.READ_INGESTION_LOG {
 		if querySpec == nil {
 			rowStoreQuery.querySpec = &QuerySpec{}
 			rowStoreQuery.querySpec.Table = t
@@ -285,7 +285,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	wg.Wait()
 
-	if *FLAGS.DEBUG {
+	if FLAGS.DEBUG {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 
@@ -293,7 +293,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		Debug("BLOCK", brokenBlockName, "IS BROKEN, SKIPPING")
 	}
 
-	if *FLAGS.READ_INGESTION_LOG {
+	if FLAGS.READ_INGESTION_LOG {
 		mu.Lock()
 		Debug("LOADING & QUERYING INGESTION LOG TOOK", logend.Sub(logstart))
 		Debug("INGESTION LOG RECORDS MATCHED", rowStoreQuery.count)
@@ -329,7 +329,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	// bc combining results is not idempotent
 	t.WriteQueryCache(toCacheSpecs)
 
-	if FLAGS.LOAD_AND_QUERY != nil && *FLAGS.LOAD_AND_QUERY && querySpec != nil {
+	if FLAGS.LOAD_AND_QUERY && querySpec != nil {
 		// COMBINE THE PER BLOCK RESULTS
 		astart := time.Now()
 		for k, v := range allResults {

@@ -85,7 +85,7 @@ func importCsvRecords() {
 		sybil.Error("ERROR READING CSV HEADER", err)
 	}
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
 	for {
 		fields, err := scanner.Read()
@@ -166,7 +166,7 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 }
 
 func importJSONRecords() {
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
 	path := strings.Split(JSON_PATH, ".")
 	sybil.Debug("PATH IS", path)
@@ -214,15 +214,14 @@ func RunIngestCmdLine() {
 	fCsv := flag.Bool("csv", false, "expect incoming data in CSV format")
 	fExcludes := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 	fJSONPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
-	fSkipCompact := flag.Bool("skip-compact", false, "skip auto compaction during ingest")
 	fReopen := flag.String("infile", "", "input file to use (instead of stdin)")
-	sybil.FLAGS.SKIP_COMPACT = fSkipCompact
+	flag.BoolVar(&sybil.FLAGS.SKIP_COMPACT, "skip-compact", false, "skip auto compaction during ingest")
 
 	flag.Parse()
 
 	digestfile := *ingestfile
 
-	if *sybil.FLAGS.TABLE == "" {
+	if sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return
 	}
@@ -240,7 +239,7 @@ func RunIngestCmdLine() {
 
 	}
 
-	if *sybil.FLAGS.PROFILE {
+	if sybil.FLAGS.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
@@ -256,7 +255,7 @@ func RunIngestCmdLine() {
 		sybil.Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := sybil.GetTable(*sybil.FLAGS.TABLE)
+	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else

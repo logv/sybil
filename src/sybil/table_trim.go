@@ -23,7 +23,7 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 
 		block := t.LoadBlockFromDir(b.Name, nil, false, nil)
 		if block != nil {
-			if block.Info.IntInfoMap[*FLAGS.TIME_COL] != nil {
+			if block.Info.IntInfoMap[FLAGS.TIME_COL] != nil {
 				block.table = t
 				blocks = append(blocks, block)
 			}
@@ -37,7 +37,7 @@ func (t *Table) TrimTable(trimSpec *TrimSpec) []*TableBlock {
 	bytesInMegabytes := int64(1024 * 1024)
 	for _, b := range blocks {
 
-		info := b.Info.IntInfoMap[*FLAGS.TIME_COL]
+		info := b.Info.IntInfoMap[FLAGS.TIME_COL]
 		trim := false
 		if trimSpec.MBLimit > 0 && size/bytesInMegabytes >= trimSpec.MBLimit {
 			trim = true
