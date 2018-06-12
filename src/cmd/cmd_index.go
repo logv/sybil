@@ -26,7 +26,7 @@ func RunIndexCmdLine() {
 
 	t.LoadRecords(nil)
 	t.SaveTableInfo("info")
-	sybil.OPTS.WRITE_BLOCK_INFO = true
+	sybil.FLAGS.WRITE_BLOCK_INFO = true
 
 	loadSpec := t.NewLoadSpec()
 	for _, v := range ints {

@@ -65,6 +65,18 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	records := *recordsPtr
 
 	var weight = int64(1)
+	var weightColID = int16(-1)
+	if FLAGS.WEIGHT_COL != "" {
+		if id, ok := querySpec.Table.KeyTable[FLAGS.WEIGHT_COL]; ok {
+			weightColID = id
+		}
+	}
+	var timeColID = int16(-1)
+	if FLAGS.TIME_COL != "" {
+		if id, ok := querySpec.Table.KeyTable[FLAGS.TIME_COL]; ok {
+			timeColID = id
+		}
+	}
 
 	matchedRecords := 0
 	if HOLD_MATCHES {
@@ -96,8 +108,8 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		add := true
 		r := records[i]
 
-		if OPTS.WEIGHT_COL && r.Populated[OPTS.WEIGHT_COL_ID] == INT_VAL {
-			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
+		if weightColID > -1 && r.Populated[weightColID] == INT_VAL {
+			weight = int64(r.Ints[weightColID])
 		}
 
 		// {{{ FILTERING
@@ -143,14 +155,11 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 
 		// {{{ time series aggregation
 		if querySpec.TimeBucket > 0 {
-			if len(r.Populated) <= int(OPTS.TIME_COL_ID) {
+			if timeColID == -1 || r.Populated[timeColID] != INT_VAL {
 				continue
 			}
 
-			if r.Populated[OPTS.TIME_COL_ID] != INT_VAL {
-				continue
-			}
-			val := int64(r.Ints[OPTS.TIME_COL_ID])
+			val := int64(r.Ints[timeColID])
 
 			bigRecord, bOk := querySpec.Results[string(binarybuffer)]
 			if !bOk {

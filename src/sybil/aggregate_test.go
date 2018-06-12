@@ -242,6 +242,8 @@ func TestTimeSeries(t *testing.T) {
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "hist"))
 	querySpec.TimeBucket = int(time.Duration(60) * time.Minute)
+	FLAGS.TIME = true
+	FLAGS.TIME_COL = "time"
 
 	nt.MatchAndAggregate(querySpec)
 
@@ -270,6 +272,7 @@ func TestTimeSeries(t *testing.T) {
 			}
 		}
 	}
+	FLAGS.TIME = false
 }
 
 func TestOrderBy(t *testing.T) {

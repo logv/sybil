@@ -178,7 +178,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 				}
 
-				if OPTS.WRITE_BLOCK_INFO {
+				if FLAGS.WRITE_BLOCK_INFO {
 					block.SaveInfoToColumns(block.Name)
 				}
 

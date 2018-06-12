@@ -188,7 +188,7 @@ func printResult(querySpec *QuerySpec, v *Result) {
 	fmt.Printf(fmt.Sprintf("%-20s", groupKey)[:20])
 
 	fmt.Printf("%.0d", v.Count)
-	if OPTS.WEIGHT_COL {
+	if FLAGS.WEIGHT_COL != "" {
 		fmt.Print(" (")
 		fmt.Print(v.Samples)
 		fmt.Print(")")
