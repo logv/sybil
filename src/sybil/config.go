@@ -71,6 +71,8 @@ type FlagDefs struct {
 
 	// STATS
 	ANOVA_ICC bool
+
+	WRITE_BLOCK_INFO bool
 }
 
 type StrReplace struct {
@@ -78,23 +80,9 @@ type StrReplace struct {
 	Replace string
 }
 
-type OptionDefs struct {
-	WEIGHT_COL       bool
-	WEIGHT_COL_ID    int16
-	WRITE_BLOCK_INFO bool
-	TIME_COL_ID      int16
-}
-
-// TODO: merge these two into one thing
-// current problem is that FLAGS needs pointers
 var FLAGS = FlagDefs{}
-var OPTS = OptionDefs{}
 
 func setDefaults() {
-	OPTS.WEIGHT_COL = false
-	OPTS.WEIGHT_COL_ID = int16(0)
-	OPTS.WRITE_BLOCK_INFO = false
-
 	FLAGS.GC = true
 	FLAGS.PRINT = true
 
@@ -115,6 +103,8 @@ func setDefaults() {
 		flag.BoolVar(&FLAGS.PROFILE, "profile", false, "turn profiling on?")
 		flag.BoolVar(&FLAGS.PROFILE_MEM, "mem", false, "turn memory profiling on")
 	}
+
+	FLAGS.WRITE_BLOCK_INFO = false
 
 }
 
