@@ -13,8 +13,6 @@ import (
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
-var NO_RECYCLE_MEM *bool
-
 const (
 	SORT_COUNT = "$COUNT"
 )
@@ -64,9 +62,7 @@ func addQueryFlags() {
 
 	flag.BoolVar(&sybil.FLAGS.ANOVA_ICC, "icc", false, "Calculate intraclass co-efficient (ANOVA)")
 
-	f := false
-	NO_RECYCLE_MEM = &f
-	flag.BoolVar(NO_RECYCLE_MEM, "no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
+	flag.BoolVar(&sybil.FLAGS.RECYCLE_MEM, "recycle-mem", true, "recycle memory slabs (versus using Go's GC)")
 
 	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
 
@@ -124,10 +120,6 @@ func RunQueryCmdLine() {
 
 	if sybil.FLAGS.DISTINCT != "" {
 		distinct = strings.Split(sybil.FLAGS.DISTINCT, sybil.FLAGS.FIELD_SEPARATOR)
-	}
-
-	if *NO_RECYCLE_MEM {
-		sybil.FLAGS.RECYCLE_MEM = false
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
