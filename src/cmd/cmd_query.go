@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/sybil"
+	"github.com/pkg/errors"
 )
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -74,7 +75,7 @@ func RunQueryCmdLine() {
 	addPrintFlags()
 	flag.Parse()
 	if err := runQueryCmdLine(&sybil.FLAGS); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, errors.Wrap(err, "query"))
 		os.Exit(1)
 	}
 }
@@ -201,7 +202,10 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 
 	loadSpec := t.NewLoadSpec()
 	filterSpec := sybil.FilterSpec{Int: flags.INT_FILTERS, Str: flags.STR_FILTERS, Set: flags.SET_FILTERS}
-	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
+	filters, err := sybil.BuildFilters(t, &loadSpec, filterSpec)
+	if err != nil {
+		return err
+	}
 
 	replacements := sybil.BuildReplacements(flags.FIELD_SEPARATOR, flags.STR_REPLACE)
 	queryParams := sybil.QueryParams{
@@ -229,28 +233,37 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 
 	allGroups := append(groups, distinct...)
 	for _, v := range allGroups {
+		var err error
 		switch t.GetColumnType(v) {
 		case sybil.STR_VAL:
-			loadSpec.Str(v)
+			err = loadSpec.Str(v)
 		case sybil.INT_VAL:
-			loadSpec.Int(v)
+			err = loadSpec.Int(v)
 		default:
 			t.PrintColInfo(printSpec)
 			fmt.Println("")
-			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
+			err = fmt.Errorf("Unknown column type for column: %v %v", v, t.GetColumnType(v))
 		}
-
+		if err != nil {
+			return err
+		}
 	}
 	for _, v := range strs {
-		loadSpec.Str(v)
+		if err := loadSpec.Str(v); err != nil {
+			return err
+		}
 	}
 	for _, v := range ints {
-		loadSpec.Int(v)
+		if err := loadSpec.Int(v); err != nil {
+			return err
+		}
 	}
 
 	if flags.SORT != "" {
 		if flags.SORT != sybil.SORT_COUNT {
-			loadSpec.Int(flags.SORT)
+			if err := loadSpec.Int(flags.SORT); err != nil {
+				return err
+			}
 		}
 		querySpec.OrderBy = flags.SORT
 	} else {
@@ -259,7 +272,9 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 
 	if flags.PRUNE_BY != "" {
 		if flags.PRUNE_BY != sybil.SORT_COUNT {
-			loadSpec.Int(flags.PRUNE_BY)
+			if err := loadSpec.Int(flags.PRUNE_BY); err != nil {
+				return err
+			}
 		}
 		querySpec.PruneBy = flags.PRUNE_BY
 	} else {
@@ -270,11 +285,15 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 		// TODO: infer the TimeBucket size
 		querySpec.TimeBucket = flags.TIME_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
-		loadSpec.Int(flags.TIME_COL)
+		if err := loadSpec.Int(flags.TIME_COL); err != nil {
+			return err
+		}
 	}
 
 	if flags.WEIGHT_COL != "" {
-		loadSpec.Int(flags.WEIGHT_COL)
+		if err := loadSpec.Int(flags.WEIGHT_COL); err != nil {
+			return err
+		}
 	}
 
 	querySpec.Limit = flags.LIMIT

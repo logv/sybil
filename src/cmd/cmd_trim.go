@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/logv/sybil/src/sybil"
+	"github.com/pkg/errors"
 )
 
 func askConfirmation() bool {
@@ -37,30 +38,39 @@ func RunTrimCmdLine() {
 
 	flag.StringVar(&sybil.FLAGS.TIME_COL, "time-col", "", "which column to treat as a timestamp [REQUIRED]")
 	flag.Parse()
+	err := runTrimCmdLine(&sybil.FLAGS, *MB_LIMIT, *DELETE_BEFORE, !*REALLY, *DELETE)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, errors.Wrap(err, "trim"))
+		os.Exit(1)
+	}
+}
 
-	if sybil.FLAGS.TABLE == "" || sybil.FLAGS.TIME_COL == "" {
+func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPrompt bool, delete bool) error {
+	if flags.TABLE == "" || flags.TIME_COL == "" {
 		flag.PrintDefaults()
-		return
+		return sybil.ErrMissingTable
 	}
 
-	if sybil.FLAGS.PROFILE {
+	if flags.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	t := sybil.GetTable(sybil.FLAGS.TABLE)
+	t := sybil.GetTable(flags.TABLE)
 	if !t.LoadTableInfo() {
-		sybil.Warn("Couldn't read table info, exiting early")
-		return
+		// TODO use LoadTableInfo
+		return errors.New("Couldn't read table info, exiting early")
 	}
 
 	loadSpec := t.NewLoadSpec()
 	loadSpec.SkipDeleteBlocksAfterQuery = true
-	loadSpec.Int(sybil.FLAGS.TIME_COL)
+	if err := loadSpec.Int(flags.TIME_COL); err != nil {
+		return err
+	}
 
 	trimSpec := sybil.TrimSpec{}
-	trimSpec.DeleteBefore = int64(*DELETE_BEFORE)
-	trimSpec.MBLimit = int64(*MB_LIMIT)
+	trimSpec.DeleteBefore = int64(deleteBefore)
+	trimSpec.MBLimit = int64(mbLimit)
 
 	toTrim := t.TrimTable(&trimSpec)
 
@@ -71,13 +81,13 @@ func RunTrimCmdLine() {
 		}
 	}
 
-	if *DELETE {
-		if !*REALLY {
+	if delete {
+		if !skipPrompt {
 			// TODO: prompt for deletion
 			fmt.Println("DELETE THE ABOVE BLOCKS? (Y/N)")
 			if !askConfirmation() {
 				sybil.Debug("ABORTING")
-				return
+				return nil
 			}
 
 		}
@@ -91,6 +101,7 @@ func RunTrimCmdLine() {
 				sybil.Debug("REFUSING TO DELETE", b.Name)
 			}
 		}
-
 	}
+
+	return nil
 }
