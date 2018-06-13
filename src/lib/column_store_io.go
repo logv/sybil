@@ -71,7 +71,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		intCol := NewSavedIntColumn()
 
 		intCol.Name = col_name
-		intCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		intCol.DeltaEncodedIDs = true
 
 		max_r := 0
 		record_to_value := make(map[uint32]int64)
@@ -96,7 +96,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, max_r)
-			intCol.ValueEncoded = OPTS.DELTA_ENCODE_INT_VALUES
+			intCol.ValueEncoded = true
 
 			for r, val := range record_to_value {
 				intCol.Values[r] = val
@@ -104,12 +104,8 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 			prev := int64(0)
 			for r, val := range intCol.Values {
-				if OPTS.DELTA_ENCODE_INT_VALUES {
-					intCol.Values[r] = val - prev
-					prev = val
-				} else {
-					intCol.Values[r] = val
-				}
+				intCol.Values[r] = val - prev
+				prev = val
 			}
 		}
 
@@ -147,7 +143,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 		}
 		setCol := SavedSetColumn{}
 		setCol.Name = col_name
-		setCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		setCol.DeltaEncodedIDs = true
 		temp_block := newTableBlock()
 
 		tb_col := tb.GetColumnInfo(k)
@@ -227,7 +223,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 		}
 		strCol := NewSavedStrColumn()
 		strCol.Name = col_name
-		strCol.DeltaEncodedIDs = OPTS.DELTA_ENCODE_RECORD_IDS
+		strCol.DeltaEncodedIDs = true
 		temp_block := newTableBlock()
 
 		temp_col := temp_block.GetColumnInfo(k)
@@ -406,11 +402,9 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		}
 	}
 
-	if OPTS.DELTA_ENCODE_RECORD_IDS {
-		delta_encode(same_ints)
-		delta_encode(same_strs)
-		delta_encode(same_sets)
-	}
+	delta_encode(same_ints)
+	delta_encode(same_strs)
+	delta_encode(same_sets)
 
 	ret := SeparatedColumns{ints: same_ints, strs: same_strs, sets: same_sets}
 	return ret

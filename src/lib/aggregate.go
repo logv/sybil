@@ -14,8 +14,9 @@ import "encoding/binary"
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
 
-var DISTINCT_STR = "distinct"
-var HIST_STR = "hist"
+const DISTINCT_STR = "distinct"
+const HIST_STR = "hist"
+const SORT_COUNT = "$COUNT"
 
 const (
 	NO_OP       = iota
@@ -38,7 +39,7 @@ func (a SortResultsByCol) Swap(i, j int) { a.Results[i], a.Results[j] = a.Result
 
 // This sorts the records in descending order
 func (a SortResultsByCol) Less(i, j int) bool {
-	if a.Col == OPTS.SORT_COUNT {
+	if a.Col == SORT_COUNT {
 		t1 := a.Results[i].Count
 		t2 := a.Results[j].Count
 

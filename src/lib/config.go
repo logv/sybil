@@ -96,20 +96,13 @@ type StrReplace struct {
 }
 
 type OptionDefs struct {
-	SORT_COUNT              string
-	SAMPLES                 bool
-	STR_REPLACEMENTS        map[string]StrReplace
-	WEIGHT_COL              bool
-	WEIGHT_COL_ID           int16
-	DELTA_ENCODE_INT_VALUES bool
-	DELTA_ENCODE_RECORD_IDS bool
-	WRITE_BLOCK_INFO        bool
-	TIMESERIES              bool
-	TIME_COL_ID             int16
-	TIME_FORMAT             string
-	GROUP_BY                []string
-	DISTINCT                []string
-	MERGE_TABLE             *Table
+	STR_REPLACEMENTS map[string]StrReplace
+	WEIGHT_COL       bool
+	WEIGHT_COL_ID    int16
+	WRITE_BLOCK_INFO bool
+	TIME_COL_ID      int16
+	TIME_FORMAT      string
+	MERGE_TABLE      *Table
 }
 
 // TODO: merge these two into one thing
@@ -119,14 +112,9 @@ var OPTS = OptionDefs{}
 var EMPTY = ""
 
 func setDefaults() {
-	OPTS.SORT_COUNT = "$COUNT"
-	OPTS.SAMPLES = false
 	OPTS.WEIGHT_COL = false
 	OPTS.WEIGHT_COL_ID = int16(0)
-	OPTS.DELTA_ENCODE_INT_VALUES = true
-	OPTS.DELTA_ENCODE_RECORD_IDS = true
 	OPTS.WRITE_BLOCK_INFO = false
-	OPTS.TIMESERIES = false
 	OPTS.TIME_FORMAT = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 	FLAGS.GC = true
@@ -141,7 +129,6 @@ func setDefaults() {
 
 	FLAGS.SKIP_COMPACT = false
 
-	FLAGS.PRINT_KEYS = OPTS.TIMESERIES
 	FLAGS.LOAD_AND_QUERY = true
 	FLAGS.LOAD_THEN_QUERY = false
 	FLAGS.READ_INGESTION_LOG = false

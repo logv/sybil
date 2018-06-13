@@ -11,10 +11,8 @@ import "runtime/debug"
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
-var NO_RECYCLE_MEM *bool
-
 const (
-	SORT_COUNT = "$COUNT"
+	SORT_COUNT = sybil.SORT_COUNT
 )
 
 func addPrintFlags() {
@@ -29,8 +27,8 @@ func addPrintFlags() {
 
 func addQueryFlags() {
 
-	flag.StringVar(&sybil.FLAGS.SORT, "sort", sybil.OPTS.SORT_COUNT, "Int Column to sort by")
-	flag.StringVar(&sybil.FLAGS.PRUNE_BY, "prune-sort", sybil.OPTS.SORT_COUNT, "Int Column to prune intermediate results by")
+	flag.StringVar(&sybil.FLAGS.SORT, "sort", SORT_COUNT, "Int Column to sort by")
+	flag.StringVar(&sybil.FLAGS.PRUNE_BY, "prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")
 
 	flag.BoolVar(&sybil.FLAGS.TIME, "time", false, "make a time rollup")
 	flag.StringVar(&sybil.FLAGS.TIME_COL, "time-col", "time", "which column to treat as a timestamp (use with -time flag)")
@@ -59,7 +57,7 @@ func addQueryFlags() {
 
 	flag.BoolVar(&sybil.FLAGS.READ_ROWSTORE, "read-log", false, "read the ingestion log (can take longer!)")
 
-	NO_RECYCLE_MEM = flag.Bool("no-recycle-mem", false, "don't recycle memory slabs (use Go GC instead)")
+	flag.BoolVar(&sybil.FLAGS.RECYCLE_MEM, "recycle-mem", true, "recycle memory slabs (versus using Go's GC)")
 
 	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
 
@@ -103,16 +101,10 @@ func RunQueryCmdLine() {
 
 	if sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(sybil.FLAGS.GROUPS, sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.GROUP_BY = groups
 	}
 
 	if sybil.FLAGS.DISTINCT != "" {
 		distinct = strings.Split(sybil.FLAGS.DISTINCT, sybil.FLAGS.FIELD_SEPARATOR)
-		sybil.OPTS.DISTINCT = distinct
-	}
-
-	if *NO_RECYCLE_MEM == true {
-		sybil.FLAGS.RECYCLE_MEM = false
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
@@ -207,7 +199,7 @@ func RunQueryCmdLine() {
 	}
 
 	if sybil.FLAGS.SORT != "" {
-		if sybil.FLAGS.SORT != sybil.OPTS.SORT_COUNT {
+		if sybil.FLAGS.SORT != SORT_COUNT {
 			loadSpec.Int(sybil.FLAGS.SORT)
 		}
 		querySpec.OrderBy = sybil.FLAGS.SORT
@@ -216,12 +208,12 @@ func RunQueryCmdLine() {
 	}
 
 	if sybil.FLAGS.PRUNE_BY != "" {
-		if sybil.FLAGS.PRUNE_BY != sybil.OPTS.SORT_COUNT {
+		if sybil.FLAGS.PRUNE_BY != SORT_COUNT {
 			loadSpec.Int(sybil.FLAGS.PRUNE_BY)
 		}
 		querySpec.PruneBy = sybil.FLAGS.PRUNE_BY
 	} else {
-		querySpec.PruneBy = sybil.OPTS.SORT_COUNT
+		querySpec.PruneBy = SORT_COUNT
 	}
 
 	if sybil.FLAGS.TIME {

@@ -93,7 +93,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		// SAMPLES: reverse chronological order
 		// EVERYTHING ELSE: chronological order
 		v := files[f]
-		if OPTS.SAMPLES {
+		if querySpec != nil && querySpec.Samples {
 			v = files[len(files)-f-1]
 		}
 
