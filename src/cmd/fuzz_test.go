@@ -37,7 +37,7 @@ func TestFuzzes(t *testing.T) {
 				t.Fatal(err)
 			}
 			t.Log(FuzzQuery(b))
-			time.Sleep(time.Millisecond * 100)
+			time.Sleep(time.Millisecond * 10)
 		})
 	}
 }

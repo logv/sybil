@@ -78,7 +78,7 @@ clean:
 	rm ./bin/*
 
 fuzz: bin/cmd-fuzz-query.zip
-	go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query
+	go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query -procs 2
 
 fuzzv: bin/cmd-fuzz-query.zip
 	FUZZDEBUG=1 go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query -testoutput -procs 1

@@ -1,0 +1,6 @@
+panic: runtime error: index out of range
+github.com/logv/sybil/src/sybil.BuildFilters
+github.com/logv/sybil/src/cmd.runQueryCmdLine
+github.com/logv/sybil/src/cmd.FuzzQuery
+go-fuzz-dep.Main
+main.main
