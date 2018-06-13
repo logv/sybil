@@ -78,8 +78,23 @@ default: all
 clean:
 	rm ./bin/*
 
+fuzz: bin/cmd-fuzz.zip
+	go-fuzz -bin=./bin/cmd-fuzz.zip -workdir=workdir
+
+fuzzv: bin/cmd-fuzz.zip
+	FUZZDEBUG=1 go-fuzz -bin=./bin/cmd-fuzz.zip -workdir=workdir -testoutput -procs 1
+
+cleanfuzz:
+	rm ./bin/cmd-fuzz.zip
+
+bin/cmd-fuzz.zip:
+	go-fuzz-build -o bin/cmd-fuzz.zip github.com/logv/sybil/src/cmd
+
 .PHONY: tags
 .PHONY: query
 .PHONY: ingest
 .PHONY: clean
+.PHONY: fuzz
+.PHONY: fuzzv
+.PHONY: cleanfuzz
 

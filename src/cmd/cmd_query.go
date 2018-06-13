@@ -3,6 +3,7 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"os"
 	"path"
 	"runtime/debug"
 	"strings"
@@ -72,41 +73,47 @@ func RunQueryCmdLine() {
 	addQueryFlags()
 	addPrintFlags()
 	flag.Parse()
+	if err := runQueryCmdLine(&sybil.FLAGS); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
 
-	if sybil.FLAGS.DECODE_FLAGS {
+func runQueryCmdLine(flags *sybil.FlagDefs) error {
+	if flags.DECODE_FLAGS {
 		sybil.DecodeFlags()
 	}
 
-	if sybil.FLAGS.ENCODE_FLAGS {
+	if flags.ENCODE_FLAGS {
 		sybil.Debug("PRINTING ENCODED FLAGS")
 		sybil.EncodeFlags()
-		return
+		return nil
 	}
 
 	printSpec := &sybil.PrintSpec{
-		ListTables: sybil.FLAGS.LIST_TABLES,
-		PrintInfo:  sybil.FLAGS.PRINT_INFO,
-		Samples:    sybil.FLAGS.SAMPLES,
+		ListTables: flags.LIST_TABLES,
+		PrintInfo:  flags.PRINT_INFO,
+		Samples:    flags.SAMPLES,
 
-		Op:            sybil.Op(sybil.FLAGS.OP),
-		Limit:         sybil.FLAGS.LIMIT,
-		EncodeResults: sybil.FLAGS.ENCODE_RESULTS,
-		JSON:          sybil.FLAGS.JSON,
+		Op:            sybil.Op(flags.OP),
+		Limit:         flags.LIMIT,
+		EncodeResults: flags.ENCODE_RESULTS,
+		JSON:          flags.JSON,
 	}
-	if sybil.FLAGS.LIST_TABLES {
+	if flags.LIST_TABLES {
 		sybil.PrintTables(printSpec)
-		return
+		return nil
 	}
 
-	table := sybil.FLAGS.TABLE
+	table := flags.TABLE
 	if table == "" {
 		flag.PrintDefaults()
-		return
+		return nil
 	}
 
 	t := sybil.GetTable(table)
 	if t.IsNotExist() {
-		sybil.Error(t.Name, "table can not be loaded or does not exist in", sybil.FLAGS.DIR)
+		sybil.Error(t.Name, "table can not be loaded or does not exist in", flags.DIR)
 	}
 
 	ints := make([]string, 0)
@@ -114,28 +121,28 @@ func RunQueryCmdLine() {
 	strs := make([]string, 0)
 	distinct := make([]string, 0)
 
-	if sybil.FLAGS.GROUPS != "" {
-		groups = strings.Split(sybil.FLAGS.GROUPS, sybil.FLAGS.FIELD_SEPARATOR)
+	if flags.GROUPS != "" {
+		groups = strings.Split(flags.GROUPS, flags.FIELD_SEPARATOR)
 	}
 
-	if sybil.FLAGS.DISTINCT != "" {
-		distinct = strings.Split(sybil.FLAGS.DISTINCT, sybil.FLAGS.FIELD_SEPARATOR)
+	if flags.DISTINCT != "" {
+		distinct = strings.Split(flags.DISTINCT, flags.FIELD_SEPARATOR)
 	}
 
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
-	if sybil.FLAGS.STRS != "" {
-		strs = strings.Split(sybil.FLAGS.STRS, sybil.FLAGS.FIELD_SEPARATOR)
+	if flags.STRS != "" {
+		strs = strings.Split(flags.STRS, flags.FIELD_SEPARATOR)
 	}
-	if sybil.FLAGS.INTS != "" {
-		ints = strings.Split(sybil.FLAGS.INTS, sybil.FLAGS.FIELD_SEPARATOR)
+	if flags.INTS != "" {
+		ints = strings.Split(flags.INTS, flags.FIELD_SEPARATOR)
 	}
-	if sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
+	if flags.PROFILE && sybil.PROFILER_ENABLED {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	if sybil.FLAGS.READ_ROWSTORE {
-		sybil.FLAGS.READ_INGESTION_LOG = true
+	if flags.READ_ROWSTORE {
+		flags.READ_INGESTION_LOG = true
 	}
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
@@ -157,7 +164,7 @@ func RunQueryCmdLine() {
 
 	aggs := []sybil.Aggregation{}
 	var op sybil.Op
-	switch sybil.Op(sybil.FLAGS.OP) {
+	switch sybil.Op(flags.OP) {
 	case sybil.OP_HIST:
 		op = sybil.OP_HIST
 	case sybil.OP_AVG:
@@ -188,33 +195,33 @@ func RunQueryCmdLine() {
 		used[v]++
 		if used[v] > 1 {
 			sybil.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
-			return
+			return nil
 		}
 	}
 
 	loadSpec := t.NewLoadSpec()
-	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS}
+	filterSpec := sybil.FilterSpec{Int: flags.INT_FILTERS, Str: flags.STR_FILTERS, Set: flags.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
-	replacements := sybil.BuildReplacements(sybil.FLAGS.FIELD_SEPARATOR, sybil.FLAGS.STR_REPLACE)
+	replacements := sybil.BuildReplacements(flags.FIELD_SEPARATOR, flags.STR_REPLACE)
 	queryParams := sybil.QueryParams{
 		Groups:       groupings,
 		Filters:      filters,
 		Aggregations: aggs,
 		Distincts:    distincts,
 
-		CachedQueries: sybil.FLAGS.CACHED_QUERIES,
+		CachedQueries: flags.CACHED_QUERIES,
 		StrReplace:    replacements,
 	}
 	if op == sybil.OP_HIST {
 		histType := sybil.HistogramTypeBasic
-		if sybil.FLAGS.LOG_HIST {
+		if flags.LOG_HIST {
 			histType = sybil.HistogramTypeLog
 		}
 		queryParams.HistogramParameters = sybil.HistogramParameters{
 			Type:       histType,
-			BucketSize: sybil.FLAGS.HIST_BUCKET,
-			Weighted:   sybil.FLAGS.WEIGHT_COL != "",
+			BucketSize: flags.HIST_BUCKET,
+			Weighted:   flags.WEIGHT_COL != "",
 		}
 	}
 
@@ -241,38 +248,38 @@ func RunQueryCmdLine() {
 		loadSpec.Int(v)
 	}
 
-	if sybil.FLAGS.SORT != "" {
-		if sybil.FLAGS.SORT != sybil.SORT_COUNT {
-			loadSpec.Int(sybil.FLAGS.SORT)
+	if flags.SORT != "" {
+		if flags.SORT != sybil.SORT_COUNT {
+			loadSpec.Int(flags.SORT)
 		}
-		querySpec.OrderBy = sybil.FLAGS.SORT
+		querySpec.OrderBy = flags.SORT
 	} else {
 		querySpec.OrderBy = ""
 	}
 
-	if sybil.FLAGS.PRUNE_BY != "" {
-		if sybil.FLAGS.PRUNE_BY != sybil.SORT_COUNT {
-			loadSpec.Int(sybil.FLAGS.PRUNE_BY)
+	if flags.PRUNE_BY != "" {
+		if flags.PRUNE_BY != sybil.SORT_COUNT {
+			loadSpec.Int(flags.PRUNE_BY)
 		}
-		querySpec.PruneBy = sybil.FLAGS.PRUNE_BY
+		querySpec.PruneBy = flags.PRUNE_BY
 	} else {
 		querySpec.PruneBy = sybil.SORT_COUNT
 	}
 
-	if sybil.FLAGS.TIME {
+	if flags.TIME {
 		// TODO: infer the TimeBucket size
-		querySpec.TimeBucket = sybil.FLAGS.TIME_BUCKET
+		querySpec.TimeBucket = flags.TIME_BUCKET
 		sybil.Debug("USING TIME BUCKET", querySpec.TimeBucket, "SECONDS")
-		loadSpec.Int(sybil.FLAGS.TIME_COL)
+		loadSpec.Int(flags.TIME_COL)
 	}
 
-	if sybil.FLAGS.WEIGHT_COL != "" {
-		loadSpec.Int(sybil.FLAGS.WEIGHT_COL)
+	if flags.WEIGHT_COL != "" {
+		loadSpec.Int(flags.WEIGHT_COL)
 	}
 
-	querySpec.Limit = sybil.FLAGS.LIMIT
+	querySpec.Limit = flags.LIMIT
 
-	if sybil.FLAGS.SAMPLES {
+	if flags.SAMPLES {
 		sybil.HOLD_MATCHES = true
 
 		loadSpec := t.NewLoadSpec()
@@ -284,14 +291,14 @@ func RunQueryCmdLine() {
 
 		t.PrintSamples(printSpec)
 
-		return
+		return nil
 	}
 
-	if sybil.FLAGS.EXPORT {
+	if flags.EXPORT {
 		loadSpec.LoadAllColumns = true
 	}
 
-	if !sybil.FLAGS.PRINT_INFO {
+	if !flags.PRINT_INFO {
 		// DISABLE GC FOR QUERY PATH
 		sybil.Debug("ADDING BULLET HOLES FOR SPEED (DISABLING GC)")
 		debug.SetGCPercent(-1)
@@ -302,7 +309,7 @@ func RunQueryCmdLine() {
 
 		start := time.Now()
 
-		if sybil.FLAGS.LOAD_AND_QUERY {
+		if flags.LOAD_AND_QUERY {
 			t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
 			end := time.Now()
@@ -312,16 +319,17 @@ func RunQueryCmdLine() {
 
 	}
 
-	if sybil.FLAGS.EXPORT {
+	if flags.EXPORT {
 		sybil.Print("EXPORTED RECORDS TO", path.Join(t.Name, "export"))
 	}
 
-	if sybil.FLAGS.PRINT_INFO {
+	if flags.PRINT_INFO {
 		t := sybil.GetTable(table)
-		sybil.FLAGS.LOAD_AND_QUERY = false
+		flags.LOAD_AND_QUERY = false
 
 		t.LoadRecords(nil)
 		t.PrintColInfo(printSpec)
 	}
 
+	return nil
 }
