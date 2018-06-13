@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"flag"
+	"fmt"
+	"os"
 
 	"github.com/logv/sybil/src/sybil"
 )
@@ -20,8 +23,10 @@ func RunDigestCmdLine() {
 	}
 	t := sybil.GetTable(sybil.FLAGS.TABLE)
 	if !t.LoadTableInfo() {
-		sybil.Warn("Couldn't read table info, exiting early")
-		return
+		// TODO use LoadTableInfo
+		err := errors.New("digest: Couldn't read table info, exiting early")
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	t.DigestRecords()
 }
