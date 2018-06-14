@@ -12,3 +12,4 @@ cover.*
 *.pyc
 .starscope.db
 cscope.out
+workdir/

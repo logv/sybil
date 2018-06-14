@@ -78,17 +78,17 @@ default: all
 clean:
 	rm ./bin/*
 
-fuzz: bin/cmd-fuzz.zip
-	go-fuzz -bin=./bin/cmd-fuzz.zip -workdir=workdir
+fuzz: bin/cmd-fuzz-query.zip
+	go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query
 
-fuzzv: bin/cmd-fuzz.zip
-	FUZZDEBUG=1 go-fuzz -bin=./bin/cmd-fuzz.zip -workdir=workdir -testoutput -procs 1
+fuzzv: bin/cmd-fuzz-query.zip
+	FUZZDEBUG=1 go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query -testoutput -procs 1
 
 cleanfuzz:
-	rm ./bin/cmd-fuzz.zip
+	rm -f ./bin/cmd-fuzz*
 
-bin/cmd-fuzz.zip:
-	go-fuzz-build -o bin/cmd-fuzz.zip github.com/logv/sybil/src/cmd
+bin/cmd-fuzz-query.zip:
+	go-fuzz-build -func FuzzQuery -o bin/cmd-fuzz-query.zip github.com/logv/sybil/src/cmd
 
 .PHONY: tags
 .PHONY: query
