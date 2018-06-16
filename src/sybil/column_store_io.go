@@ -362,10 +362,8 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) error {
 	}
 
 	w, _ := os.Create(colFname)
-	if _, err := network.WriteTo(w); err != nil {
-		return err
-	}
-	return nil
+	_, err = network.WriteTo(w)
+	return err
 }
 
 type SeparatedColumns struct {
