@@ -65,7 +65,9 @@ func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Tab
 	unloadTestTable(tableName)
 
 	nt := GetTable(tableName)
-	nt.LoadTableInfo()
+	if err := nt.LoadTableInfo(); err != nil {
+		t.Error(err)
+	}
 
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true

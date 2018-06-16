@@ -58,11 +58,13 @@ func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) error {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
-	os.MkdirAll(dirname, 0777)
+	if err := os.MkdirAll(dirname, 0777); err != nil {
+		return err
+	}
 	for k, v := range sameInts {
 		colName := tb.getStringForKey(k)
 		if colName == "" {
@@ -128,12 +130,15 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 
 		w, _ := os.Create(colFname)
 
-		network.WriteTo(w)
+		if _, err := network.WriteTo(w); err != nil {
+			return err
+		}
 	}
 
+	return nil
 }
 
-func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]ValueMap) {
+func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]ValueMap) error {
 	for k, v := range sameSets {
 		colName := tb.getStringForKey(k)
 		if colName == "" {
@@ -208,12 +213,15 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(colFname)
-		network.WriteTo(w)
+		if _, err := network.WriteTo(w); err != nil {
+			return err
+		}
 
 	}
+	return nil
 }
 
-func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]ValueMap) {
+func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]ValueMap) error {
 	for k, v := range sameStrs {
 		colName := tb.getStringForKey(k)
 		if colName == "" {
@@ -294,15 +302,18 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]Value
 		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(colFname)
-		network.WriteTo(w)
+		if _, err := network.WriteTo(w); err != nil {
+			return err
+		}
 
 	}
+	return nil
 }
 
 type SavedIntInfo map[string]*IntInfo
 type SavedStrInfo map[string]*StrInfo
 
-func (tb *TableBlock) SaveInfoToColumns(dirname string) {
+func (tb *TableBlock) SaveInfoToColumns(dirname string) error {
 	records := tb.RecordList
 
 	// Now to save block info...
@@ -351,7 +362,10 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	}
 
 	w, _ := os.Create(colFname)
-	network.WriteTo(w)
+	if _, err := network.WriteTo(w); err != nil {
+		return err
+	}
+	return nil
 }
 
 type SeparatedColumns struct {
@@ -419,7 +433,11 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 	// of the various block infos
 	tb.Name = dirname
 
-	defer tb.table.ReleaseBlockLock(filename)
+	defer func() {
+		if err := tb.table.ReleaseBlockLock(filename); err != nil {
+			Warn("failed to release block lock:", err)
+		}
+	}()
 	if err := tb.table.GrabBlockLock(filename); err != nil {
 		Debug("Can't grab lock to save block", filename)
 		return err
@@ -434,10 +452,18 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 	end := time.Now()
 	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
-	tb.SaveIntsToColumns(partialname, separatedColumns.ints)
-	tb.SaveStrsToColumns(partialname, separatedColumns.strs)
-	tb.SaveSetsToColumns(partialname, separatedColumns.sets)
-	tb.SaveInfoToColumns(partialname)
+	if err := tb.SaveIntsToColumns(partialname, separatedColumns.ints); err != nil {
+		return err
+	}
+	if err := tb.SaveStrsToColumns(partialname, separatedColumns.strs); err != nil {
+		return err
+	}
+	if err := tb.SaveSetsToColumns(partialname, separatedColumns.sets); err != nil {
+		return err
+	}
+	if err := tb.SaveInfoToColumns(partialname); err != nil {
+		return err
+	}
 
 	end = time.Now()
 	Debug("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
@@ -465,7 +491,9 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 
 	Debug("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
 
-	os.RemoveAll(oldblock)
+	if err := os.RemoveAll(oldblock); err != nil {
+		return err
+	}
 	err := RenameAndMod(dirname, oldblock)
 	if err != nil {
 		Error("ERROR RENAMING BLOCK", dirname, oldblock, err)
@@ -476,7 +504,9 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 	}
 
 	if err == nil {
-		os.RemoveAll(oldblock)
+		if err := os.RemoveAll(oldblock); err != nil {
+			return err
+		}
 	} else {
 		Error("ERROR SAVING BLOCK", partialname, dirname, err)
 	}
