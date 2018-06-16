@@ -1,12 +1,16 @@
 package sybil
 
-import "path"
-import "os"
-import "syscall"
-import "fmt"
-import "strconv"
-import "io/ioutil"
-import "time"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"strconv"
+	"syscall"
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 var LOCK_US = time.Millisecond * 3
 var LOCK_TRIES = 50
@@ -14,9 +18,9 @@ var MAX_LOCK_BREAKS = 5
 
 // Every LockFile should have a recovery plan
 type RecoverableLock interface {
-	Grab() bool
-	Release() bool
-	Recover() bool
+	Grab() error
+	Release() error
+	Recover() error
 }
 
 var BREAK_MAP = make(map[string]int)
@@ -43,26 +47,30 @@ type DigestLock struct {
 	Lock
 }
 
-func RecoverLock(lock RecoverableLock) bool {
+func RecoverLock(lock RecoverableLock) error {
 	// TODO: log the auto recovery into a recovery file
 	return lock.Recover()
 }
 
-func (l *InfoLock) Recover() bool {
+func (l *InfoLock) Recover() error {
 	t := l.Lock.Table
 	Debug("INFO LOCK RECOVERY")
 	dirname := path.Join(FLAGS.DIR, t.Name)
 	backup := path.Join(dirname, "info.bak")
 	infodb := path.Join(dirname, "info.db")
 
-	if t.LoadTableInfoFrom(infodb) {
+	if err := t.LoadTableInfoFrom(infodb); err == nil {
 		Debug("LOADED REASONABLE TABLE INFO, DELETING LOCK")
 		l.ForceDeleteFile()
-		return true
+	} else {
+		return errors.Wrap(err, "LoadTableInfoFrom")
 	}
 
-	if t.LoadTableInfoFrom(backup) {
+	err := t.LoadTableInfoFrom(backup)
+
+	if err == nil {
 		Debug("LOADED TABLE INFO FROM BACKUP, RESTORING BACKUP")
+		// TODO add error handling
 		os.Remove(infodb)
 		RenameAndMod(backup, infodb)
 		l.ForceDeleteFile()
@@ -72,10 +80,10 @@ func (l *InfoLock) Recover() bool {
 	Debug("CANT READ info.db OR RECOVER info.bak")
 	Debug("TRY DELETING LOCK BY HAND FOR", l.Name)
 
-	return false
+	return errors.Wrap(err, "loading from backup failed")
 }
 
-func (l *DigestLock) Recover() bool {
+func (l *DigestLock) Recover() error {
 	Debug("RECOVERING DIGEST LOCK", l.Name)
 	t := l.Table
 	ingestdir := path.Join(FLAGS.DIR, t.Name, INGEST_DIR)
@@ -83,14 +91,15 @@ func (l *DigestLock) Recover() bool {
 	os.MkdirAll(ingestdir, 0777)
 	// TODO: understand if any file in particular is messing things up...
 	pid := int64(os.Getpid())
+	// TODO add error handling to these methods
 	l.ForceMakeFile(pid)
 	t.RestoreUningestedFiles()
 	l.ForceDeleteFile()
 
-	return true
+	return nil
 }
 
-func (l *BlockLock) Recover() bool {
+func (l *BlockLock) Recover() error {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
 	tb := t.LoadBlockFromDir(l.Name, nil, true, nil)
@@ -105,17 +114,17 @@ func (l *BlockLock) Recover() bool {
 		l.ForceDeleteFile()
 	}
 
-	return true
+	return nil
 }
 
-func (l *CacheLock) Recover() bool {
+func (l *CacheLock) Recover() error {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
 	files, err := ioutil.ReadDir(path.Join(FLAGS.DIR, t.Name, CACHE_DIR))
 
 	if err != nil {
 		l.ForceDeleteFile()
-		return true
+		return nil
 	}
 
 	for _, blockFile := range files {
@@ -136,18 +145,17 @@ func (l *CacheLock) Recover() bool {
 
 	}
 
+	// TODO: handle errors
 	l.ForceDeleteFile()
-
-	return true
-
+	return nil
 }
 
-func (l *Lock) Recover() bool {
+func (l *Lock) Recover() error {
 	Debug("UNIMPLEMENTED RECOVERY FOR LOCK", l.Table.Name, l.Name)
-	return false
+	return errors.New("unimplemented Recover()")
 }
 
-func (l *Lock) ForceDeleteFile() {
+func (l *Lock) ForceDeleteFile() error {
 	t := l.Table
 	digest := l.Name
 
@@ -156,7 +164,7 @@ func (l *Lock) ForceDeleteFile() {
 	lockfile := path.Join(FLAGS.DIR, t.Name, fmt.Sprintf("%s.lock", digest))
 
 	Debug("FORCE DELETING", lockfile)
-	os.RemoveAll(lockfile)
+	return os.RemoveAll(lockfile)
 }
 
 func (l *Lock) ForceMakeFile(pid int64) {
@@ -280,7 +288,7 @@ func checkPid(lockfile string, l *Lock) bool {
 	return cangrab
 }
 
-func (l *Lock) Grab() bool {
+func (l *Lock) Grab() error {
 	t := l.Table
 	digest := l.Name
 
@@ -294,7 +302,7 @@ func (l *Lock) Grab() bool {
 		if !checkPid(lockfile, l) {
 			if l.broken {
 				Debug("MARKING BROKEN LOCKFILE", lockfile)
-				return false
+				return ErrLockBroken
 			}
 
 			continue
@@ -318,16 +326,15 @@ func (l *Lock) Grab() bool {
 		}
 
 		Debug("LOCKING", lockfile)
-		return true
+		return nil
 	}
 
 	Debug("CANT CREATE LOCK FILE:", err)
 	Debug("LOCK FAIL!", lockfile)
-	return false
-
+	return ErrLockTimeout
 }
 
-func (l *Lock) Release() bool {
+func (l *Lock) Release() error {
 	t := l.Table
 	digest := l.Name
 
@@ -349,75 +356,74 @@ func (l *Lock) Release() bool {
 
 	}
 
-	return true
+	return nil
 }
 
-func (t *Table) GrabInfoLock() bool {
+func (t *Table) GrabInfoLock() error {
 	lock := Lock{Table: t, Name: "info"}
 	info := &InfoLock{lock}
 	ret := info.Grab()
-	if !ret && info.broken {
-		ret = RecoverLock(info)
+	if ret == ErrLockBroken {
+		return RecoverLock(info)
 	}
 
 	return ret
 }
 
-func (t *Table) ReleaseInfoLock() bool {
+func (t *Table) ReleaseInfoLock() error {
 	lock := Lock{Table: t, Name: "info"}
 	info := &InfoLock{lock}
 	ret := info.Release()
 	return ret
 }
 
-func (t *Table) GrabDigestLock() bool {
+func (t *Table) GrabDigestLock() error {
 	lock := Lock{Table: t, Name: STOMACHE_DIR}
 	info := &DigestLock{lock}
 	ret := info.Grab()
-	if !ret && info.broken {
-		ret = RecoverLock(info)
+	if ret == ErrLockBroken {
+		return RecoverLock(info)
 	}
 	return ret
 }
 
-func (t *Table) ReleaseDigestLock() bool {
+func (t *Table) ReleaseDigestLock() error {
 	lock := Lock{Table: t, Name: STOMACHE_DIR}
 	info := &DigestLock{lock}
 	ret := info.Release()
 	return ret
 }
 
-func (t *Table) GrabBlockLock(name string) bool {
+func (t *Table) GrabBlockLock(name string) error {
 	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
 	ret := info.Grab()
 	// INFO RECOVER IS GOING TO HAVE TIMING ISSUES... WHEN MULTIPLE THREADS ARE
 	// AT PLAY
-	if !ret && info.broken {
-		ret = RecoverLock(info)
+	if ret == ErrLockBroken {
+		return RecoverLock(info)
 	}
 	return ret
-
 }
 
-func (t *Table) ReleaseBlockLock(name string) bool {
+func (t *Table) ReleaseBlockLock(name string) error {
 	lock := Lock{Table: t, Name: name}
 	info := &BlockLock{lock}
 	ret := info.Release()
 	return ret
 }
 
-func (t *Table) GrabCacheLock() bool {
+func (t *Table) GrabCacheLock() error {
 	lock := Lock{Table: t, Name: CACHE_DIR}
 	info := &CacheLock{lock}
 	ret := info.Grab()
-	if !ret && info.broken {
-		ret = RecoverLock(info)
+	if ret == ErrLockBroken {
+		return RecoverLock(info)
 	}
 	return ret
 }
 
-func (t *Table) ReleaseCacheLock() bool {
+func (t *Table) ReleaseCacheLock() error {
 	lock := Lock{Table: t, Name: CACHE_DIR}
 	info := &CacheLock{lock}
 	ret := info.Release()

@@ -1,32 +1,36 @@
 package cmd
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 
 	"github.com/logv/sybil/src/sybil"
+	"github.com/pkg/errors"
 )
 
 func RunDigestCmdLine() {
 	flag.Parse()
 
-	if sybil.FLAGS.TABLE == "" {
+	if err := runDigestCmdLine(&sybil.FLAGS); err != nil {
+		fmt.Fprintln(os.Stderr, errors.Wrap(err, "digest"))
+		os.Exit(1)
+	}
+}
+
+func runDigestCmdLine(flags *sybil.FlagDefs) error {
+	if flags.TABLE == "" {
 		flag.PrintDefaults()
-		return
+		return sybil.ErrMissingTable
 	}
 
-	if sybil.FLAGS.PROFILE {
+	if flags.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
-	t := sybil.GetTable(sybil.FLAGS.TABLE)
-	if !t.LoadTableInfo() {
-		// TODO use LoadTableInfo
-		err := errors.New("digest: Couldn't read table info, exiting early")
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	t := sybil.GetTable(flags.TABLE)
+	if err := t.LoadTableInfo(); err != nil {
+		return nil
 	}
-	t.DigestRecords()
+	return t.DigestRecords()
 }

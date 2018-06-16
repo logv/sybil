@@ -57,7 +57,7 @@ func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPr
 	}
 
 	t := sybil.GetTable(flags.TABLE)
-	if !t.LoadTableInfo() {
+	if err := t.LoadTableInfo(); err != nil {
 		// TODO use LoadTableInfo
 		return errors.New("Couldn't read table info, exiting early")
 	}

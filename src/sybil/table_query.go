@@ -9,9 +9,11 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
-func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
+func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) (int, error) {
 	waystart := time.Now()
 	Debug("LOADING", FLAGS.DIR, t.Name)
 
@@ -33,10 +35,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	blockSpecs := make(map[string]*QuerySpec)
 	toCacheSpecs := make(map[string]*QuerySpec)
 
-	loadedInfo := t.LoadTableInfo()
-	if !loadedInfo {
+	if err := t.LoadTableInfo(); err != nil {
 		if t.HasFlagFile() {
-			return 0
+			return 0, errors.Wrap(err, "issue loading existing table")
 		}
 	}
 
@@ -352,6 +353,5 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	t.WriteBlockCache()
 
-	return count
-
+	return count, nil
 }

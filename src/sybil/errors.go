@@ -7,6 +7,8 @@ import (
 
 var (
 	ErrMissingTable = errors.New("missing table")
+	ErrLockTimeout  = errors.New("lock timeout")
+	ErrLockBroken   = errors.New("lock broken")
 )
 
 type ErrMissingColumn struct {
@@ -24,4 +26,12 @@ type ErrColumnTypeMismatch struct {
 
 func (e ErrColumnTypeMismatch) Error() string {
 	return fmt.Sprintf("column '%s' is not of type %s", e.column, e.expected)
+}
+
+type ErrUnrecoverableLock struct {
+	lockfile string
+}
+
+func (e ErrUnrecoverableLock) Error() string {
+	return fmt.Sprintf("recovery failed for broken lock file: '%s'", e.lockfile)
 }
