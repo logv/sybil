@@ -10,13 +10,7 @@ import (
 	"github.com/logv/sybil/src/sybil"
 )
 
-type F func(*sybil.FlagDefs) error
-
-var cmdFuncs = []F{
-	runQueryCmdLine,
-}
-
-func Fuzz(data []byte) int {
+func FuzzQuery(data []byte) int {
 	if len(data) < 1 {
 		return 0
 	}
@@ -34,12 +28,10 @@ func Fuzz(data []byte) int {
 		}
 		return 0
 	}
-	fn := cmdFuncs[int(data[0])%len(cmdFuncs)]
-
 	if print {
 		fmt.Println(&flags)
 	}
-	if err := fn(&flags); err != nil {
+	if err := runQueryCmdLine(&flags); err != nil {
 		if print {
 			fmt.Println("err:", err)
 		}
