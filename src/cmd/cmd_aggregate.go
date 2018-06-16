@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
+	"os"
 
 	"github.com/logv/sybil/src/sybil"
 )
@@ -17,7 +19,9 @@ func RunAggregateCmdLine() {
 	sybil.FLAGS.DEBUG = true
 	sybil.Debug("AGGREGATING")
 
-	sybil.DecodeFlags()
+	if err := sybil.DecodeFlags(); err != nil {
+		fmt.Fprintln(os.Stderr, "aggregate: failed to decode flags:", err)
+	}
 	sybil.FLAGS.PRINT = true
 	sybil.FLAGS.ENCODE_RESULTS = false
 	sybil.Debug("AGGREGATING DIRS", dirs)
