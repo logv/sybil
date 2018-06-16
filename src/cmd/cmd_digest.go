@@ -30,7 +30,7 @@ func runDigestCmdLine(flags *sybil.FlagDefs) error {
 	}
 	t := sybil.GetTable(flags.TABLE)
 	if err := t.LoadTableInfo(); err != nil {
-		return nil
+		return err
 	}
 	return t.DigestRecords()
 }
