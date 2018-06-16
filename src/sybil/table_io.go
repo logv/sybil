@@ -93,14 +93,18 @@ func (t *Table) saveRecordList(records RecordList) error {
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("error saving block %v", filename))
 		}
-		t.SaveRecordsToBlock(records, filename)
+		if err := t.SaveRecordsToBlock(records, filename); err != nil {
+			return err
+		}
 	} else {
 		for j := 0; j < chunks; j++ {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("error saving block %v", filename))
 			}
-			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename)
+			if err := t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename); err != nil {
+				return err
+			}
 		}
 
 		// SAVE THE REMAINDER
@@ -110,7 +114,9 @@ func (t *Table) saveRecordList(records RecordList) error {
 				return errors.Wrap(err, "error creating new ingestion block")
 			}
 
-			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename)
+			if err := t.SaveRecordsToBlock(records[chunks*chunkSize:], filename); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -121,7 +127,9 @@ func (t *Table) SaveRecordsToColumns() error {
 	os.MkdirAll(path.Join(FLAGS.DIR, t.Name), 0777)
 	sort.Sort(SortRecordsByTime{t.newRecords})
 
-	t.FillPartialBlock()
+	if err := t.FillPartialBlock(); err != nil {
+		return err
+	}
 	ret := t.saveRecordList(t.newRecords)
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
@@ -371,8 +379,12 @@ func (t *Table) ChunkAndSave() error {
 		os.MkdirAll(path.Join(FLAGS.DIR, t.Name), 0777)
 		name, err := t.getNewIngestBlockName()
 		if err == nil {
-			t.SaveRecordsToBlock(t.newRecords, name)
-			t.SaveTableInfo("info")
+			if err := t.SaveRecordsToBlock(t.newRecords, name); err != nil {
+				return err
+			}
+			if err := t.SaveTableInfo("info"); err != nil {
+				return err
+			}
 			t.newRecords = make(RecordList, 0)
 			t.ReleaseRecords()
 		} else {
