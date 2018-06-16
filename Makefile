@@ -84,6 +84,11 @@ fuzz: bin/cmd-fuzz-query.zip
 fuzzv: bin/cmd-fuzz-query.zip
 	FUZZDEBUG=1 go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query -testoutput -procs 1
 
+fuzzcoverage:
+	${GOBIN} test -tags gofuzz -coverpkg ./... -covermode atomic -coverprofile fuzzcover.out ./src/cmd
+	sed -i "s|_${ROOT_DIR}|.|"	fuzzcover.out
+	${GOBIN} tool cover -html=fuzzcover.out -o fuzzcover.html
+
 cleanfuzz:
 	rm -f ./bin/cmd-fuzz*
 

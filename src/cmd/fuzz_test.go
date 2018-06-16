@@ -1,4 +1,4 @@
-// +build gofuzz
+// +build gofuzz,go1.7
 
 package cmd
 
