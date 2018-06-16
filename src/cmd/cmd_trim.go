@@ -9,20 +9,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-func askConfirmation() bool {
+func askConfirmation() (bool, error) {
 
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		sybil.Error(err)
+		return false, err
 	}
 
 	if response == "Y" {
-		return true
+		return true, nil
 	}
 
 	if response == "N" {
-		return false
+		return false, nil
 	}
 
 	fmt.Println("Y or N only")
@@ -84,9 +84,9 @@ func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPr
 		if !skipPrompt {
 			// TODO: prompt for deletion
 			fmt.Println("DELETE THE ABOVE BLOCKS? (Y/N)")
-			if !askConfirmation() {
+			if ok, err := askConfirmation(); !ok {
 				sybil.Debug("ABORTING")
-				return nil
+				return err
 			}
 
 		}
