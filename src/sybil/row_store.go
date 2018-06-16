@@ -33,7 +33,7 @@ type SavedRecord struct {
 	Sets []RowSavedSet
 }
 
-func (s SavedRecord) toRecord(t *Table) *Record {
+func (s SavedRecord) toRecord(t *Table) (*Record, error) {
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
@@ -61,15 +61,21 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	}
 
 	for _, v := range s.Strs {
-		r.AddStrField(t.getStringForKey(int(v.Name)), v.Value)
+		err := r.AddStrField(t.getStringForKey(int(v.Name)), v.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, v := range s.Sets {
-		r.AddSetField(t.getStringForKey(int(v.Name)), v.Value)
+		err := r.AddSetField(t.getStringForKey(int(v.Name)), v.Value)
+		if err != nil {
+			return nil, err
+		}
 		r.Populated[v.Name] = SET_VAL
 	}
 
-	return &r
+	return &r, nil
 }
 
 func (r Record) toSavedRecord() *SavedRecord {

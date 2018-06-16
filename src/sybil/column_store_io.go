@@ -628,14 +628,14 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replac
 	return nil
 }
 
-func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) error {
 	records := tb.RecordList
 
 	savedCol := NewSavedSetColumn()
 	into := &savedCol
 	err := dec.Decode(into)
 	if err != nil {
-		Debug("DECODE COL ERR:", err)
+		return err
 	}
 
 	keyTableLen := len(tb.table.KeyTable)
@@ -644,7 +644,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 	if int(colID) >= keyTableLen {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	col := tb.GetColumnInfo(colID)
@@ -689,6 +689,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 			records[r].Populated[colID] = SET_VAL
 		}
 	}
+	return nil
 }
 
 func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) error {
