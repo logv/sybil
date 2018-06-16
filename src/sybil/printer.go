@@ -87,7 +87,6 @@ func printTimeResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 	}
 
 	w.Flush()
-
 }
 
 func getSparseBuckets(buckets map[string]int64) map[string]int64 {

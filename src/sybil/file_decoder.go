@@ -16,20 +16,20 @@ type GobFileDecoder struct {
 
 type FileDecoder interface {
 	Decode(interface{}) error
-	CloseFile() bool
+	CloseFile() error
 }
 
-func (gfd GobFileDecoder) CloseFile() bool {
-	gfd.File.Close()
-	return true
+func (gfd GobFileDecoder) CloseFile() error {
+	return gfd.File.Close()
 }
 
 func decodeInto(filename string, obj interface{}) error {
 	dec := GetFileDecoder(filename)
-	defer dec.CloseFile()
 
-	err := dec.Decode(obj)
-	return err
+	if err := dec.Decode(obj); err != nil {
+		return err
+	}
+	return dec.CloseFile()
 }
 
 func getGobGzipDecoder(filename string) FileDecoder {
