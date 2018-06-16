@@ -30,8 +30,12 @@ func runIndexCmdLine(flags *sybil.FlagDefs, ints []string) error {
 
 	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
-	t.LoadRecords(nil)
-	t.SaveTableInfo("info")
+	if _, err := t.LoadRecords(nil); err != nil {
+		return err
+	}
+	if err := t.SaveTableInfo("info"); err != nil {
+		return err
+	}
 	sybil.FLAGS.WRITE_BLOCK_INFO = true
 
 	loadSpec := t.NewLoadSpec()
@@ -41,7 +45,8 @@ func runIndexCmdLine(flags *sybil.FlagDefs, ints []string) error {
 			return err
 		}
 	}
-	t.LoadRecords(&loadSpec)
-	t.SaveTableInfo("info")
-	return nil
+	if _, err := t.LoadRecords(&loadSpec); err != nil {
+		return err
+	}
+	return t.SaveTableInfo("info")
 }

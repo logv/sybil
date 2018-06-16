@@ -148,8 +148,12 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
-	t.LoadTableInfo()
-	t.LoadRecords(nil)
+	if err := t.LoadTableInfo(); err != nil {
+		return errors.Wrap(err, "load table info failed")
+	}
+	if _, err := t.LoadRecords(nil); err != nil {
+		return errors.Wrap(err, "loading records failed")
+	}
 
 	count := 0
 	for _, block := range t.BlockList {
@@ -306,7 +310,9 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 		loadSpec.SkipDeleteBlocksAfterQuery = true
 		querySpec.Samples = true
 
-		t.LoadAndQueryRecords(&loadSpec, &querySpec)
+		if _, err := t.LoadAndQueryRecords(&loadSpec, &querySpec); err != nil {
+			return err
+		}
 
 		t.PrintSamples(printSpec)
 
@@ -329,7 +335,9 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 		start := time.Now()
 
 		if flags.LOAD_AND_QUERY {
-			t.LoadAndQueryRecords(&loadSpec, &querySpec)
+			if _, err := t.LoadAndQueryRecords(&loadSpec, &querySpec); err != nil {
+				return err
+			}
 
 			end := time.Now()
 			sybil.Debug("LOAD AND QUERY RECORDS TOOK", end.Sub(start))
@@ -346,7 +354,9 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 		t := sybil.GetTable(table)
 		flags.LOAD_AND_QUERY = false
 
-		t.LoadRecords(nil)
+		if _, err := t.LoadRecords(nil); err != nil {
+			return err
+		}
 		t.PrintColInfo(printSpec)
 	}
 

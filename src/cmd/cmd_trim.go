@@ -58,8 +58,7 @@ func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPr
 
 	t := sybil.GetTable(flags.TABLE)
 	if err := t.LoadTableInfo(); err != nil {
-		// TODO use LoadTableInfo
-		return errors.New("Couldn't read table info, exiting early")
+		return err
 	}
 
 	loadSpec := t.NewLoadSpec()
@@ -96,7 +95,9 @@ func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPr
 		for _, b := range toTrim {
 			sybil.Debug("DELETING", b.Name)
 			if len(b.Name) > 5 {
-				os.RemoveAll(b.Name)
+				if err := os.RemoveAll(b.Name); err != nil {
+					return errors.Wrap(err, fmt.Sprintf("removing '%v' failed", b.Name))
+				}
 			} else {
 				sybil.Debug("REFUSING TO DELETE", b.Name)
 			}

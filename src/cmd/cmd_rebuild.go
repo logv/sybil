@@ -49,11 +49,12 @@ func runRebuildCmdLine(flags *sybil.FlagDefs, replaceInfo bool, forceUpdate bool
 	if replaceInfo {
 		sybil.Print("REPLACING info.db WITH DATA COMPUTED ABOVE")
 		lock := sybil.Lock{Table: t, Name: "info"}
-		lock.ForceDeleteFile()
+		if err := lock.ForceDeleteFile(); err != nil {
+			return err
+		}
 		return t.SaveTableInfo("info")
 	} else {
 		sybil.Print("SAVING TO temp_info.db")
 		return t.SaveTableInfo("temp_info")
 	}
-	return nil
 }
