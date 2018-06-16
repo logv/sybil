@@ -261,8 +261,8 @@ func RunIngestCmdLine() {
 	// someone else
 	var loadedTable = false
 	for i := 0; i < TABLE_INFO_GRABS; i++ {
-		loaded := t.LoadTableInfo()
-		if loaded || !t.HasFlagFile() {
+		loadErr := t.LoadTableInfo()
+		if loadErr == nil || !t.HasFlagFile() {
 			loadedTable = true
 			break
 		}

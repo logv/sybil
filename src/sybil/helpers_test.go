@@ -69,7 +69,10 @@ func saveAndReloadTable(t *testing.T, tableName string, expectedBlocks int) *Tab
 
 	loadSpec := NewLoadSpec()
 	loadSpec.LoadAllColumns = true
-	count := nt.LoadRecords(&loadSpec)
+	count, err := nt.LoadRecords(&loadSpec)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if count != expectedCount {
 		t.Error("Wrote", expectedCount, "records, but read back", count)

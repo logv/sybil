@@ -1,19 +1,23 @@
 package sybil
 
-import "bytes"
-import "fmt"
-import "time"
-import "os"
-import "path"
-import "strings"
-import "sync"
-import "compress/gzip"
+import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"os"
+	"path"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string) error {
 	if len(records) == 0 {
-		return true
+		return nil
 	}
 
 	tempBlock := newTableBlock()
@@ -44,9 +48,9 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 }
 
 // TODO: find any open blocks and then fill them...
-func (t *Table) FillPartialBlock() bool {
+func (t *Table) FillPartialBlock() error {
 	if len(t.newRecords) == 0 {
-		return false
+		return nil
 	}
 
 	openBlocks := t.FindPartialBlocks()
@@ -55,7 +59,7 @@ func (t *Table) FillPartialBlock() bool {
 	var filename string
 
 	if len(openBlocks) == 0 {
-		return true
+		return nil
 	}
 
 	for _, b := range openBlocks {
@@ -64,9 +68,9 @@ func (t *Table) FillPartialBlock() bool {
 
 	Debug("OPENING PARTIAL BLOCK", filename)
 
-	if !t.GrabBlockLock(filename) {
+	if err := t.GrabBlockLock(filename); err != nil {
 		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
-		return true
+		return errors.Wrap(err, "failed to grab block lock")
 	}
 
 	defer t.ReleaseBlockLock(filename)
@@ -75,8 +79,9 @@ func (t *Table) FillPartialBlock() bool {
 	delete(t.BlockInfoCache, filename)
 
 	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */, nil)
+	// TODO add error handling
 	if block == nil {
-		return true
+		return nil
 	}
 
 	partialRecords := block.RecordList
@@ -90,9 +95,9 @@ func (t *Table) FillPartialBlock() bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if !t.SaveRecordsToBlock(partialRecords, filename) {
+		if err := t.SaveRecordsToBlock(partialRecords, filename); err != nil {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
-			return false
+			return errors.Wrap(err, "save records to block")
 		}
 
 		if delta < len(t.newRecords) {
@@ -102,7 +107,7 @@ func (t *Table) FillPartialBlock() bool {
 		}
 	}
 
-	return true
+	return nil
 }
 
 // optimizing for integer pre-cached info

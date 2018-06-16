@@ -1,11 +1,14 @@
 package sybil
 
-import "time"
-import "path"
-import "io/ioutil"
+import (
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
+	"time"
 
-import "os"
-import "strings"
+	"github.com/pkg/errors"
+)
 
 // to ingest, make a new tmp file inside ingest/ (or append to an existing one)
 // to digest, make a new STOMACHE_DIR tempdir and move all files from ingest/ into it
@@ -196,16 +199,17 @@ func LoadRowBlockCB(digestname string, records RecordList) {
 
 var DELETE_BLOCKS = make([]string, 0)
 
-func (t *Table) RestoreUningestedFiles() {
-	if !t.GrabDigestLock() {
+func (t *Table) RestoreUningestedFiles() error {
+	if err := t.GrabDigestLock(); err != nil {
 		Debug("CANT RESTORE UNINGESTED RECORDS WITHOUT DIGEST LOCK")
-		return
+		return err
 	}
 
 	ingestdir := path.Join(FLAGS.DIR, t.Name, INGEST_DIR)
 	os.MkdirAll(ingestdir, 0777)
 
 	digesting := path.Join(FLAGS.DIR, t.Name)
+	// TODO add error handling
 	file, _ := os.Open(digesting)
 	dirs, _ := file.Readdir(0)
 
@@ -221,17 +225,20 @@ func (t *Table) RestoreUningestedFiles() {
 				err := RenameAndMod(from, to)
 				if err != nil {
 					Debug("COULDNT RESTORE UNINGESTED FILE", from, to, err)
+					return err
 				}
 			}
 
 			err := os.Remove(path.Join(digesting, dir.Name()))
 			if err != nil {
 				Debug("REMOVING STOMACHE FAILED!", err)
+				return err
 			}
 
 		}
 	}
 
+	return nil
 }
 
 type SaveBlockChunkCB struct {
@@ -275,13 +282,11 @@ func (cb *SaveBlockChunkCB) CB(digestname string, records RecordList) {
 var STOMACHE_DIR = "stomache"
 
 // Go through rowstore and save records out to column store
-func (t *Table) DigestRecords() {
-	canDigest := t.GrabDigestLock()
-
-	if !canDigest {
+func (t *Table) DigestRecords() error {
+	if err := t.GrabDigestLock(); err != nil {
 		t.ReleaseInfoLock()
 		Debug("CANT GRAB LOCK FOR DIGEST RECORDS")
-		return
+		return errors.Wrap(err, "grabbing digest lock failed")
 	}
 
 	dirname := path.Join(FLAGS.DIR, t.Name)
@@ -294,16 +299,17 @@ func (t *Table) DigestRecords() {
 		t.ReleaseDigestLock()
 		Debug("ERROR CREATING DIGESTION DIR", err)
 		time.Sleep(time.Millisecond * 50)
-		return
+		return err
 	}
 
 	file, _ := os.Open(digestfile)
 
 	files, err := file.Readdir(0)
+	// TODO add error handling
 	if len(files) < MIN_FILES_TO_DIGEST {
 		Debug("SKIPPING DIGESTION, NOT AS MANY FILES AS WE THOUGHT", len(files), "VS", MIN_FILES_TO_DIGEST)
 		t.ReleaseDigestLock()
-		return
+		return nil
 	}
 
 	if err == nil {
@@ -319,4 +325,5 @@ func (t *Table) DigestRecords() {
 	} else {
 		t.ReleaseDigestLock()
 	}
+	return nil
 }

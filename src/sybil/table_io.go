@@ -22,9 +22,9 @@ var CACHE_DIR = "cache"
 var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
-func (t *Table) saveTableInfo(fname string) {
-	if !t.GrabInfoLock() {
-		return
+func (t *Table) saveTableInfo(fname string) error {
+	if err := t.GrabInfoLock(); err != nil {
+		return err
 	}
 
 	defer t.ReleaseInfoLock()
@@ -44,6 +44,7 @@ func (t *Table) saveTableInfo(fname string) {
 
 	if err != nil {
 		Error("encode:", err)
+		return err
 	}
 
 	Debug("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
@@ -51,21 +52,22 @@ func (t *Table) saveTableInfo(fname string) {
 	tempfile, err := ioutil.TempFile(dirname, "info.db")
 	if err != nil {
 		Error("ERROR CREATING TEMP FILE FOR TABLE INFO", err)
+		return err
 	}
 
 	_, err = network.WriteTo(tempfile)
 	if err != nil {
 		Error("ERROR SAVING TABLE INFO INTO TEMPFILE", err)
+		return err
 	}
 
 	RenameAndMod(tempfile.Name(), filename)
-	os.Create(flagfile)
+	_, err = os.Create(flagfile)
+	return err
 }
 
-func (t *Table) SaveTableInfo(fname string) {
-	saveTable := getSaveTable(t)
-	saveTable.saveTableInfo(fname)
-
+func (t *Table) SaveTableInfo(fname string) error {
+	return getSaveTable(t).saveTableInfo(fname)
 }
 
 func getSaveTable(t *Table) *Table {
@@ -128,20 +130,20 @@ func (t *Table) SaveRecordsToColumns() bool {
 
 }
 
-func (t *Table) LoadTableInfo() bool {
+func (t *Table) LoadTableInfo() error {
 	tablename := t.Name
 	filename := path.Join(FLAGS.DIR, tablename, "info.db")
-	if t.GrabInfoLock() {
+	if err := t.GrabInfoLock(); err == nil {
 		defer t.ReleaseInfoLock()
 	} else {
 		Debug("LOAD TABLE INFO LOCK TAKEN")
-		return false
+		return err
 	}
 
 	return t.LoadTableInfoFrom(filename)
 }
 
-func (t *Table) LoadTableInfoFrom(filename string) bool {
+func (t *Table) LoadTableInfoFrom(filename string) error {
 	savedTable := Table{Name: t.Name}
 	savedTable.initDataStructures()
 
@@ -152,7 +154,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 	end := time.Now()
 	if err != nil {
 		Debug("TABLE INFO DECODE:", err)
-		return false
+		return err
 	}
 
 	if DEBUG_TIMING {
@@ -180,7 +182,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 		t.populateStringIDLookup()
 	}
 
-	return true
+	return nil
 }
 
 // Remove our pointer to the blocklist so a GC is triggered and
@@ -234,24 +236,21 @@ func fileLooksLikeBlock(v os.FileInfo) bool {
 
 }
 
-func (t *Table) LoadBlockCache() {
-	if !t.GrabCacheLock() {
-		return
+func (t *Table) LoadBlockCache() error {
+	if err := t.GrabCacheLock(); err != nil {
+		return nil
 	}
 
 	defer t.ReleaseCacheLock()
 	files, err := ioutil.ReadDir(path.Join(FLAGS.DIR, t.Name, CACHE_DIR))
 
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, blockFile := range files {
 		filename := path.Join(FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
 		blockCache := SavedBlockCache{}
-		if err != nil {
-			continue
-		}
 
 		err = decodeInto(filename, &blockCache)
 		if err != nil {
@@ -264,6 +263,7 @@ func (t *Table) LoadBlockCache() {
 	}
 
 	Debug("FILLED BLOCK CACHE WITH", len(t.BlockInfoCache), "ITEMS")
+	return nil
 }
 
 func (t *Table) ResetBlockCache() {
@@ -314,13 +314,13 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 
 }
 
-func (t *Table) WriteBlockCache() {
+func (t *Table) WriteBlockCache() error {
 	if len(t.NewBlockInfos) == 0 {
-		return
+		return nil
 	}
 
-	if !t.GrabCacheLock() {
-		return
+	if err := t.GrabCacheLock(); err != nil {
+		return err
 	}
 
 	defer t.ReleaseCacheLock()
@@ -358,9 +358,10 @@ func (t *Table) WriteBlockCache() {
 
 	t.NewBlockInfos = t.NewBlockInfos[:0]
 
+	return nil
 }
 
-func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
+func (t *Table) LoadRecords(loadSpec *LoadSpec) (int, error) {
 	t.LoadBlockCache()
 
 	return t.LoadAndQueryRecords(loadSpec, nil)
@@ -384,6 +385,7 @@ func (t *Table) ChunkAndSave() {
 }
 
 func (t *Table) IsNotExist() bool {
+	// TODO: consider using os.Stat and os.IsNotExist
 	tableDir := path.Join(FLAGS.DIR, t.Name)
 	_, err := ioutil.ReadDir(tableDir)
 	return err != nil
