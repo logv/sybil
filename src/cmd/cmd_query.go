@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -10,7 +12,9 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/sybil"
+	pb "github.com/logv/sybil/src/sybilpb"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 )
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
@@ -81,6 +85,9 @@ func RunQueryCmdLine() {
 }
 
 func runQueryCmdLine(flags *sybil.FlagDefs) error {
+	if flags.DIAL != "" {
+		return runQueryGRPC(flags)
+	}
 	if flags.DECODE_FLAGS {
 		sybil.DecodeFlags()
 	}
@@ -360,4 +367,44 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 	}
 
 	return nil
+}
+
+func runQueryGRPC(flags *sybil.FlagDefs) error {
+	ctx := context.Background()
+	opts := []grpc.DialOption{
+		// todo
+		grpc.WithInsecure(),
+	}
+	conn, err := grpc.Dial(flags.DIAL, opts...)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	c := pb.NewSybilClient(conn)
+
+	if flags.LIST_TABLES {
+		r, err := c.ListTables(ctx, &pb.ListTablesRequest{})
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(r)
+	}
+
+	if flags.PRINT_INFO {
+		r, err := c.GetTable(ctx, &pb.GetTableRequest{
+			Name: flags.TABLE,
+		})
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(r)
+	}
+	q := &pb.QueryRequest{
+		Dataset: flags.TABLE,
+	}
+	qr, err := c.Query(ctx, q)
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(os.Stdout).Encode(qr)
 }

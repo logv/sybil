@@ -19,5 +19,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return s.Serve()
+	_ = s
+	return nil
 }
