@@ -27,8 +27,10 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) error {
 	return tempBlock.SaveToColumns(filename)
 }
 
-func (t *Table) FindPartialBlocks() []*TableBlock {
-	t.LoadRecords(nil)
+func (t *Table) FindPartialBlocks() ([]*TableBlock, error) {
+	if _, err := t.LoadRecords(nil); err != nil {
+		return nil, err
+	}
 
 	ret := make([]*TableBlock, 0)
 
@@ -44,7 +46,7 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 	}
 	t.blockMu.Unlock()
 
-	return ret
+	return ret, nil
 }
 
 // TODO: find any open blocks and then fill them...
@@ -53,7 +55,10 @@ func (t *Table) FillPartialBlock() error {
 		return nil
 	}
 
-	openBlocks := t.FindPartialBlocks()
+	openBlocks, err := t.FindPartialBlocks()
+	if err != nil {
+		return err
+	}
 
 	Debug("OPEN BLOCKS", openBlocks)
 	var filename string
@@ -259,15 +264,18 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, *info, replacements)
+			err = tb.unpackStrCol(dec, *info, replacements)
 		case strings.HasPrefix(fname, "set"):
-			tb.unpackSetCol(dec, *info)
+			err = tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, *info)
+			err = tb.unpackIntCol(dec, *info)
 		}
 
 		dec.CloseFile()
 
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("issue unpacking %v", fname))
+		}
 	}
 
 	tb.Size = size

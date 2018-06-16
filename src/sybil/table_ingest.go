@@ -126,7 +126,7 @@ func (t *Table) ShouldCompactRowStore(digest string) bool {
 
 }
 
-func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBlockLoad) {
+func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBlockLoad) error {
 	dirname := path.Join(FLAGS.DIR, t.Name, digest)
 	var err error
 
@@ -137,7 +137,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 			afterBlockLoadCb(NO_MORE_BLOCKS, nil)
 		}
 
-		return
+		return err
 	}
 
 	var file *os.File
@@ -147,7 +147,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 			Debug("Can't open the ingestion dir", dirname)
 			time.Sleep(LOCK_US)
 			if i > MAX_ROW_STORE_TRIES {
-				return
+				return ErrLockTimeout
 			}
 			continue
 		}
@@ -177,7 +177,10 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 
 		filename = path.Join(dirname, file.Name())
 
-		records := t.LoadRecordsFromLog(filename)
+		records, err := t.LoadRecordsFromLog(filename)
+		if err != nil {
+			return err
+		}
 		if afterBlockLoadCb != nil {
 			afterBlockLoadCb(filename, records)
 		}
@@ -187,6 +190,7 @@ func (t *Table) LoadRowStoreRecords(digest string, afterBlockLoadCb AfterRowBloc
 		afterBlockLoadCb(NO_MORE_BLOCKS, nil)
 	}
 
+	return nil
 }
 
 func LoadRowBlockCB(digestname string, records RecordList) {

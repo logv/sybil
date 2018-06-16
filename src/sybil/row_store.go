@@ -127,7 +127,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	return marshalledRecords
 }
 
-func (t *Table) LoadRecordsFromLog(filename string) RecordList {
+func (t *Table) LoadRecordsFromLog(filename string) (RecordList, error) {
 	var marshalledRecords []*SavedRecord
 
 	// Create an encoder and send a value.
@@ -139,10 +139,12 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	ret := make(RecordList, len(marshalledRecords))
 
 	for i, r := range marshalledRecords {
-		ret[i] = r.toRecord(t)
+		ret[i], err = r.toRecord(t)
+		if err != nil {
+			return RecordList{}, err
+		}
 	}
-	return ret
-
+	return ret, nil
 }
 
 func (t *Table) AppendRecordsToLog(records RecordList, blockname string) error {
