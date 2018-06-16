@@ -21,7 +21,7 @@ type Dictionary map[string]interface{}
 // how many times we try to grab table info when ingesting
 var TABLE_INFO_GRABS = 10
 
-func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
+func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) error {
 	for k, v := range *recordmap {
 		keyName := fmt.Sprint(prefix, k)
 		_, ok := EXCLUDES[keyName]
@@ -30,25 +30,26 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 		}
 
 		prefixName := fmt.Sprint(keyName, "_")
+		var err error
 		switch iv := v.(type) {
 		case string:
 			if INT_CAST[keyName] {
-				val, err := strconv.ParseInt(iv, 10, 64)
-				if err == nil {
-					r.AddIntField(keyName, int64(val))
+				val, cerr := strconv.ParseInt(iv, 10, 64)
+				if cerr == nil {
+					err = r.AddIntField(keyName, int64(val))
 				}
 			} else {
-				r.AddStrField(keyName, iv)
+				err = r.AddStrField(keyName, iv)
 
 			}
 		case int64:
-			r.AddIntField(keyName, int64(iv))
+			err = r.AddIntField(keyName, int64(iv))
 		case float64:
-			r.AddIntField(keyName, int64(iv))
+			err = r.AddIntField(keyName, int64(iv))
 		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
-			ingestDictionary(r, &d, prefixName)
+			err = ingestDictionary(r, &d, prefixName)
 		// This is a set field
 		case []interface{}:
 			keyStrs := make([]string, 0)
@@ -63,12 +64,17 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 				}
 			}
 
-			r.AddSetField(keyName, keyStrs)
+			err = r.AddSetField(keyName, keyStrs)
 		case nil:
 		default:
 			sybil.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), keyName)
 		}
+		if err != nil {
+			// TODO: consider if there should be a relaxed mode
+			return errors.Wrap(err, fmt.Sprintf("issue loading %v", keyName))
+		}
 	}
+	return nil
 }
 
 var IMPORTED_COUNT = 0
@@ -109,13 +115,16 @@ func importCsvRecords() error {
 				continue
 			}
 
-			val, err := strconv.ParseFloat(v, 64)
-			if err == nil {
-				r.AddIntField(fieldName, int64(val))
+			var err error
+			val, cerr := strconv.ParseFloat(v, 64)
+			if cerr == nil {
+				err = r.AddIntField(fieldName, int64(val))
 			} else {
-				r.AddStrField(fieldName, v)
+				err = r.AddStrField(fieldName, v)
 			}
-
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("issue loading %v", fieldName))
+			}
 		}
 
 		if err := t.ChunkAndSave(); err != nil {
@@ -189,15 +198,18 @@ func importJSONRecords(jsonPath string) error {
 		records := jsonQuery(&decoded, path)
 		decoded = nil
 
-		for _, ing := range records {
+		for i, ing := range records {
 			r := t.NewRecord()
+			var err error
 			switch dict := ing.(type) {
 			case map[string]interface{}:
 				ndict := Dictionary(dict)
-				ingestDictionary(r, &ndict, "")
+				err = ingestDictionary(r, &ndict, "")
 			case Dictionary:
-				ingestDictionary(r, &dict, "")
-
+				err = ingestDictionary(r, &dict, "")
+			}
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("issue with record %v", i))
 			}
 			if err := t.ChunkAndSave(); err != nil {
 				return err
