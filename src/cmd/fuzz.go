@@ -11,10 +11,6 @@ import (
 )
 
 func FuzzQuery(data []byte) int {
-	if len(data) < 1 {
-		return 0
-	}
-
 	print := os.Getenv("FUZZDEBUG") == "1"
 	if print {
 		fmt.Printf("+%q\n", string(data))
@@ -22,7 +18,7 @@ func FuzzQuery(data []byte) int {
 	}
 	flags := sybil.FLAGS
 	flags.TABLE = "a"
-	if err := json.Unmarshal(data[1:], &flags); err != nil {
+	if err := json.Unmarshal(data, &flags); err != nil {
 		if print {
 			fmt.Println("err:", err)
 		}
@@ -35,7 +31,6 @@ func FuzzQuery(data []byte) int {
 		if print {
 			fmt.Println("err:", err)
 		}
-		return -1
 	}
 	return 1
 }

@@ -8,9 +8,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
-const corpusPath = "../../workdir/corpus"
+const corpusPath = "../../workdir/query/corpus"
 
 var fuzzPrep = `
 rm -rf ./db
@@ -28,13 +29,15 @@ func TestFuzzes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log(len(files), "corpus files at", corpusPath)
 	for _, f := range files {
 		t.Run(f, func(t *testing.T) {
-			b, err := ioutil.ReadFile(filepath.Join(corpusPath, f))
+			b, err := ioutil.ReadFile(f)
 			if err != nil {
 				t.Fatal(err)
 			}
-			t.Log(Fuzz(b))
+			t.Log(FuzzQuery(b))
+			time.Sleep(time.Millisecond * 100)
 		})
 	}
 }
