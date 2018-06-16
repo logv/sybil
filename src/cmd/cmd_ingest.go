@@ -70,8 +70,8 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) err
 			sybil.Debug(fmt.Sprintf("TYPE %T IS UNKNOWN FOR FIELD", iv), keyName)
 		}
 		if err != nil {
-			// TODO: consider if there should be a relaxed mode
-			return errors.Wrap(err, fmt.Sprintf("issue loading %v", keyName))
+			// TODO: collect error counters?
+			sybil.Debug("INGEST RECORD ISSUE:", errors.Wrap(err, fmt.Sprintf("issue with field %v", keyName)))
 		}
 	}
 	return nil
@@ -123,12 +123,13 @@ func importCsvRecords() error {
 				err = r.AddStrField(fieldName, v)
 			}
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("issue loading %v", fieldName))
+				sybil.Debug("INGEST RECORD ISSUE:", errors.Wrap(err, fmt.Sprintf("issue loading %v", fieldName)))
 			}
 		}
 
 		if err := t.ChunkAndSave(); err != nil {
-			return err
+			// TODO: collect error counters?
+			sybil.Debug("INGEST RECORD ISSUE:", err)
 		}
 	}
 	return nil
@@ -209,10 +210,12 @@ func importJSONRecords(jsonPath string) error {
 				err = ingestDictionary(r, &dict, "")
 			}
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("issue with record %v", i))
+				// TODO: collect error counters?
+				sybil.Debug("INGEST RECORD ISSUE:", errors.Wrap(err, fmt.Sprintf("issue with record %v", i)))
 			}
 			if err := t.ChunkAndSave(); err != nil {
-				return err
+				// TODO: collect error counters?
+				sybil.Debug("INGEST RECORD ISSUE:", err)
 			}
 		}
 
