@@ -56,7 +56,7 @@ func (vt *VTable) findResultsInDirs(dirs []string) map[string]*NodeResults {
 
 }
 
-func (vt *VTable) AggregateSamples(printSpec *PrintSpec, dirs []string) {
+func (vt *VTable) AggregateSamples(printSpec *PrintSpec, dirs []string) error {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 
@@ -72,11 +72,10 @@ func (vt *VTable) AggregateSamples(printSpec *PrintSpec, dirs []string) {
 
 	// TODO: call into vt.PrintSamples later after adjusting how we store the samples
 	// on a per table basis
-	printJSON(samples)
-
+	return printJSON(samples)
 }
 
-func (vt *VTable) AggregateTables(printSpec *PrintSpec, dirs []string) {
+func (vt *VTable) AggregateTables(printSpec *PrintSpec, dirs []string) error {
 	Debug("AGGREGATING TABLE LIST")
 	allResults := vt.findResultsInDirs(dirs)
 	Debug("FOUND", len(allResults), "SPECS TO AGG")
@@ -98,7 +97,7 @@ func (vt *VTable) AggregateTables(printSpec *PrintSpec, dirs []string) {
 		tableArr = append(tableArr, table)
 	}
 
-	printTablesToOutput(printSpec, tableArr)
+	return printTablesToOutput(printSpec, tableArr)
 }
 
 func (vt *VTable) AggregateInfo(printSpec *PrintSpec, dirs []string) {

@@ -22,7 +22,3 @@ func Debug(args ...interface{}) {
 		log.Println(args...)
 	}
 }
-
-func Error(args ...interface{}) {
-	log.Fatalln(append([]interface{}{"ERROR"}, args...)...)
-}

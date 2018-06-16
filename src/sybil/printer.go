@@ -12,16 +12,17 @@ import "io/ioutil"
 import "text/tabwriter"
 import "time"
 
-func printJSON(data interface{}) {
+func printJSON(data interface{}) error {
 	b, err := json.Marshal(data)
 	if err == nil {
 		os.Stdout.Write(b)
 	} else {
-		Error("JSON encoding error", err)
+		return err
 	}
+	return nil
 }
 
-func printTimeResults(printSpec *PrintSpec, querySpec *QuerySpec) {
+func printTimeResults(printSpec *PrintSpec, querySpec *QuerySpec) error {
 	Debug("PRINTING TIME RESULTS")
 	Debug("CHECKING SORT ORDER", len(querySpec.Sorted))
 
@@ -59,8 +60,7 @@ func printTimeResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 			}
 		}
 
-		printJSON(marshalledResults)
-		return
+		return printJSON(marshalledResults)
 	}
 
 	w := new(tabwriter.Writer)
@@ -86,7 +86,7 @@ func printTimeResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 		}
 	}
 
-	w.Flush()
+	return w.Flush()
 }
 
 func getSparseBuckets(buckets map[string]int64) map[string]int64 {
@@ -261,16 +261,16 @@ func printResults(printSpec *PrintSpec, querySpec *QuerySpec) {
 	}
 }
 
-func PrintBytes(obj interface{}) {
+func PrintBytes(obj interface{}) error {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(obj)
 	if err != nil {
-		Warn("COULDNT ENCODE BYTES", err)
+		return err
 	}
 
 	Print(buf.String())
-
+	return nil
 }
 
 func encodeResults(qs *QuerySpec) {
@@ -431,7 +431,6 @@ func (t *Table) PrintSamples(printSpec *PrintSpec) {
 func ListTables() []string {
 	files, err := ioutil.ReadDir(FLAGS.DIR)
 	if err != nil {
-		Error("No tables found!")
 		return []string{}
 	}
 
@@ -452,10 +451,9 @@ func PrintTables(printSpec *PrintSpec) {
 
 }
 
-func printTablesToOutput(printSpec *PrintSpec, tables []string) {
+func printTablesToOutput(printSpec *PrintSpec, tables []string) error {
 	if printSpec.EncodeResults {
-		PrintBytes(NodeResults{Tables: tables})
-		return
+		return PrintBytes(NodeResults{Tables: tables})
 	}
 
 	if printSpec.JSON {
@@ -463,10 +461,10 @@ func printTablesToOutput(printSpec *PrintSpec, tables []string) {
 		if err == nil {
 			os.Stdout.Write(b)
 		} else {
-			Error("JSON encoding error", err)
+			return err
 		}
 
-		return
+		return nil
 	}
 
 	for _, name := range tables {
@@ -474,6 +472,7 @@ func printTablesToOutput(printSpec *PrintSpec, tables []string) {
 	}
 
 	fmt.Println("")
+	return nil
 }
 
 func (t *Table) getColsOfType(wantedType int8) []string {

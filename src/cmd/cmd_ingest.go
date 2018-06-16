@@ -118,7 +118,9 @@ func importCsvRecords() error {
 
 		}
 
-		t.ChunkAndSave()
+		if err := t.ChunkAndSave(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -197,7 +199,9 @@ func importJSONRecords(jsonPath string) error {
 				ingestDictionary(r, &dict, "")
 
 			}
-			t.ChunkAndSave()
+			if err := t.ChunkAndSave(); err != nil {
+				return err
+			}
 		}
 
 	}

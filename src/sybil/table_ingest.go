@@ -37,7 +37,8 @@ func (t *Table) IngestRecords(blockname string) error {
 	Debug("KEY TYPES", t.KeyTypes)
 
 	if err := t.AppendRecordsToLog(t.newRecords[:], blockname); err != nil {
-		return err}
+		return err
+	}
 	t.newRecords = make(RecordList, 0)
 	if err := t.SaveTableInfo("info"); err != nil {
 		return err
