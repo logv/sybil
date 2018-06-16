@@ -114,7 +114,7 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 
 	t := sybil.GetTable(table)
 	if t.IsNotExist() {
-		sybil.Error(t.Name, "table can not be loaded or does not exist in", flags.DIR)
+		return fmt.Errorf("table %v does not exist in %v", flags.TABLE, flags.DIR)
 	}
 
 	ints := make([]string, 0)
@@ -199,8 +199,7 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 	for _, v := range t.KeyTable {
 		used[v]++
 		if used[v] > 1 {
-			sybil.Error("THERE IS A SERIOUS KEY TABLE INCONSISTENCY")
-			return nil
+			return sybil.ErrKeyTableInconsistent
 		}
 	}
 

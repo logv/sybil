@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	ErrMissingTable = errors.New("missing table")
-	ErrLockTimeout  = errors.New("lock timeout")
-	ErrLockBroken   = errors.New("lock broken")
+	ErrMissingTable         = errors.New("missing table")
+	ErrLockTimeout          = errors.New("lock timeout")
+	ErrLockBroken           = errors.New("lock broken")
+	ErrKeyTableInconsistent = errors.New("key table is inconsistent")
 )
 
 type ErrMissingColumn struct {

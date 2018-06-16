@@ -32,16 +32,20 @@ func (t *Table) getNewCacheBlockFile() (*os.File, error) {
 }
 
 // Go through newRecords list and save all the new records out to a row store
-func (t *Table) IngestRecords(blockname string) {
+func (t *Table) IngestRecords(blockname string) error {
 	Debug("KEY TABLE", t.KeyTable)
 	Debug("KEY TYPES", t.KeyTypes)
 
-	t.AppendRecordsToLog(t.newRecords[:], blockname)
+	if err := t.AppendRecordsToLog(t.newRecords[:], blockname); err != nil {
+		return err}
 	t.newRecords = make(RecordList, 0)
-	t.SaveTableInfo("info")
+	if err := t.SaveTableInfo("info"); err != nil {
+		return err
+	}
 	t.ReleaseRecords()
 
 	t.MaybeCompactRecords()
+	return nil
 }
 
 // TODO: figure out how often we actually do a collation check by storing last

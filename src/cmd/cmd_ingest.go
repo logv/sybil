@@ -13,11 +13,10 @@ import (
 	"time"
 
 	"github.com/logv/sybil/src/sybil"
+	"github.com/pkg/errors"
 )
 
 type Dictionary map[string]interface{}
-
-var JSON_PATH string
 
 // how many times we try to grab table info when ingesting
 var TABLE_INFO_GRABS = 10
@@ -74,7 +73,7 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) {
 
 var IMPORTED_COUNT = 0
 
-func importCsvRecords() {
+func importCsvRecords() error {
 	// For importing CSV records, we need to validate the headers, then we just
 	// read in and fill out record fields!
 	scanner := csv.NewReader(os.Stdin)
@@ -82,7 +81,7 @@ func importCsvRecords() {
 	if err == nil {
 		sybil.Debug("HEADER FIELDS FOR CSV ARE", headerFields)
 	} else {
-		sybil.Error("ERROR READING CSV HEADER", err)
+		return errors.Wrap(err, "error reading csv header")
 	}
 
 	t := sybil.GetTable(sybil.FLAGS.TABLE)
@@ -121,7 +120,7 @@ func importCsvRecords() {
 
 		t.ChunkAndSave()
 	}
-
+	return nil
 }
 
 func jsonQuery(obj *interface{}, path []string) []interface{} {
@@ -165,10 +164,10 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 	return nil
 }
 
-func importJSONRecords() {
+func importJSONRecords(jsonPath string) error {
 	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
-	path := strings.Split(JSON_PATH, ".")
+	path := strings.Split(jsonPath, ".")
 	sybil.Debug("PATH IS", path)
 
 	dec := json.NewDecoder(os.Stdin)
@@ -203,6 +202,7 @@ func importJSONRecords() {
 
 	}
 
+	return nil
 }
 
 var INT_CAST = make(map[string]bool)
@@ -218,36 +218,39 @@ func RunIngestCmdLine() {
 	flag.BoolVar(&sybil.FLAGS.SKIP_COMPACT, "skip-compact", false, "skip auto compaction during ingest")
 
 	flag.Parse()
+	if err := runIngestCmdLine(&sybil.FLAGS, *ingestfile, *fInts, *fCsv, *fExcludes, *fJSONPath, *fReopen); err != nil {
+		fmt.Fprintln(os.Stderr, errors.Wrap(err, "ingest"))
+		os.Exit(1)
+	}
+}
 
-	digestfile := *ingestfile
+func runIngestCmdLine(flags *sybil.FlagDefs, digestFile string, ints string, csv bool, excludes string, jsonPath string, filePath string) error {
 
-	if sybil.FLAGS.TABLE == "" {
+	if flags.TABLE == "" {
 		flag.PrintDefaults()
-		return
+		return sybil.ErrMissingTable
 	}
 
-	JSON_PATH = *fJSONPath
+	if filePath != "" {
 
-	if *fReopen != "" {
-
-		infile, err := os.OpenFile(*fReopen, syscall.O_RDONLY|syscall.O_CREAT, 0666)
+		infile, err := os.OpenFile(filePath, syscall.O_RDONLY|syscall.O_CREAT, 0666)
 		if err != nil {
-			sybil.Error("ERROR OPENING INFILE", err)
+			return errors.Wrap(err, "error opening infile")
 		}
 
 		os.Stdin = infile
 
 	}
 
-	if sybil.FLAGS.PROFILE {
+	if flags.PROFILE {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
 	}
 
-	for _, v := range strings.Split(*fInts, ",") {
+	for _, v := range strings.Split(ints, ",") {
 		INT_CAST[v] = true
 	}
-	for _, v := range strings.Split(*fExcludes, ",") {
+	for _, v := range strings.Split(excludes, ",") {
 		EXCLUDES[v] = true
 	}
 
@@ -255,13 +258,14 @@ func RunIngestCmdLine() {
 		sybil.Debug("EXCLUDING COLUMN", k)
 	}
 
-	t := sybil.GetTable(sybil.FLAGS.TABLE)
+	t := sybil.GetTable(flags.TABLE)
 
 	// We have 5 tries to load table info, just in case the lock is held by
 	// someone else
 	var loadedTable = false
+	var loadErr error
 	for i := 0; i < TABLE_INFO_GRABS; i++ {
-		loadErr := t.LoadTableInfo()
+		loadErr = t.LoadTableInfo()
 		if loadErr == nil || !t.HasFlagFile() {
 			loadedTable = true
 			break
@@ -272,15 +276,21 @@ func RunIngestCmdLine() {
 	if !loadedTable {
 		if t.HasFlagFile() {
 			sybil.Warn("INGESTOR COULDNT READ TABLE INFO, LOSING SAMPLES")
-			return
+			if loadErr == nil {
+				loadErr = fmt.Errorf("unknown (nil) error")
+			}
+			return errors.Wrap(loadErr, "issue loading existing table")
 		}
 	}
 
-	if !*fCsv {
-		importJSONRecords()
+	var err error
+	if !csv {
+		err = importJSONRecords(jsonPath)
 	} else {
-		importCsvRecords()
+		err = importCsvRecords()
 	}
-
-	t.IngestRecords(digestfile)
+	if err != nil {
+		return err
+	}
+	return t.IngestRecords(digestFile)
 }
