@@ -48,7 +48,6 @@ testv:
 
 coverage:
 	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/sybil
-	sed -i "s|_${ROOT_DIR}|.|"	cover.out
 	${GOBIN} tool cover -html=cover.out -o cover.html
 
 
@@ -83,6 +82,10 @@ fuzz: bin/cmd-fuzz-query.zip
 
 fuzzv: bin/cmd-fuzz-query.zip
 	FUZZDEBUG=1 go-fuzz -bin=./bin/cmd-fuzz-query.zip -workdir=workdir/query -testoutput -procs 1
+
+fuzzcoverage:
+	${GOBIN} test -tags gofuzz -coverpkg ./... -covermode atomic -coverprofile fuzzcover.out ./src/cmd
+	${GOBIN} tool cover -html=fuzzcover.out -o fuzzcover.html
 
 cleanfuzz:
 	rm -f ./bin/cmd-fuzz*
