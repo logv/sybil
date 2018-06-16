@@ -66,7 +66,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) (i
 	allResults := make([]*QuerySpec, 0)
 
 	brokenMu := sync.Mutex{}
-	brokenBlocks := make([]string, 0)
+	type brokenBlock struct {
+		name string
+		err  error
+	}
+	brokenBlocks := make([]brokenBlock, 0)
 
 	var memstats runtime.MemStats
 	var maxAlloc = uint64(0)
@@ -112,10 +116,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) (i
 					if querySpec != nil {
 						replacements = querySpec.StrReplace
 					}
-					block = t.LoadBlockFromDir(filename, loadSpec, loadAll, replacements)
-					if block == nil {
+					var err error
+					block, err = t.LoadBlockFromDir(filename, loadSpec, loadAll, replacements)
+					if block == nil || err != nil {
 						brokenMu.Lock()
-						brokenBlocks = append(brokenBlocks, filename)
+						brokenBlocks = append(brokenBlocks, brokenBlock{
+							name: filename,
+							err:  err,
+						})
 						brokenMu.Unlock()
 						return
 					}

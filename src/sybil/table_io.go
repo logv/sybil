@@ -27,7 +27,7 @@ var BLOCKS_PER_CACHE_FILE = 64
 
 func (t *Table) saveTableInfo(fname string) error {
 	if err := t.GrabInfoLock(); err != nil {
-		return err
+		return errors.Wrap(err, "t.GrabInfoLock")
 	}
 
 	defer t.ReleaseInfoLock()

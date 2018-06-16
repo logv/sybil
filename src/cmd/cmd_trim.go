@@ -71,7 +71,10 @@ func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPr
 	trimSpec.DeleteBefore = int64(deleteBefore)
 	trimSpec.MBLimit = int64(mbLimit)
 
-	toTrim := t.TrimTable(&trimSpec)
+	toTrim, err := t.TrimTable(&trimSpec)
+	if err != nil {
+		return err
+	}
 
 	sybil.Debug("FOUND", len(toTrim), "CANDIDATE BLOCKS FOR TRIMMING")
 	if len(toTrim) > 0 {

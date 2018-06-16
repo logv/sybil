@@ -78,7 +78,10 @@ func (t *Table) FillPartialBlock() error {
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
 
-	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */, nil)
+	block, err := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */, nil)
+	if err != nil {
+		return err
+	}
 	// TODO add error handling
 	if block == nil {
 		return nil
@@ -201,7 +204,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool, replacements map[string]StrReplace) *TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool, replacements map[string]StrReplace) (*TableBlock, error) {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -211,11 +214,11 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 	info := t.LoadBlockInfo(dirname)
 
 	if info == nil {
-		return nil
+		return nil, nil
 	}
 
 	if info.NumRecords <= 0 {
-		return nil
+		return nil, nil
 	}
 
 	t.blockMu.Lock()
@@ -249,7 +252,10 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 
 		filename := fmt.Sprintf("%s/%s", dirname, fname)
 
-		dec := GetFileDecoder(filename)
+		dec, err := GetFileDecoder(filename)
+		if err != nil {
+			return nil, err
+		}
 
 		switch {
 		case strings.HasPrefix(fname, "str"):
@@ -267,7 +273,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 	tb.Size = size
 
 	file.Close()
-	return &tb
+	return &tb, nil
 }
 
 type AfterLoadQueryCB struct {

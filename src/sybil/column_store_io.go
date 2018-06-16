@@ -475,7 +475,10 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 	// For now, we load info.db and check NumRecords inside it to prevent
 	// catastrophics, but we could load everything potentially
 	start = time.Now()
-	nb := tb.table.LoadBlockFromDir(partialname, nil, false, nil)
+	nb, err := tb.table.LoadBlockFromDir(partialname, nil, false, nil)
+	if err != nil {
+		return err
+	}
 	end = time.Now()
 
 	// TODO:
@@ -485,7 +488,10 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
-		nb = tb.table.LoadBlockFromDir(partialname, nil, true, nil)
+		nb, err = tb.table.LoadBlockFromDir(partialname, nil, true, nil)
+		if err != nil {
+			return err
+		}
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
 			// TODO//Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 			return fmt.Errorf("deep validation of block failed consistency check %v", filename)
@@ -497,7 +503,7 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 	if err := os.RemoveAll(oldblock); err != nil {
 		return err
 	}
-	err := RenameAndMod(dirname, oldblock)
+	err = RenameAndMod(dirname, oldblock)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("error renaming block %v to %v", dirname, oldblock))
 	}

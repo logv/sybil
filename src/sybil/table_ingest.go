@@ -2,6 +2,7 @@ package sybil
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -41,7 +42,8 @@ func (t *Table) IngestRecords(blockname string) error {
 	}
 	t.newRecords = make(RecordList, 0)
 	if err := t.SaveTableInfo("info"); err != nil {
-		return err
+		//return errors.Wrap(err, "t.SaveTableInfo")
+		log.Println(err)
 	}
 	t.ReleaseRecords()
 
