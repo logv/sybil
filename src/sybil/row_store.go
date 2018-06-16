@@ -1,12 +1,16 @@
 package sybil
 
-import "fmt"
-import "path"
-import "bytes"
-import "encoding/gob"
-import "io/ioutil"
-import "time"
-import "os"
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 type RowSavedInt struct {
 	Name  int16
@@ -29,7 +33,7 @@ type SavedRecord struct {
 	Sets []RowSavedSet
 }
 
-func (s SavedRecord) toRecord(t *Table) *Record {
+func (s SavedRecord) toRecord(t *Table) (*Record, error) {
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
@@ -57,15 +61,21 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	}
 
 	for _, v := range s.Strs {
-		r.AddStrField(t.getStringForKey(int(v.Name)), v.Value)
+		err := r.AddStrField(t.getStringForKey(int(v.Name)), v.Value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, v := range s.Sets {
-		r.AddSetField(t.getStringForKey(int(v.Name)), v.Value)
+		err := r.AddSetField(t.getStringForKey(int(v.Name)), v.Value)
+		if err != nil {
+			return nil, err
+		}
 		r.Populated[v.Name] = SET_VAL
 	}
 
-	return &r
+	return &r, nil
 }
 
 func (r Record) toSavedRecord() *SavedRecord {
@@ -117,7 +127,7 @@ func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
 	return marshalledRecords
 }
 
-func (t *Table) LoadRecordsFromLog(filename string) RecordList {
+func (t *Table) LoadRecordsFromLog(filename string) (RecordList, error) {
 	var marshalledRecords []*SavedRecord
 
 	// Create an encoder and send a value.
@@ -129,15 +139,17 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	ret := make(RecordList, len(marshalledRecords))
 
 	for i, r := range marshalledRecords {
-		ret[i] = r.toRecord(t)
+		ret[i], err = r.toRecord(t)
+		if err != nil {
+			return RecordList{}, err
+		}
 	}
-	return ret
-
+	return ret, nil
 }
 
-func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
+func (t *Table) AppendRecordsToLog(records RecordList, blockname string) error {
 	if len(records) == 0 {
-		return
+		return nil
 	}
 
 	// TODO: fix this up, so that we don't
@@ -163,7 +175,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	err := enc.Encode(marshalledRecords)
 
 	if err != nil {
-		Error("encode:", err)
+		return errors.Wrap(err, "encoding issue")
 	}
 
 	filename := fmt.Sprintf("%s.db", w.Name())
@@ -171,7 +183,9 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 
 	Debug("SERIALIZED INTO LOG", filename, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(marshalledRecords), ")")
 
-	network.WriteTo(w)
+	if _, err := network.WriteTo(w); err != nil {
+		return err
+	}
 
 	for i := 0; i < 3; i++ {
 		fullname := path.Join(ingestdir, basename)
@@ -179,7 +193,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 		err = RenameAndMod(w.Name(), fullname)
 		if err == nil {
 			// we are done writing, time to exit
-			return
+			return nil
 		}
 
 		if err != nil {
@@ -188,4 +202,5 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 	}
 
 	Warn("COULDNT INGEST INTO ROW STORE")
+	return fmt.Errorf("issue ingesting")
 }

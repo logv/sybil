@@ -1,6 +1,10 @@
 package sybil
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/pkg/errors"
+)
 
 type LoadSpec struct {
 	columns map[string]bool
@@ -34,14 +38,14 @@ func (t *Table) NewLoadSpec() LoadSpec {
 	return l
 }
 
-func (l *LoadSpec) assertColType(name string, colType int8) {
+func (l *LoadSpec) checkColType(name string, colType int8) error {
 	if l.table == nil {
-		return
+		return nil
 	}
 	nameID := l.table.getKeyID(name)
 
 	if l.table.KeyTypes[nameID] == 0 {
-		Error("Query Error! Column ", name, " does not exist")
+		return ErrMissingColumn{name}
 	}
 
 	if l.table.KeyTypes[nameID] != colType {
@@ -54,23 +58,32 @@ func (l *LoadSpec) assertColType(name string, colType int8) {
 		case SET_VAL:
 			colTypeName = "Set"
 		}
-
-		Error("Query Error! Key ", name, " exists, but is not of type ", colTypeName)
+		return ErrColumnTypeMismatch{name, colTypeName}
 	}
+	return nil
 }
 
-func (l *LoadSpec) Str(name string) {
-	l.assertColType(name, STR_VAL)
+func (l *LoadSpec) Str(name string) error {
+	if err := l.checkColType(name, STR_VAL); err != nil {
+		return errors.Wrap(err, "Str")
+	}
 	l.columns[name] = true
 	l.files["str_"+name+".db"] = true
+	return nil
 }
-func (l *LoadSpec) Int(name string) {
-	l.assertColType(name, INT_VAL)
+func (l *LoadSpec) Int(name string) error {
+	if err := l.checkColType(name, INT_VAL); err != nil {
+		return errors.Wrap(err, "Int")
+	}
 	l.columns[name] = true
 	l.files["int_"+name+".db"] = true
+	return nil
 }
-func (l *LoadSpec) Set(name string) {
-	l.assertColType(name, SET_VAL)
+func (l *LoadSpec) Set(name string) error {
+	if err := l.checkColType(name, SET_VAL); err != nil {
+		return errors.Wrap(err, "Set")
+	}
 	l.columns[name] = true
 	l.files["set_"+name+".db"] = true
+	return nil
 }

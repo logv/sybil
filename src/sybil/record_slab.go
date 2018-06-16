@@ -1,8 +1,13 @@
 package sybil
 
-import "time"
+import (
+	"fmt"
+	"time"
 
-func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
+	"github.com/pkg/errors"
+)
+
+func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) (RecordList, error) {
 
 	if FLAGS.RECYCLE_MEM && info.NumRecords == int32(CHUNK_SIZE) && loadSpec != nil && !loadRecords {
 		loadSpec.slabMu.Lock()
@@ -13,16 +18,14 @@ func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, 
 
 			slab.ResetRecords(tb)
 			tb.RecordList = *slab
-			return *slab
+			return *slab, nil
 		}
 	}
 
-	slab := tb.makeRecordSlab(loadSpec, info, loadRecords)
-	return slab
-
+	return tb.makeRecordSlab(loadSpec, info, loadRecords)
 }
 
-func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) RecordList {
+func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, loadRecords bool) (RecordList, error) {
 	t := tb.table
 
 	var r *Record
@@ -56,7 +59,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 			case STR_VAL:
 				hasStrs = true
 			default:
-				Error("MISSING KEY TYPE FOR COL", v)
+				return nil, errors.New(fmt.Sprint("missing key type for col", v))
 			}
 		}
 	} else {
@@ -111,8 +114,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	}
 
 	tb.RecordList = records[:]
-	return tb.RecordList
-
+	return tb.RecordList, nil
 }
 
 // recycle allocated records between blocks

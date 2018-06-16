@@ -1,5 +1,11 @@
 package sybil
 
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+)
+
 type Record struct {
 	Strs      []StrField
 	Ints      []IntField
@@ -85,7 +91,7 @@ func (r *Record) ResizeFields(length int16) {
 
 }
 
-func (r *Record) AddStrField(name string, val string) {
+func (r *Record) AddStrField(name string, val string) error {
 	nameID := r.block.getKeyID(name)
 
 	col := r.block.GetColumnInfo(nameID)
@@ -96,11 +102,12 @@ func (r *Record) AddStrField(name string, val string) {
 	r.Populated[nameID] = STR_VAL
 
 	if !r.block.table.setKeyType(nameID, STR_VAL) {
-		Error("COULDNT SET STR VAL", name, val, nameID)
+		return errors.New(fmt.Sprint("couldnt set str val", name, val, nameID))
 	}
+	return nil
 }
 
-func (r *Record) AddIntField(name string, val int64) {
+func (r *Record) AddIntField(name string, val int64) error {
 	nameID := r.block.getKeyID(name)
 	r.block.table.updateIntInfo(nameID, val)
 
@@ -108,11 +115,12 @@ func (r *Record) AddIntField(name string, val int64) {
 	r.Ints[nameID] = IntField(val)
 	r.Populated[nameID] = INT_VAL
 	if !r.block.table.setKeyType(nameID, INT_VAL) {
-		Error("COULDNT SET INT VAL", name, val, nameID)
+		return errors.New(fmt.Sprint("couldnt set int val", name, val, nameID))
 	}
+	return nil
 }
 
-func (r *Record) AddSetField(name string, val []string) {
+func (r *Record) AddSetField(name string, val []string) error {
 	nameID := r.block.getKeyID(name)
 	vals := make([]int32, len(val))
 	for i, v := range val {
@@ -128,8 +136,9 @@ func (r *Record) AddSetField(name string, val []string) {
 	r.SetMap[nameID] = SetField(vals)
 	r.Populated[nameID] = SET_VAL
 	if !r.block.table.setKeyType(nameID, SET_VAL) {
-		Error("COULDNT SET SET VAL", name, val, nameID)
+		return errors.New(fmt.Sprint("couldnt set set val", name, val, nameID))
 	}
+	return nil
 }
 
 var COPY_RECORD_INTERNS = false

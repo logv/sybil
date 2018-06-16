@@ -1,0 +1,12 @@
+  -debug
+    	enable debug logging
+  -dir string
+    	Directory to store DB files (default "./db/")
+  -field-separator string
+    	Field separator used in command line params (default ",")
+  -filter-separator string
+    	Filter separator used in filters (default ":")
+  -table string
+    	Table to operate on [REQUIRED]
+2018/06/16 04:27:24 ERROR 00 table can not be loaded or does not exist in ./db/
+exit status 1

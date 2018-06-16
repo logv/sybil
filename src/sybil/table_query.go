@@ -9,9 +9,11 @@ import (
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
-func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
+func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) (int, error) {
 	waystart := time.Now()
 	Debug("LOADING", FLAGS.DIR, t.Name)
 
@@ -33,10 +35,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	blockSpecs := make(map[string]*QuerySpec)
 	toCacheSpecs := make(map[string]*QuerySpec)
 
-	loadedInfo := t.LoadTableInfo()
-	if !loadedInfo {
+	if err := t.LoadTableInfo(); err != nil {
 		if t.HasFlagFile() {
-			return 0
+			return 0, errors.Wrap(err, "issue loading existing table")
 		}
 	}
 
@@ -65,7 +66,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	allResults := make([]*QuerySpec, 0)
 
 	brokenMu := sync.Mutex{}
-	brokenBlocks := make([]string, 0)
+	type brokenBlock struct {
+		name string
+		err  error
+	}
+	brokenBlocks := make([]brokenBlock, 0)
 
 	var memstats runtime.MemStats
 	var maxAlloc = uint64(0)
@@ -111,10 +116,14 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					if querySpec != nil {
 						replacements = querySpec.StrReplace
 					}
-					block = t.LoadBlockFromDir(filename, loadSpec, loadAll, replacements)
-					if block == nil {
+					var err error
+					block, err = t.LoadBlockFromDir(filename, loadSpec, loadAll, replacements)
+					if block == nil || err != nil {
 						brokenMu.Lock()
-						brokenBlocks = append(brokenBlocks, filename)
+						brokenBlocks = append(brokenBlocks, brokenBlock{
+							name: filename,
+							err:  err,
+						})
 						brokenMu.Unlock()
 						return
 					}
@@ -352,6 +361,5 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	t.WriteBlockCache()
 
-	return count
-
+	return count, nil
 }

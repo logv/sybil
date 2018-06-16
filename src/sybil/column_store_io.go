@@ -1,13 +1,16 @@
 package sybil
 
-import "fmt"
-import "bytes"
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"os"
+	"regexp"
+	"runtime/debug"
+	"time"
 
-import "os"
-import "encoding/gob"
-import "runtime/debug"
-import "time"
-import "regexp"
+	"github.com/pkg/errors"
+)
 
 type ValueMap map[int64][]uint32
 
@@ -58,11 +61,13 @@ func (tb *TableBlock) GetColumnInfo(nameID int16) *TableColumn {
 	return col
 }
 
-func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) {
+func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]ValueMap) error {
 	// now make the dir and shoot each blob out into a separate file
 
 	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
-	os.MkdirAll(dirname, 0777)
+	if err := os.MkdirAll(dirname, 0777); err != nil {
+		return err
+	}
 	for k, v := range sameInts {
 		colName := tb.getStringForKey(k)
 		if colName == "" {
@@ -116,10 +121,10 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 		enc := gob.NewEncoder(&network)
 		err := enc.Encode(intCol)
 		if err != nil {
-			Error("encode:", err)
+			return errors.Wrap(err, "encode")
 		}
 
-		action := "SERIALIZED"
+		action := "serialized"
 		if intCol.BucketEncoded {
 			action = "BUCKETED  "
 		}
@@ -128,12 +133,15 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, sameInts map[int16]Value
 
 		w, _ := os.Create(colFname)
 
-		network.WriteTo(w)
+		if _, err := network.WriteTo(w); err != nil {
+			return err
+		}
 	}
 
+	return nil
 }
 
-func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]ValueMap) {
+func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]ValueMap) error {
 	for k, v := range sameSets {
 		colName := tb.getStringForKey(k)
 		if colName == "" {
@@ -197,7 +205,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 		err := enc.Encode(setCol)
 
 		if err != nil {
-			Error("encode:", err)
+			return errors.Wrap(err, "error opening infile")
 		}
 
 		action := "SERIALIZED"
@@ -208,12 +216,15 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, sameSets map[int16]Value
 		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(colFname)
-		network.WriteTo(w)
+		if _, err := network.WriteTo(w); err != nil {
+			return err
+		}
 
 	}
+	return nil
 }
 
-func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]ValueMap) {
+func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]ValueMap) error {
 	for k, v := range sameStrs {
 		colName := tb.getStringForKey(k)
 		if colName == "" {
@@ -283,7 +294,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]Value
 		err := enc.Encode(strCol)
 
 		if err != nil {
-			Error("encode:", err)
+			return errors.Wrap(err, "encode")
 		}
 
 		action := "SERIALIZED"
@@ -294,15 +305,18 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, sameStrs map[int16]Value
 		Debug(action, "COLUMN BLOCK", colFname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
 
 		w, _ := os.Create(colFname)
-		network.WriteTo(w)
+		if _, err := network.WriteTo(w); err != nil {
+			return err
+		}
 
 	}
+	return nil
 }
 
 type SavedIntInfo map[string]*IntInfo
 type SavedStrInfo map[string]*StrInfo
 
-func (tb *TableBlock) SaveInfoToColumns(dirname string) {
+func (tb *TableBlock) SaveInfoToColumns(dirname string) error {
 	records := tb.RecordList
 
 	// Now to save block info...
@@ -338,7 +352,7 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	err := enc.Encode(colInfo)
 
 	if err != nil {
-		Error("encode:", err)
+		return errors.Wrap(err, "encode")
 	}
 
 	length := len(records)
@@ -351,7 +365,8 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 	}
 
 	w, _ := os.Create(colFname)
-	network.WriteTo(w)
+	_, err = network.WriteTo(w)
+	return err
 }
 
 type SeparatedColumns struct {
@@ -412,17 +427,21 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 
 }
 
-func (tb *TableBlock) SaveToColumns(filename string) bool {
+func (tb *TableBlock) SaveToColumns(filename string) error {
 	dirname := filename
 
 	// Important to set the BLOCK's dirName so we can keep track
 	// of the various block infos
 	tb.Name = dirname
 
-	defer tb.table.ReleaseBlockLock(filename)
-	if !tb.table.GrabBlockLock(filename) {
+	defer func() {
+		if err := tb.table.ReleaseBlockLock(filename); err != nil {
+			Warn("failed to release block lock:", err)
+		}
+	}()
+	if err := tb.table.GrabBlockLock(filename); err != nil {
 		Debug("Can't grab lock to save block", filename)
-		return false
+		return err
 	}
 
 	partialname := fmt.Sprintf("%s.partial", dirname)
@@ -434,10 +453,18 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	end := time.Now()
 	Debug("COLLATING BLOCKS TOOK", end.Sub(start))
 
-	tb.SaveIntsToColumns(partialname, separatedColumns.ints)
-	tb.SaveStrsToColumns(partialname, separatedColumns.strs)
-	tb.SaveSetsToColumns(partialname, separatedColumns.sets)
-	tb.SaveInfoToColumns(partialname)
+	if err := tb.SaveIntsToColumns(partialname, separatedColumns.ints); err != nil {
+		return err
+	}
+	if err := tb.SaveStrsToColumns(partialname, separatedColumns.strs); err != nil {
+		return err
+	}
+	if err := tb.SaveSetsToColumns(partialname, separatedColumns.sets); err != nil {
+		return err
+	}
+	if err := tb.SaveInfoToColumns(partialname); err != nil {
+		return err
+	}
 
 	end = time.Now()
 	Debug("FINISHED BLOCK", partialname, "RELINKING TO", dirname, "TOOK", end.Sub(start))
@@ -448,52 +475,63 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	// For now, we load info.db and check NumRecords inside it to prevent
 	// catastrophics, but we could load everything potentially
 	start = time.Now()
-	nb := tb.table.LoadBlockFromDir(partialname, nil, false, nil)
+	nb, err := tb.table.LoadBlockFromDir(partialname, nil, false, nil)
+	if err != nil {
+		return err
+	}
 	end = time.Now()
 
 	// TODO:
 	if nb == nil || nb.Info.NumRecords != int32(len(tb.RecordList)) {
-		Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
+		// TODO//Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
+		return fmt.Errorf("could not validate consistency for recently saved block %v", filename)
 	}
 
 	if DEBUG_RECORD_CONSISTENCY {
-		nb = tb.table.LoadBlockFromDir(partialname, nil, true, nil)
+		nb, err = tb.table.LoadBlockFromDir(partialname, nil, true, nil)
+		if err != nil {
+			return err
+		}
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
-			Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
+			// TODO//Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
+			return fmt.Errorf("deep validation of block failed consistency check %v", filename)
 		}
 	}
 
 	Debug("VALIDATED NEW BLOCK HAS", nb.Info.NumRecords, "RECORDS, TOOK", end.Sub(start))
 
-	os.RemoveAll(oldblock)
-	err := RenameAndMod(dirname, oldblock)
+	if err := os.RemoveAll(oldblock); err != nil {
+		return err
+	}
+	err = RenameAndMod(dirname, oldblock)
 	if err != nil {
-		Error("ERROR RENAMING BLOCK", dirname, oldblock, err)
+		return errors.Wrap(err, fmt.Sprintf("error renaming block %v to %v", dirname, oldblock))
 	}
 	err = RenameAndMod(partialname, dirname)
 	if err != nil {
-		Error("ERROR RENAMING PARTIAL", partialname, dirname, err)
+		return errors.Wrap(err, fmt.Sprintf("error renaming partial %v to %v", partialname, dirname))
 	}
 
 	if err == nil {
-		os.RemoveAll(oldblock)
+		if err := os.RemoveAll(oldblock); err != nil {
+			return err
+		}
 	} else {
-		Error("ERROR SAVING BLOCK", partialname, dirname, err)
+		return errors.Wrap(err, fmt.Sprintf("error saving block %v to %v", partialname, dirname))
 	}
 
 	Debug("RELEASING BLOCK", tb.Name)
-	return true
+	return nil
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replacements map[string]StrReplace) {
+func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replacements map[string]StrReplace) error {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
 	if err != nil {
-		Debug("DECODE COL ERR:", err)
-		return
+		return err
 	}
 
 	stringLookup := make([]string, info.NumRecords)
@@ -502,7 +540,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replac
 
 	if int(colID) >= keyTableLen {
 		Debug("IGNORING STR COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	col := tb.GetColumnInfo(colID)
@@ -565,7 +603,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replac
 
 				if DEBUG_RECORD_CONSISTENCY {
 					if record.Populated[colID] != _NO_VAL {
-						Error("OVERWRITING RECORD VALUE", record, into.Name, colID, bucket.Value)
+						return fmt.Errorf("overwriting record value: %v %v %v %v", record, into.Name, colID, bucket.Value)
 					}
 				}
 
@@ -587,16 +625,17 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo, replac
 		}
 
 	}
+	return nil
 }
 
-func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) error {
 	records := tb.RecordList
 
 	savedCol := NewSavedSetColumn()
 	into := &savedCol
 	err := dec.Decode(into)
 	if err != nil {
-		Debug("DECODE COL ERR:", err)
+		return err
 	}
 
 	keyTableLen := len(tb.table.KeyTable)
@@ -605,7 +644,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 	if int(colID) >= keyTableLen {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	col := tb.GetColumnInfo(colID)
@@ -650,9 +689,10 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 			records[r].Populated[colID] = SET_VAL
 		}
 	}
+	return nil
 }
 
-func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) error {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}
@@ -665,7 +705,7 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	colID := tb.table.getKeyID(into.Name)
 	if int(colID) >= keyTableLen {
 		Debug("IGNORING INT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	isTimeCol := into.Name == FLAGS.TIME_COL
@@ -686,7 +726,7 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 
 				if DEBUG_RECORD_CONSISTENCY {
 					if records[r].Populated[colID] != _NO_VAL {
-						Error("OVERWRITING RECORD VALUE", records[r], into.Name, colID, bucket.Value)
+						return fmt.Errorf("overwriting record value: %v %v %v %v", records[r], into.Name, colID, bucket.Value)
 					}
 				}
 
@@ -727,4 +767,5 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 
 		}
 	}
+	return nil
 }

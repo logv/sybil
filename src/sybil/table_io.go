@@ -1,17 +1,20 @@
 package sybil
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/gob"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"runtime/debug"
+	"sort"
+	"strings"
+	"sync"
+	"time"
 
-import "os"
-import "path"
-import "sort"
-import "strings"
-import "sync"
-import "time"
-import "bytes"
-import "io/ioutil"
-import "encoding/gob"
-import "runtime/debug"
+	"github.com/pkg/errors"
+)
 
 var DEBUG_TIMING = false
 var CHUNKS_BEFORE_GC = 16
@@ -22,9 +25,9 @@ var CACHE_DIR = "cache"
 var HOLD_MATCHES = false
 var BLOCKS_PER_CACHE_FILE = 64
 
-func (t *Table) saveTableInfo(fname string) {
-	if !t.GrabInfoLock() {
-		return
+func (t *Table) saveTableInfo(fname string) error {
+	if err := t.GrabInfoLock(); err != nil {
+		return errors.Wrap(err, "t.GrabInfoLock")
 	}
 
 	defer t.ReleaseInfoLock()
@@ -43,29 +46,28 @@ func (t *Table) saveTableInfo(fname string) {
 	err := enc.Encode(t)
 
 	if err != nil {
-		Error("encode:", err)
+		return err
 	}
 
 	Debug("SERIALIZED TABLE INFO", fname, "INTO ", network.Len(), "BYTES")
 
 	tempfile, err := ioutil.TempFile(dirname, "info.db")
 	if err != nil {
-		Error("ERROR CREATING TEMP FILE FOR TABLE INFO", err)
+		return errors.Wrap(err, "error creating temp file for table info")
 	}
 
 	_, err = network.WriteTo(tempfile)
 	if err != nil {
-		Error("ERROR SAVING TABLE INFO INTO TEMPFILE", err)
+		return errors.Wrap(err, "error saving table info into tempfile")
 	}
 
 	RenameAndMod(tempfile.Name(), filename)
-	os.Create(flagfile)
+	_, err = os.Create(flagfile)
+	return err
 }
 
-func (t *Table) SaveTableInfo(fname string) {
-	saveTable := getSaveTable(t)
-	saveTable.saveTableInfo(fname)
-
+func (t *Table) SaveTableInfo(fname string) error {
+	return getSaveTable(t).saveTableInfo(fname)
 }
 
 func getSaveTable(t *Table) *Table {
@@ -76,9 +78,9 @@ func getSaveTable(t *Table) *Table {
 		StrInfo:  t.StrInfo}
 }
 
-func (t *Table) saveRecordList(records RecordList) bool {
+func (t *Table) saveRecordList(records RecordList) error {
 	if len(records) == 0 {
-		return false
+		return nil
 	}
 
 	Debug("SAVING RECORD LIST", len(records), t.Name)
@@ -89,59 +91,65 @@ func (t *Table) saveRecordList(records RecordList) bool {
 	if chunks == 0 {
 		filename, err := t.getNewIngestBlockName()
 		if err != nil {
-			Error("ERR SAVING BLOCK", filename, err)
+			return errors.Wrap(err, fmt.Sprintf("error saving block %v", filename))
 		}
-		t.SaveRecordsToBlock(records, filename)
+		if err := t.SaveRecordsToBlock(records, filename); err != nil {
+			return err
+		}
 	} else {
 		for j := 0; j < chunks; j++ {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
-				Error("ERR SAVING BLOCK", filename, err)
+				return errors.Wrap(err, fmt.Sprintf("error saving block %v", filename))
 			}
-			t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename)
+			if err := t.SaveRecordsToBlock(records[j*chunkSize:(j+1)*chunkSize], filename); err != nil {
+				return err
+			}
 		}
 
 		// SAVE THE REMAINDER
 		if len(records) > chunks*chunkSize {
 			filename, err := t.getNewIngestBlockName()
 			if err != nil {
-				Error("Error creating new ingestion block", err)
+				return errors.Wrap(err, "error creating new ingestion block")
 			}
 
-			t.SaveRecordsToBlock(records[chunks*chunkSize:], filename)
+			if err := t.SaveRecordsToBlock(records[chunks*chunkSize:], filename); err != nil {
+				return err
+			}
 		}
 	}
 
-	return true
+	return nil
 }
 
-func (t *Table) SaveRecordsToColumns() bool {
+func (t *Table) SaveRecordsToColumns() error {
 	os.MkdirAll(path.Join(FLAGS.DIR, t.Name), 0777)
 	sort.Sort(SortRecordsByTime{t.newRecords})
 
-	t.FillPartialBlock()
+	if err := t.FillPartialBlock(); err != nil {
+		return err
+	}
 	ret := t.saveRecordList(t.newRecords)
 	t.newRecords = make(RecordList, 0)
 	t.SaveTableInfo("info")
-
 	return ret
-
 }
 
-func (t *Table) LoadTableInfo() bool {
+func (t *Table) LoadTableInfo() error {
 	tablename := t.Name
 	filename := path.Join(FLAGS.DIR, tablename, "info.db")
-	if t.GrabInfoLock() {
+	if err := t.GrabInfoLock(); err == nil {
 		defer t.ReleaseInfoLock()
 	} else {
 		Debug("LOAD TABLE INFO LOCK TAKEN")
-		return false
+		return err
 	}
 
 	return t.LoadTableInfoFrom(filename)
 }
 
-func (t *Table) LoadTableInfoFrom(filename string) bool {
+func (t *Table) LoadTableInfoFrom(filename string) error {
 	savedTable := Table{Name: t.Name}
 	savedTable.initDataStructures()
 
@@ -152,7 +160,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 	end := time.Now()
 	if err != nil {
 		Debug("TABLE INFO DECODE:", err)
-		return false
+		return err
 	}
 
 	if DEBUG_TIMING {
@@ -180,7 +188,7 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 		t.populateStringIDLookup()
 	}
 
-	return true
+	return nil
 }
 
 // Remove our pointer to the blocklist so a GC is triggered and
@@ -234,24 +242,21 @@ func fileLooksLikeBlock(v os.FileInfo) bool {
 
 }
 
-func (t *Table) LoadBlockCache() {
-	if !t.GrabCacheLock() {
-		return
+func (t *Table) LoadBlockCache() error {
+	if err := t.GrabCacheLock(); err != nil {
+		return nil
 	}
 
 	defer t.ReleaseCacheLock()
 	files, err := ioutil.ReadDir(path.Join(FLAGS.DIR, t.Name, CACHE_DIR))
 
 	if err != nil {
-		return
+		return err
 	}
 
 	for _, blockFile := range files {
 		filename := path.Join(FLAGS.DIR, t.Name, CACHE_DIR, blockFile.Name())
 		blockCache := SavedBlockCache{}
-		if err != nil {
-			continue
-		}
 
 		err = decodeInto(filename, &blockCache)
 		if err != nil {
@@ -264,6 +269,7 @@ func (t *Table) LoadBlockCache() {
 	}
 
 	Debug("FILLED BLOCK CACHE WITH", len(t.BlockInfoCache), "ITEMS")
+	return nil
 }
 
 func (t *Table) ResetBlockCache() {
@@ -314,13 +320,13 @@ func (t *Table) WriteQueryCache(toCacheSpecs map[string]*QuerySpec) {
 
 }
 
-func (t *Table) WriteBlockCache() {
+func (t *Table) WriteBlockCache() error {
 	if len(t.NewBlockInfos) == 0 {
-		return
+		return nil
 	}
 
-	if !t.GrabCacheLock() {
-		return
+	if err := t.GrabCacheLock(); err != nil {
+		return err
 	}
 
 	defer t.ReleaseCacheLock()
@@ -358,32 +364,39 @@ func (t *Table) WriteBlockCache() {
 
 	t.NewBlockInfos = t.NewBlockInfos[:0]
 
+	return nil
 }
 
-func (t *Table) LoadRecords(loadSpec *LoadSpec) int {
+func (t *Table) LoadRecords(loadSpec *LoadSpec) (int, error) {
 	t.LoadBlockCache()
 
 	return t.LoadAndQueryRecords(loadSpec, nil)
 }
 
-func (t *Table) ChunkAndSave() {
+func (t *Table) ChunkAndSave() error {
 
 	if len(t.newRecords) >= CHUNK_SIZE {
 		os.MkdirAll(path.Join(FLAGS.DIR, t.Name), 0777)
 		name, err := t.getNewIngestBlockName()
 		if err == nil {
-			t.SaveRecordsToBlock(t.newRecords, name)
-			t.SaveTableInfo("info")
+			if err := t.SaveRecordsToBlock(t.newRecords, name); err != nil {
+				return err
+			}
+			if err := t.SaveTableInfo("info"); err != nil {
+				return err
+			}
 			t.newRecords = make(RecordList, 0)
 			t.ReleaseRecords()
 		} else {
-			Error("ERROR SAVING BLOCK", err)
+			return errors.Wrap(err, "error saving block")
 		}
 	}
 
+	return nil
 }
 
 func (t *Table) IsNotExist() bool {
+	// TODO: consider using os.Stat and os.IsNotExist
 	tableDir := path.Join(FLAGS.DIR, t.Name)
 	_, err := ioutil.ReadDir(tableDir)
 	return err != nil

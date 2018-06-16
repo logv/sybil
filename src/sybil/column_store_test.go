@@ -28,10 +28,15 @@ func TestTableDigestRowRecords(t *testing.T) {
 	FLAGS.TABLE = tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = true
 
-	nt.LoadTableInfo()
-	nt.LoadRecords(&LoadSpec{
+	if err := nt.LoadTableInfo(); err != nil {
+		t.Error(err)
+	}
+	_, err := nt.LoadRecords(&LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -41,12 +46,16 @@ func TestTableDigestRowRecords(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	if err := nt.DigestRecords(); err != nil {
+		t.Error(err)
+	}
 
 	unloadTestTable(tableName)
 
 	nt = GetTable(tableName)
-	nt.LoadRecords(nil)
+	if _, err := nt.LoadRecords(nil); err != nil {
+		t.Error(err)
+	}
 
 	count := int32(0)
 	for _, b := range nt.BlockList {
@@ -83,10 +92,15 @@ func TestColumnStoreFileNames(t *testing.T) {
 	FLAGS.TABLE = tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = true
 
-	nt.LoadTableInfo()
-	nt.LoadRecords(&LoadSpec{
+	if err := nt.LoadTableInfo(); err != nil {
+		t.Error(err)
+	}
+	_, err := nt.LoadRecords(&LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -96,12 +110,16 @@ func TestColumnStoreFileNames(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	if err := nt.DigestRecords(); err != nil {
+		t.Error(err)
+	}
 
 	unloadTestTable(tableName)
 
 	nt = GetTable(tableName)
-	nt.LoadRecords(nil)
+	if _, err := nt.LoadRecords(nil); err != nil {
+		t.Error(err)
+	}
 
 	count := int32(0)
 
@@ -161,10 +179,15 @@ func TestBigIntColumns(t *testing.T) {
 	FLAGS.TABLE = tableName // TODO: eliminate global use
 	FLAGS.READ_INGESTION_LOG = true
 
-	nt.LoadTableInfo()
-	nt.LoadRecords(&LoadSpec{
+	if err := nt.LoadTableInfo(); err != nil {
+		t.Error(err)
+	}
+	_, err := nt.LoadRecords(&LoadSpec{
 		SkipDeleteBlocksAfterQuery: true,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if len(nt.RowBlock.RecordList) != CHUNK_SIZE*blockCount {
 		t.Error("Row Store didn't read back right number of records", len(nt.RowBlock.RecordList))
@@ -174,7 +197,9 @@ func TestBigIntColumns(t *testing.T) {
 		t.Error("Found other records than rowblock")
 	}
 
-	nt.DigestRecords()
+	if err := nt.DigestRecords(); err != nil {
+		t.Error(err)
+	}
 
 	unloadTestTable(tableName)
 
@@ -185,7 +210,9 @@ func TestBigIntColumns(t *testing.T) {
 	querySpec := newQuerySpec()
 	querySpec.Samples = true
 	querySpec.Limit = 1000
-	nt.LoadAndQueryRecords(&loadSpec, querySpec)
+	if _, err := nt.LoadAndQueryRecords(&loadSpec, querySpec); err != nil {
+		t.Error(err)
+	}
 
 	count := int32(0)
 	Debug("MIN VALUE BEING CHECKED FOR IS", minVal, "2^32 is", 1<<32)
