@@ -115,11 +115,8 @@ func EncodeFlags() {
 	FLAGS.ENCODE_FLAGS = oldEncode
 }
 
-func DecodeFlags() {
+func DecodeFlags() error {
 	Debug("READING ENCODED FLAGS FROM STDIN")
 	dec := gob.NewDecoder(os.Stdin)
-	err := dec.Decode(&FLAGS)
-	if err != nil {
-		Error("ERROR DECODING FLAGS", err)
-	}
+	return dec.Decode(&FLAGS)
 }
