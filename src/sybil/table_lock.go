@@ -62,8 +62,7 @@ func (l *InfoLock) Recover() error {
 	if err := t.LoadTableInfoFrom(infodb); err == nil {
 		Debug("LOADED REASONABLE TABLE INFO, DELETING LOCK")
 		l.ForceDeleteFile()
-	} else {
-		return errors.Wrap(err, "LoadTableInfoFrom")
+		return nil
 	}
 
 	err := t.LoadTableInfoFrom(backup)
@@ -102,7 +101,10 @@ func (l *DigestLock) Recover() error {
 func (l *BlockLock) Recover() error {
 	Debug("RECOVERING BLOCK LOCK", l.Name)
 	t := l.Table
-	tb := t.LoadBlockFromDir(l.Name, nil, true, nil)
+	tb, err := t.LoadBlockFromDir(l.Name, nil, true, nil)
+	if err != nil {
+		return err
+	}
 	if tb == nil || tb.Info == nil || tb.Info.NumRecords <= 0 {
 		Debug("BLOCK IS NO GOOD, TURNING IT INTO A BROKEN BLOCK")
 		// This block is not good! need to put it into remediation...
