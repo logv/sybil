@@ -64,7 +64,21 @@ func (s *Server) ListTables(ctx context.Context, r *pb.ListTablesRequest) (*pb.L
 
 func (s *Server) GetTable(ctx context.Context, r *pb.GetTableRequest) (*pb.Table, error) {
 	json.NewEncoder(os.Stdout).Encode(r)
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	t, err := s.db.GetTable(r.Name)
+	t.LoadRecords(nil)
+	if err != nil {
+		return nil, err
+	}
+	ci := t.ColInfo()
+	return &pb.Table{
+		Name:              t.Name,
+		StrColumns:        ci.Strs,
+		IntColumns:        ci.Ints,
+		SetColumns:        ci.Sets,
+		Count:             ci.Count,
+		StorageSize:       ci.Size,
+		AverageObjectSize: ci.AverageObjectSize,
+	}, nil
 }
 
 func (s *Server) Trim(ctx context.Context, r *pb.TrimRequest) (*pb.TrimResponse, error) {
