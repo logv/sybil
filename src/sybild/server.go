@@ -1,11 +1,13 @@
 package sybild
 
 import (
+	"encoding/json"
+	"os"
+
 	context "golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/logv/sybil/src/sybil"
 	pb "github.com/logv/sybil/src/sybilpb"
 )
@@ -40,27 +42,32 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Ingest(context.Context, *pb.IngestRequest) (*pb.IngestResponse, error) {
-	panic("not implemented")
+func (s *Server) Ingest(ctx context.Context, r *pb.IngestRequest) (*pb.IngestResponse, error) {
+	json.NewEncoder(os.Stdout).Encode(r)
+	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
 func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryResponse, error) {
-	spew.Dump(r)
+	json.NewEncoder(os.Stdout).Encode(r)
 	// TODO QueryRequest to FLAGS (racily), loadSpec, querySpec
 	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
-func (s *Server) ListTables(context.Context, *pb.ListTablesRequest) (*pb.ListTablesResponse, error) {
+// ListTables .
+func (s *Server) ListTables(ctx context.Context, r *pb.ListTablesRequest) (*pb.ListTablesResponse, error) {
+	json.NewEncoder(os.Stdout).Encode(r)
 	tables, err := s.db.ListTables()
 	return &pb.ListTablesResponse{
 		Tables: tables,
 	}, err
 }
 
-func (s *Server) GetTable(context.Context, *pb.GetTableRequest) (*pb.Table, error) {
-	panic("not implemented")
+func (s *Server) GetTable(ctx context.Context, r *pb.GetTableRequest) (*pb.Table, error) {
+	json.NewEncoder(os.Stdout).Encode(r)
+	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
-func (s *Server) Trim(context.Context, *pb.TrimRequest) (*pb.TrimResponse, error) {
-	panic("not implemented")
+func (s *Server) Trim(ctx context.Context, r *pb.TrimRequest) (*pb.TrimResponse, error) {
+	json.NewEncoder(os.Stdout).Encode(r)
+	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
