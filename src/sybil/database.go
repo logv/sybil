@@ -14,3 +14,8 @@ func (db *Database) ListTables() ([]string, error) {
 	// TODO: ListTables uses globals
 	return ListTables(), nil
 }
+
+func (db *Database) GetTable(name string) (*Table, error) {
+	// TODO: ListTables uses globals
+	return GetTable(name), nil
+}

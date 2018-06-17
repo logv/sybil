@@ -496,6 +496,34 @@ func (t *Table) printColsOfType(wantedType int8) {
 	}
 }
 
+type ColInfo struct {
+	Count             int64
+	Size              int64
+	AverageObjectSize float64
+	Strs              []string
+	Ints              []string
+	Sets              []string
+}
+
+func (t *Table) ColInfo() *ColInfo {
+	r := &ColInfo{}
+	count := int64(0)
+	size := int64(0)
+	for _, block := range t.BlockList {
+		count += int64(block.Info.NumRecords)
+		size += block.Size
+	}
+
+	r.Count = count
+	r.Size = size
+	r.AverageObjectSize = float64(size) / float64(count)
+
+	r.Strs = t.getColsOfType(STR_VAL)
+	r.Ints = t.getColsOfType(INT_VAL)
+	r.Sets = t.getColsOfType(SET_VAL)
+	return r
+}
+
 func (t *Table) PrintColInfo(printSpec *PrintSpec) {
 	// count: 3253,
 	// size: 908848,
