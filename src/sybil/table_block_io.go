@@ -1,19 +1,23 @@
 package sybil
 
-import "bytes"
-import "fmt"
-import "time"
-import "os"
-import "path"
-import "strings"
-import "sync"
-import "compress/gzip"
+import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
+	"os"
+	"path"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/pkg/errors"
+)
 
 var GZIP_EXT = ".gz"
 
-func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
+func (t *Table) SaveRecordsToBlock(records RecordList, filename string) error {
 	if len(records) == 0 {
-		return true
+		return nil
 	}
 
 	tempBlock := newTableBlock()
@@ -23,8 +27,10 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
 	return tempBlock.SaveToColumns(filename)
 }
 
-func (t *Table) FindPartialBlocks() []*TableBlock {
-	t.LoadRecords(nil)
+func (t *Table) FindPartialBlocks() ([]*TableBlock, error) {
+	if _, err := t.LoadRecords(nil); err != nil {
+		return nil, err
+	}
 
 	ret := make([]*TableBlock, 0)
 
@@ -40,22 +46,25 @@ func (t *Table) FindPartialBlocks() []*TableBlock {
 	}
 	t.blockMu.Unlock()
 
-	return ret
+	return ret, nil
 }
 
 // TODO: find any open blocks and then fill them...
-func (t *Table) FillPartialBlock() bool {
+func (t *Table) FillPartialBlock() error {
 	if len(t.newRecords) == 0 {
-		return false
+		return nil
 	}
 
-	openBlocks := t.FindPartialBlocks()
+	openBlocks, err := t.FindPartialBlocks()
+	if err != nil {
+		return err
+	}
 
 	Debug("OPEN BLOCKS", openBlocks)
 	var filename string
 
 	if len(openBlocks) == 0 {
-		return true
+		return nil
 	}
 
 	for _, b := range openBlocks {
@@ -64,9 +73,9 @@ func (t *Table) FillPartialBlock() bool {
 
 	Debug("OPENING PARTIAL BLOCK", filename)
 
-	if !t.GrabBlockLock(filename) {
+	if err := t.GrabBlockLock(filename); err != nil {
 		Debug("CANT FILL PARTIAL BLOCK DUE TO LOCK", filename)
-		return true
+		return errors.Wrap(err, "failed to grab block lock")
 	}
 
 	defer t.ReleaseBlockLock(filename)
@@ -74,9 +83,13 @@ func (t *Table) FillPartialBlock() bool {
 	// open up our last record block, see how full it is
 	delete(t.BlockInfoCache, filename)
 
-	block := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */, nil)
+	block, err := t.LoadBlockFromDir(filename, nil, true /* LOAD ALL RECORDS */, nil)
+	if err != nil {
+		return err
+	}
+	// TODO add error handling
 	if block == nil {
-		return true
+		return nil
 	}
 
 	partialRecords := block.RecordList
@@ -90,9 +103,9 @@ func (t *Table) FillPartialBlock() bool {
 
 		Debug("SAVING PARTIAL RECORDS", delta, "TO", filename)
 		partialRecords = append(partialRecords, t.newRecords[0:delta]...)
-		if !t.SaveRecordsToBlock(partialRecords, filename) {
+		if err := t.SaveRecordsToBlock(partialRecords, filename); err != nil {
 			Debug("COULDNT SAVE PARTIAL RECORDS TO", filename)
-			return false
+			return errors.Wrap(err, "save records to block")
 		}
 
 		if delta < len(t.newRecords) {
@@ -102,7 +115,7 @@ func (t *Table) FillPartialBlock() bool {
 		}
 	}
 
-	return true
+	return nil
 }
 
 // optimizing for integer pre-cached info
@@ -196,7 +209,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
-func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool, replacements map[string]StrReplace) *TableBlock {
+func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords bool, replacements map[string]StrReplace) (*TableBlock, error) {
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -206,11 +219,11 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 	info := t.LoadBlockInfo(dirname)
 
 	if info == nil {
-		return nil
+		return nil, nil
 	}
 
 	if info.NumRecords <= 0 {
-		return nil
+		return nil, nil
 	}
 
 	t.blockMu.Lock()
@@ -244,25 +257,31 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, loadRecords
 
 		filename := fmt.Sprintf("%s/%s", dirname, fname)
 
-		dec := GetFileDecoder(filename)
+		dec, err := GetFileDecoder(filename)
+		if err != nil {
+			return nil, err
+		}
 
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, *info, replacements)
+			err = tb.unpackStrCol(dec, *info, replacements)
 		case strings.HasPrefix(fname, "set"):
-			tb.unpackSetCol(dec, *info)
+			err = tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, *info)
+			err = tb.unpackIntCol(dec, *info)
 		}
 
 		dec.CloseFile()
 
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("issue unpacking %v", fname))
+		}
 	}
 
 	tb.Size = size
 
 	file.Close()
-	return &tb
+	return &tb, nil
 }
 
 type AfterLoadQueryCB struct {

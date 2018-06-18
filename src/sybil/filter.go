@@ -1,9 +1,12 @@
 package sybil
 
-import "regexp"
+import (
+	"regexp"
+	"strconv"
+	"strings"
 
-import "strings"
-import "strconv"
+	"github.com/pkg/errors"
+)
 
 // This is the passed in flags
 type FilterSpec struct {
@@ -19,7 +22,7 @@ func checkTable(tokens []string, t *Table) bool {
 	return true
 }
 
-func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter {
+func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) ([]Filter, error) {
 	strfilters := make([]string, 0)
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)
@@ -58,7 +61,9 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		}
 
 		filters = append(filters, t.IntFilter(col, op, int(val)))
-		loadSpec.Int(col)
+		if err := loadSpec.Int(col); err != nil {
+			return nil, errors.Wrap(err, "building int filters")
+		}
 	}
 
 	for _, filter := range setfilters {
@@ -70,7 +75,9 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 		if !checkTable(tokens, t) {
 			continue
 		}
-		loadSpec.Set(col)
+		if err := loadSpec.Set(col); err != nil {
+			return nil, errors.Wrap(err, "building set filters")
+		}
 
 		filters = append(filters, t.SetFilter(col, op, val))
 
@@ -86,14 +93,15 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 			continue
 		}
 
-		loadSpec.Str(col)
+		if err := loadSpec.Str(col); err != nil {
+			return nil, errors.Wrap(err, "building string filters")
+		}
 
 		filters = append(filters, t.StrFilter(col, op, val))
 
 	}
 
-	return filters
-
+	return filters, nil
 }
 
 // FILTERS RETURN TRUE ON MATCH SUCCESS

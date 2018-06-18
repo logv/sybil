@@ -49,21 +49,28 @@ func TestOpenCompressedInfoDB(t *testing.T) {
 
 	}
 	zinfo := gzip.NewWriter(file)
-	zinfo.Write(dat)
-	zinfo.Close()
+	if _, err := zinfo.Write(dat); err != nil {
+		t.Error(err)
+	}
+	if err := zinfo.Close(); err != nil {
+		t.Error(err)
+	}
 
-	os.RemoveAll(filename)
+	if err := os.RemoveAll(filename); err != nil {
+		t.Error(err)
+	}
 	// END ZIPPING INFO.DB.GZ
 
 	loadSpec := nt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
-	loaded := nt.LoadTableInfo()
-	if !loaded {
-		t.Error("COULDNT LOAD ZIPPED TABLE INFO!")
+	if err := nt.LoadTableInfo(); err != nil {
+		t.Error("COULDNT LOAD ZIPPED TABLE INFO!", err)
 	}
 
-	nt.LoadRecords(&loadSpec)
+	if _, err := nt.LoadRecords(&loadSpec); err != nil {
+		t.Error(err)
+	}
 
 	var records = make([]*Record, 0)
 	for _, b := range nt.BlockList {
@@ -92,8 +99,12 @@ func TestOpenCompressedColumn(t *testing.T) {
 	}, blockCount)
 
 	nt := saveAndReloadTable(t, tableName, blockCount)
-	nt.DigestRecords()
-	nt.LoadRecords(nil)
+	if err := nt.DigestRecords(); err != nil {
+		t.Error(err)
+	}
+	if _, err := nt.LoadRecords(nil); err != nil {
+		t.Error(err)
+	}
 
 	blocks := nt.BlockList
 
@@ -120,8 +131,12 @@ func TestOpenCompressedColumn(t *testing.T) {
 
 			}
 			zinfo := gzip.NewWriter(file)
-			zinfo.Write(dat)
-			zinfo.Close()
+			if _, err := zinfo.Write(dat); err != nil {
+				t.Error(err)
+			}
+			if err := zinfo.Close(); err != nil {
+				t.Error(err)
+			}
 			Debug("CREATED GZIP FILE", zfilename)
 
 			err = os.RemoveAll(filename)
@@ -137,12 +152,13 @@ func TestOpenCompressedColumn(t *testing.T) {
 	loadSpec := bt.NewLoadSpec()
 	loadSpec.LoadAllColumns = true
 
-	loaded := bt.LoadTableInfo()
-	if !loaded {
-		t.Error("COULDNT LOAD ZIPPED TABLE INFO!")
+	if err := bt.LoadTableInfo(); err != nil {
+		t.Error("COULDNT LOAD ZIPPED TABLE INFO!", err)
 	}
 
-	bt.LoadRecords(&loadSpec)
+	if _, err := bt.LoadRecords(&loadSpec); err != nil {
+		t.Error(err)
+	}
 
 	var records = make([]*Record, 0)
 	for _, b := range bt.BlockList {
