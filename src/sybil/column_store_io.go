@@ -483,7 +483,6 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 
 	// TODO:
 	if nb == nil || nb.Info.NumRecords != int32(len(tb.RecordList)) {
-		// TODO//Error("COULDNT VALIDATE CONSISTENCY FOR RECENTLY SAVED BLOCK!", filename)
 		return fmt.Errorf("could not validate consistency for recently saved block %v", filename)
 	}
 
@@ -493,7 +492,6 @@ func (tb *TableBlock) SaveToColumns(filename string) error {
 			return err
 		}
 		if nb == nil || len(nb.RecordList) != len(tb.RecordList) {
-			// TODO//Error("DEEP VALIDATION OF BLOCK FAILED CONSISTENCY CHECK!", filename)
 			return fmt.Errorf("deep validation of block failed consistency check %v", filename)
 		}
 	}
