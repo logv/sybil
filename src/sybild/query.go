@@ -2,10 +2,13 @@ package sybild
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/logv/sybil/src/sybil"
 	pb "github.com/logv/sybil/src/sybilpb"
+
+	google_protobuf "github.com/golang/protobuf/ptypes/struct"
 )
 
 var opsToSybilOps = map[pb.QueryOp]sybil.Op{
@@ -18,10 +21,17 @@ func queryToSpecs(t *sybil.Table, r *pb.QueryRequest) (*sybil.LoadSpec, *sybil.Q
 	t.LoadTableInfo()
 	//return nil,nil,err
 	t.LoadRecords(nil)
-	loadSpec := t.NewLoadSpec()
 	params := sybil.QueryParams{
-		Limit: int(r.Limit),
+		Limit:   int(r.Limit),
+		Samples: r.Type == pb.QueryType_SAMPLES,
 	}
+	loadSpec := t.NewLoadSpec()
+	if params.Samples {
+		sybil.HOLD_MATCHES = true
+		loadSpec.LoadAllColumns = true
+		loadSpec.SkipDeleteBlocksAfterQuery = true
+	}
+
 	for _, v := range r.Strs {
 		loadSpec.Str(v)
 	}
@@ -56,9 +66,11 @@ func queryToSpecs(t *sybil.Table, r *pb.QueryRequest) (*sybil.LoadSpec, *sybil.Q
 	return &loadSpec, querySpec, nil
 }
 
-func querySpecResultsToResults(qr *pb.QueryRequest, r sybil.ResultMap) *pb.QueryResponse {
+func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults) *pb.QueryResponse {
 	results := make([]*pb.QueryResult, 0)
+	r := qresults.Results
 	for _, result := range r {
+
 		qresult := &pb.QueryResult{
 			Count:   result.Count,
 			Samples: result.Samples,
@@ -101,4 +113,58 @@ func querySpecResultsToResults(qr *pb.QueryRequest, r sybil.ResultMap) *pb.Query
 	return &pb.QueryResponse{
 		Results: results,
 	}
+}
+
+func toString(v string) *google_protobuf.Value {
+	return &google_protobuf.Value{
+		Kind: &google_protobuf.Value_StringValue{
+			StringValue: v,
+		},
+	}
+}
+
+func toNumber(v float64) *google_protobuf.Value {
+	return &google_protobuf.Value{
+		Kind: &google_protobuf.Value_NumberValue{
+			NumberValue: v,
+		},
+	}
+}
+
+func toValue(v interface{}) *google_protobuf.Value {
+	switch t := v.(type) {
+	case int:
+		return toNumber(float64(t))
+	case float64:
+		return toNumber(t)
+	case string:
+		return toString(t)
+	case sybil.IntField:
+		return toNumber(float64(t))
+	case sybil.StrField:
+		return toString(string(t))
+	default:
+		log.Printf("toValue: unknown type: %T\n", t)
+	}
+	return nil
+}
+
+func convertSamples(samples []*sybil.Sample) []*google_protobuf.Struct {
+	result := make([]*google_protobuf.Struct, 0, len(samples))
+
+	for _, s := range samples {
+		sv := &google_protobuf.Struct{
+			Fields: make(map[string]*google_protobuf.Value),
+		}
+		for k, v := range *s {
+			val := toValue(v)
+			if val != nil {
+				sv.Fields[k] = toValue(v)
+			} else {
+				log.Println("got nil from tovalue for", k)
+			}
+		}
+		result = append(result, sv)
+	}
+	return result
 }
