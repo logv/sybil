@@ -13,6 +13,7 @@ import (
 )
 
 const defaultAddr = ":7000"
+const defaultLimit = 100
 
 // Server implements SybilServer
 type Server struct {
@@ -62,8 +63,24 @@ func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryRespon
 	if err != nil {
 		return nil, err
 	}
-	t.LoadAndQueryRecords(loadSpec, querySpec)
-	resp := querySpecResultsToResults(r, querySpec.Results)
+	_, err = t.LoadAndQueryRecords(loadSpec, querySpec)
+	if err != nil {
+		return nil, err
+	}
+	if r.Type == pb.QueryType_SAMPLES {
+		limit := r.Limit
+		if limit == 0 {
+			limit = defaultLimit
+		}
+		samples, err := t.LoadSamples(int(limit))
+		if err != nil {
+			return nil, err
+		}
+		return &pb.QueryResponse{
+			Samples: convertSamples(samples),
+		}, nil
+	}
+	resp := querySpecResultsToResults(r, querySpec.QueryResults)
 	return resp, nil
 }
 

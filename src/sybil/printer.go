@@ -374,6 +374,42 @@ type PrintSpec struct {
 	JSON          bool
 }
 
+func (t *Table) LoadSamples(limit int) ([]*Sample, error) {
+	count := 0
+	records := make(RecordList, limit)
+	for _, b := range t.BlockList {
+		for _, r := range b.Matched {
+			if r == nil {
+				records = records[:count]
+				break
+			}
+
+			if count >= limit {
+				break
+			}
+
+			records[count] = r
+			count++
+		}
+
+		if count >= limit {
+			break
+		}
+	}
+
+	samples := make([]*Sample, 0)
+	for _, r := range records {
+		if r == nil {
+			break
+		}
+
+		s := r.toSample()
+		samples = append(samples, s)
+	}
+
+	return samples, nil
+}
+
 func (t *Table) PrintSamples(printSpec *PrintSpec) {
 	count := 0
 	records := make(RecordList, printSpec.Limit)

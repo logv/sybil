@@ -322,7 +322,6 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 		}
 
 		t.PrintSamples(printSpec)
-
 		return nil
 	}
 
@@ -416,6 +415,9 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		Limit:           int64(flags.LIMIT),
 		//Samples:         flags.SAMPLES,
 		// TODO
+	}
+	if flags.SAMPLES {
+		q.Type = pb.QueryType_SAMPLES
 	}
 	if flags.OP == sybil.OP_AVG {
 		q.Op = pb.QueryOp_AVERAGE
