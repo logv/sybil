@@ -1,10 +1,12 @@
 package sybil
 
-import "testing"
-import "math/rand"
-import "strconv"
-import "math"
-import "strings"
+import (
+	"math"
+	"math/rand"
+	"strconv"
+	"strings"
+	"testing"
+)
 
 func TestFilters(t *testing.T) {
 	tableName := getTestTableName(t)
@@ -39,8 +41,11 @@ func TestFilters(t *testing.T) {
 
 func testIntLt(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.IntFilter("age", "lt", 20))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Int: "age:lt:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -65,8 +70,11 @@ func testIntLt(t *testing.T, tableName string) {
 
 func testIntGt(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.IntFilter("age", "gt", 20))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Int: "age:gt:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -92,8 +100,11 @@ func testIntGt(t *testing.T, tableName string) {
 
 func testIntNeq(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.IntFilter("age", "neq", 20))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Int: "age:neq:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -126,8 +137,11 @@ func testIntNeq(t *testing.T, tableName string) {
 
 func testIntEq(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.IntFilter("age", "eq", 20))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Int: "age:eq:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -153,8 +167,11 @@ func testIntEq(t *testing.T, tableName string) {
 
 func testStrEq(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "re", "20"))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Str: "age_str:re:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -184,8 +201,11 @@ func testStrEq(t *testing.T, tableName string) {
 
 func testStrNeq(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "nre", "20"))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Str: "age_str:nre:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -210,8 +230,11 @@ func testStrNeq(t *testing.T, tableName string) {
 
 func testStrRe(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.StrFilter("age_str", "re", "^2"))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Str: "age_str:re:^2"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -241,8 +264,11 @@ func testStrRe(t *testing.T, tableName string) {
 
 func testSetIn(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.SetFilter("age_set", "in", "20"))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Set: "age_set:in:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
@@ -283,8 +309,11 @@ func testSetIn(t *testing.T, tableName string) {
 
 func testSetNin(t *testing.T, tableName string) {
 	nt := GetTable(tableName)
-	filters := []Filter{}
-	filters = append(filters, nt.SetFilter("age_set", "nin", "20"))
+	loadSpec := nt.NewLoadSpec()
+	filters, err := BuildFilters(nt, &loadSpec, FilterSpec{Set: "age_set:nin:20"})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	aggs := []Aggregation{}
 	aggs = append(aggs, nt.Aggregation("age", "avg"))
