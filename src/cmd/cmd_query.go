@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/logv/sybil/src/sybil"
 	pb "github.com/logv/sybil/src/sybilpb"
 	"github.com/pkg/errors"
@@ -369,6 +370,13 @@ func runQueryCmdLine(flags *sybil.FlagDefs) error {
 	return nil
 }
 
+func split(s, sep string) []string {
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, sep)
+}
+
 func runQueryGRPC(flags *sybil.FlagDefs) error {
 	ctx := context.Background()
 	opts := []grpc.DialOption{
@@ -400,11 +408,23 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		return json.NewEncoder(os.Stdout).Encode(r)
 	}
 	q := &pb.QueryRequest{
-		Dataset: flags.TABLE,
+		Dataset:         flags.TABLE,
+		Ints:            split(flags.INTS, flags.FIELD_SEPARATOR),
+		Strs:            split(flags.STRS, flags.FIELD_SEPARATOR),
+		GroupBy:         split(flags.GROUPS, flags.FIELD_SEPARATOR),
+		DistinctGroupBy: split(flags.DISTINCT, flags.FIELD_SEPARATOR),
+		Limit:           int64(flags.LIMIT),
+		//Samples:         flags.SAMPLES,
+		// TODO
+	}
+	if flags.OP == sybil.OP_AVG {
+		q.Op = pb.QueryOp_AVERAGE
+	} else if flags.OP == sybil.OP_HIST {
+		q.Op = pb.QueryOp_HISTOGRAM
 	}
 	qr, err := c.Query(ctx, q)
 	if err != nil {
 		return err
 	}
-	return json.NewEncoder(os.Stdout).Encode(qr)
+	return (&jsonpb.Marshaler{}).Marshal(os.Stdout, qr)
 }

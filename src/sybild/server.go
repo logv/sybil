@@ -50,7 +50,21 @@ func (s *Server) Ingest(ctx context.Context, r *pb.IngestRequest) (*pb.IngestRes
 func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryResponse, error) {
 	json.NewEncoder(os.Stdout).Encode(r)
 	// TODO QueryRequest to FLAGS (racily), loadSpec, querySpec
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	// set defaults:
+	if r.Op == pb.QueryOp_QUERY_OP_UNKNOWN {
+		r.Op = pb.QueryOp_AVERAGE
+	}
+	t := sybil.GetTable(r.Dataset)
+	if t.IsNotExist() {
+		return nil, status.Error(codes.NotFound, "table not found")
+	}
+	loadSpec, querySpec, err := queryToSpecs(t, r)
+	if err != nil {
+		return nil, err
+	}
+	t.LoadAndQueryRecords(loadSpec, querySpec)
+	resp := querySpecResultsToResults(r, querySpec.Results)
+	return resp, nil
 }
 
 // ListTables .
