@@ -3,16 +3,25 @@ package sybil_cmd
 import sybil "github.com/logv/sybil/src/lib"
 
 import (
+	"bufio"
+	"bytes"
+
 	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes/struct"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
+
+	pb "github.com/logv/sybil/src/sybild/pb"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 type Dictionary map[string]interface{}
@@ -220,6 +229,20 @@ func RunIngestCmdLine() {
 	f_REOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
 
 	flag.Parse()
+	if sybil.FLAGS.DIAL != "" {
+		var r io.ReadCloser = os.Stdin
+
+		var err error
+		if *f_REOPEN != "" {
+			r, err = os.Open(*f_REOPEN)
+		}
+		if err != nil {
+			return
+		}
+
+		defer r.Close()
+		runIngestGRPC(&sybil.FLAGS, r)
+	}
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
 
@@ -285,4 +308,59 @@ func RunIngestCmdLine() {
 	}
 
 	t.IngestRecords(digestfile)
+}
+
+func runIngestGRPC(flags *sybil.FlagDefs, r io.Reader) error {
+	ctx := context.Background()
+	opts := []grpc.DialOption{
+		// todo
+		grpc.WithInsecure(),
+	}
+	conn, err := grpc.Dial(flags.DIAL, opts...)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	c := pb.NewSybilClient(conn)
+	m := &jsonpb.Marshaler{OrigName: true}
+	maxErrs := 100
+	var errs int
+	var vals []*structpb.Struct
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		v := &structpb.Struct{}
+		if err := jsonpb.Unmarshal(bytes.NewReader(s.Bytes()), v); err != nil {
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				sybil.Debug("ERR", err)
+				errs++
+				if errs > maxErrs {
+					break
+				}
+				continue
+			}
+		}
+		vals = append(vals, v)
+	}
+	if err := s.Err(); err != nil {
+		return err
+	}
+	i := &pb.IngestRequest{
+		Dataset: flags.TABLE,
+		Records: vals,
+	}
+	qr, err := c.Ingest(ctx, i)
+	if err != nil {
+		return err
+	}
+	if err := m.Marshal(os.Stdout, qr); err != nil {
+		return err
+	}
+	if errs > 0 {
+		fmt.Fprintln(os.Stderr, "exiting due to error threshold being reached:", errs)
+		os.Exit(errs)
+	}
+	return nil
 }

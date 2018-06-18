@@ -17,6 +17,10 @@ deps:
 sybil: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
 
+# regenerates sybild protobuf definition from sybil.proto
+sybild-proto:
+	go generate src/sybild/pb/proto
+
 fake-data: fake-uptime
 
 fake-people:
@@ -29,7 +33,6 @@ fake-uptime:
 
 testquery:
 	${BINDIR}/sybil query -table people -int age,f1 -op hist -group state
-
 
 bindir:
 	mkdir ${BINDIR} 2>/dev/null || true

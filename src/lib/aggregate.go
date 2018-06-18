@@ -19,10 +19,10 @@ const HIST_STR = "hist"
 const SORT_COUNT = "$COUNT"
 
 const (
-	NO_OP       = iota
-	OP_AVG      = iota
-	OP_HIST     = iota
-	OP_DISTINCT = iota
+	NO_OP       = ""
+	OP_AVG      = "avg"
+	OP_HIST     = "hist"
+	OP_DISTINCT = "distinct"
 )
 
 var GROUP_DELIMITER = "\t"
