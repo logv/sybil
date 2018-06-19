@@ -9,6 +9,7 @@ bin/
 data/
 sync.sh
 cover.*
+bench*txt
 *.pyc
 .starscope.db
 cscope.out
