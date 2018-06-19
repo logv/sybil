@@ -45,6 +45,12 @@ jobs:
             cp fuzzcover.html /tmp/test-results
             bash <(curl -s https://codecov.io/bash) -c -F fuzztests -f fuzzcover.out
 
+      - run:
+          name: Run benchmarks
+          command: |
+            make benchmarks
+            cp bench.txt /tmp/test-results
+
       - store_artifacts:
           path: /tmp/test-results
           destination: raw-test-output
