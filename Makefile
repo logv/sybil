@@ -55,6 +55,8 @@ coverage:
 	sed -i "s|_${ROOT_DIR}|.|"	cover.out
 	${GOBIN} tool cover -html=cover.out -o cover.html
 
+benchmarks:
+	${GOBIN} test -run=NONE -benchmem -bench=. ./src/lib |tee bench.txt
 
 hdrhist: export BUILD_FLAGS += -tags hdrhist
 hdrhist: bindir
