@@ -5,12 +5,9 @@ jobs:
       - image: golang
     working_directory: /go/src/github.com/logv/sybil
 
-    environment:
-      TEST_RESULTS: /tmp/test-results
-
     steps:
       - checkout
-      - run: mkdir -p $TEST_RESULTS
+      - run: mkdir -p /tmp/test-results
 
       - run: make deps
 
@@ -27,8 +24,8 @@ jobs:
       - run:
           name: Run unit tests
           command: |
-            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
-            make testv | tee ${TEST_RESULTS}/go-test.out
+            trap "go-junit-report </tmp/test-results/go-test.out > /tmp/test-results/go-test-report.xml" EXIT
+            make testv | tee /tmp/test-results/go-test.out
 
       - run:
           name: Run code coverage
@@ -45,6 +42,10 @@ jobs:
             cp fuzzcover.html /tmp/test-results
             bash <(curl -s https://codecov.io/bash) -c -F fuzztests -f fuzzcover.out
 
+      - run:
+          name: Run benchmarks
+          command: ./scripts/ci_run_benchmarks.sh
+
       - store_artifacts:
           path: /tmp/test-results
           destination: raw-test-output
@@ -59,6 +60,11 @@ jobs:
       - checkout
       - run: make deps
       - run: make
+      - run: mkdir -p /tmp/test-results
+      - run: ./scripts/ci_run_benchmarks.sh
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
   build17:
     docker:
       - image: golang:1.7
@@ -67,6 +73,11 @@ jobs:
       - checkout
       - run: make deps
       - run: make
+      - run: mkdir -p /tmp/test-results
+      - run: ./scripts/ci_run_benchmarks.sh
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
   build18:
     docker:
       - image: golang:1.8
@@ -75,6 +86,11 @@ jobs:
       - checkout
       - run: make deps
       - run: make
+      - run: mkdir -p /tmp/test-results
+      - run: ./scripts/ci_run_benchmarks.sh
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
 workflows:
   version: 2
   build_and_test:
