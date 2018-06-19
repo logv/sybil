@@ -5,12 +5,9 @@ jobs:
       - image: golang
     working_directory: /go/src/github.com/logv/sybil
 
-    environment:
-      TEST_RESULTS: /tmp/test-results
-
     steps:
       - checkout
-      - run: mkdir -p $TEST_RESULTS
+      - run: mkdir -p /tmp/test-results
 
       - run: make deps
 
@@ -27,8 +24,8 @@ jobs:
       - run:
           name: Run unit tests
           command: |
-            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
-            make testv | tee ${TEST_RESULTS}/go-test.out
+            trap "go-junit-report </tmp/test-results/go-test.out > /tmp/test-results/go-test-report.xml" EXIT
+            make testv | tee /tmp/test-results/go-test.out
 
       - run:
           name: Run code coverage
@@ -47,17 +44,7 @@ jobs:
 
       - run:
           name: Run benchmarks
-          command: |
-            go get golang.org/x/tools/cmd/benchcmp
-            make benchmarks
-            mv bench.txt bench-new.txt
-            git checkout master
-            make benchmarks
-            mv bench.txt bench-old.txt
-            benchcmp bench-old.txt bench-new.txt |tee bench-cmp.txt
-            go get github.com/ajstarks/svgo/benchviz
-            cat bench-cmp.txt | benchviz > bench-cmp.svg
-            cp bench* /tmp/test-results
+          command: ./scripts/ci_run_benchmarks.sh
 
       - store_artifacts:
           path: /tmp/test-results
@@ -73,6 +60,11 @@ jobs:
       - checkout
       - run: make deps
       - run: make
+      - run: mkdir -p /tmp/test-results
+      - run: ./scripts/ci_run_benchmarks.sh
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
   build17:
     docker:
       - image: golang:1.7
@@ -81,6 +73,11 @@ jobs:
       - checkout
       - run: make deps
       - run: make
+      - run: mkdir -p /tmp/test-results
+      - run: ./scripts/ci_run_benchmarks.sh
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
   build18:
     docker:
       - image: golang:1.8
@@ -89,6 +86,11 @@ jobs:
       - checkout
       - run: make deps
       - run: make
+      - run: mkdir -p /tmp/test-results
+      - run: ./scripts/ci_run_benchmarks.sh
+      - store_artifacts:
+          path: /tmp/test-results
+          destination: raw-test-output
 workflows:
   version: 2
   build_and_test:
