@@ -12,7 +12,6 @@ import (
 	pb "github.com/logv/sybil/src/sybilpb"
 )
 
-const defaultAddr = ":7000"
 const defaultLimit = 100
 
 // Server implements SybilServer

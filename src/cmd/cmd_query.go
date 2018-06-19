@@ -423,6 +423,7 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		q.Op = pb.QueryOp_AVERAGE
 	} else if flags.OP == sybil.OP_HIST {
 		q.Op = pb.QueryOp_HISTOGRAM
+		q.Type = pb.QueryType_DISTRIBUTION
 	}
 	qr, err := c.Query(ctx, q)
 	if err != nil {

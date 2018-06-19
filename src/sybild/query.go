@@ -25,6 +25,10 @@ func queryToSpecs(t *sybil.Table, r *pb.QueryRequest) (*sybil.LoadSpec, *sybil.Q
 		Limit:   int(r.Limit),
 		Samples: r.Type == pb.QueryType_SAMPLES,
 	}
+	if r.Type == pb.QueryType_DISTRIBUTION {
+		params.HistogramParameters.Type = sybil.HistogramTypeBasic
+		// todo other params
+	}
 	loadSpec := t.NewLoadSpec()
 	if params.Samples {
 		sybil.HOLD_MATCHES = true
@@ -86,9 +90,7 @@ func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults)
 			} else {
 				qresult.Values[field] = &pb.FieldValue{
 					Value: &pb.FieldValue_Hist{
-						Hist: &pb.Histogram{
-							Mean: hist.Mean(),
-						},
+						Hist: sybilHistToPbHist(hist),
 					},
 				}
 
@@ -113,6 +115,16 @@ func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults)
 	return &pb.QueryResponse{
 		Results: results,
 	}
+}
+
+func sybilHistToPbHist(h sybil.Histogram) *pb.Histogram {
+	r := &pb.Histogram{
+		Mean:         h.Mean(),
+		StdDeviation: h.StdDev(),
+		Buckets:      h.GetIntBuckets(),
+		Percentiles:  h.GetPercentiles(),
+	}
+	return r
 }
 
 func toString(v string) *google_protobuf.Value {
