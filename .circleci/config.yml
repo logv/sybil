@@ -45,6 +45,18 @@ jobs:
             cp fuzzcover.html /tmp/test-results
             bash <(curl -s https://codecov.io/bash) -c -F fuzztests -f fuzzcover.out
 
+      - run:
+          name: Run benchmarks
+          command: |
+            go get golang.org/x/tools/cmd/benchcmp
+            make benchmarks
+            mv bench.txt bench-new.txt
+            git checkout master
+            make benchmarks
+            mv bench.txt bench-old.txt
+            benchcmp bench-old.txt bench-new.txt |tee bench-cmp.txt
+            cp bench*txt /tmp/test-results
+
       - store_artifacts:
           path: /tmp/test-results
           destination: raw-test-output
