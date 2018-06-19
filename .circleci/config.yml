@@ -48,8 +48,14 @@ jobs:
       - run:
           name: Run benchmarks
           command: |
+            go get golang.org/x/tools/cmd/benchcmp
             make benchmarks
-            cp bench.txt /tmp/test-results
+            mv bench.txt bench-new.txt
+            git checkout master
+            make benchmarks
+            mv bench.txt bench-old.txt
+            benchcmp bench-old.txt bench-new.txt |tee bench-cmp.txt
+            cp bench*txt /tmp/test-results
 
       - store_artifacts:
           path: /tmp/test-results
