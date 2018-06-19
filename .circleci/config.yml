@@ -55,7 +55,9 @@ jobs:
             make benchmarks
             mv bench.txt bench-old.txt
             benchcmp bench-old.txt bench-new.txt |tee bench-cmp.txt
-            cp bench*txt /tmp/test-results
+            go get github.com/ajstarks/svgo/benchviz
+            cat bench-cmp.txt | benchviz > bench-cmp.svg
+            cp bench* /tmp/test-results
 
       - store_artifacts:
           path: /tmp/test-results
