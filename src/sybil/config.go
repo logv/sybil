@@ -3,9 +3,12 @@ package sybil
 import (
 	"encoding/gob"
 	"flag"
+	"io/ioutil"
 	"os"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/logv/sybil/src/internal/internalpb"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -47,15 +50,35 @@ func setDefaults() {
 
 }
 
-func EncodeFlags() {
+func EncodeFlags() error {
 	oldEncode := FLAGS.ENCODE_FLAGS
 	FLAGS.ENCODE_FLAGS = false
-	PrintBytes(FLAGS)
+	if FLAGS.PROTO {
+		Debug("ENCODING FLAGS AS PROTO")
+		if err := PrintBytesProto(&FLAGS); err != nil {
+			return errors.Wrap(err, "encoding flags as proto")
+		}
+	} else {
+		if err := PrintBytes(FLAGS); err != nil {
+			return err
+		}
+	}
 	FLAGS.ENCODE_FLAGS = oldEncode
+	return nil
 }
 
 func DecodeFlags() error {
 	Debug("READING ENCODED FLAGS FROM STDIN")
 	dec := gob.NewDecoder(os.Stdin)
 	return dec.Decode(&FLAGS)
+}
+
+func DecodeFlagsProto() error {
+	Debug("READING ENCODED FLAGS FROM STDIN AS PROTO")
+	data, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return errors.Wrap(err, "read stdin")
+	}
+	err = proto.Unmarshal(data, &FLAGS)
+	return errors.Wrap(err, "proto.Unmarshal")
 }

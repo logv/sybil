@@ -73,5 +73,8 @@ message FlagDefs {
   bool ANOVA_ICC = 44;
 
   bool WRITE_BLOCK_INFO = 45;
+
+  // If true protobuf encoding is used for flags.
+  bool PROTO = 46;
 }
 
