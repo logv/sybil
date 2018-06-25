@@ -38,6 +38,9 @@ func TestDecodeGoldenFiles(t *testing.T) {
 				t.Error(err)
 			}
 
+			if testing.Verbose() {
+				t.Logf("decoded: %+v", tt.target)
+			}
 			asJSON, err := json.Marshal(tt.target)
 			if err != nil {
 				t.Error(err)
