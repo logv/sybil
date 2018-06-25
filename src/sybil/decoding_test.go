@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/logv/sybil/src/internal/internalpb"
 )
 
 var flagUpdateGoldenFiles = flag.Bool("update-golden", false, "update golden files")
@@ -23,7 +24,7 @@ func TestDecodeGoldenFiles(t *testing.T) {
 		target interface{}
 	}{
 		{"node_results", &NodeResults{}},
-		{"flag_defs", &FlagDefs{}},
+		{"flag_defs", &internalpb.FlagDefs{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

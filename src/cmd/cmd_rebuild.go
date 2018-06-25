@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -19,7 +20,7 @@ func RunRebuildCmdLine() {
 	}
 }
 
-func runRebuildCmdLine(flags *sybil.FlagDefs, replaceInfo bool, forceUpdate bool) error {
+func runRebuildCmdLine(flags *internalpb.FlagDefs, replaceInfo bool, forceUpdate bool) error {
 	if flags.TABLE == "" {
 		flag.PrintDefaults()
 		return sybil.ErrMissingTable

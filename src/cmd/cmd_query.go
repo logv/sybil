@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -80,7 +81,7 @@ func RunQueryCmdLine() {
 	}
 }
 
-func runQueryCmdLine(flags *sybil.FlagDefs) error {
+func runQueryCmdLine(flags *internalpb.FlagDefs) error {
 	if flags.DECODE_FLAGS {
 		sybil.DecodeFlags()
 	}

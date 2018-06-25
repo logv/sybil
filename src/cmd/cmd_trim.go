@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -45,7 +46,7 @@ func RunTrimCmdLine() {
 	}
 }
 
-func runTrimCmdLine(flags *sybil.FlagDefs, mbLimit int, deleteBefore int, skipPrompt bool, delete bool) error {
+func runTrimCmdLine(flags *internalpb.FlagDefs, mbLimit int, deleteBefore int, skipPrompt bool, delete bool) error {
 	if flags.TABLE == "" || flags.TIME_COL == "" {
 		flag.PrintDefaults()
 		return sybil.ErrMissingTable
