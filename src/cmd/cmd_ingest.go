@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -243,7 +244,7 @@ func RunIngestCmdLine() {
 	}
 }
 
-func runIngestCmdLine(flags *sybil.FlagDefs, digestFile string, ints string, csv bool, excludes string, jsonPath string, filePath string) error {
+func runIngestCmdLine(flags *internalpb.FlagDefs, digestFile string, ints string, csv bool, excludes string, jsonPath string, filePath string) error {
 
 	if flags.TABLE == "" {
 		flag.PrintDefaults()

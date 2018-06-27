@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -18,7 +19,7 @@ func RunDigestCmdLine() {
 	}
 }
 
-func runDigestCmdLine(flags *sybil.FlagDefs) error {
+func runDigestCmdLine(flags *internalpb.FlagDefs) error {
 	if flags.TABLE == "" {
 		flag.PrintDefaults()
 		return sybil.ErrMissingTable

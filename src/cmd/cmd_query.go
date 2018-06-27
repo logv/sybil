@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -27,6 +28,7 @@ func addPrintFlags() {
 	flag.BoolVar(&sybil.FLAGS.PRINT, "print", true, "Print some records")
 	flag.BoolVar(&sybil.FLAGS.SAMPLES, "samples", false, "Grab samples")
 	flag.BoolVar(&sybil.FLAGS.JSON, "json", false, "Print results in JSON format")
+	flag.BoolVar(&sybil.FLAGS.PROTO, "proto", false, "Use protobuf encoding of flags (instead of gob)")
 }
 
 func addQueryFlags() {
@@ -80,15 +82,22 @@ func RunQueryCmdLine() {
 	}
 }
 
-func runQueryCmdLine(flags *sybil.FlagDefs) error {
+func runQueryCmdLine(flags *internalpb.FlagDefs) error {
 	if flags.DECODE_FLAGS {
-		sybil.DecodeFlags()
+		if flags.PROTO {
+			err := sybil.DecodeFlagsProto()
+			if err != nil {
+				return errors.Wrap(err, "decoding flags as proto")
+			}
+		} else {
+			// otherwise do gob decoding
+			sybil.DecodeFlags()
+		}
 	}
 
 	if flags.ENCODE_FLAGS {
 		sybil.Debug("PRINTING ENCODED FLAGS")
-		sybil.EncodeFlags()
-		return nil
+		return sybil.EncodeFlags()
 	}
 
 	printSpec := &sybil.PrintSpec{

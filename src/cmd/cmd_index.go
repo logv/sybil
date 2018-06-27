@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/logv/sybil/src/internal/internalpb"
 	"github.com/logv/sybil/src/sybil"
 	"github.com/pkg/errors"
 )
@@ -20,7 +21,7 @@ func RunIndexCmdLine() {
 	}
 }
 
-func runIndexCmdLine(flags *sybil.FlagDefs, ints []string) error {
+func runIndexCmdLine(flags *internalpb.FlagDefs, ints []string) error {
 	if sybil.FLAGS.TABLE == "" {
 		flag.PrintDefaults()
 		return sybil.ErrMissingTable

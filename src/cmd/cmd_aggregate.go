@@ -19,8 +19,14 @@ func RunAggregateCmdLine() {
 	sybil.FLAGS.DEBUG = true
 	sybil.Debug("AGGREGATING")
 
-	if err := sybil.DecodeFlags(); err != nil {
-		fmt.Fprintln(os.Stderr, "aggregate: failed to decode flags:", err)
+	if sybil.FLAGS.PROTO {
+		if err := sybil.DecodeFlagsProto(); err != nil {
+			fmt.Fprintln(os.Stderr, "aggregate: failed to decode flags as protobuf:", err)
+		}
+	} else {
+		if err := sybil.DecodeFlags(); err != nil {
+			fmt.Fprintln(os.Stderr, "aggregate: failed to decode flags as gob:", err)
+		}
 	}
 	sybil.FLAGS.PRINT = true
 	sybil.FLAGS.ENCODE_RESULTS = false

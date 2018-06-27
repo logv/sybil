@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package internalpb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+message FlagDefs {
+  string OP = 1;
+  // print results out
+  bool PRINT = 2;
+  // save records that match filter to tsv files
+  bool EXPORT = 3;
+  // list the tables in the db dir
+  bool LIST_TABLES = 4;
+
+  // for usage with distributed queries
+  // load query flags from stdin as gob encoded data
+  bool DECODE_FLAGS = 5;
+  // print the query flags to stdout as binary
+  bool ENCODE_FLAGS = 6;
+  // print the querySpec results to stdout as binary
+  bool ENCODE_RESULTS = 7;
+
+  string INT_FILTERS = 8;
+  string STR_FILTERS = 9;
+  // regex replacement for strings
+  string STR_REPLACE = 10;
+  string SET_FILTERS = 11;
+
+  string INTS = 12;
+  string STRS = 13;
+  string GROUPS = 14;
+  string DISTINCT = 15;
+
+  bool TIME = 16;
+  string TIME_COL = 17;
+  int64 TIME_BUCKET = 18 [(gogoproto.customtype) = "int", (gogoproto.nullable) = false];
+  int64 HIST_BUCKET = 19 [(gogoproto.customtype) = "int", (gogoproto.nullable) = false];
+  bool LOG_HIST = 20;
+
+  string FIELD_SEPARATOR = 21;
+  string FILTER_SEPARATOR = 22;
+  bool LOAD_AND_QUERY = 23;
+  bool READ_INGESTION_LOG = 24;
+  bool READ_ROWSTORE = 25;
+  bool SKIP_COMPACT = 26;
+
+  bool PROFILE = 27;
+  bool PROFILE_MEM = 28;
+
+  bool RECYCLE_MEM = 29;
+  bool CACHED_QUERIES = 30;
+
+  string WEIGHT_COL = 31;
+
+  int64 LIMIT = 32 [(gogoproto.customtype) = "int", (gogoproto.nullable) = false];
+
+  bool DEBUG = 33;
+  bool JSON = 34;
+  bool GC = 35;
+
+  string DIR = 36;
+  string SORT = 37;
+  string PRUNE_BY = 38;
+  string TABLE = 39;
+  bool PRINT_INFO = 40;
+  bool SAMPLES = 41;
+
+  bool UPDATE_TABLE_INFO = 42;
+  bool SKIP_OUTLIERS = 43;
+
+  // STATS
+  bool ANOVA_ICC = 44;
+
+  bool WRITE_BLOCK_INFO = 45;
+
+  // If true protobuf encoding is used for flags.
+  bool PROTO = 46;
+}
+
