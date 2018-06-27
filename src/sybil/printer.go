@@ -359,6 +359,17 @@ func (r *Record) toSample() *Sample {
 			sample[col.getStringForKey(name)] = col.getStringForVal(int32(val))
 		}
 	}
+	for name, vals := range r.SetMap {
+		if r.Populated[name] == SET_VAL {
+			col := r.block.GetColumnInfo(int16(name))
+			sName := col.getStringForKey(int(name))
+			sVals := []string{}
+			for _, val := range vals {
+				sVals = append(sVals, col.getStringForVal(int32(val)))
+			}
+			sample[sName] = sVals
+		}
+	}
 
 	return &sample
 }

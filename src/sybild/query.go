@@ -218,6 +218,20 @@ func toString(v string) *google_protobuf.Value {
 	}
 }
 
+func toList(vs []string) *google_protobuf.Value {
+	var vals []*google_protobuf.Value
+	for _, v := range vs {
+		vals = append(vals, toString(v))
+	}
+	return &google_protobuf.Value{
+		Kind: &google_protobuf.Value_ListValue{
+			ListValue: &google_protobuf.ListValue{
+				Values: vals,
+			},
+		},
+	}
+}
+
 func toNumber(v float64) *google_protobuf.Value {
 	return &google_protobuf.Value{
 		Kind: &google_protobuf.Value_NumberValue{
@@ -234,6 +248,8 @@ func toValue(v interface{}) *google_protobuf.Value {
 		return toNumber(t)
 	case string:
 		return toString(t)
+	case []string:
+		return toList(t)
 	case sybil.IntField:
 		return toNumber(float64(t))
 	case sybil.StrField:

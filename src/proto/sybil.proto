@@ -153,7 +153,7 @@ message FieldValue {
     double avg = 1;
     Histogram hist = 2;
     string str = 3;
-    // TODO: set fields
+    SetField set = 4;
   }
 }
 
