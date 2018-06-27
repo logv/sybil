@@ -157,6 +157,7 @@ message FieldValue {
   }
 }
 
+// QueryResult is a set of results.
 message QueryResult {
   map <string, FieldValue> values = 1;
   uint64 count = 2;
@@ -164,6 +165,7 @@ message QueryResult {
   uint64 distinct = 4;
 }
 
+// QueryResults is a set of results.
 message QueryResults {
   repeated QueryResult results = 1;
 }

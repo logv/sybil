@@ -438,6 +438,8 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		IntFilters:      splitFilters(flags.INT_FILTERS, fs, flts),
 		StrFilters:      splitFilters(flags.STR_FILTERS, fs, flts),
 		SetFilters:      splitFilters(flags.SET_FILTERS, fs, flts),
+
+		ReadIngestionLog: flags.READ_ROWSTORE,
 		// TODO: replacements
 	}
 	if flags.SAMPLES {

@@ -55,6 +55,8 @@ func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryRespon
 		INT_FILTERS: joinFilters(r.IntFilters),
 		STR_FILTERS: joinFilters(r.StrFilters),
 		SET_FILTERS: joinFilters(r.SetFilters),
+
+		READ_INGESTION_LOG: r.ReadIngestionLog,
 	}
 	results, err := callSybil(flags)
 	if err != nil {
