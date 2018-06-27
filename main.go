@@ -24,6 +24,7 @@ func setupCommands() {
 	cmdFuncs["inspect"] = cmd.RunInspectCmdLine
 	cmdFuncs["aggregate"] = cmd.RunAggregateCmdLine
 	cmdFuncs["version"] = cmd.RunVersionCmdLine
+	cmdFuncs["serve"] = cmd.RunServeCmdLine
 
 	for k := range cmdFuncs {
 		cmdKeys = append(cmdKeys, k)

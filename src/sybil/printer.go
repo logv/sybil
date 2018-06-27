@@ -374,6 +374,42 @@ type PrintSpec struct {
 	JSON          bool
 }
 
+func (t *Table) LoadSamples(limit int) ([]*Sample, error) {
+	count := 0
+	records := make(RecordList, limit)
+	for _, b := range t.BlockList {
+		for _, r := range b.Matched {
+			if r == nil {
+				records = records[:count]
+				break
+			}
+
+			if count >= limit {
+				break
+			}
+
+			records[count] = r
+			count++
+		}
+
+		if count >= limit {
+			break
+		}
+	}
+
+	samples := make([]*Sample, 0)
+	for _, r := range records {
+		if r == nil {
+			break
+		}
+
+		s := r.toSample()
+		samples = append(samples, s)
+	}
+
+	return samples, nil
+}
+
 func (t *Table) PrintSamples(printSpec *PrintSpec) {
 	count := 0
 	records := make(RecordList, printSpec.Limit)
@@ -494,6 +530,34 @@ func (t *Table) printColsOfType(wantedType int8) {
 	for _, v := range t.getColsOfType(wantedType) {
 		fmt.Println(" ", v)
 	}
+}
+
+type ColInfo struct {
+	Count             int64
+	Size              int64
+	AverageObjectSize float64
+	Strs              []string
+	Ints              []string
+	Sets              []string
+}
+
+func (t *Table) ColInfo() *ColInfo {
+	r := &ColInfo{}
+	count := int64(0)
+	size := int64(0)
+	for _, block := range t.BlockList {
+		count += int64(block.Info.NumRecords)
+		size += block.Size
+	}
+
+	r.Count = count
+	r.Size = size
+	r.AverageObjectSize = float64(size) / float64(count)
+
+	r.Strs = t.getColsOfType(STR_VAL)
+	r.Ints = t.getColsOfType(INT_VAL)
+	r.Sets = t.getColsOfType(SET_VAL)
+	return r
 }
 
 func (t *Table) PrintColInfo(printSpec *PrintSpec) {
