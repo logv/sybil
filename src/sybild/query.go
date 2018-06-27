@@ -122,7 +122,7 @@ func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults)
 }
 
 func querySpecResultsToTimeResults(qr *pb.QueryRequest, qresults sybil.QueryResults) *pb.QueryResponse {
-	results := make(map[int64]*pb.QueryResults, 0)
+	results := make(map[int64]*pb.QueryResults)
 
 	isTopResult := make(map[string]bool)
 	sorted := qresults.Sorted
@@ -156,6 +156,9 @@ func sybilResultToPbQueryResult(qr *pb.QueryRequest, result *sybil.Result) *pb.Q
 		Count:   uint64(result.Count),
 		Samples: uint64(result.Samples),
 		Values:  make(map[string]*pb.FieldValue),
+	}
+	if result.Distinct != nil {
+		qresult.Distinct = result.Distinct.Cardinality()
 	}
 	for field, hist := range result.Hists {
 		if qr.Op == pb.QueryOp_AVERAGE {
