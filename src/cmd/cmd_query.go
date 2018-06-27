@@ -376,6 +376,24 @@ func split(s, sep string) []string {
 	return strings.Split(s, sep)
 }
 
+func splitFilters(s, sep, fSep string) []*pb.QueryFilter {
+	if s == "" {
+		return nil
+	}
+	var result []*pb.QueryFilter
+
+	for _, filter := range strings.Split(s, sep) {
+		parts := strings.Split(filter, fSep)
+		// TODO: check filter validity
+		result = append(result, &pb.QueryFilter{
+			Column: parts[0],
+			Op:     pb.QueryFilterOp(pb.QueryFilterOp_value[strings.ToUpper(parts[1])]),
+			Value:  parts[2],
+		})
+	}
+	return result
+}
+
 func runQueryGRPC(flags *sybil.FlagDefs) error {
 	ctx := context.Background()
 	opts := []grpc.DialOption{
@@ -408,15 +426,18 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		}
 		return m.Marshal(os.Stdout, r)
 	}
+	fs, flts := flags.FIELD_SEPARATOR, flags.FILTER_SEPARATOR
 	q := &pb.QueryRequest{
 		Dataset:         flags.TABLE,
-		Ints:            split(flags.INTS, flags.FIELD_SEPARATOR),
-		Strs:            split(flags.STRS, flags.FIELD_SEPARATOR),
-		GroupBy:         split(flags.GROUPS, flags.FIELD_SEPARATOR),
-		DistinctGroupBy: split(flags.DISTINCT, flags.FIELD_SEPARATOR),
+		Ints:            split(flags.INTS, fs),
+		Strs:            split(flags.STRS, fs),
+		GroupBy:         split(flags.GROUPS, fs),
+		DistinctGroupBy: split(flags.DISTINCT, fs),
 		Limit:           int64(flags.LIMIT),
 		SortBy:          flags.SORT,
-		// TODO: filters
+		IntFilters:      splitFilters(flags.INT_FILTERS, fs, flts),
+		StrFilters:      splitFilters(flags.STR_FILTERS, fs, flts),
+		SetFilters:      splitFilters(flags.SET_FILTERS, fs, flts),
 		// TODO: replacements
 	}
 	if flags.SAMPLES {

@@ -42,16 +42,19 @@ func (s *Server) Ingest(ctx context.Context, r *pb.IngestRequest) (*pb.IngestRes
 func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryResponse, error) {
 	json.NewEncoder(os.Stdout).Encode(r)
 	flags := &sybil.FlagDefs{
-		OP:       string(opToSybilOp[r.Op]),
-		TABLE:    r.Dataset,
-		LIMIT:    int(r.Limit),
-		SORT:     r.SortBy,
-		TIME:     r.Type == pb.QueryType_TIME_SERIES,
-		SAMPLES:  r.Type == pb.QueryType_SAMPLES,
-		INTS:     strings.Join(r.Ints, ","),
-		STRS:     strings.Join(r.Strs, ","),
-		GROUPS:   strings.Join(r.GroupBy, ","),
-		DISTINCT: strings.Join(r.DistinctGroupBy, ","),
+		OP:          string(opToSybilOp[r.Op]),
+		TABLE:       r.Dataset,
+		LIMIT:       int(r.Limit),
+		SORT:        r.SortBy,
+		TIME:        r.Type == pb.QueryType_TIME_SERIES,
+		SAMPLES:     r.Type == pb.QueryType_SAMPLES,
+		INTS:        strings.Join(r.Ints, ","),
+		STRS:        strings.Join(r.Strs, ","),
+		GROUPS:      strings.Join(r.GroupBy, ","),
+		DISTINCT:    strings.Join(r.DistinctGroupBy, ","),
+		INT_FILTERS: joinFilters(r.IntFilters),
+		STR_FILTERS: joinFilters(r.StrFilters),
+		SET_FILTERS: joinFilters(r.SetFilters),
 	}
 	results, err := callSybil(flags)
 	if err != nil {

@@ -16,6 +16,11 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/struct"
 )
 
+const (
+	defaultFieldSeparator  = ","
+	defaultFilterSeparator = ":"
+)
+
 var defaultFlags = &sybil.FlagDefs{
 	TIME_COL:         "time",
 	TIME_BUCKET:      3600,
@@ -178,6 +183,18 @@ func sybilResultToPbQueryResult(qr *pb.QueryRequest, result *sybil.Result) *pb.Q
 		}
 	}
 	return qresult
+}
+
+func joinFilters(filters []*pb.QueryFilter) string {
+	var parts []string
+	for _, f := range filters {
+		parts = append(parts, strings.Join([]string{
+			f.Column,
+			strings.ToLower(pb.QueryFilterOp_name[int32(f.Op)]),
+			f.Value,
+		}, defaultFilterSeparator))
+	}
+	return strings.Join(parts, defaultFieldSeparator)
 }
 
 func sybilHistToPbHist(h sybil.Histogram) *pb.Histogram {
