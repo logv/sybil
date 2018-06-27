@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
@@ -12,8 +14,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/struct"
+
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/logv/sybil/src/sybil"
+	pb "github.com/logv/sybil/src/sybilpb"
 	"github.com/pkg/errors"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 type Dictionary map[string]interface{}
@@ -244,6 +252,19 @@ func RunIngestCmdLine() {
 }
 
 func runIngestCmdLine(flags *sybil.FlagDefs, digestFile string, ints string, csv bool, excludes string, jsonPath string, filePath string) error {
+	if flags.DIAL != "" {
+
+		var r io.ReadCloser = os.Stdin
+		var err error
+		if filePath != "" {
+			r, err = os.Open(filePath)
+		}
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+		return runIngestGRPC(flags, r)
+	}
 
 	if flags.TABLE == "" {
 		flag.PrintDefaults()
@@ -312,4 +333,61 @@ func runIngestCmdLine(flags *sybil.FlagDefs, digestFile string, ints string, csv
 		return err
 	}
 	return t.IngestRecords(digestFile)
+}
+
+func runIngestGRPC(flags *sybil.FlagDefs, r io.Reader) error {
+	ctx := context.Background()
+	opts := []grpc.DialOption{
+		// todo
+		grpc.WithInsecure(),
+	}
+	conn, err := grpc.Dial(flags.DIAL, opts...)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	c := pb.NewSybilClient(conn)
+
+	m := &jsonpb.Marshaler{OrigName: true}
+
+	maxErrs := 100
+	var errs int
+	var vals []*structpb.Struct
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		v := &structpb.Struct{}
+		if err := jsonpb.Unmarshal(bytes.NewReader(s.Bytes()), v); err != nil {
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				sybil.Debug("ERR", err)
+				errs++
+				if errs > maxErrs {
+					break
+				}
+				continue
+			}
+		}
+		vals = append(vals, v)
+	}
+	if err := s.Err(); err != nil {
+		return err
+	}
+	i := &pb.IngestRequest{
+		Dataset: flags.TABLE,
+		Records: vals,
+	}
+	qr, err := c.Ingest(ctx, i)
+	if err != nil {
+		return err
+	}
+	if err := m.Marshal(os.Stdout, qr); err != nil {
+		return err
+	}
+	if errs > 0 {
+		fmt.Fprintln(os.Stderr, "exiting due to error threshold being reached:", errs)
+		os.Exit(errs)
+	}
+	return nil
 }

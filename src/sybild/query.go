@@ -63,7 +63,7 @@ func setDefaults(flags *sybil.FlagDefs) {
 	flags.SKIP_OUTLIERS = defaultFlags.SKIP_OUTLIERS
 }
 
-func callSybil(flags *sybil.FlagDefs) (*sybil.NodeResults, error) {
+func sybilQuery(flags *sybil.FlagDefs) (*sybil.NodeResults, error) {
 	setDefaults(flags)
 	const sybilBinary = "sybil"
 	var sybilFlags = []string{"query", "-decode-flags", "-encode-results"}

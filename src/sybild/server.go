@@ -1,7 +1,9 @@
 package sybild
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
@@ -9,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/logv/sybil/src/sybil"
 	pb "github.com/logv/sybil/src/sybilpb"
 )
@@ -35,8 +38,24 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 }
 
 func (s *Server) Ingest(ctx context.Context, r *pb.IngestRequest) (*pb.IngestResponse, error) {
+	fmt.Println("ingest:")
 	json.NewEncoder(os.Stdout).Encode(r)
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+
+	buf := new(bytes.Buffer)
+	for _, r := range r.Records {
+		err := (&jsonpb.Marshaler{}).Marshal(buf, r)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := sybilIngest(r.Dataset, buf)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: this is presuming success on each record
+	return &pb.IngestResponse{
+		NumberInserted: int64(len(r.Records)),
+	}, nil
 }
 
 func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryResponse, error) {
@@ -58,7 +77,7 @@ func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryRespon
 
 		READ_INGESTION_LOG: r.ReadIngestionLog,
 	}
-	results, err := callSybil(flags)
+	results, err := sybilQuery(flags)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +99,7 @@ func (s *Server) ListTables(ctx context.Context, r *pb.ListTablesRequest) (*pb.L
 		DIR:         s.DbDir,
 		LIST_TABLES: true,
 	}
-	results, err := callSybil(flags)
+	results, err := sybilQuery(flags)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +115,7 @@ func (s *Server) GetTable(ctx context.Context, r *pb.GetTableRequest) (*pb.Table
 		PRINT_INFO: true,
 		TABLE:      r.Name,
 	}
-	results, err := callSybil(flags)
+	results, err := sybilQuery(flags)
 	if err != nil {
 		return nil, err
 	}
