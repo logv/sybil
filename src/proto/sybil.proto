@@ -133,7 +133,7 @@ message HistogramOptions {
 message Histogram {
   double mean = 1;
   repeated int64 percentiles = 5;
-  repeated int64 buckets = 6;
+  map<int64,int64> buckets = 6;
   double std_deviation = 9;
 }
 
@@ -147,11 +147,13 @@ message SetField {
   repeated string values = 1;
 }
 
+// FieldValue is either an average, a historgram, or a string.
 message FieldValue {
   oneof value {
     double avg = 1;
     Histogram hist = 2;
     string str = 3;
+    // TODO: set fields
   }
 }
 
