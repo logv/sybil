@@ -46,6 +46,7 @@ func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryRespon
 		TABLE:    r.Dataset,
 		LIMIT:    int(r.Limit),
 		SORT:     r.SortBy,
+		TIME:     r.Type == pb.QueryType_TIME_SERIES,
 		SAMPLES:  r.Type == pb.QueryType_SAMPLES,
 		INTS:     strings.Join(r.Ints, ","),
 		STRS:     strings.Join(r.Strs, ","),

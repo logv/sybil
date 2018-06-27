@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -390,12 +389,14 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 	defer conn.Close()
 	c := pb.NewSybilClient(conn)
 
+	m := &jsonpb.Marshaler{OrigName: true}
+
 	if flags.LIST_TABLES {
 		r, err := c.ListTables(ctx, &pb.ListTablesRequest{})
 		if err != nil {
 			return err
 		}
-		return json.NewEncoder(os.Stdout).Encode(r)
+		return m.Marshal(os.Stdout, r)
 	}
 
 	if flags.PRINT_INFO {
@@ -405,7 +406,7 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		if err != nil {
 			return err
 		}
-		return json.NewEncoder(os.Stdout).Encode(r)
+		return m.Marshal(os.Stdout, r)
 	}
 	q := &pb.QueryRequest{
 		Dataset:         flags.TABLE,
@@ -427,9 +428,12 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		q.Op = pb.QueryOp_HISTOGRAM
 		q.Type = pb.QueryType_DISTRIBUTION
 	}
+	if flags.TIME {
+		q.Type = pb.QueryType_TIME_SERIES
+	}
 	qr, err := c.Query(ctx, q)
 	if err != nil {
 		return err
 	}
-	return (&jsonpb.Marshaler{}).Marshal(os.Stdout, qr)
+	return m.Marshal(os.Stdout, qr)
 }

@@ -97,40 +97,13 @@ var opToSybilOp = map[pb.QueryOp]sybil.Op{
 }
 
 func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults) *pb.QueryResponse {
+	if qr.Type == pb.QueryType_TIME_SERIES {
+		return querySpecResultsToTimeResults(qr, qresults)
+	}
 	results := make([]*pb.QueryResult, 0)
-	r := qresults.Sorted
-	for _, result := range r {
+	for _, result := range qresults.Sorted {
+		qresult := sybilResultToPbQueryResult(qr, result)
 
-		qresult := &pb.QueryResult{
-			Count:   result.Count,
-			Samples: result.Samples,
-			Values:  make(map[string]*pb.FieldValue),
-		}
-		for field, hist := range result.Hists {
-			if qr.Op == pb.QueryOp_AVERAGE {
-				qresult.Values[field] = &pb.FieldValue{
-					Value: &pb.FieldValue_Avg{
-						Avg: hist.Mean(),
-					},
-				}
-			} else {
-				qresult.Values[field] = &pb.FieldValue{
-					Value: &pb.FieldValue_Hist{
-						Hist: sybilHistToPbHist(hist),
-					},
-				}
-
-			}
-		}
-		var groupKey = strings.Split(result.GroupByKey, sybil.GROUP_DELIMITER)
-		for i, g := range qr.GroupBy {
-			fmt.Println(g, "=", groupKey[i])
-			qresult.Values[g] = &pb.FieldValue{
-				Value: &pb.FieldValue_Str{
-					Str: groupKey[i],
-				},
-			}
-		}
 		//fmt.Println(qresult)
 		results = append(results, qresult)
 		// TODO: needed?
@@ -141,6 +114,70 @@ func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults)
 	return &pb.QueryResponse{
 		Results: results,
 	}
+}
+
+func querySpecResultsToTimeResults(qr *pb.QueryRequest, qresults sybil.QueryResults) *pb.QueryResponse {
+	results := make(map[int64]*pb.QueryResults, 0)
+
+	isTopResult := make(map[string]bool)
+	sorted := qresults.Sorted
+	if len(sorted) > int(qr.Limit) {
+		// TODO: 0 limit?
+		sorted = sorted[:qr.Limit]
+	}
+	for _, result := range sorted {
+		isTopResult[result.GroupByKey] = true
+	}
+
+	for ts, v := range qresults.TimeResults {
+		//results[ts] = make([]*pb.QueryResult, 0)
+		k := int64(ts)
+		results[k] = &pb.QueryResults{}
+		for _, r := range v {
+			_, ok := isTopResult[r.GroupByKey]
+			if !ok {
+				continue
+			}
+			results[k].Results = append(results[k].Results, sybilResultToPbQueryResult(qr, r))
+		}
+	}
+	return &pb.QueryResponse{
+		TimeResults: results,
+	}
+}
+
+func sybilResultToPbQueryResult(qr *pb.QueryRequest, result *sybil.Result) *pb.QueryResult {
+	qresult := &pb.QueryResult{
+		Count:   result.Count,
+		Samples: result.Samples,
+		Values:  make(map[string]*pb.FieldValue),
+	}
+	for field, hist := range result.Hists {
+		if qr.Op == pb.QueryOp_AVERAGE {
+			qresult.Values[field] = &pb.FieldValue{
+				Value: &pb.FieldValue_Avg{
+					Avg: hist.Mean(),
+				},
+			}
+		} else {
+			qresult.Values[field] = &pb.FieldValue{
+				Value: &pb.FieldValue_Hist{
+					Hist: sybilHistToPbHist(hist),
+				},
+			}
+
+		}
+	}
+	var groupKey = strings.Split(result.GroupByKey, sybil.GROUP_DELIMITER)
+	for i, g := range qr.GroupBy {
+		fmt.Println(g, "=", groupKey[i])
+		qresult.Values[g] = &pb.FieldValue{
+			Value: &pb.FieldValue_Str{
+				Str: groupKey[i],
+			},
+		}
+	}
+	return qresult
 }
 
 func sybilHistToPbHist(h sybil.Histogram) *pb.Histogram {
