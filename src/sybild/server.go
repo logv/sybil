@@ -105,8 +105,8 @@ func (s *Server) GetTable(ctx context.Context, r *pb.GetTableRequest) (*pb.Table
 		StrColumns:        ci.Strs,
 		IntColumns:        ci.Ints,
 		SetColumns:        ci.Sets,
-		Count:             ci.Count,
-		StorageSize:       ci.Size,
+		Count:             uint64(ci.Count),
+		StorageSize:       uint64(ci.Size),
 		AverageObjectSize: ci.AverageObjectSize,
 	}, nil
 }

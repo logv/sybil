@@ -159,9 +159,9 @@ message FieldValue {
 
 message QueryResult {
   map <string, FieldValue> values = 1;
-  int64 count = 2;
-  int64 samples = 3;
-  int64 distinct = 4;
+  uint64 count = 2;
+  uint64 samples = 3;
+  uint64 distinct = 4;
 }
 
 message QueryResults {
@@ -201,9 +201,9 @@ message Table {
   // the set of set column names.
   repeated string set_columns = 4;
   // the approximate count of samples.
-  int64 count = 5;
+  uint64 count = 5;
   // the approximate size in terms of disk utilization.
-  int64 storage_size = 6;
+  uint64 storage_size = 6;
   // the mean sample storage size.
   double average_object_size = 7;
 }

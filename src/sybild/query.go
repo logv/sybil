@@ -148,8 +148,8 @@ func querySpecResultsToTimeResults(qr *pb.QueryRequest, qresults sybil.QueryResu
 
 func sybilResultToPbQueryResult(qr *pb.QueryRequest, result *sybil.Result) *pb.QueryResult {
 	qresult := &pb.QueryResult{
-		Count:   result.Count,
-		Samples: result.Samples,
+		Count:   uint64(result.Count),
+		Samples: uint64(result.Samples),
 		Values:  make(map[string]*pb.FieldValue),
 	}
 	for field, hist := range result.Hists {
