@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,6 +9,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/logv/sybil/src/sybil"
