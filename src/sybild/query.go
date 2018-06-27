@@ -1,8 +1,13 @@
 package sybild
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
+	"io"
 	"log"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/logv/sybil/src/sybil"
@@ -11,68 +16,89 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/struct"
 )
 
-var opsToSybilOps = map[pb.QueryOp]sybil.Op{
+var defaultFlags = &sybil.FlagDefs{
+	TIME_COL:         "time",
+	TIME_BUCKET:      3600,
+	FIELD_SEPARATOR:  ",",
+	FILTER_SEPARATOR: ":",
+	LOAD_AND_QUERY:   true,
+	RECYCLE_MEM:      true,
+	GC:               true,
+	DIR:              "./db/",
+	SORT:             "$COUNT",
+	PRUNE_BY:         "$COUNT",
+	SKIP_OUTLIERS:    true,
+}
+
+func setDefaults(flags *sybil.FlagDefs) {
+	if flags.TIME_COL == "" {
+		flags.TIME_COL = defaultFlags.TIME_COL
+	}
+	if flags.TIME_BUCKET == 0 {
+		flags.TIME_BUCKET = defaultFlags.TIME_BUCKET
+	}
+	if flags.FIELD_SEPARATOR == "" {
+		flags.FIELD_SEPARATOR = defaultFlags.FIELD_SEPARATOR
+	}
+	if flags.FILTER_SEPARATOR == "" {
+		flags.FILTER_SEPARATOR = defaultFlags.FILTER_SEPARATOR
+	}
+	if flags.DIR == "" {
+		flags.DIR = defaultFlags.DIR
+	}
+	if flags.SORT == "" {
+		flags.SORT = defaultFlags.SORT
+	}
+	if flags.PRUNE_BY == "" {
+		flags.PRUNE_BY = defaultFlags.PRUNE_BY
+	}
+	flags.LOAD_AND_QUERY = defaultFlags.LOAD_AND_QUERY
+	flags.RECYCLE_MEM = defaultFlags.RECYCLE_MEM
+	flags.GC = defaultFlags.GC
+	flags.SKIP_OUTLIERS = defaultFlags.SKIP_OUTLIERS
+}
+
+func callSybil(flags *sybil.FlagDefs) (*sybil.NodeResults, error) {
+	setDefaults(flags)
+	const sybilBinary = "sybil"
+	var sybilFlags = []string{"query", "-decode-flags", "-encode-results"}
+	c := exec.Command(sybilBinary, sybilFlags...)
+	c.Stderr = os.Stderr
+	si, err := c.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err := gob.NewEncoder(si).Encode(flags); err != nil {
+		return nil, err
+	}
+	so, err := c.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	if err := c.Start(); err != nil {
+		return nil, err
+	}
+	results := &sybil.NodeResults{}
+	buf := new(bytes.Buffer)
+	io.Copy(buf, so)
+	if err := gob.NewDecoder(buf).Decode(results); err != nil {
+		return nil, err
+	}
+	if err := c.Wait(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+var opToSybilOp = map[pb.QueryOp]sybil.Op{
 	pb.QueryOp_QUERY_OP_UNKNOWN: sybil.NO_OP,
 	pb.QueryOp_AVERAGE:          sybil.OP_AVG,
 	pb.QueryOp_HISTOGRAM:        sybil.OP_HIST,
 }
 
-func queryToSpecs(t *sybil.Table, r *pb.QueryRequest) (*sybil.LoadSpec, *sybil.QuerySpec, error) {
-	t.LoadTableInfo()
-	//return nil,nil,err
-	t.LoadRecords(nil)
-	params := sybil.QueryParams{
-		Limit:   int(r.Limit),
-		Samples: r.Type == pb.QueryType_SAMPLES,
-	}
-	if r.Type == pb.QueryType_DISTRIBUTION {
-		params.HistogramParameters.Type = sybil.HistogramTypeBasic
-		// todo other params
-	}
-	loadSpec := t.NewLoadSpec()
-	if params.Samples {
-		sybil.HOLD_MATCHES = true
-		loadSpec.LoadAllColumns = true
-		loadSpec.SkipDeleteBlocksAfterQuery = true
-	}
-
-	for _, v := range r.Strs {
-		loadSpec.Str(v)
-	}
-	for _, v := range r.Ints {
-		loadSpec.Int(v)
-		params.Aggregations = append(params.Aggregations, t.Aggregation(v, opsToSybilOps[r.Op]))
-	}
-	for _, v := range r.GroupBy {
-		params.Groups = append(params.Groups, t.Grouping(v))
-		switch t.GetColumnType(v) {
-		case sybil.STR_VAL:
-			loadSpec.Str(v)
-		case sybil.INT_VAL:
-			loadSpec.Int(v)
-		default:
-			return nil, nil, fmt.Errorf("unknown type %v", t.GetColumnType(v))
-		}
-	}
-	for _, v := range r.DistinctGroupBy {
-		params.Distincts = append(params.Distincts, t.Grouping(v))
-		switch t.GetColumnType(v) {
-		case sybil.STR_VAL:
-			loadSpec.Str(v)
-		case sybil.INT_VAL:
-			loadSpec.Int(v)
-		default:
-			return nil, nil, fmt.Errorf("unknown type %v", t.GetColumnType(v))
-		}
-	}
-
-	querySpec := &sybil.QuerySpec{QueryParams: params}
-	return &loadSpec, querySpec, nil
-}
-
 func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults) *pb.QueryResponse {
 	results := make([]*pb.QueryResult, 0)
-	r := qresults.Results
+	r := qresults.Sorted
 	for _, result := range r {
 
 		qresult := &pb.QueryResult{
@@ -105,11 +131,11 @@ func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults)
 				},
 			}
 		}
-		fmt.Println(qresult)
+		//fmt.Println(qresult)
 		results = append(results, qresult)
 		// TODO: needed?
 		if qr.Limit > 0 && int64(len(results)) == int64(qr.Limit) {
-			continue
+			break
 		}
 	}
 	return &pb.QueryResponse{

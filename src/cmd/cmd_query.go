@@ -413,8 +413,9 @@ func runQueryGRPC(flags *sybil.FlagDefs) error {
 		GroupBy:         split(flags.GROUPS, flags.FIELD_SEPARATOR),
 		DistinctGroupBy: split(flags.DISTINCT, flags.FIELD_SEPARATOR),
 		Limit:           int64(flags.LIMIT),
-		//Samples:         flags.SAMPLES,
-		// TODO
+		SortBy:          flags.SORT,
+		// TODO: filters
+		// TODO: replacements
 	}
 	if flags.SAMPLES {
 		q.Type = pb.QueryType_SAMPLES
