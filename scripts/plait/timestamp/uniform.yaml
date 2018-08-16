@@ -1,13 +1,19 @@
 define:
   now: time.time()
-  max_offset: 60 * 1000
+  max_offset: 60 * 60 * 24 # we distribute uniformly on a day
+  per_day: 1000 * 1000 # one million samples per day
+  seconds_in_day: 60 * 60 * 24
 
 fields:
   _offset:
     random: (random() * $max_offset) - ($max_offset / 2)
 
+  _base:
+    initial: 1
+    lambda: prev._base + 1
+
   time:
-    lambda: $now + this._offset
+    lambda: $now + this._offset + (this._base/$per_day) * $seconds_in_day
 
 hide:
   - offset
