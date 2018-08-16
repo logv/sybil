@@ -1,4 +1,3 @@
-
 fields:
   status:
     lambda: random.choice([200, 300, 403, 404, 503])
@@ -13,8 +12,11 @@ fields:
   weight: 
     lambda: random.choice([1,10,100])
 
-mixin:
-    - timestamp/uniform.yaml
+  _timestamp:
+    template: timestamp/uniform.yaml
+
+  time:
+    lambda: this._timestamp.time
 
 #    record["status"] = str(random.choice(STATII))
 #    record["host"] = rand_host
