@@ -2,9 +2,7 @@ package sybild
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	context "golang.org/x/net/context"
@@ -34,24 +32,29 @@ func NewServer(opts ...ServerOption) (*Server, error) {
 	for _, o := range opts {
 		o(s)
 	}
+
+	fmt.Println("Serving DB out of", s.DbDir)
 	return s, nil
 }
 
 func (s *Server) Ingest(ctx context.Context, r *pb.IngestRequest) (*pb.IngestResponse, error) {
-	fmt.Println("ingest:")
-	json.NewEncoder(os.Stdout).Encode(r)
+	fmt.Println("ingesting", len(r.Records), "records into", r.Dataset)
 
 	buf := new(bytes.Buffer)
 	for _, r := range r.Records {
 		err := (&jsonpb.Marshaler{}).Marshal(buf, r)
+
+		// TODO: dont error if only one sample is bad
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	err := sybilIngest(r.Dataset, buf)
 	if err != nil {
 		return nil, err
 	}
+
 	// TODO: this is presuming success on each record
 	return &pb.IngestResponse{
 		NumberInserted: int64(len(r.Records)),
@@ -59,23 +62,24 @@ func (s *Server) Ingest(ctx context.Context, r *pb.IngestRequest) (*pb.IngestRes
 }
 
 func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryResponse, error) {
-	json.NewEncoder(os.Stdout).Encode(r)
+	fmt.Println("running query:", r)
 	flags := &sybil.FlagDefs{
-		OP:          string(opToSybilOp[r.Op]),
-		TABLE:       r.Dataset,
-		LIMIT:       int(r.Limit),
-		SORT:        r.SortBy,
-		TIME:        r.Type == pb.QueryType_TIME_SERIES,
-		SAMPLES:     r.Type == pb.QueryType_SAMPLES,
-		INTS:        strings.Join(r.Ints, ","),
-		STRS:        strings.Join(r.Strs, ","),
-		GROUPS:      strings.Join(r.GroupBy, ","),
-		DISTINCT:    strings.Join(r.DistinctGroupBy, ","),
-		INT_FILTERS: joinFilters(r.IntFilters),
-		STR_FILTERS: joinFilters(r.StrFilters),
-		SET_FILTERS: joinFilters(r.SetFilters),
-
+		OP:                 string(opToSybilOp[r.Op]),
+		TABLE:              r.Dataset,
+		LIMIT:              int(r.Limit),
+		SORT:               r.SortBy,
+		TIME:               r.Type == pb.QueryType_TIME_SERIES,
+		SAMPLES:            r.Type == pb.QueryType_SAMPLES,
+		INTS:               strings.Join(r.Ints, ","),
+		STRS:               strings.Join(r.Strs, ","),
+		GROUPS:             strings.Join(r.GroupBy, ","),
+		DISTINCT:           strings.Join(r.DistinctGroupBy, ","),
+		INT_FILTERS:        joinFilters(r.IntFilters),
+		STR_FILTERS:        joinFilters(r.StrFilters),
+		SET_FILTERS:        joinFilters(r.SetFilters),
 		READ_INGESTION_LOG: r.ReadIngestionLog,
+		// TODO: add the missing options:
+		// query cache control, HistogramOptions,
 	}
 	results, err := sybilQuery(flags)
 	if err != nil {
@@ -94,7 +98,6 @@ func (s *Server) Query(ctx context.Context, r *pb.QueryRequest) (*pb.QueryRespon
 
 // ListTables .
 func (s *Server) ListTables(ctx context.Context, r *pb.ListTablesRequest) (*pb.ListTablesResponse, error) {
-	json.NewEncoder(os.Stdout).Encode(r)
 	flags := &sybil.FlagDefs{
 		DIR:         s.DbDir,
 		LIST_TABLES: true,
@@ -109,7 +112,7 @@ func (s *Server) ListTables(ctx context.Context, r *pb.ListTablesRequest) (*pb.L
 }
 
 func (s *Server) GetTable(ctx context.Context, r *pb.GetTableRequest) (*pb.Table, error) {
-	json.NewEncoder(os.Stdout).Encode(r)
+	fmt.Println("getting table info for", r)
 	flags := &sybil.FlagDefs{
 		DIR:        s.DbDir,
 		PRINT_INFO: true,
@@ -136,6 +139,5 @@ func (s *Server) GetTable(ctx context.Context, r *pb.GetTableRequest) (*pb.Table
 }
 
 func (s *Server) Trim(ctx context.Context, r *pb.TrimRequest) (*pb.TrimResponse, error) {
-	json.NewEncoder(os.Stdout).Encode(r)
 	return nil, status.Error(codes.Unimplemented, "not implemented")
 }

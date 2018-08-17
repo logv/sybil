@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func sybilIngest(tableName string, buf io.Reader) error {
@@ -34,6 +32,5 @@ func sybilIngest(tableName string, buf io.Reader) error {
 	}
 	results := new(bytes.Buffer)
 	io.Copy(results, so)
-	spew.Fdump(os.Stderr, results.Bytes())
 	return nil
 }

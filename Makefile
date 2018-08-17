@@ -11,6 +11,9 @@ GO_FLAGS=--ldflags '-extldflags "-static"'
 
 all: sybil
 
+serve: sybil
+	sybil serve
+
 deps:
 	${GOBIN} get -d -v -t ./...
 

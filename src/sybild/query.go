@@ -3,7 +3,6 @@ package sybild
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -109,9 +108,7 @@ func querySpecResultsToResults(qr *pb.QueryRequest, qresults sybil.QueryResults)
 	for _, result := range qresults.Sorted {
 		qresult := sybilResultToPbQueryResult(qr, result)
 
-		//fmt.Println(qresult)
 		results = append(results, qresult)
-		// TODO: needed?
 		if qr.Limit > 0 && int64(len(results)) == int64(qr.Limit) {
 			break
 		}
@@ -126,8 +123,7 @@ func querySpecResultsToTimeResults(qr *pb.QueryRequest, qresults sybil.QueryResu
 
 	isTopResult := make(map[string]bool)
 	sorted := qresults.Sorted
-	if len(sorted) > int(qr.Limit) {
-		// TODO: 0 limit?
+	if qr.Limit > 0 && len(sorted) > int(qr.Limit) {
 		sorted = sorted[:qr.Limit]
 	}
 	for _, result := range sorted {
@@ -178,7 +174,6 @@ func sybilResultToPbQueryResult(qr *pb.QueryRequest, result *sybil.Result) *pb.Q
 	}
 	var groupKey = strings.Split(result.GroupByKey, sybil.GROUP_DELIMITER)
 	for i, g := range qr.GroupBy {
-		fmt.Println(g, "=", groupKey[i])
 		qresult.Values[g] = &pb.FieldValue{
 			Value: &pb.FieldValue_Str{
 				Str: groupKey[i],

@@ -33,6 +33,14 @@ installation
 
     go get github.com/logv/sybil
 
+grpc
+----
+
+Sybil can run as a standalone binary or as a GRPC service. To use the sybil
+grpc service. the server is run with `sybil serve`, while the clients have an
+additional `-dial localhost:7000` flag added to their invocations.
+
+
 additional information
 ----------------------
 

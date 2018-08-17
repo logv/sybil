@@ -24,9 +24,9 @@ func RunServeCmdLine() {
 }
 
 func runServeCmdLine(flags *sybil.FlagDefs) error {
-	//ctx := context.Background()
 	// TODO: handle signals, shutdown
 	// TODO: auth, tls
+	// TODO: add configurable listening address
 	lis, err := net.Listen("tcp", defaultServeListenAddr)
 	if err != nil {
 		return err
