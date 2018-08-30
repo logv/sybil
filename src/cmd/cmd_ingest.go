@@ -40,6 +40,7 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string, tim
 					continue
 				}
 				r.AddIntField(keyName, t.Local().Unix())
+				continue
 			}
 			if INT_CAST[keyName] {
 				val, err := strconv.ParseInt(iv, 10, 64)
