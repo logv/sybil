@@ -29,7 +29,7 @@ type Dictionary map[string]interface{}
 // how many times we try to grab table info when ingesting
 var TABLE_INFO_GRABS = 10
 
-func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) error {
+func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string, timestampFormat string) error {
 	for k, v := range *recordmap {
 		keyName := fmt.Sprint(prefix, k)
 		_, ok := EXCLUDES[keyName]
@@ -41,6 +41,15 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) err
 		var err error
 		switch iv := v.(type) {
 		case string:
+			if TIMESTAMPS[keyName] {
+				t, err := time.Parse(timestampFormat, iv)
+				if err != nil {
+					sybil.Debug(fmt.Sprintf("PROBLEM PARSING '%v' as '%v'", iv, timestampFormat), keyName)
+					continue
+				}
+				r.AddIntField(keyName, t.Local().Unix())
+				continue
+			}
 			if INT_CAST[keyName] {
 				val, cerr := strconv.ParseInt(iv, 10, 64)
 				if cerr == nil {
@@ -57,7 +66,7 @@ func ingestDictionary(r *sybil.Record, recordmap *Dictionary, prefix string) err
 		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
-			err = ingestDictionary(r, &d, prefixName)
+			err = ingestDictionary(r, &d, prefixName, timestampFormat)
 		// This is a set field
 		case []interface{}:
 			keyStrs := make([]string, 0)
@@ -184,7 +193,7 @@ func jsonQuery(obj *interface{}, path []string) []interface{} {
 	return nil
 }
 
-func importJSONRecords(jsonPath string) error {
+func importJSONRecords(jsonPath, timestampFormat string) error {
 	t := sybil.GetTable(sybil.FLAGS.TABLE)
 
 	path := strings.Split(jsonPath, ".")
@@ -213,9 +222,9 @@ func importJSONRecords(jsonPath string) error {
 			switch dict := ing.(type) {
 			case map[string]interface{}:
 				ndict := Dictionary(dict)
-				err = ingestDictionary(r, &ndict, "")
+				err = ingestDictionary(r, &ndict, "", timestampFormat)
 			case Dictionary:
-				err = ingestDictionary(r, &dict, "")
+				err = ingestDictionary(r, &dict, "", timestampFormat)
 			}
 			if err != nil {
 				// TODO: collect error counters?
@@ -233,12 +242,21 @@ func importJSONRecords(jsonPath string) error {
 }
 
 var INT_CAST = make(map[string]bool)
+var TIMESTAMPS = make(map[string]bool)
 var EXCLUDES = make(map[string]bool)
+
+var blank = ""
+var fTimestamps *string
+var fTimestampFormat *string
+var fInts *string
+var fCsv *bool
 
 func RunIngestCmdLine() {
 	ingestfile := flag.String("file", sybil.INGEST_DIR, "name of dir to ingest into")
-	fInts := flag.String("ints", "", "columns to treat as ints (comma delimited)")
-	fCsv := flag.Bool("csv", false, "expect incoming data in CSV format")
+	fInts = flag.String("ints", "", "columns to treat as ints (comma delimited)")
+	fTimestamps = flag.String("timestamps", "", "columns to treat as ints (comma delimited), parsed via timestamp-format")
+	fTimestampFormat = flag.String("timestamp-format", time.RFC3339, "when -timestamps is provided, this is the parsing string used")
+	fCsv = flag.Bool("csv", false, "expect incoming data in CSV format")
 	fExcludes := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 	fJSONPath := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	fReopen := flag.String("infile", "", "input file to use (instead of stdin)")
@@ -287,7 +305,10 @@ func runIngestCmdLine(flags *sybil.FlagDefs, digestFile string, ints string, csv
 		defer profile.Start().Stop()
 	}
 
-	for _, v := range strings.Split(ints, ",") {
+	for _, v := range strings.Split(*fTimestamps, ",") {
+		TIMESTAMPS[v] = true
+	}
+	for _, v := range strings.Split(*fInts, ",") {
 		INT_CAST[v] = true
 	}
 	for _, v := range strings.Split(excludes, ",") {
@@ -324,8 +345,8 @@ func runIngestCmdLine(flags *sybil.FlagDefs, digestFile string, ints string, csv
 	}
 
 	var err error
-	if !csv {
-		err = importJSONRecords(jsonPath)
+	if !*fCsv {
+		err = importJSONRecords(jsonPath, *fTimestampFormat)
 	} else {
 		err = importCsvRecords()
 	}
