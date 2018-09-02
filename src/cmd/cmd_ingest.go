@@ -66,6 +66,12 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string, ti
 			r.AddIntField(key_name, int64(iv))
 		case float64:
 			r.AddIntField(key_name, int64(iv))
+		case bool:
+			if iv {
+				r.AddIntField(key_name, 1)
+			} else {
+				r.AddIntField(key_name, 0)
+			}
 		// nested fields
 		case map[string]interface{}:
 			d := Dictionary(iv)
