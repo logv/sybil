@@ -113,6 +113,7 @@ func (r *Result) toResultJSON(printSpec *PrintSpec, querySpec *QuerySpec) Result
 				inner["buckets"] = getSparseBuckets(r.Hists[agg.Name].GetStrBuckets())
 				inner["stddev"] = r.Hists[agg.Name].StdDev()
 				inner["samples"] = r.Hists[agg.Name].TotalCount()
+				inner["avg"] = r.Hists[agg.Name].Mean()
 			}
 		}
 

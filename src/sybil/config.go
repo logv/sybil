@@ -27,10 +27,11 @@ type FlagDefs struct {
 	STR_REPLACE string // regex replacement for strings
 	SET_FILTERS string
 
-	INTS     string
-	STRS     string
-	GROUPS   string
-	DISTINCT string
+	INTS        string
+	STRS        string
+	GROUPS      string
+	DISTINCT    string
+	MERGE_TABLE *Table
 
 	TIME        bool
 	TIME_COL    string

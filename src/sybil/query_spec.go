@@ -163,6 +163,19 @@ func (rs *Result) Combine(nextResult *Result) {
 
 		if !ok {
 			nh := h.NewHist(h.GetIntInfo())
+
+			if FLAGS.MERGE_TABLE != nil {
+				switch v := nh.(type) {
+				case *HistCompat:
+					v.TrackPercentiles()
+				case *MultiHistCompat:
+					v.TrackPercentiles()
+				default:
+					Warn("Unknown Hist Type during aggregation phase")
+				}
+
+			}
+
 			nh.Combine(h)
 			rs.Hists[k] = nh
 			continue

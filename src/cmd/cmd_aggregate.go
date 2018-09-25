@@ -35,7 +35,9 @@ func RunAggregateCmdLine() {
 		Limit: sybil.FLAGS.LIMIT,
 		JSON:  sybil.FLAGS.JSON,
 	}
+
 	vt := sybil.VTable{}
+	sybil.FLAGS.MERGE_TABLE = &vt.Table
 	vt.StitchResults(printSpec, dirs)
 
 }
