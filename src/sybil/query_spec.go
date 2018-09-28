@@ -185,7 +185,7 @@ func (rs *Result) Combine(nextResult *Result) {
 		// when merging histograms because we can't be sure they were created
 		// with the same extents (being that they may originate from different
 		// nodes)
-		if fastMergeable(h, ph) {
+		if fastMergeable(h, ph) && FLAGS.MERGE_TABLE == nil {
 			rs.Hists[k].Combine(h)
 		} else {
 			rs.Hists[k] = fullMergeHist(h, ph)
