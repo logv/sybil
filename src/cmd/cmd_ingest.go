@@ -251,7 +251,6 @@ var INT_CAST = make(map[string]bool)
 var TIMESTAMPS = make(map[string]bool)
 var EXCLUDES = make(map[string]bool)
 
-var blank = ""
 var fTimestamps *string
 var fTimestampFormat *string
 var fInts *string
