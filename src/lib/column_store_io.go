@@ -543,10 +543,6 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 
 	col.val_string_id_lookup = string_lookup
 
-	is_path_col := false
-	if FLAGS.PATH_KEY != nil {
-		is_path_col = into.Name == *FLAGS.PATH_KEY
-	}
 	var record *Record
 	var r uint32
 
@@ -581,9 +577,6 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 				records[r].Populated[col_id] = STR_VAL
 				records[r].Strs[col_id] = cast_value
 
-				if is_path_col {
-					record.Path = string_lookup[new_value]
-				}
 			}
 		}
 

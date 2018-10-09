@@ -101,7 +101,6 @@ type FlagDefs struct {
 	// Sessionization stuff
 	SESSION_CUTOFF *int
 	RETENTION      *bool
-	PATH_KEY       *string
 	PATH_LENGTH    *int
 
 	// STATS
