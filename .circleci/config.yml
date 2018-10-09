@@ -36,23 +36,8 @@ jobs:
             bash <(curl -s https://codecov.io/bash) -c -F unittests
 
       - run:
-          name: Run fuzz coverage
-          command: |
-            go install
-            make fuzzcoverage
-            cp fuzzcover.html /tmp/test-results
-            bash <(curl -s https://codecov.io/bash) -c -F fuzztests -f fuzzcover.out
-
-      - run:
           name: Run benchmarks
           command: ./scripts/ci_run_benchmarks.sh
-
-      - run:
-          name: Run code coverage
-          command: |
-            make coverage
-            cp cover.html /tmp/test-results
-            bash <(curl -s https://codecov.io/bash)
 
       - store_artifacts:
           path: /tmp/test-results
