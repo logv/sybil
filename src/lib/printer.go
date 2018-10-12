@@ -118,6 +118,8 @@ func (r *Result) toResultJSON(querySpec *QuerySpec) ResultJSON {
 				inner["percentiles"] = r.Hists[agg.Name].GetPercentiles()
 				inner["buckets"] = getSparseBuckets(r.Hists[agg.Name].GetStrBuckets())
 				inner["stddev"] = r.Hists[agg.Name].StdDev()
+				inner["avg"] = r.Hists[agg.Name].Mean()
+				inner["sum"] = r.Hists[agg.Name].Mean() * float64(r.Hists[agg.Name].TotalCount())
 				inner["samples"] = r.Hists[agg.Name].TotalCount()
 			}
 		}
