@@ -3,7 +3,6 @@ BUILD_CMD = ${GOBIN} install
 BINDIR = ./bin
 GOBINDIR = `readlink -f ./bin`
 PROFILE = -tags profile
-LUA = -tags lua
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 LDFLAGS=-all-static
 GO_FLAGS=--ldflags '-extldflags "-static"'
@@ -70,8 +69,8 @@ profile: export BUILD_FLAGS += -tags profile
 profile: bindir
 	make all
 
-luajit: export BUILD_FLAGS += -tags luajit
-luajit: bindir
+grpc: export BUILD_FLAGS += -tags grpc
+grpc: bindir
 	make all
 
 tags:

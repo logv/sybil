@@ -1,3 +1,5 @@
+// +build grpc
+
 package sybil_cmd
 
 import (
