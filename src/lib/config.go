@@ -55,6 +55,7 @@ type FlagDefs struct {
 	HIST_BUCKET int
 	HDR_HIST    bool
 	LOG_HIST    bool
+	T_DIGEST    bool
 
 	FIELD_SEPARATOR    string
 	FILTER_SEPARATOR   string
@@ -153,6 +154,7 @@ func setDefaults() {
 
 	FLAGS.HDR_HIST = false
 	FLAGS.LOG_HIST = false
+	FLAGS.T_DIGEST = false
 
 	DEFAULT_LIMIT := 100
 	FLAGS.LIMIT = DEFAULT_LIMIT

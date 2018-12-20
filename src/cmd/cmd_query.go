@@ -26,6 +26,9 @@ func addPrintFlags() {
 }
 
 func addQueryFlags() {
+	if sybil.ENABLE_TDIGEST {
+		flag.BoolVar(&sybil.FLAGS.T_DIGEST, "tdigest", false, "Use TDIGEST Histograms")
+	}
 
 	flag.StringVar(&sybil.FLAGS.SORT, "sort", SORT_COUNT, "Int Column to sort by")
 	flag.StringVar(&sybil.FLAGS.PRUNE_BY, "prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")

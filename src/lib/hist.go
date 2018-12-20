@@ -29,6 +29,8 @@ func (t *Table) NewHist(info *IntInfo) Histogram {
 	var hist Histogram
 	if FLAGS.LOG_HIST {
 		hist = newMultiHist(t, info)
+	} else if FLAGS.T_DIGEST && ENABLE_TDIGEST {
+		hist = t.NewTDigestHist(info)
 	} else {
 		hist = newBasicHist(t, info)
 	}

@@ -221,6 +221,10 @@ func (t *Table) Aggregation(name string, op string) Aggregation {
 
 	if op == "hist" {
 		agg.HistType = "basic"
+		if FLAGS.T_DIGEST {
+			agg.HistType = "tdigest"
+
+		}
 		if FLAGS.LOG_HIST {
 			agg.HistType = "multi"
 
