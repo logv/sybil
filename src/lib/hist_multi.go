@@ -231,6 +231,15 @@ func (h *MultiHist) TrackPercentiles() {
 		num_hists += 1
 	}
 
+	num_buckets := 1
+	if num_hists > 0 {
+		num_buckets = NUM_BUCKETS / num_hists / 10 * 10
+	}
+
+	if num_buckets < 10 {
+		num_buckets = 10
+	}
+
 	h.Subhists = make([]*HistCompat, num_hists+1)
 
 	right_edge := h.Max
@@ -243,7 +252,7 @@ func (h *MultiHist) TrackPercentiles() {
 
 		right_edge = info.Min
 		h.Subhists[i] = newBasicHist(h.table, &info)
-		h.Subhists[i].TrackPercentiles()
+		h.Subhists[i].TrackPercentiles(num_buckets)
 	}
 
 	// Add the smallest hist to the end from h.Min -> the last bucket
@@ -252,7 +261,7 @@ func (h *MultiHist) TrackPercentiles() {
 	info.Max = right_edge
 
 	h.Subhists[num_hists] = newBasicHist(h.table, &info)
-	h.Subhists[num_hists].TrackPercentiles()
+	h.Subhists[num_hists].TrackPercentiles(num_buckets)
 
 }
 

@@ -60,7 +60,7 @@ func (querySpec *QuerySpec) CalculateICC() map[string]float64 {
 		info.Max = int64(max_avg)
 
 		between_groups := newBasicHist(t, &info)
-		between_groups.TrackPercentiles()
+		between_groups.TrackPercentiles(NUM_BUCKETS)
 
 		sum_of_squares_within := float64(0.0)
 		for _, res := range querySpec.Results {

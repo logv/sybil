@@ -77,17 +77,17 @@ func newBasicHist(t *Table, info *IntInfo) *HistCompat {
 	compat_hist.Info = *info
 
 	if FLAGS.OP == "hist" {
-		compat_hist.TrackPercentiles()
+		compat_hist.TrackPercentiles(NUM_BUCKETS)
 	}
 
 	return &compat_hist
 
 }
 
-func (h *BasicHist) TrackPercentiles() {
+func (h *BasicHist) TrackPercentiles(num_buckets int) {
 	h.PercentileMode = true
 
-	h.SetupBuckets(NUM_BUCKETS, h.Info.Min, h.Info.Max)
+	h.SetupBuckets(num_buckets, h.Info.Min, h.Info.Max)
 }
 
 func (h *BasicHist) AddValue(value int64) {
