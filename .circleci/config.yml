@@ -67,7 +67,6 @@ jobs:
       - run: make deps
       - run: make
       - run: mkdir -p /tmp/test-results
-      - run: ./scripts/ci_run_benchmarks.sh
       - store_artifacts:
           path: /tmp/test-results
           destination: raw-test-output
