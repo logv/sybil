@@ -1,9 +1,8 @@
-//+build profile
+// +build profile
 
 package sybil
 
 import "github.com/pkg/profile"
-
 
 var PROFILER_ENABLED = true
 var PROFILE ProfilerStart

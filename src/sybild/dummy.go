@@ -1,0 +1,4 @@
+package sybild
+
+func DummyFunc() {
+}
