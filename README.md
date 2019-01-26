@@ -19,14 +19,13 @@ advantages
   * Lower disk usage through per column compression schemes
   * Serverless design with controlled memory usage
   * Per table retention policies (specify max age and/or size of tables)
-  * Per block query cache (optional) that avoids recomputation
+  * Timestamp resistant query cache (optional) that avoids recomputation
 
 disadvantages
 -------------
 
   * JOINS not supported
   * No UPDATE operation on data - only writes
-  * No sharding
 
 installation
 ------------
@@ -39,4 +38,5 @@ additional information
 * [command line tour](http://github.com/logv/sybil/wiki/Quick-Overview)
 * [want to contribute?](http://github.com/logv/sybil/wiki/Contributing)
 * [notes on performance](http://github.com/logv/sybil/wiki/Performance)
+* [implementation notes](https://logv.org/sybil-implementation.html)
 * [abadi survey of column stores](http://db.csail.mit.edu/pubs/abadi-column-stores.pdf)
