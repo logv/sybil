@@ -3,6 +3,7 @@ package sybil_cmd
 import sybil "github.com/logv/sybil/src/lib"
 
 import (
+	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
@@ -190,17 +191,14 @@ func import_json_records(timestampFormat string) {
 	path := strings.Split(JSON_PATH, ".")
 	sybil.Debug("PATH IS", path)
 
-	dec := json.NewDecoder(os.Stdin)
-
-	for {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
 		var decoded interface{}
 
-		if err := dec.Decode(&decoded); err != nil {
-			if err == io.EOF {
-				break
-			}
+		if err := json.Unmarshal(scanner.Bytes(), &decoded); err != nil {
 			if err != nil {
 				sybil.Debug("ERR", err)
+				continue
 			}
 		}
 
