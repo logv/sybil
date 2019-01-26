@@ -292,7 +292,6 @@ func runQueryCmdLine() {
 		t := sybil.GetTable(table)
 		sybil.FLAGS.LOAD_AND_QUERY = false
 
-		t.LoadRecords(nil)
 		t.PrintColInfo()
 	}
 
