@@ -1,0 +1,9 @@
+imports:
+  - os
+
+fields:
+  _timestamp:
+    template: timestamp/uniform.yaml
+
+  time:
+    lambda: this._timestamp.time

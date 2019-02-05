@@ -11,7 +11,10 @@ import "regexp"
 
 type ValueMap map[int64][]uint32
 
-var CARDINALITY_THRESHOLD = 4
+// After testing various cardinalities for timestamps, the optimal seems to be
+// about 5000 (or even less) unique values.
+// TODO: determine optimal for different sized integers other than timestamps
+var CARDINALITY_THRESHOLD = 5000
 var DEBUG_RECORD_CONSISTENCY = false
 
 func delta_encode_col(col ValueMap) {
@@ -27,7 +30,7 @@ func delta_encode_col(col ValueMap) {
 
 func delta_encode(same_map map[int16]ValueMap) {
 	for _, col := range same_map {
-		if len(col) <= CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(col) <= CARDINALITY_THRESHOLD {
 			delta_encode_col(col)
 		}
 	}
@@ -92,7 +95,7 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 
 		intCol.BucketEncoded = true
 		// the column is high cardinality?
-		if len(intCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(intCol.Bins) > CARDINALITY_THRESHOLD {
 			intCol.BucketEncoded = false
 			intCol.Bins = nil
 			intCol.Values = make([]int64, max_r)
@@ -178,7 +181,7 @@ func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]Valu
 
 		// the column is high cardinality?
 		setCol.BucketEncoded = true
-		if len(setCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(setCol.Bins) > CARDINALITY_THRESHOLD {
 			setCol.BucketEncoded = false
 			setCol.Bins = nil
 			setCol.Values = make([][]int32, max_r)
@@ -250,7 +253,7 @@ func (tb *TableBlock) SaveStrsToColumns(dirname string, same_strs map[int16]Valu
 
 		strCol.BucketEncoded = true
 		// the column is high cardinality?
-		if len(strCol.Bins) > CHUNK_SIZE/CARDINALITY_THRESHOLD {
+		if len(strCol.Bins) > CARDINALITY_THRESHOLD {
 			strCol.BucketEncoded = false
 			strCol.Bins = nil
 			strCol.Values = make([]int32, max_r)

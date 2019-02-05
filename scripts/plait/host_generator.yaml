@@ -1,3 +1,6 @@
+imports:
+  - os
+
 fields:
   status:
     lambda: random.choice([200, 300, 403, 404, 503])

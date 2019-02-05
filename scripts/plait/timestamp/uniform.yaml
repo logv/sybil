@@ -1,6 +1,7 @@
 define:
   now: time.time()
-  max_offset: 60 * 60 * 24 # we distribute uniformly on a day
+  hours_offset: os.environ.get("H", 24) # default spread is 1 day
+  max_offset: 60 * 60 * float(${hours_offset}) # we distribute uniformly on a day
   per_day: 1000 * 1000 # one million samples per day
   seconds_in_day: 60 * 60 * 24
 
