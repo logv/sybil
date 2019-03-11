@@ -370,6 +370,18 @@ func (r *Record) toSample() *Sample {
 		}
 	}
 
+	for name, vals := range r.SetMap {
+		if r.Populated[name] == SET_VAL {
+			col := r.block.GetColumnInfo(int16(name))
+			arr := make([]string, 0)
+
+			for _, val := range vals {
+				arr = append(arr, col.get_string_for_val(int32(val)))
+			}
+			sample[col.get_string_for_key(int(name))] = arr
+		}
+	}
+
 	return &sample
 }
 

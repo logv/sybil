@@ -198,7 +198,7 @@ func (t *Table) PrintRecord(r *Record) {
 		if r.Populated[name] == SET_VAL {
 			col := r.block.GetColumnInfo(int16(name))
 			for _, val := range vals {
-				Print("  ", name, col.get_string_for_key(int(name)), val, col.get_string_for_val(int32(val)))
+				Print("  ", name, col.get_string_for_key(int(name)), col.get_string_for_val(int32(val)))
 
 			}
 
