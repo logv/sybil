@@ -39,13 +39,6 @@ bindir:
 test:
 	${GOBIN} test ./src/lib/ -race -v
 
-lint:
-	gometalinter -t --disable-all \
-		--enable=vet \
-		--disable=golint \
-		--disable=megacheck \
-		--deadline=3m ./... 2>&1 | revgrep origin/master
-
 testv:
 	${GOBIN} test ./src/lib/ -race -v -debug
 
