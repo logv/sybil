@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Knetic/govaluate"
 	hll "github.com/logv/loglogbeta"
 )
 
@@ -27,6 +28,7 @@ type savedQueryParams struct {
 	Groups       []Grouping            `json:",omitempty"`
 	Aggregations []Aggregation         `json:",omitempty"`
 	Distincts    []Grouping            `json:",omitempty"` // list of columns we are creating a count distinct query on
+	Expressions  []Expression          `json:",omitempty"` // list of columns we are creating a count distinct query on
 	StrReplace   map[string]StrReplace `json:",omitempty"`
 
 	OrderBy    string `json:",omitempty"`
@@ -78,6 +80,13 @@ type Aggregation struct {
 	Name     string
 	name_id  int16
 	HistType string
+}
+
+type Expression struct {
+	Name     string
+	Expr     govaluate.EvaluableExpression
+	name_id  int16
+	ExprType int8
 }
 
 type Result struct {

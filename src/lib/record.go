@@ -11,6 +11,20 @@ type Record struct {
 	block *TableBlock
 }
 
+type EvaluableRecord struct {
+	Record
+}
+
+func (r *EvaluableRecord) Str(name string) string {
+	s, _ := r.GetStrVal(name)
+	return s
+}
+
+func (r *EvaluableRecord) Int(name string) int {
+	s, _ := r.GetIntVal(name)
+	return s
+}
+
 const (
 	_NO_VAL = iota
 	INT_VAL = iota
