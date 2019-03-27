@@ -132,6 +132,11 @@ func (t *Table) SaveRecordsToColumns() bool {
 func (t *Table) LoadTableInfo() bool {
 	tablename := t.Name
 	filename := path.Join(FLAGS.DIR, tablename, "info.db")
+
+	if t.loaded_info {
+		return true
+	}
+
 	if t.GrabInfoLock() {
 		defer t.ReleaseInfoLock()
 	} else {
@@ -180,6 +185,8 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 	if t.string_id_m != nil {
 		t.populate_string_id_lookup()
 	}
+
+	t.loaded_info = true
 
 	return true
 }

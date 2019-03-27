@@ -91,7 +91,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 	// }}} func setup
 
 	// {{{ the main loop over all records
-	params := make(map[string]interface{})
 	for i := 0; i < len(records); i++ {
 		add := true
 		r := records[i]
@@ -99,6 +98,32 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 		if OPTS.WEIGHT_COL && r.Populated[OPTS.WEIGHT_COL_ID] == INT_VAL {
 			weight = int64(r.Ints[OPTS.WEIGHT_COL_ID])
 		}
+
+		// {{{ EXPRESSIONS
+		for _, e := range querySpec.Expressions {
+			params := make(map[string]interface{})
+			for _, f := range e.Fields {
+				params[f], ok = r.GetIntVal(f)
+			}
+			ret, err := e.Expr.Evaluate(params)
+			if err != nil {
+				Print("Error evaluating expression", params, e)
+				continue
+			}
+			Print("POPULATING", e.name_id, ret)
+			r.Populated[e.name_id] = e.ExprType
+
+			switch v := ret.(type) {
+			case int:
+				r.Ints[e.name_id] = IntField(v)
+				// TODO:
+				// case string:
+				//	r.Strs[e.name_id] = StrField(v)
+
+			}
+
+		}
+		// }}}
 
 		// {{{ FILTERING
 		for j := 0; j < len(querySpec.Filters); j++ {
@@ -240,27 +265,6 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 			}
 
 		} // }}}
-
-		// {{{ EXPRESSIONS
-		params["r"] = r
-		for _, e := range querySpec.Expressions {
-			ret, err := e.Expr.Evaluate(params)
-			if err != nil {
-				continue
-			}
-			r.Populated[e.name_id] = e.ExprType
-
-			switch v := ret.(type) {
-			case int:
-				r.Ints[e.name_id] = IntField(v)
-				// TODO:
-				// case string:
-				//	r.Strs[e.name_id] = StrField(v)
-
-			}
-
-		}
-		// }}}
 
 		// {{{ aggregations
 		for _, a := range querySpec.Aggregations {

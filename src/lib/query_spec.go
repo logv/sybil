@@ -85,6 +85,7 @@ type Aggregation struct {
 type Expression struct {
 	Name     string
 	Expr     govaluate.EvaluableExpression
+	Fields   []string
 	name_id  int16
 	ExprType int8
 }

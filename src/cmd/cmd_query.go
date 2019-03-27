@@ -41,6 +41,7 @@ func addQueryFlags() {
 	flag.BoolVar(&sybil.FLAGS.ENCODE_FLAGS, "encode-flags", false, "Print the query flags in binary format")
 	flag.BoolVar(&sybil.FLAGS.DECODE_FLAGS, "decode-flags", false, "Use the query flags supplied on stdin")
 	flag.StringVar(&sybil.FLAGS.INT_FILTERS, "int-filter", "", "Int filters, format: col:op:val")
+	flag.StringVar(&sybil.FLAGS.INT_EXPRESSIONS, "int-expr", "", "Int filters, format: expr1:expr2:expr3")
 	flag.IntVar(&sybil.FLAGS.HIST_BUCKET, "int-bucket", 0, "Int hist bucket size")
 
 	flag.StringVar(&sybil.FLAGS.STR_REPLACE, "str-replace", "", "Str replacement, format: col:find:replace")
@@ -133,9 +134,16 @@ func runQueryCmdLine() {
 		sybil.FLAGS.READ_INGESTION_LOG = true
 	}
 
+	t.LoadTableInfo()
+	loadSpec := t.NewLoadSpec()
+	// We need to build expressions early so that the table blocks get allocated
+	// correctly. If we do it after LoadRecords(nil), the initial slabs will be the
+	// incorrect sizes
+	exprSpec := sybil.ExpressionSpec{Int: sybil.FLAGS.INT_EXPRESSIONS}
+	expressions := sybil.BuildExpressions(t, &loadSpec, exprSpec)
+
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON
 	// THE RIGHT COLUMN ID
-	t.LoadTableInfo()
 	t.LoadRecords(nil)
 
 	count := 0
@@ -178,12 +186,11 @@ func runQueryCmdLine() {
 		}
 	}
 
-	loadSpec := t.NewLoadSpec()
 	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters,
-		Aggregations: aggs, Distincts: distincts}
+		Aggregations: aggs, Distincts: distincts, Expressions: expressions}
 
 	querySpec := sybil.QuerySpec{QueryParams: query_params}
 

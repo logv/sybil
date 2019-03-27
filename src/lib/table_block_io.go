@@ -198,6 +198,7 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
+	Print("LOADING BLOCK FROM DIR", load_records, dirname)
 	tb := newTableBlock()
 
 	tb.Name = dirname

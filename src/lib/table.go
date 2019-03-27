@@ -32,6 +32,9 @@ type Table struct {
 	// This is used for join tables
 	join_lookup map[string]*Record
 
+	// if we've already loaded table info we don't need to do it twice
+	loaded_info bool
+
 	string_id_m *sync.RWMutex
 	record_m    *sync.Mutex
 	block_m     *sync.Mutex
@@ -50,9 +53,11 @@ func GetTable(name string) *Table {
 
 	t, ok := LOADED_TABLES[name]
 	if ok {
+		Print("RETURNING LOADED TABLE", name)
 		return t
 	}
 
+	Print("MAKING NEW TABLE", name)
 	t = &Table{Name: name}
 	LOADED_TABLES[name] = t
 
@@ -72,6 +77,7 @@ func (t *Table) init_data_structures() {
 	t.key_string_id_lookup = make(map[int16]string)
 	t.val_string_id_lookup = make(map[int32]string)
 
+	Print("INIT DATA STRUCTURES")
 	t.KeyTable = make(map[string]int16)
 	t.KeyTypes = make(map[int16]int8)
 
@@ -146,6 +152,7 @@ func (t *Table) get_key_id(name string) int16 {
 	t.KeyTable[name] = int16(len(t.KeyTable))
 	t.key_string_id_lookup[t.KeyTable[name]] = name
 
+	Print("GETTING KEY ID", name, t.KeyTable[name])
 	return int16(t.KeyTable[name])
 }
 

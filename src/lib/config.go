@@ -42,6 +42,8 @@ type FlagDefs struct {
 	STR_REPLACE string // regex replacement for strings
 	SET_FILTERS string
 
+	INT_EXPRESSIONS string
+
 	INTS     string
 	STRS     string
 	GROUPS   string
