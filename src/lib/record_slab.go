@@ -36,14 +36,12 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	var has_strs = false
 	var has_ints = false
 	max_key_id := 0
-	Print("KT", t.KeyTable)
 
 	for _, v := range t.KeyTable {
 		if max_key_id <= int(v) {
 			max_key_id = int(v) + 1
 		}
 	}
-	Print("MAKING RECORD SLAB", max_key_id)
 
 	// determine if we need to allocate the different field containers inside
 	// each record

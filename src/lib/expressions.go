@@ -10,6 +10,15 @@ type ExpressionSpec struct {
 	Set string
 }
 
+type Expression struct {
+	Name     string
+	Expr     govaluate.EvaluableExpression
+	Fields   []string
+	FieldIds []int16
+	name_id  int16
+	ExprType int8
+}
+
 func ExprFields(expr string) []string {
 	str_fields := make([]string, 0)
 	f := ""
@@ -18,7 +27,7 @@ func ExprFields(expr string) []string {
 			continue
 		}
 
-		if unicode.IsLetter(c) {
+		if unicode.IsLetter(c) || c == '_' || c == '.' {
 			f += string(c)
 		} else {
 			if f != "" {
@@ -58,6 +67,7 @@ func BuildExpressions(t *Table, loadSpec *LoadSpec, exprSpec ExpressionSpec) []E
 		}
 
 		fields := ExprFields(tokens[1])
+		Print("FIELDS", fields)
 
 		field_ids := make([]int16, 0)
 
@@ -72,6 +82,7 @@ func BuildExpressions(t *Table, loadSpec *LoadSpec, exprSpec ExpressionSpec) []E
 			Name:     tokens[0],
 			Expr:     *ee,
 			Fields:   fields,
+			FieldIds: field_ids,
 			name_id:  t.get_key_id(tokens[0]),
 			ExprType: INT_VAL}
 		t.KeyTypes[expr.name_id] = INT_VAL

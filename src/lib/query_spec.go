@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Knetic/govaluate"
 	hll "github.com/logv/loglogbeta"
 )
 
@@ -80,14 +79,6 @@ type Aggregation struct {
 	Name     string
 	name_id  int16
 	HistType string
-}
-
-type Expression struct {
-	Name     string
-	Expr     govaluate.EvaluableExpression
-	Fields   []string
-	name_id  int16
-	ExprType int8
 }
 
 type Result struct {

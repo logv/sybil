@@ -198,7 +198,6 @@ func (t *Table) LoadBlockInfo(dirname string) *SavedColumnInfo {
 // TODO: have this only pull the blocks into column format and not materialize
 // the columns immediately
 func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_records bool) *TableBlock {
-	Print("LOADING BLOCK FROM DIR", load_records, dirname)
 	tb := newTableBlock()
 
 	tb.Name = dirname
@@ -262,37 +261,49 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	}
 
 	// {{{ EXPRESSIONS
-	for _, r := range tb.RecordList {
+
+	if len(tb.RecordList) > 0 {
 		for _, e := range loadSpec.expressions {
 			params := make(map[string]interface{})
-			for _, f := range e.Fields {
-				params[f], _ = r.GetIntVal(f)
+			for _, r := range tb.RecordList {
+				for i, f := range e.Fields {
+					fi := e.FieldIds[i]
+					if r.Populated[fi] == INT_VAL {
+						params[f] = r.Ints[fi]
+					} else if r.Populated[fi] == STR_VAL {
+						params[f] = r.Strs[fi]
+					} else {
+						delete(params, f)
+					}
+				}
+
+				ret, err := e.Expr.Evaluate(params)
+				if err != nil {
+					Print("Error evaluating expression", params, e)
+					continue
+				}
+
+				r.Populated[e.name_id] = e.ExprType
+
+				switch v := ret.(type) {
+				case int:
+				case int64:
+				case IntField:
+					r.Ints[e.name_id] = IntField(v)
+					tb.update_int_info(e.name_id, int64(v))
+					// TODO:
+					// case string:
+					//	r.Strs[e.name_id] = StrField(v)
+				case float64:
+					r.Ints[e.name_id] = IntField(v)
+					tb.update_int_info(e.name_id, int64(v))
+				default:
+					fmt.Printf("TYPE UNKNOWN %T\n", v)
+
+				}
 			}
 
-			ret, err := e.Expr.Evaluate(params)
-			if err != nil {
-				Print("Error evaluating expression", params, e)
-				continue
-			}
-
-			r.Populated[e.name_id] = e.ExprType
-
-			switch v := ret.(type) {
-			case int:
-				r.Ints[e.name_id] = IntField(v)
-				tb.update_int_info(e.name_id, int64(v))
-				// TODO:
-				// case string:
-				//	r.Strs[e.name_id] = StrField(v)
-			case float64:
-				r.Ints[e.name_id] = IntField(v)
-				tb.update_int_info(e.name_id, int64(v))
-			default:
-
-				Print("TYPE UNCOUNTED")
-			}
 		}
-
 	}
 	// }}}
 

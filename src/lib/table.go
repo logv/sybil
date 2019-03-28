@@ -53,11 +53,9 @@ func GetTable(name string) *Table {
 
 	t, ok := LOADED_TABLES[name]
 	if ok {
-		Print("RETURNING LOADED TABLE", name)
 		return t
 	}
 
-	Print("MAKING NEW TABLE", name)
 	t = &Table{Name: name}
 	LOADED_TABLES[name] = t
 
@@ -77,7 +75,6 @@ func (t *Table) init_data_structures() {
 	t.key_string_id_lookup = make(map[int16]string)
 	t.val_string_id_lookup = make(map[int32]string)
 
-	Print("INIT DATA STRUCTURES")
 	t.KeyTable = make(map[string]int16)
 	t.KeyTypes = make(map[int16]int8)
 
