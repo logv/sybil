@@ -261,6 +261,47 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 	}
 
+	// {{{ EXPRESSIONS
+	for _, r := range tb.RecordList {
+		for _, e := range loadSpec.expressions {
+			params := make(map[string]interface{})
+			for _, f := range e.Fields {
+				params[f], _ = r.GetIntVal(f)
+			}
+
+			ret, err := e.Expr.Evaluate(params)
+			if err != nil {
+				Print("Error evaluating expression", params, e)
+				continue
+			}
+
+			r.Populated[e.name_id] = e.ExprType
+
+			switch v := ret.(type) {
+			case int:
+				r.Ints[e.name_id] = IntField(v)
+				tb.update_int_info(e.name_id, int64(v))
+				// TODO:
+				// case string:
+				//	r.Strs[e.name_id] = StrField(v)
+			case float64:
+				r.Ints[e.name_id] = IntField(v)
+				tb.update_int_info(e.name_id, int64(v))
+			default:
+
+				Print("TYPE UNCOUNTED")
+			}
+		}
+
+	}
+	// }}}
+
+	if len(tb.RecordList) > 0 {
+		for _, e := range loadSpec.expressions {
+			t.merge_int_info(e.name_id, tb.IntInfo[e.name_id])
+		}
+	}
+
 	tb.Size = size
 
 	file.Close()

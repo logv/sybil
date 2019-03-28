@@ -134,6 +134,33 @@ func (t *Table) update_int_info(name int16, val int64) {
 	update_int_info(t.IntInfo, name, val)
 }
 
+func (t *Table) merge_int_info(name int16, int_info *IntInfo) {
+	t.block_m.Lock()
+	defer t.block_m.Unlock()
+
+	info, ok := t.IntInfo[name]
+	if !ok {
+		info = &IntInfo{}
+		t.IntInfo[name] = info
+		info.Max = int_info.Max
+		info.Min = int_info.Min
+		info.Avg = int_info.Avg
+		info.Count = int_info.Count
+		return
+	}
+
+	if int_info.Max > info.Max {
+		info.Max = int_info.Max
+	}
+
+	if int_info.Min < info.Min {
+		info.Min = int_info.Min
+	}
+
+	info.Count = int_info.Count + info.Count
+
+}
+
 func (tb *TableBlock) update_str_info(name int16, val int, increment int) {
 	if tb.StrInfo == nil {
 		tb.StrInfo = make(map[int16]*StrInfo)

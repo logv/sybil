@@ -3,8 +3,9 @@ package sybil
 import "sync"
 
 type LoadSpec struct {
-	columns map[string]bool
-	files   map[string]bool
+	columns     map[string]bool
+	files       map[string]bool
+	expressions []Expression
 
 	LoadAllColumns bool
 	table          *Table
