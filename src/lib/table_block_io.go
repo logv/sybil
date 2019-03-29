@@ -279,8 +279,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 					}
 				}
 
-				rval, _, err := e.Expr.Eval(params)
-				ret := rval.Value()
+				ret, err := e.Expr.Evaluate(params)
 				if err != nil {
 					Print("Error evaluating expression", params, e, "ERR", err)
 					continue
@@ -290,8 +289,14 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 				switch v := ret.(type) {
 				case int:
+					r.Ints[e.name_id] = IntField(v)
+					tb.update_int_info(e.name_id, int64(v))
 				case int64:
+					r.Ints[e.name_id] = IntField(v)
+					tb.update_int_info(e.name_id, int64(v))
 				case float64:
+					r.Ints[e.name_id] = IntField(v)
+					tb.update_int_info(e.name_id, int64(v))
 				case IntField:
 					r.Ints[e.name_id] = IntField(v)
 					tb.update_int_info(e.name_id, int64(v))
