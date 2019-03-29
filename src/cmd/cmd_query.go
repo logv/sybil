@@ -41,11 +41,12 @@ func addQueryFlags() {
 	flag.BoolVar(&sybil.FLAGS.ENCODE_FLAGS, "encode-flags", false, "Print the query flags in binary format")
 	flag.BoolVar(&sybil.FLAGS.DECODE_FLAGS, "decode-flags", false, "Use the query flags supplied on stdin")
 	flag.StringVar(&sybil.FLAGS.INT_FILTERS, "int-filter", "", "Int filters, format: col:op:val")
-	flag.StringVar(&sybil.FLAGS.INT_EXPRESSIONS, "int-expr", "", "Int filters, format: expr1:expr2:expr3")
+	flag.StringVar(&sybil.FLAGS.INT_EXPRESSIONS, "int-expr", "", "Int Expressions, format: name:expr,name:expr")
 	flag.IntVar(&sybil.FLAGS.HIST_BUCKET, "int-bucket", 0, "Int hist bucket size")
 
 	flag.StringVar(&sybil.FLAGS.STR_REPLACE, "str-replace", "", "Str replacement, format: col:find:replace")
 	flag.StringVar(&sybil.FLAGS.STR_FILTERS, "str-filter", "", "Str filters, format: col:op:val")
+	flag.StringVar(&sybil.FLAGS.STR_EXPRESSIONS, "str-expr", "", "Str Expressions, format: name:expr,name:expr")
 	flag.StringVar(&sybil.FLAGS.SET_FILTERS, "set-filter", "", "Set filters, format: col:op:val")
 	flag.BoolVar(&sybil.FLAGS.UPDATE_TABLE_INFO, "update-info", false, "Re-compute cached column data")
 
@@ -139,7 +140,7 @@ func runQueryCmdLine() {
 	// We need to build expressions early so that the table blocks get allocated
 	// correctly. If we do it after LoadRecords(nil), the initial slabs will be the
 	// incorrect sizes
-	exprSpec := sybil.ExpressionSpec{Int: sybil.FLAGS.INT_EXPRESSIONS}
+	exprSpec := sybil.ExpressionSpec{Int: sybil.FLAGS.INT_EXPRESSIONS, Str: sybil.FLAGS.STR_EXPRESSIONS}
 	expressions := sybil.BuildExpressions(t, &loadSpec, exprSpec)
 
 	// LOAD TABLE INFOS BEFORE WE CREATE OUR FILTERS, SO WE CAN CREATE FILTERS ON

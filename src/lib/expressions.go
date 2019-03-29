@@ -1,8 +1,12 @@
 package sybil
 
+import "log"
 import "strings"
 import "unicode"
-import "github.com/Knetic/govaluate"
+import "github.com/google/cel-go/cel"
+import "github.com/google/cel-go/checker/decls"
+
+import exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 
 type ExpressionSpec struct {
 	Int string
@@ -12,7 +16,7 @@ type ExpressionSpec struct {
 
 type Expression struct {
 	Name     string
-	Expr     govaluate.EvaluableExpression
+	Expr     cel.Program
 	Fields   []string
 	FieldIds []int16
 	name_id  int16
@@ -47,48 +51,85 @@ func ExprFields(expr string) []string {
 	return str_fields
 }
 
-func BuildExpressions(t *Table, loadSpec *LoadSpec, exprSpec ExpressionSpec) []Expression {
+func MakeExpression(t *Table, loadSpec *LoadSpec, expr string, expr_type int8) *Expression {
+	tokens := strings.SplitN(expr, FLAGS.FILTER_SEPARATOR, 2)
 
+	ds := make([]*exprpb.Decl, 0)
+	for f, tp := range t.KeyTypes {
+		fname := t.get_string_for_key(int(f))
+		if tp == INT_VAL {
+			ds = append(ds, decls.NewIdent(fname, decls.Int, nil))
+		}
+
+		if tp == STR_VAL {
+			ds = append(ds, decls.NewIdent(fname, decls.String, nil))
+
+		}
+	}
+
+	env, err := cel.NewEnv(cel.Declarations(ds...))
+
+	parsed, issues := env.Parse(tokens[1])
+	if issues != nil && issues.Err() != nil {
+		log.Fatalf("parse error: %s", issues.Err())
+	}
+	checked, issues := env.Check(parsed)
+	if issues != nil && issues.Err() != nil {
+		log.Fatalf("type-check error: %s", issues.Err())
+	}
+	Print("CHECKED", checked, checked.ResultType())
+	prg, err := env.Program(checked)
+	if err != nil {
+		log.Fatalf("program construction error: %s", err)
+	}
+
+	fields := ExprFields(tokens[1])
+
+	field_ids := make([]int16, 0)
+	for _, f := range fields {
+		// properly evaluate fields later
+		loadSpec.Int(f)
+		field_ids = append(field_ids, t.get_key_id(f))
+	}
+
+	ex := Expression{
+		Name:     tokens[0],
+		Expr:     prg,
+		Fields:   fields,
+		FieldIds: field_ids,
+		name_id:  t.get_key_id(tokens[0]),
+		ExprType: expr_type}
+	t.KeyTypes[ex.name_id] = expr_type
+	Print("EX", ex)
+
+	return &ex
+}
+
+func BuildExpressions(t *Table, loadSpec *LoadSpec, exprSpec ExpressionSpec) []Expression {
 	Print("BUILDING EXPRESSIONS")
-	intexprs := make([]string, 0)
 	expressions := make([]Expression, 0)
 
 	if exprSpec.Int != "" {
-		intexprs = strings.Split(exprSpec.Int, FLAGS.FIELD_SEPARATOR)
+		intexprs := strings.Split(exprSpec.Int, FLAGS.FIELD_SEPARATOR)
+		for _, expr := range intexprs {
+			ex := MakeExpression(t, loadSpec, expr, INT_VAL)
+			if ex != nil {
+				expressions = append(expressions, *ex)
+			}
+		}
 	}
 
-	for _, expr := range intexprs {
-		tokens := strings.Split(expr, FLAGS.FILTER_SEPARATOR)
-		Print("TOKENS", tokens)
-		ee, err := govaluate.NewEvaluableExpression(tokens[1])
-		if err != nil {
-			Print("Bad Expr:", tokens[1], err)
-			continue
+	if exprSpec.Str != "" {
+		strexprs := strings.Split(exprSpec.Str, FLAGS.FIELD_SEPARATOR)
+		for _, expr := range strexprs {
+			ex := MakeExpression(t, loadSpec, expr, STR_VAL)
+			if ex != nil {
+				expressions = append(expressions, *ex)
+			}
 		}
-
-		fields := ExprFields(tokens[1])
-		Print("FIELDS", fields)
-
-		field_ids := make([]int16, 0)
-
-		for _, f := range fields {
-			loadSpec.Int(f)
-			field_ids = append(field_ids, t.get_key_id(f))
-		}
-
-		Print("FIELDS", fields, field_ids)
-
-		expr := Expression{
-			Name:     tokens[0],
-			Expr:     *ee,
-			Fields:   fields,
-			FieldIds: field_ids,
-			name_id:  t.get_key_id(tokens[0]),
-			ExprType: INT_VAL}
-		t.KeyTypes[expr.name_id] = INT_VAL
-		expressions = append(expressions, expr)
-
 	}
+
+	Print("EXPR", expressions)
 
 	loadSpec.expressions = expressions
 

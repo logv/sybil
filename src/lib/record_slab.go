@@ -37,6 +37,11 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	var has_ints = false
 	max_key_id := 0
 
+	if loadSpec != nil && len(loadSpec.expressions) > 0 {
+		has_strs = true
+		has_ints = true
+	}
+
 	for _, v := range t.KeyTable {
 		if max_key_id <= int(v) {
 			max_key_id = int(v) + 1
@@ -94,7 +99,6 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 				r.Strs = bigStrArr[i*max_key_id : (i+1)*max_key_id]
 			}
 
-			// TODO: move this allocation next to the allocations above
 			if has_sets {
 				r.SetMap = make(SetMap)
 			}

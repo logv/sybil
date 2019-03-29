@@ -43,6 +43,7 @@ type FlagDefs struct {
 	SET_FILTERS string
 
 	INT_EXPRESSIONS string
+	STR_EXPRESSIONS string
 
 	INTS     string
 	STRS     string

@@ -264,12 +264,14 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 	if len(tb.RecordList) > 0 {
 		for _, e := range loadSpec.expressions {
+			tc := tb.GetColumnInfo(e.name_id)
+
 			params := make(map[string]interface{})
 			for _, r := range tb.RecordList {
 				for i, f := range e.Fields {
 					fi := e.FieldIds[i]
 					if r.Populated[fi] == INT_VAL {
-						params[f] = r.Ints[fi]
+						params[f] = int64(r.Ints[fi])
 					} else if r.Populated[fi] == STR_VAL {
 						params[f] = r.Strs[fi]
 					} else {
@@ -277,9 +279,10 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 					}
 				}
 
-				ret, err := e.Expr.Evaluate(params)
+				rval, _, err := e.Expr.Eval(params)
+				ret := rval.Value()
 				if err != nil {
-					Print("Error evaluating expression", params, e)
+					Print("Error evaluating expression", params, e, "ERR", err)
 					continue
 				}
 
@@ -288,15 +291,12 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 				switch v := ret.(type) {
 				case int:
 				case int64:
+				case float64:
 				case IntField:
 					r.Ints[e.name_id] = IntField(v)
 					tb.update_int_info(e.name_id, int64(v))
-					// TODO:
-					// case string:
-					//	r.Strs[e.name_id] = StrField(v)
-				case float64:
-					r.Ints[e.name_id] = IntField(v)
-					tb.update_int_info(e.name_id, int64(v))
+				case string:
+					r.Strs[e.name_id] = StrField(tc.get_val_id(v))
 				default:
 					fmt.Printf("TYPE UNKNOWN %T\n", v)
 
@@ -309,7 +309,9 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 	if len(tb.RecordList) > 0 {
 		for _, e := range loadSpec.expressions {
-			t.merge_int_info(e.name_id, tb.IntInfo[e.name_id])
+			if e.ExprType == INT_VAL {
+				t.merge_int_info(e.name_id, tb.IntInfo[e.name_id])
+			}
 		}
 	}
 
