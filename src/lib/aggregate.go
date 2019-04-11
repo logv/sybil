@@ -373,7 +373,15 @@ func MultiCombineResults(querySpec *QuerySpec, block_specs map[string]*QuerySpec
 
 	count := 0
 
-	for k, spec := range block_specs {
+	block_names := make([]string, 0)
+	for k, _ := range block_specs {
+		block_names = append(block_names, k)
+	}
+
+	sort.Strings(block_names)
+
+	for _, k := range block_names {
+		spec := block_specs[k]
 
 		next_specs[k] = spec
 		count += 1
