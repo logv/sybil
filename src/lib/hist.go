@@ -4,7 +4,6 @@ var NUM_BUCKETS = 1000
 var DEBUG_OUTLIERS = false
 
 // histogram types:
-// HDRHist (wrapper around github.com/codahale/hdrhistogram which implements Histogram interface)
 // BasicHist (which gets wrapped in HistCompat to implement the Histogram interface)
 
 type Histogram interface {

@@ -10,7 +10,7 @@ func GetVersionInfo() map[string]interface{} {
 	version_info["log_hist"] = true
 	version_info["query_cache"] = true
 	version_info["dist_queries"] = true
-	version_info["tdigest"] = true
+	version_info["tdigest"] = ENABLE_TDIGEST
 
 	return version_info
 
