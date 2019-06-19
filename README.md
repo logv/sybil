@@ -1,3 +1,4 @@
+
 Sybil is an append only analytics datastore with no up front table schema
 requirements; just log JSON records to a table and run queries. Written in Go,
 sybil is designed for fast full table scans of multi-dimensional data on one or
@@ -31,6 +32,11 @@ installation
 ------------
 
     go get github.com/logv/sybil
+
+build status
+------------
+
+[![CircleCI](https://circleci.com/gh/logv/sybil.svg?style=svg)](https://circleci.com/gh/logv/sybil)
 
 additional information
 ----------------------
