@@ -29,7 +29,7 @@ func setupCommands() {
 
 var USAGE = `sybil: a fast and simple NoSQL column store
 
-Commands: ingest, digest, trim, query, session, rebuild, inspect
+Commands: ingest, digest, trim, query, index, rebuild, inspect, aggregate, version, serve
 
 Storage Commands:
 
