@@ -50,7 +50,7 @@ DB_DIR = "testdb/%s" % (TEST_TABLE)
 def gen_and_ingest_data(test_table, n):
     incr = int(1e5)
     t = plaitpy.Template(TEMPLATE)
-    for i in xrange(0, n, incr):
+    for i in range(0, n, incr):
         records = t.gen_records(incr)
         ingest_data(test_table, records, i)
     

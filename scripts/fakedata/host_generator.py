@@ -46,10 +46,10 @@ def rand_record():
 
 def generate_records(n):
     records = []
-    for j in xrange(n):
+    for j in range(n):
         record = rand_record()
         records.append(record)
-        print json.dumps(record)
+        print(json.dumps(record))
 
 
     return records
