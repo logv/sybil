@@ -51,16 +51,31 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	r.ResizeFields(int16(max_key_id))
 
 	for _, v := range s.Ints {
+		if v.Name > int16(max_key_id) {
+			r.ResizeFields(v.Name)
+			max_key_id = int(v.Name)
+		}
+
 		r.Populated[v.Name] = INT_VAL
 		r.Ints[v.Name] = IntField(v.Value)
 		t.update_int_info(v.Name, v.Value)
 	}
 
 	for _, v := range s.Strs {
+		if v.Name > int16(max_key_id) {
+			r.ResizeFields(v.Name)
+			max_key_id = int(v.Name)
+		}
+
 		r.AddStrField(t.get_string_for_key(int(v.Name)), v.Value)
 	}
 
 	for _, v := range s.Sets {
+		if v.Name > int16(max_key_id) {
+			r.ResizeFields(v.Name)
+			max_key_id = int(v.Name)
+		}
+
 		r.AddSetField(t.get_string_for_key(int(v.Name)), v.Value)
 		r.Populated[v.Name] = SET_VAL
 	}
