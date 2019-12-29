@@ -380,22 +380,23 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 			}
 		}
 		for k, v := range r.Strs {
-			// transition key from the
-			col := r.block.GetColumnInfo(int16(k))
-			new_col := tb.GetColumnInfo(int16(k))
-
-			v_name := col.get_string_for_val(int32(v))
-			v_id := new_col.get_val_id(v_name)
 
 			// record the transitioned key
 			if r.Populated[k] == STR_VAL {
+				// transition key from the
+				col := r.block.GetColumnInfo(int16(k))
+				new_col := tb.GetColumnInfo(int16(k))
+
+				v_name := col.get_string_for_val(int32(v))
+				v_id := new_col.get_val_id(v_name)
+
 				record_value(same_strs, int32(i), int16(k), int64(v_id))
 			}
 		}
 		for k, v := range r.SetMap {
-			col := r.block.GetColumnInfo(int16(k))
-			new_col := tb.GetColumnInfo(int16(k))
 			if r.Populated[k] == SET_VAL {
+				col := r.block.GetColumnInfo(int16(k))
+				new_col := tb.GetColumnInfo(int16(k))
 				for _, iv := range v {
 					v_name := col.get_string_for_val(int32(iv))
 					v_id := new_col.get_val_id(v_name)

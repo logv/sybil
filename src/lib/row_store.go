@@ -29,7 +29,30 @@ type SavedRecord struct {
 	Sets []RowSavedSet
 }
 
-func (s SavedRecord) toRecord(t *Table) *Record {
+type SavedRecordBlock struct {
+	RecordList   []*SavedRecord
+	KeyTable     *map[string]int16
+	max_key_id   int
+	key_exchange map[int16]int16
+}
+
+func (srb *SavedRecordBlock) init_data_structures(t *Table) {
+	key_exchange := make(map[int16]int16, 0)
+	max_key_id := 0
+	for k, v := range *srb.KeyTable {
+		vv := t.get_key_id(k)
+		if max_key_id <= int(vv) {
+			max_key_id = int(vv) + 1
+		}
+
+		key_exchange[v] = vv
+	}
+
+	srb.key_exchange = key_exchange
+	srb.max_key_id = max_key_id
+}
+
+func (srb *SavedRecordBlock) toRecord(t *Table, s *SavedRecord) *Record {
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
@@ -41,43 +64,20 @@ func (s SavedRecord) toRecord(t *Table) *Record {
 	b.table = t
 	r.block = &b
 
-	max_key_id := 0
-	for _, v := range t.KeyTable {
-		if max_key_id <= int(v) {
-			max_key_id = int(v) + 1
-		}
-	}
-
+	max_key_id := srb.max_key_id
+	key_exchange := srb.key_exchange
 	r.ResizeFields(int16(max_key_id))
 
 	for _, v := range s.Ints {
-		if v.Name > int16(max_key_id) {
-			r.ResizeFields(v.Name)
-			max_key_id = int(v.Name)
-		}
-
-		r.Populated[v.Name] = INT_VAL
-		r.Ints[v.Name] = IntField(v.Value)
-		t.update_int_info(v.Name, v.Value)
+		r.AddIntField(t.get_string_for_key(int(key_exchange[v.Name])), v.Value)
 	}
 
 	for _, v := range s.Strs {
-		if v.Name > int16(max_key_id) {
-			r.ResizeFields(v.Name)
-			max_key_id = int(v.Name)
-		}
-
-		r.AddStrField(t.get_string_for_key(int(v.Name)), v.Value)
+		r.AddStrField(t.get_string_for_key(int(key_exchange[v.Name])), v.Value)
 	}
 
 	for _, v := range s.Sets {
-		if v.Name > int16(max_key_id) {
-			r.ResizeFields(v.Name)
-			max_key_id = int(v.Name)
-		}
-
-		r.AddSetField(t.get_string_for_key(int(v.Name)), v.Value)
-		r.Populated[v.Name] = SET_VAL
+		r.AddSetField(t.get_string_for_key(int(key_exchange[v.Name])), v.Value)
 	}
 
 	return &r
@@ -114,38 +114,30 @@ func (r Record) toSavedRecord() *SavedRecord {
 
 }
 
-type SavedRecords struct {
-	RecordList []*SavedRecord
-}
-
-func (t *Table) LoadSavedRecordsFromLog(filename string) []*SavedRecord {
-	Debug("LOADING RECORDS FROM LOG", filename)
-	var marshalled_records []*SavedRecord
-
-	// Create an encoder and send a value.
-	err := decodeInto(filename, &marshalled_records)
-
-	if err != nil {
-		Debug("ERROR LOADING INGESTION LOG", err)
-	}
-
-	return marshalled_records
-}
-
 func (t *Table) LoadRecordsFromLog(filename string) RecordList {
-	var marshalled_records []*SavedRecord
+	var srb SavedRecordBlock
 
-	// Create an encoder and send a value.
-	err := decodeInto(filename, &marshalled_records)
+	err := decodeInto(filename, &srb)
 	if err != nil {
-		Debug("ERROR LOADING INGESTION LOG", err)
+		err := decodeInto(filename, &srb.RecordList)
+		if err != nil {
+			Debug("ERROR LOADING INGESTION LOG", err)
+		}
 	}
 
-	ret := make(RecordList, len(marshalled_records))
+	ret := make(RecordList, len(srb.RecordList))
 
-	for i, r := range marshalled_records {
-		ret[i] = r.toRecord(t)
+	// If the KeyTable doesn't exist, it means we are loading old records that
+	// were ingested without a keytable
+	if srb.KeyTable == nil {
+		srb.KeyTable = &t.KeyTable
 	}
+
+	srb.init_data_structures(t)
+	for i, r := range srb.RecordList {
+		ret[i] = srb.toRecord(t, r)
+	}
+
 	return ret
 
 }
@@ -175,7 +167,10 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&network)
-	err = enc.Encode(marshalled_records)
+	srb := SavedRecordBlock{}
+	srb.RecordList = marshalled_records
+	srb.KeyTable = &t.KeyTable
+	err = enc.Encode(srb)
 
 	if err != nil {
 		Error("encode:", err)
