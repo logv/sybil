@@ -65,6 +65,7 @@ type FlagDefs struct {
 	READ_INGESTION_LOG bool
 	READ_ROWSTORE      bool
 	SKIP_COMPACT       bool
+	SAVE_AS_SRB        bool
 
 	PROFILE     bool
 	PROFILE_MEM bool
@@ -131,6 +132,8 @@ func setDefaults() {
 	FLAGS.DECODE_FLAGS = false
 
 	FLAGS.SKIP_COMPACT = false
+
+	FLAGS.SAVE_AS_SRB = false
 
 	FLAGS.LOAD_AND_QUERY = true
 	FLAGS.LOAD_THEN_QUERY = false

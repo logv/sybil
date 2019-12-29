@@ -233,6 +233,8 @@ func RunIngestCmdLine() {
 	f_EXCLUDES := flag.String("exclude", "", "Columns to exclude (comma delimited)")
 	f_JSON_PATH := flag.String("path", "$", "Path to JSON record, ex: $.foo.bar")
 	flag.BoolVar(&sybil.FLAGS.SKIP_COMPACT, "skip-compact", false, "skip auto compaction during ingest")
+
+	flag.BoolVar(&sybil.FLAGS.SAVE_AS_SRB, "save-srb", false, "Save ingestion records as SaveRecordBlocks, including Key info")
 	f_REOPEN := flag.String("infile", "", "input file to use (instead of stdin)")
 	f_TIMESTAMPS := flag.String("timestamps", "", "columns to treat as ints (comma delimited), parsed via timestamp-format")
 	f_TIMESTAMP_FORMAT := flag.String("timestamp-format", time.RFC3339, "when -timestamps is provided, this is the parsing string used")

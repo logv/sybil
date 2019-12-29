@@ -78,6 +78,25 @@ func decodeStrCol(digest_file *string) bool {
 	return true
 
 }
+func decodeIngestFile(digest_file *string) bool {
+	dec := sybil.GetFileDecoder(*digest_file)
+
+	var srb sybil.SavedRecordBlock
+	err := dec.Decode(&srb)
+
+	if err != nil {
+		dec := sybil.GetFileDecoder(*digest_file)
+		err := dec.Decode(&srb.RecordList)
+		if err != nil {
+			return false
+		}
+	}
+
+	sybil.Print("INGEST FILE, NUM RECORDS", len(srb.RecordList), "KEY TABLE", srb.KeyTable)
+
+	return true
+
+}
 
 // TODO: make a list of potential types that can be decoded into
 func RunInspectCmdLine() {
@@ -86,6 +105,10 @@ func RunInspectCmdLine() {
 
 	if *digest_file == "" || digest_file == nil {
 		sybil.Print("Please specify a file to inspect with the -file flag")
+		return
+	}
+
+	if decodeIngestFile(digest_file) {
 		return
 	}
 
