@@ -76,11 +76,6 @@ func RunQueryCmdLine() {
 }
 
 func runQueryCmdLine() {
-	if sybil.FLAGS.DIAL != "" {
-		runQueryGRPC(&sybil.FLAGS)
-		return
-	}
-
 	if sybil.FLAGS.DECODE_FLAGS {
 		sybil.DecodeFlags()
 	}

@@ -89,8 +89,6 @@ type FlagDefs struct {
 
 	UPDATE_TABLE_INFO bool
 	SKIP_OUTLIERS     bool
-
-	DIAL string // GRPC dialing
 }
 
 type StrReplace struct {
@@ -142,8 +140,6 @@ func setDefaults() {
 	flag.BoolVar(&FLAGS.DEBUG, "debug", false, "enable debug logging")
 	flag.StringVar(&FLAGS.FIELD_SEPARATOR, "field-separator", ",", "Field separator used in command line params")
 	flag.StringVar(&FLAGS.FILTER_SEPARATOR, "filter-separator", ":", "Filter separator used in filters")
-
-	flag.StringVar(&FLAGS.DIAL, "dial", "", "address of remote sybild to query")
 
 	FLAGS.UPDATE_TABLE_INFO = false
 	FLAGS.SKIP_OUTLIERS = true
