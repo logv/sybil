@@ -16,10 +16,6 @@ deps:
 sybil: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
 
-# regenerates sybild protobuf definition from sybil.proto
-sybild-proto:
-	go generate src/sybild/pb/proto
-
 fake-data: fake-uptime
 
 fake-people:
@@ -60,10 +56,6 @@ nodeltaencoding: bindir
 
 profile: export BUILD_FLAGS += -tags profile
 profile: bindir
-	make all
-
-grpc: export BUILD_FLAGS += -tags grpc
-grpc: bindir
 	make all
 
 tags:

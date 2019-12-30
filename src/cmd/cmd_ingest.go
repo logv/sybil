@@ -240,20 +240,6 @@ func RunIngestCmdLine() {
 	f_TIMESTAMP_FORMAT := flag.String("timestamp-format", time.RFC3339, "when -timestamps is provided, this is the parsing string used")
 
 	flag.Parse()
-	if sybil.FLAGS.DIAL != "" {
-		var r io.ReadCloser = os.Stdin
-
-		var err error
-		if *f_REOPEN != "" {
-			r, err = os.Open(*f_REOPEN)
-		}
-		if err != nil {
-			return
-		}
-
-		defer r.Close()
-		runIngestGRPC(&sybil.FLAGS, r)
-	}
 
 	digestfile := fmt.Sprintf("%s", *ingestfile)
 
