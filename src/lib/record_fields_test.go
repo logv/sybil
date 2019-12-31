@@ -14,7 +14,7 @@ func TestSets(t *testing.T) {
 	blockCount := 3
 	minCount := CHUNK_SIZE * blockCount
 	records := addRecords(tableName, func(r *Record, i int) {
-		setId := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i)*2, 10)}
+		setId := []string{strconv.FormatInt(int64(i), 10), strconv.FormatInt(int64(i), 10)}
 		r.AddIntField("id_int", int64(i))
 		r.AddSetField("id_set", setId)
 		r.AddStrField("id_str", strconv.FormatInt(int64(i), 10))
@@ -56,7 +56,7 @@ func TestSets(t *testing.T) {
 			}
 
 			if strval != setval[0] {
-				Debug("SET AND STR vals misaligned", setval, strval)
+				t.Error("SET AND STR vals misaligned", setval, strval)
 			}
 
 		}
