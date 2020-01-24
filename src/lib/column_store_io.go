@@ -500,7 +500,7 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	}
 
 	string_lookup := make([]string, info.NumRecords)
-	key_table_len := len(tb.table.KeyTable)
+	key_table_len := len(records[0].Strs)
 	col_id := tb.table.get_key_id(into.Name)
 
 	if int(col_id) >= key_table_len {
@@ -670,7 +670,7 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 		Debug("DECODE COL ERR:", err)
 	}
 
-	key_table_len := len(tb.table.KeyTable)
+	key_table_len := len(records[0].Ints)
 	col_id := tb.table.get_key_id(into.Name)
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING INT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
