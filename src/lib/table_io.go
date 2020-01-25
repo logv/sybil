@@ -21,7 +21,7 @@ var CACHE_DIR = "cache"
 
 var DELETE_BLOCKS_AFTER_QUERY = true
 var HOLD_MATCHES = false
-var BLOCKS_PER_CACHE_FILE = 64
+var BLOCKS_PER_CACHE_FILE = 512
 
 func (t *Table) saveTableInfo(fname string) {
 	if t.GrabInfoLock() == false {
