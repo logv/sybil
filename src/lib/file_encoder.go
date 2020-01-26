@@ -1,6 +1,7 @@
 package sybil
 
 import "os"
+import "bytes"
 import "encoding/gob"
 
 type GobFileEncoder struct {
@@ -18,22 +19,16 @@ type FileEncoder interface {
 }
 
 func encodeInto(filename string, obj interface{}) error {
-	enc := GetFileEncoder(filename)
-	defer enc.CloseFile()
-
+	var network bytes.Buffer
+	// Create an encoder and send a value.
+	enc := gob.NewEncoder(&network)
 	err := enc.Encode(obj)
-	return err
-}
-
-func GetFileEncoder(filename string) FileEncoder {
-	// otherwise, we just return vanilla decoder for this file
-
-	file, err := os.Open(filename)
 	if err != nil {
-		dec := GobFileEncoder{gob.NewEncoder(file), file}
-		return dec
+		Error("encode:", err)
 	}
 
-	dec := GobFileEncoder{gob.NewEncoder(file), file}
-	return dec
+	w, _ := os.Create(filename)
+
+	network.WriteTo(w)
+	return err
 }

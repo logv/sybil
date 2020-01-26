@@ -8,6 +8,7 @@ import "path"
 import "strings"
 import "sync"
 import "compress/gzip"
+import "encoding/gob"
 
 var GZIP_EXT = ".gz"
 
@@ -23,9 +24,59 @@ func (t *Table) SaveRecordsToBlock(records RecordList, filename string) bool {
 	return temp_block.SaveToColumns(filename)
 }
 
+type PartialInfo struct {
+	Blocks []string
+}
+
+func init() {
+	gob.Register(PartialInfo{})
+}
+
+func (t *Table) AddPartialBlock(name string) {
+	dirname := path.Join(FLAGS.DIR, t.Name)
+	filename := fmt.Sprintf("%s/partials.db", dirname)
+	info := PartialInfo{}
+	err := decodeInto(filename, &info)
+	if err == nil {
+		info.Blocks = make([]string, 0)
+	}
+
+	info.Blocks = append(info.Blocks, name)
+
+	err = encodeInto(filename, info)
+	if err != nil {
+		Debug("COULDNT SAVE PARTIAL LIST", err)
+	} else {
+		Debug("SAVED PARTIAL LIST INTO", filename)
+	}
+}
+
+func (t *Table) ListPartialBlocks() {
+	dirname := path.Join(FLAGS.DIR, t.Name)
+	filename := fmt.Sprintf("%s/partials.db", dirname)
+	info := PartialInfo{}
+	err := decodeInto(filename, &info)
+	if err != nil {
+		Debug("CANT LOAD PARTIAL INFO FILE")
+		return
+	}
+
+	partials := make([]string, 0)
+	for _, filename := range info.Blocks {
+		block := t.LoadBlockFromDir(filename, nil, false)
+		t.BlockList[filename] = block
+		if block.Info.NumRecords < int32(CHUNK_SIZE) {
+			partials = append(partials, block.Name)
+		}
+	}
+
+	info.Blocks = partials
+	encodeInto(filename, info)
+}
+
 func (t *Table) FindPartialBlocks() []*TableBlock {
 	READ_ROWS_ONLY = false
-	t.LoadRecords(nil)
+	t.ListPartialBlocks()
 
 	ret := make([]*TableBlock, 0)
 

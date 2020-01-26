@@ -484,6 +484,10 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 		Error("ERROR SAVING BLOCK", partialname, dirname, err)
 	}
 
+	if nb.Info.NumRecords < int32(CHUNK_SIZE) {
+		tb.table.AddPartialBlock(tb.Name)
+	}
+
 	Debug("RELEASING BLOCK", tb.Name)
 	return true
 
