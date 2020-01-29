@@ -1,13 +1,15 @@
 package sybil_cmd
 
-import sybil "github.com/logv/sybil/src/lib"
+import (
+	"flag"
+	"fmt"
+	"path"
+	"runtime/debug"
+	"strings"
+	"time"
 
-import "fmt"
-import "flag"
-import "strings"
-import "time"
-import "path"
-import "runtime/debug"
+	sybil "github.com/logv/sybil/src/lib"
+)
 
 var MAX_RECORDS_NO_GC = 4 * 1000 * 1000 // 4 million
 
@@ -55,6 +57,7 @@ func addQueryFlags() {
 	flag.StringVar(&sybil.FLAGS.STRS, "str", "", "String values to load")
 	flag.StringVar(&sybil.FLAGS.GROUPS, "group", "", "values group by")
 	flag.StringVar(&sybil.FLAGS.DISTINCT, sybil.DISTINCT_STR, "", "distinct group by")
+	flag.IntVar(&sybil.FLAGS.NUM_DISTINCT, sybil.NUM_DISTINCT, -1, "short the group by when this number of elements is hit")
 
 	flag.BoolVar(&sybil.FLAGS.EXPORT, "export", false, "export data to TSV")
 
@@ -242,6 +245,7 @@ func runQueryCmdLine() {
 	}
 
 	querySpec.Limit = int(sybil.FLAGS.LIMIT)
+	querySpec.NumDistinct = int(sybil.FLAGS.NUM_DISTINCT)
 
 	if sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
