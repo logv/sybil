@@ -1,15 +1,16 @@
 package sybil
 
-import "fmt"
-
-import "os"
-import "path"
-import "strings"
-import "sync"
-import "time"
-import "io/ioutil"
-import "runtime"
-import "runtime/debug"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"runtime"
+	"runtime/debug"
+	"strings"
+	"sync"
+	"time"
+)
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
@@ -243,6 +244,24 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					m.Lock()
 					all_results = append(all_results, resultSpec)
 					m.Unlock()
+
+					if FLAGS.NUM_DISTINCT > 0 {
+						// We need to force the evaluation to figure out the number of distinct results.
+						m.Lock()
+						for k, v := range all_results {
+							block_specs[fmt.Sprintf("result_%v", k)] = v
+						}
+
+						resultSpec := MultiCombineResults(querySpec, block_specs)
+						all_results = all_results[:0]
+						all_results = append(all_results, resultSpec)
+						m.Unlock()
+						block_specs = make(map[string]*QuerySpec)
+
+						if len(resultSpec.Results) >= FLAGS.NUM_DISTINCT {
+							break
+						}
+					}
 
 					runtime.ReadMemStats(&memstats)
 					alloced := memstats.Alloc / 1024 / 1024

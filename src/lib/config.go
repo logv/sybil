@@ -1,9 +1,10 @@
 package sybil
 
-import "flag"
-
-import "os"
-import "encoding/gob"
+import (
+	"encoding/gob"
+	"flag"
+	"os"
+)
 
 func init() {
 	setDefaults()
@@ -75,7 +76,8 @@ type FlagDefs struct {
 
 	WEIGHT_COL string
 
-	LIMIT int
+	LIMIT        int
+	NUM_DISTINCT int
 
 	DEBUG bool
 	JSON  bool

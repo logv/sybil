@@ -29,10 +29,11 @@ type savedQueryParams struct {
 	Distincts    []Grouping            `json:",omitempty"` // list of columns we are creating a count distinct query on
 	StrReplace   map[string]StrReplace `json:",omitempty"`
 
-	OrderBy    string `json:",omitempty"`
-	PruneBy    string `json:",omitempty"`
-	Limit      int    `json:",omitempty"`
-	TimeBucket int    `json:",omitempty"`
+	OrderBy     string `json:",omitempty"`
+	PruneBy     string `json:",omitempty"`
+	Limit       int    `json:",omitempty"`
+	NumDistinct int    `json:",omitempty"` // TODO(gouthamve): Add comment.
+	TimeBucket  int    `json:",omitempty"`
 
 	Samples       bool `json:",omitempty"`
 	CachedQueries bool `json:",omitempty"`

@@ -1,20 +1,22 @@
 package sybil
 
-import "fmt"
-import "time"
-import "bytes"
-import "sort"
-import "strconv"
-import "sync"
-import "math"
-import "runtime"
-
-import "encoding/binary"
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"math"
+	"runtime"
+	"sort"
+	"strconv"
+	"sync"
+	"time"
+)
 
 var INTERNAL_RESULT_LIMIT = 100000
 var GROUP_BY_WIDTH = 8 // bytes
 
 const DISTINCT_STR = "distinct"
+const NUM_DISTINCT = "distinct-limit"
 const HIST_STR = "hist"
 const SORT_COUNT = "$COUNT"
 
