@@ -4,6 +4,7 @@ import "fmt"
 import "bytes"
 
 import "os"
+import "errors"
 import "encoding/gob"
 import "runtime/debug"
 import "time"
@@ -489,23 +490,24 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 
 }
 
-func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) error {
 	records := tb.RecordList[:]
 
 	into := &SavedStrColumn{}
 	err := dec.Decode(into)
 	if err != nil {
 		Debug("DECODE COL ERR:", err)
-		return
+		return nil
 	}
 
 	string_lookup := make([]string, info.NumRecords)
 	key_table_len := len(records[0].Strs)
 	col_id := tb.table.get_key_id(into.Name)
+	num_records := uint32(tb.Info.NumRecords)
 
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING STR COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	col := tb.GetColumnInfo(col_id)
@@ -517,6 +519,10 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 	var re *regexp.Regexp
 	if ok {
 		re, err = regexp.Compile(str_replace.Pattern)
+	}
+
+	if uint32(len(into.StringTable)) > num_records {
+		return errors.New("BLOCK SIZE CHANGED DURING QUERY")
 	}
 
 	for k, v := range into.StringTable {
@@ -563,6 +569,10 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 					r = prev + r
 				}
 
+				if r >= num_records {
+					return errors.New("BLOCK SIZE CHANGED DURING QUERY")
+				}
+
 				prev = r
 				record = records[r]
 
@@ -579,6 +589,10 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 		}
 
 	} else {
+		if uint32(len(into.Values)) > num_records {
+			return errors.New("BLOCK SIZE CHANGED DURING QUERY")
+		}
+
 		for r, v := range into.Values {
 			new_value, should_replace := bucket_replace[v]
 			if should_replace {
@@ -590,9 +604,11 @@ func (tb *TableBlock) unpackStrCol(dec FileDecoder, info SavedColumnInfo) {
 		}
 
 	}
+
+	return nil
 }
 
-func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) error {
 	records := tb.RecordList
 
 	saved_col := NewSavedSetColumn()
@@ -608,7 +624,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING SET COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	col := tb.GetColumnInfo(col_id)
@@ -625,6 +641,7 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 	col.val_string_id_lookup = tr_string_lookup
 
+	num_records := uint32(tb.Info.NumRecords)
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
 			// DONT FORGET TO DELTA UNENCODE THE RECORD VALUES
@@ -632,6 +649,10 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 			for _, r := range bucket.Records {
 				if into.DeltaEncodedIDs {
 					r = r + prev
+				}
+
+				if r >= num_records {
+					return errors.New("BLOCK SIZE CHANGED DURING QUERY")
 				}
 
 				cur_set, ok := records[r].SetMap[col_id]
@@ -648,6 +669,9 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 
 		}
 	} else {
+		if uint32(len(into.Values)) > num_records {
+			return errors.New("BLOCK SIZE CHANGED DURING QUERY")
+		}
 		for r, v := range into.Values {
 			cur_set, ok := records[r].SetMap[col_id]
 			if !ok {
@@ -659,9 +683,11 @@ func (tb *TableBlock) unpackSetCol(dec FileDecoder, info SavedColumnInfo) {
 			records[r].Populated[col_id] = SET_VAL
 		}
 	}
+
+	return nil
 }
 
-func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
+func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) error {
 	records := tb.RecordList[:]
 
 	into := &SavedIntColumn{}
@@ -674,13 +700,15 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	col_id := tb.table.get_key_id(into.Name)
 	if int(col_id) >= key_table_len {
 		Debug("IGNORING INT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
-		return
+		return nil
 	}
 
 	is_time_col := false
 	if FLAGS.TIME_COL != "" {
 		is_time_col = into.Name == FLAGS.TIME_COL
 	}
+
+	num_records := uint32(tb.Info.NumRecords)
 
 	if into.BucketEncoded {
 		for _, bucket := range into.Bins {
@@ -702,6 +730,10 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 					}
 				}
 
+				if r >= num_records {
+					return errors.New("BLOCK SIZE CHANGED DURING QUERY")
+				}
+
 				records[r].Ints[col_id] = IntField(bucket.Value)
 				records[r].Populated[col_id] = INT_VAL
 				prev = r
@@ -716,6 +748,10 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 	} else {
 
 		prev := int64(0)
+		if uint32(len(into.Values)) > num_records {
+			return errors.New("BLOCK SIZE CHANGED DURING QUERY")
+		}
+
 		for r, v := range into.Values {
 			if FLAGS.UPDATE_TABLE_INFO {
 				tb.update_int_info(col_id, v)
@@ -739,4 +775,6 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) {
 
 		}
 	}
+
+	return nil
 }

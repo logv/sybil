@@ -207,10 +207,12 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	info := t.LoadBlockInfo(dirname)
 
 	if info == nil {
+		Debug("COULDNT READ BLOCK INFO FOR", dirname)
 		return nil
 	}
 
 	if info.NumRecords <= 0 {
+		Debug("NUM RECORDS BELOW 0 FOR", dirname)
 		return nil
 	}
 
@@ -247,17 +249,23 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 
 		dec := GetFileDecoder(filename)
 
+		err := error(nil)
 		switch {
 		case strings.HasPrefix(fname, "str"):
-			tb.unpackStrCol(dec, *info)
+			err = tb.unpackStrCol(dec, *info)
 		case strings.HasPrefix(fname, "set"):
-			tb.unpackSetCol(dec, *info)
+			err = tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
-			tb.unpackIntCol(dec, *info)
+			err = tb.unpackIntCol(dec, *info)
 		}
 
 		dec.CloseFile()
 
+		if err != nil {
+			Debug("ERROR DURING COLUMN UNPACK", fname, "SKIPPING BLOCK", dirname)
+			Debug("ERROR: ", err)
+			return nil
+		}
 	}
 
 	tb.Size = size
