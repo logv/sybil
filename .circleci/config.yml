@@ -21,13 +21,6 @@ jobs:
             make testv | tee /tmp/test-results/go-test.out
 
       - run:
-          name: Run code coverage
-          command: |
-            make coverage
-            cp cover.html /tmp/test-results
-            bash <(curl -s https://codecov.io/bash) -c -F unittests
-
-      - run:
           name: Run benchmarks
           command: ./scripts/ci_run_benchmarks.sh
 
