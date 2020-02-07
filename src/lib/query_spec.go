@@ -32,7 +32,7 @@ type savedQueryParams struct {
 	OrderBy     string `json:",omitempty"`
 	PruneBy     string `json:",omitempty"`
 	Limit       int    `json:",omitempty"`
-	NumDistinct int    `json:",omitempty"` // TODO(gouthamve): Add comment.
+	NumDistinct int    `json:",omitempty"` // Exit early once we have NumDistinct records
 	TimeBucket  int    `json:",omitempty"`
 
 	Samples       bool `json:",omitempty"`

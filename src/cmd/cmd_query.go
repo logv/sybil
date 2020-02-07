@@ -246,6 +246,10 @@ func runQueryCmdLine() {
 
 	querySpec.Limit = int(sybil.FLAGS.LIMIT)
 	querySpec.NumDistinct = int(sybil.FLAGS.NUM_DISTINCT)
+	if querySpec.NumDistinct > 0 {
+		sybil.Debug("Setting Limit to same as NumDistinct:", querySpec.NumDistinct)
+		querySpec.Limit = querySpec.NumDistinct
+	}
 
 	if sybil.FLAGS.SAMPLES {
 		sybil.HOLD_MATCHES = true
