@@ -43,10 +43,12 @@ type FlagDefs struct {
 	STR_REPLACE string // regex replacement for strings
 	SET_FILTERS string
 
-	INTS     string
-	STRS     string
-	GROUPS   string
-	DISTINCT string
+	INTS        string
+	STRS        string
+	SETS        string
+	SAMPLE_COLS string
+	GROUPS      string
+	DISTINCT    string
 
 	ADD_RECORDS int
 

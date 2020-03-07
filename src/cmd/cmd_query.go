@@ -55,6 +55,8 @@ func addQueryFlags() {
 
 	flag.StringVar(&sybil.FLAGS.INTS, "int", "", "Integer values to aggregate")
 	flag.StringVar(&sybil.FLAGS.STRS, "str", "", "String values to load")
+	flag.StringVar(&sybil.FLAGS.SETS, "set", "", "Set values to load")
+	flag.StringVar(&sybil.FLAGS.SAMPLE_COLS, "sample-cols", "", "Columns to load for samples query")
 	flag.StringVar(&sybil.FLAGS.GROUPS, "group", "", "values group by")
 	flag.StringVar(&sybil.FLAGS.DISTINCT, sybil.DISTINCT_STR, "", "distinct group by")
 	flag.IntVar(&sybil.FLAGS.NUM_DISTINCT, sybil.NUM_DISTINCT, -1, "short the group by when this number of elements is hit")
@@ -108,7 +110,10 @@ func runQueryCmdLine() {
 	ints := make([]string, 0)
 	groups := make([]string, 0)
 	strs := make([]string, 0)
+	sets := make([]string, 0)
 	distinct := make([]string, 0)
+
+	has_sample_cols := false
 
 	if sybil.FLAGS.GROUPS != "" {
 		groups = strings.Split(sybil.FLAGS.GROUPS, sybil.FLAGS.FIELD_SEPARATOR)
@@ -121,10 +126,25 @@ func runQueryCmdLine() {
 	// PROCESS CMD LINE ARGS THAT USE COMMA DELIMITERS
 	if sybil.FLAGS.STRS != "" {
 		strs = strings.Split(sybil.FLAGS.STRS, sybil.FLAGS.FIELD_SEPARATOR)
+		has_sample_cols = true
 	}
 	if sybil.FLAGS.INTS != "" {
 		ints = strings.Split(sybil.FLAGS.INTS, sybil.FLAGS.FIELD_SEPARATOR)
+		has_sample_cols = true
 	}
+	if sybil.FLAGS.SETS != "" {
+		sets = strings.Split(sybil.FLAGS.SETS, sybil.FLAGS.FIELD_SEPARATOR)
+		has_sample_cols = true
+	}
+
+	sample_cols := make([]string, 0)
+	if sybil.FLAGS.SAMPLE_COLS != "" {
+		sample_cols = strings.Split(sybil.FLAGS.SAMPLE_COLS, sybil.FLAGS.FIELD_SEPARATOR)
+
+		has_sample_cols = true
+
+	}
+
 	if sybil.FLAGS.PROFILE && sybil.PROFILER_ENABLED {
 		profile := sybil.RUN_PROFILER()
 		defer profile.Start().Stop()
@@ -202,8 +222,25 @@ func runQueryCmdLine() {
 		}
 
 	}
+
+	for _, v := range sample_cols {
+		key_id := t.KeyTable[v]
+		switch t.KeyTypes[key_id] {
+		case sybil.INT_VAL:
+			ints = append(ints, v)
+		case sybil.STR_VAL:
+			strs = append(strs, v)
+		case sybil.SET_VAL:
+			sets = append(sets, v)
+
+		}
+	}
+
 	for _, v := range strs {
 		loadSpec.Str(v)
+	}
+	for _, v := range sets {
+		loadSpec.Set(v)
 	}
 	for _, v := range ints {
 		loadSpec.Int(v)
@@ -255,8 +292,10 @@ func runQueryCmdLine() {
 		sybil.HOLD_MATCHES = true
 		sybil.DELETE_BLOCKS_AFTER_QUERY = false
 
-		loadSpec := t.NewLoadSpec()
-		loadSpec.LoadAllColumns = true
+		if !has_sample_cols {
+			loadSpec = t.NewLoadSpec()
+			loadSpec.LoadAllColumns = true
+		}
 
 		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
