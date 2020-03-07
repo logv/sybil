@@ -11,7 +11,10 @@ func (tb *TableBlock) allocateRecords(loadSpec *LoadSpec, info SavedColumnInfo, 
 			slab := loadSpec.slabs[0]
 			loadSpec.slabs = loadSpec.slabs[1:]
 
-			slab.ResetRecords(tb)
+			if len(loadSpec.files) > 0 {
+				slab.ResetRecords(tb)
+			}
+
 			tb.RecordList = *slab
 			return *slab
 		}
