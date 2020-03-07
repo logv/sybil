@@ -223,6 +223,15 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	tb.allocateRecords(loadSpec, *info, load_records)
 	tb.Info = info
 
+	// We read the block's inner files if we are getting the table info
+	// (because we need to size up all the blocks) or if we are loading the
+	// columns into row form (loadSpec is true). Otherwise, we skip - this
+	// speeds up reading block info on large tables
+	if !FLAGS.PRINT_INFO && loadSpec == nil && !load_records {
+		return &tb
+	}
+
+	// Read the files in this block dir and unpack relevant ones if necessary
 	file, _ := os.Open(dirname)
 	files, _ := file.Readdir(-1)
 
@@ -271,6 +280,7 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 	tb.Size = size
 
 	file.Close()
+
 	return &tb
 }
 
