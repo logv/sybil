@@ -264,7 +264,8 @@ func (t *Table) StrFilter(name string, op string, value string) StrFilter {
 	if op == "re" || op == "nre" {
 		strFilter.regex, err = regexp.Compile(value)
 		if err != nil {
-			Debug("REGEX ERROR", err, "WITH", value)
+			Error(err, "IN REGEX:", value)
+
 		}
 	}
 
