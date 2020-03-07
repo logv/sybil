@@ -51,6 +51,7 @@ func TestSkipChangedBlocks(t *testing.T) {
 		nt.LoadTableInfo()
 
 		loadSpec := NewLoadSpec()
+		loadSpec.LoadAllColumns = true
 		cb(&loadSpec)
 		count := nt.LoadRecords(&loadSpec)
 
@@ -125,6 +126,7 @@ func TestSkipChangedBlocksLargeChunk(t *testing.T) {
 		nt.LoadTableInfo()
 
 		loadSpec := NewLoadSpec()
+		loadSpec.LoadAllColumns = true
 		cb(&loadSpec)
 		count := nt.LoadRecords(&loadSpec)
 

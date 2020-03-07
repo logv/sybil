@@ -38,6 +38,9 @@ test:
 testv:
 	${GOBIN} test ./src/lib/ -race -v -debug
 
+update-golden:
+	${GOBIN} test ./src/lib --update-golden
+
 coverage:
 	${GOBIN} test -covermode atomic -coverprofile cover.out ./src/lib
 	sed -i "s|_${ROOT_DIR}|.|"	cover.out
