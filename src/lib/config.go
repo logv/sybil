@@ -74,6 +74,7 @@ type FlagDefs struct {
 	PROFILE_MEM bool
 
 	RECYCLE_MEM    bool
+	FAST_RECYCLE   bool
 	CACHED_QUERIES bool
 
 	WEIGHT_COL string
@@ -153,6 +154,7 @@ func setDefaults() {
 	FLAGS.SAMPLES = false
 
 	FLAGS.RECYCLE_MEM = true
+	FLAGS.FAST_RECYCLE = false
 	FLAGS.CACHED_QUERIES = false
 
 	FLAGS.HDR_HIST = false

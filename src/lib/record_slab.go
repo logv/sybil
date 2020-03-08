@@ -135,19 +135,25 @@ func (rl RecordList) ResetRecords(tb *TableBlock) {
 		return
 	}
 
+	// Fast recycle means that we only reset record.Populated
+	// this saves time when querying tables with lots of columns
+	if !FLAGS.FAST_RECYCLE {
+		for _, record := range rl {
+			if record.Ints != nil {
+				for i := range record.Ints {
+					record.Ints[i] = 0
+				}
+			}
+
+			if record.Strs != nil {
+				for i := range record.Strs {
+					record.Strs[i] = 0
+				}
+			}
+		}
+	}
+
 	for _, record := range rl {
-		if record.Ints != nil {
-			for i := range record.Ints {
-				record.Ints[i] = 0
-			}
-		}
-
-		if record.Strs != nil {
-			for i := range record.Strs {
-				record.Strs[i] = 0
-			}
-		}
-
 		if record.SetMap != nil {
 			record.SetMap = make(SetMap)
 		}
@@ -157,7 +163,6 @@ func (rl RecordList) ResetRecords(tb *TableBlock) {
 		}
 
 		record.block = tb
-
 	}
 
 }
