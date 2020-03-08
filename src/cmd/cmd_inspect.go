@@ -29,11 +29,10 @@ func decodeInfoCol(digest_file *string) bool {
 	err := dec.Decode(&info)
 
 	if err != nil {
-		sybil.Print("ERROR", err)
 		return false
 	}
 
-	sybil.Print("INFO COL", info)
+	sybil.Print("BLOCK INFO", info)
 
 	return true
 
@@ -108,10 +107,6 @@ func RunInspectCmdLine() {
 		return
 	}
 
-	if decodeIngestFile(digest_file) {
-		return
-	}
-
 	if decodeTableInfo(digest_file) {
 		return
 	}
@@ -119,6 +114,11 @@ func RunInspectCmdLine() {
 	if decodeInfoCol(digest_file) {
 		return
 	}
+
+	if decodeIngestFile(digest_file) {
+		return
+	}
+
 	if decodeStrCol(digest_file) {
 		return
 	}
