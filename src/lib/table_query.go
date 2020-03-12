@@ -248,6 +248,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					all_results = append(all_results, resultSpec)
 					m.Unlock()
 
+					// {{{ LOGIC FOR EARLY EXIT WHEN DOING A NUM DISTINCT QUERY
+					// sometimes we just want to find x samples that fit some filter set and exit early
+					// we can't use a samples query because samples doesn't give us distinct results,
+					// instead we issue a query with a group by and once the group by goes above NUM_DISTINCT, we exit
 					if FLAGS.NUM_DISTINCT > 0 {
 						// We need to force the evaluation to figure out the number of distinct results.
 						m.Lock()
@@ -265,6 +269,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 							break
 						}
 					}
+					// }}}
 
 					runtime.ReadMemStats(&memstats)
 					alloced := memstats.Alloc / 1024 / 1024
