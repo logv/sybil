@@ -215,21 +215,23 @@ func (qs *QuerySpec) SaveCachedResults(blockname string) {
 
 	if err != nil {
 		Warn("cached query encoding error:", err)
+		tempfile.Close()
 		return
 	}
 
 	if err != nil {
 		Warn("ERROR CREATING TEMP FILE FOR QUERY CACHED INFO", err)
+		tempfile.Close()
 		return
 	}
 
 	_, err = gbuf.WriteTo(tempfile)
+	tempfile.Close()
 	if err != nil {
 		Warn("ERROR SAVING QUERY CACHED INFO INTO TEMPFILE", err)
 		return
 	}
 
-	tempfile.Close()
 	err = RenameAndMod(tempfile.Name(), filename)
 	if err != nil {
 		Warn("ERROR RENAMING", tempfile.Name())

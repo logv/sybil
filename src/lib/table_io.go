@@ -160,19 +160,23 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 		Debug("TABLE INFO OPEN TOOK", end.Sub(start))
 	}
 
-	if len(saved_table.KeyTable) > 0 {
-		t.KeyTable = saved_table.KeyTable
-	}
+	// if we shortened the key table already we won't override it
+	// t.KeyInfo is set during a query command and nowhere else usually
+	if t.KeyInfo == nil {
+		if len(saved_table.KeyTable) > 0 {
+			t.KeyTable = saved_table.KeyTable
+		}
 
-	if len(saved_table.KeyTypes) > 0 {
-		t.KeyTypes = saved_table.KeyTypes
-	}
+		if len(saved_table.KeyTypes) > 0 {
+			t.KeyTypes = saved_table.KeyTypes
+		}
 
-	if saved_table.IntInfo != nil {
-		t.IntInfo = saved_table.IntInfo
-	}
-	if saved_table.StrInfo != nil {
-		t.StrInfo = saved_table.StrInfo
+		if saved_table.IntInfo != nil {
+			t.IntInfo = saved_table.IntInfo
+		}
+		if saved_table.StrInfo != nil {
+			t.StrInfo = saved_table.StrInfo
+		}
 	}
 
 	// If we are recovering the INFO lock, we won't necessarily have

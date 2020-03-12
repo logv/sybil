@@ -122,13 +122,24 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 	}
 
 	for field_name, _ := range info.StrInfoMap {
-		field_id := t.get_key_id(field_name)
+		t.string_id_m.Lock()
+		field_id, ok := t.KeyTable[field_name]
+		t.string_id_m.Unlock()
+		if !ok {
+			continue
+		}
 		min_record.ResizeFields(field_id)
 		max_record.ResizeFields(field_id)
 	}
 
 	for field_name, field_info := range info.IntInfoMap {
-		field_id := t.get_key_id(field_name)
+		t.string_id_m.Lock()
+		field_id, ok := t.KeyTable[field_name]
+		t.string_id_m.Unlock()
+		if !ok {
+			continue
+		}
+
 		min_record.ResizeFields(field_id)
 		max_record.ResizeFields(field_id)
 

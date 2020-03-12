@@ -12,6 +12,7 @@ type Table struct {
 	BlockList map[string]*TableBlock
 	KeyTable  map[string]int16 // String Key Names
 	KeyTypes  map[int16]int8
+	KeyInfo   *KeyInfo // Keys that we will be using during a query
 
 	// Need to keep track of the last block we've used, right?
 	LastBlock TableBlock

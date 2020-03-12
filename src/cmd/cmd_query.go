@@ -167,14 +167,39 @@ func runQueryCmdLine() {
 
 	sybil.Debug("WILL INSPECT", count, "RECORDS")
 
+	// {{ TRIM KEY TABLE
+	shorten_key_table := true
+	if sybil.FLAGS.PRINT_INFO {
+		shorten_key_table = false
+	}
+	if !has_sample_cols {
+		shorten_key_table = false
+	}
+
+	if shorten_key_table {
+		t.UseKeys(strs)
+		t.UseKeys(strs)
+		t.UseKeys(sets)
+		t.UseKeys(ints)
+		t.UseKeys(groups)
+		t.UseKeys(distinct)
+		t.UseKeys(sample_cols)
+
+		t.ShortenKeyTable()
+
+	}
+	// }}
+
 	groupings := []sybil.Grouping{}
 	for _, g := range groups {
 		groupings = append(groupings, t.Grouping(g))
 	}
 
 	aggs := []sybil.Aggregation{}
-	for _, agg := range ints {
-		aggs = append(aggs, t.Aggregation(agg, sybil.FLAGS.OP))
+	if !sybil.FLAGS.SAMPLES {
+		for _, agg := range ints {
+			aggs = append(aggs, t.Aggregation(agg, sybil.FLAGS.OP))
+		}
 	}
 
 	distincts := []sybil.Grouping{}
