@@ -233,6 +233,9 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					m.Unlock()
 				}
 
+				end := time.Now()
+				block_gc_time += end.Sub(start)
+
 				if querySpec != nil {
 
 					t.WriteQueryCache(to_cache_specs)
@@ -271,15 +274,12 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 					if alloced > 500 {
 						debug.FreeOSMemory()
-						runtime.ReadMemStats(&memstats)
 					}
 				}
 
 				if FLAGS.DEBUG {
 					fmt.Fprint(os.Stderr, ",")
 				}
-				end := time.Now()
-				block_gc_time += end.Sub(start)
 			}
 		}
 
