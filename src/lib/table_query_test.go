@@ -3,6 +3,8 @@ package sybil
 import "testing"
 import "math/rand"
 import "strconv"
+import "strings"
+import "math"
 
 type loadColCB func(*LoadSpec)
 
@@ -153,4 +155,64 @@ func TestSkipChangedBlocksLargeChunk(t *testing.T) {
 
 	deleteTestDb(tableName)
 	CHUNK_SIZE = old_chunk_size
+}
+
+// Tests that the average histogram works
+func TestShortenKeyTable(t *testing.T) {
+	tableName := getTestTableName(t)
+	deleteTestDb(tableName)
+
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+		return
+	}
+
+	blockCount := 3
+
+	totalAge := int64(0)
+	count := 0
+	addRecords(tableName, func(r *Record, index int) {
+		count++
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(20)) + 10
+		totalAge += age
+		r.AddIntField("age", age)
+		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
+
+	avgAge := float64(totalAge) / float64(count)
+
+	nt := saveAndReloadTable(t, tableName, blockCount)
+
+	// We have to unload and reload the table if we are doing a shorten key test
+	unloadTestTable(tableName)
+
+	nt = GetTable(tableName)
+	nt.LoadTableInfo()
+
+	nt.UseKeys([]string{"age"})
+	nt.ShortenKeyTable()
+
+	querySpec := newQuerySpec()
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+
+	if len(nt.KeyTable) != 1 {
+		t.Error("KEY TABLE SHORTENING DIDNT WORK")
+	}
+
+	Debug("KEY TABLES", nt.KeyTable, nt.KeyTypes)
+	Debug("INFO MAP", nt.IntInfo)
+
+	nt.MatchAndAggregate(querySpec)
+
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		Debug("AVG AGE", avgAge)
+
+		if math.Abs(float64(avgAge)-float64(v.Hists["age"].Mean())) > 0.1 {
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avgAge, v.Hists["age"].Mean())
+		}
+	}
+	deleteTestDb(tableName)
+
 }
