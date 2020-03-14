@@ -160,6 +160,9 @@ func runQueryCmdLine() {
 	t.LoadTableInfo()
 	t.LoadRecords(nil)
 
+	// Make filterSpec before shortening key table
+	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS}
+
 	count := 0
 	for _, block := range t.BlockList {
 		count += int(block.Info.NumRecords)
@@ -172,7 +175,7 @@ func runQueryCmdLine() {
 	if sybil.FLAGS.PRINT_INFO {
 		shorten_key_table = false
 	}
-	if !has_sample_cols {
+	if sybil.FLAGS.SAMPLES && !has_sample_cols {
 		shorten_key_table = false
 	}
 
@@ -184,6 +187,7 @@ func runQueryCmdLine() {
 		t.UseKeys(groups)
 		t.UseKeys(distinct)
 		t.UseKeys(sample_cols)
+		t.UseKeys(filterSpec.GetFilterCols())
 
 		t.ShortenKeyTable()
 
@@ -226,7 +230,6 @@ func runQueryCmdLine() {
 	}
 
 	loadSpec := t.NewLoadSpec()
-	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS}
 	filters := sybil.BuildFilters(t, &loadSpec, filterSpec)
 
 	query_params := sybil.QueryParams{Groups: groupings, Filters: filters,

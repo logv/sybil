@@ -20,6 +20,42 @@ func checkTable(tokens []string, t *Table) bool {
 	}
 }
 
+func (filterSpec *FilterSpec) GetFilterCols() []string {
+	strfilters := make([]string, 0)
+	intfilters := make([]string, 0)
+	setfilters := make([]string, 0)
+	filtercols := make([]string, 0)
+	if filterSpec.Int != "" {
+		intfilters = strings.Split(filterSpec.Int, FLAGS.FIELD_SEPARATOR)
+	}
+	if filterSpec.Str != "" {
+		strfilters = strings.Split(filterSpec.Str, FLAGS.FIELD_SEPARATOR)
+	}
+
+	if filterSpec.Set != "" {
+		setfilters = strings.Split(filterSpec.Set, FLAGS.FIELD_SEPARATOR)
+	}
+
+	for _, filt := range intfilters {
+		tokens := strings.Split(filt, FLAGS.FILTER_SEPARATOR)
+		col := tokens[0]
+		filtercols = append(filtercols, col)
+	}
+	for _, filt := range strfilters {
+		tokens := strings.Split(filt, FLAGS.FILTER_SEPARATOR)
+		col := tokens[0]
+		filtercols = append(filtercols, col)
+	}
+	for _, filt := range setfilters {
+		tokens := strings.Split(filt, FLAGS.FILTER_SEPARATOR)
+		col := tokens[0]
+		filtercols = append(filtercols, col)
+	}
+
+	return filtercols
+
+}
+
 func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter {
 	strfilters := make([]string, 0)
 	intfilters := make([]string, 0)
