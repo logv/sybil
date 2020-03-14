@@ -161,6 +161,20 @@ func (t *Table) ShouldLoadBlockFromDir(dirname string, querySpec *QuerySpec) boo
 					break
 				}
 			}
+			if fil.Op == "eq" {
+				if len(min_record.Populated) <= int(fil.FieldId) ||
+					min_record.Populated[fil.FieldId] != INT_VAL {
+					add = false
+					break
+				}
+
+				if int(min_record.Ints[fil.FieldId]) > fil.Value ||
+					int(max_record.Ints[fil.FieldId]) < fil.Value {
+					add = false
+					break
+				}
+
+			}
 		}
 	}
 
