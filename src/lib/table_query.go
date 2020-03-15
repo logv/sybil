@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+var MAX_MEM = uint64(1024)
+
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
 	Debug("LOADING", FLAGS.DIR, t.Name)
@@ -79,6 +81,8 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 	broken_count := 0
 	this_block := 0
 	block_gc_time := time.Now().Sub(time.Now())
+	combine_time := time.Now().Sub(time.Now())
+	os_free_time := time.Now().Sub(time.Now())
 
 	all_results := make([]*QuerySpec, 0)
 
@@ -241,7 +245,10 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					t.WriteQueryCache(to_cache_specs)
 					to_cache_specs = make(map[string]*QuerySpec)
 
+					combine_start := time.Now()
 					resultSpec := MultiCombineResults(querySpec, block_specs)
+					combine_time += (time.Now().Sub(combine_start))
+
 					block_specs = make(map[string]*QuerySpec)
 
 					m.Lock()
@@ -277,9 +284,11 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 						max_alloc = alloced
 					}
 
-					if alloced > 500 {
+					os_free_start := time.Now()
+					if alloced > MAX_MEM {
 						debug.FreeOSMemory()
 					}
+					os_free_time += time.Now().Sub(os_free_start)
 				}
 
 				if FLAGS.DEBUG {
@@ -344,7 +353,15 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 
 	if block_gc_time > 0 {
 		Debug("BLOCK GC TOOK", block_gc_time)
+	}
+
+	if os_free_time > 0 {
+		Debug("FREEING OS MEMORY TOOK", os_free_time)
 		Debug("MAX ALLOC", max_alloc)
+	}
+
+	if combine_time > 0 {
+		Debug("COMBINING RESULTS TOOK", combine_time)
 	}
 
 	// RE-POPULATE LOOKUP TABLE INFO
