@@ -73,9 +73,10 @@ type FlagDefs struct {
 	PROFILE     bool
 	PROFILE_MEM bool
 
-	RECYCLE_MEM    bool
-	FAST_RECYCLE   bool
-	CACHED_QUERIES bool
+	RECYCLE_MEM       bool
+	FAST_RECYCLE      bool
+	CACHED_QUERIES    bool
+	SHORTEN_KEY_TABLE bool
 
 	WEIGHT_COL string
 

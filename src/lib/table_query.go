@@ -13,6 +13,7 @@ import (
 )
 
 var MAX_MEM = uint64(1024)
+var FREE_MEM_AFTER = uint64(1024)
 
 func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) int {
 	waystart := time.Now()
@@ -278,17 +279,29 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 					}
 					// }}}
 
+					// {{{ Freeing memory back to the OS
+					// We defer the free so that not all threads are halted while we
+					// free. We also schedule the next collection at alloced_mem +
+					// allowed overhead
 					runtime.ReadMemStats(&memstats)
 					alloced := memstats.Alloc / 1024 / 1024
 					if alloced > max_alloc {
 						max_alloc = alloced
 					}
 
-					os_free_start := time.Now()
 					if alloced > MAX_MEM {
-						debug.FreeOSMemory()
+						wg.Add(1)
+						go func() {
+							os_free_start := time.Now()
+							debug.FreeOSMemory()
+							runtime.ReadMemStats(&memstats)
+							after_free := memstats.Alloc / 1024 / 1024
+							MAX_MEM = after_free + FREE_MEM_AFTER
+							os_free_time += time.Now().Sub(os_free_start)
+							wg.Done()
+						}()
 					}
-					os_free_time += time.Now().Sub(os_free_start)
+					// }}} end free memory
 				}
 
 				if FLAGS.DEBUG {

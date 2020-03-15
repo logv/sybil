@@ -67,6 +67,7 @@ func addQueryFlags() {
 
 	flag.BoolVar(&sybil.FLAGS.RECYCLE_MEM, "recycle-mem", true, "recycle memory slabs (versus using Go's GC)")
 	flag.BoolVar(&sybil.FLAGS.FAST_RECYCLE, "fast-recycle", false, "faster memory recycling")
+	flag.BoolVar(&sybil.FLAGS.SHORTEN_KEY_TABLE, "shorten-key-table", false, "faster queries by shortening the key table")
 
 	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
 
@@ -171,7 +172,7 @@ func runQueryCmdLine() {
 	sybil.Debug("WILL INSPECT", count, "RECORDS")
 
 	// {{ TRIM KEY TABLE
-	shorten_key_table := true
+	shorten_key_table := sybil.FLAGS.SHORTEN_KEY_TABLE
 	if sybil.FLAGS.PRINT_INFO {
 		shorten_key_table = false
 	}
