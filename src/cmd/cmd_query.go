@@ -66,8 +66,8 @@ func addQueryFlags() {
 	flag.BoolVar(&sybil.FLAGS.READ_ROWSTORE, "read-log", false, "read the ingestion log (can take longer!)")
 
 	flag.BoolVar(&sybil.FLAGS.RECYCLE_MEM, "recycle-mem", true, "recycle memory slabs (versus using Go's GC)")
-	flag.BoolVar(&sybil.FLAGS.FAST_RECYCLE, "fast-recycle", false, "faster memory recycling")
-	flag.BoolVar(&sybil.FLAGS.SHORTEN_KEY_TABLE, "shorten-key-table", false, "faster queries by shortening the key table")
+	flag.BoolVar(&sybil.FLAGS.FAST_RECYCLE, "fast-recycle", true, "faster memory recycling")
+	flag.BoolVar(&sybil.FLAGS.SHORTEN_KEY_TABLE, "shorten-key-table", true, "faster queries by shortening the key table")
 
 	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
 
