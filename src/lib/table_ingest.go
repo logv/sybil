@@ -164,6 +164,8 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 	for _, file := range files {
 		filename := file.Name()
 
+		t.RowBlock.Size += file.Size()
+
 		// we can open .gz files as well as regular .db files
 		cname := strings.TrimRight(filename, GZIP_EXT)
 
@@ -174,6 +176,7 @@ func (t *Table) LoadRowStoreRecords(digest string, after_block_load_cb AfterRowB
 		filename = path.Join(dirname, file.Name())
 
 		records := t.LoadRecordsFromLog(filename)
+		t.RowBlock.Info.NumRecords += int32(len(records))
 		if after_block_load_cb != nil {
 			after_block_load_cb(filename, records)
 		}
