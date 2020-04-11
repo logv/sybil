@@ -246,7 +246,7 @@ func runQueryCmdLine() {
 		case sybil.INT_VAL:
 			loadSpec.Int(v)
 		default:
-			t.PrintColInfo()
+			t.PrintTableInfo()
 			fmt.Println("")
 			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
 		}
@@ -367,7 +367,7 @@ func runQueryCmdLine() {
 		t := sybil.GetTable(table)
 		sybil.FLAGS.LOAD_AND_QUERY = false
 
-		t.PrintColInfo()
+		t.PrintTableInfo()
 	}
 
 }

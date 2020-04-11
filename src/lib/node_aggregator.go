@@ -140,7 +140,7 @@ func (vt *VTable) AggregateInfo(dirs []string) {
 
 	}
 
-	vt.PrintColInfo()
+	vt.PrintTableInfo()
 
 }
 

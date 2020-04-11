@@ -508,17 +508,22 @@ func (t *Table) printColsOfType(wanted_type int8) {
 	}
 }
 
-type ColInfo struct {
-	Count             int64
-	Size              int64
-	AverageObjectSize float64
-	Strs              []string
-	Ints              []string
-	Sets              []string
+type TableInfo struct {
+	Count             int64   `json:"count"`
+	Size              int64   `json:"storageSize"`
+	AverageObjectSize float64 `json:"avgObjSize"`
+
+	Columns ColumnInfo `json:"columns"`
 }
 
-func (t *Table) ColInfo() *ColInfo {
-	r := &ColInfo{}
+type ColumnInfo struct {
+	Strs []string `json:"strs"`
+	Ints []string `json:"ints"`
+	Sets []string `json:"sets"`
+}
+
+func (t *Table) TableInfo() *TableInfo {
+	r := &TableInfo{}
 	count := int64(0)
 	size := int64(0)
 	for _, block := range t.BlockList {
@@ -528,13 +533,13 @@ func (t *Table) ColInfo() *ColInfo {
 	r.Count = count
 	r.Size = size
 	r.AverageObjectSize = float64(size) / float64(count)
-	r.Strs = t.getColsOfType(STR_VAL)
-	r.Ints = t.getColsOfType(INT_VAL)
-	r.Sets = t.getColsOfType(SET_VAL)
+	r.Columns.Strs = t.getColsOfType(STR_VAL)
+	r.Columns.Ints = t.getColsOfType(INT_VAL)
+	r.Columns.Sets = t.getColsOfType(SET_VAL)
 	return r
 }
 
-func (t *Table) PrintColInfo() {
+func (t *Table) PrintTableInfo() {
 	// count: 3253,
 	// size: 908848,
 	// avgObjSize: 279.3876421764525,
@@ -564,22 +569,7 @@ func (t *Table) PrintColInfo() {
 	}
 
 	if FLAGS.JSON {
-		table_cols := make(map[string][]string)
-		table_info := make(map[string]interface{})
-
-		table_cols["ints"] = t.getColsOfType(INT_VAL)
-		table_cols["strs"] = t.getColsOfType(STR_VAL)
-		table_cols["sets"] = t.getColsOfType(SET_VAL)
-		table_info["columns"] = table_cols
-
-		table_info["count"] = count
-		table_info["size"] = size
-		if count == 0 {
-			count = 1
-		}
-		table_info["avgObjSize"] = float64(size) / float64(count)
-		table_info["storageSize"] = size
-
+		table_info := t.TableInfo()
 		printJson(table_info)
 		return
 	}
