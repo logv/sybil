@@ -1,6 +1,6 @@
 package sybil
 
-var VERSION_STRING = "0.5.0"
+var VERSION_STRING = "0.5.1"
 
 func GetVersionInfo() map[string]interface{} {
 	version_info := make(map[string]interface{})
@@ -11,6 +11,7 @@ func GetVersionInfo() map[string]interface{} {
 	version_info["query_cache"] = true
 	version_info["dist_queries"] = true
 	version_info["tdigest"] = ENABLE_TDIGEST
+	version_info["short_key_table"] = true
 
 	return version_info
 
