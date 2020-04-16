@@ -8,7 +8,7 @@ LDFLAGS=-all-static
 GO_FLAGS=--ldflags '-extldflags "-static"'
 
 
-all: sybil demo
+all: sybil
 
 demo:
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./src/api/demo
@@ -37,11 +37,16 @@ bindir:
 
 test:
 	${GOBIN} test ./src/lib/ -race -v
-	${GOBIN} test ./src/api/ -race -v
 
 testv:
 	${GOBIN} test ./src/lib/ -race -v -debug
+
+test-api: sybil
+	${GOBIN} test ./src/api/ -race -v
+
+testv-api: sybil
 	${GOBIN} test ./src/api/ -race -v -debug
+
 
 update-golden:
 	${GOBIN} test ./src/lib --update-golden
