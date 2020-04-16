@@ -71,3 +71,6 @@ func (l *LoadSpec) Set(name string) {
 	l.columns[name] = true
 	l.files["set_"+name+".db"] = true
 }
+func (l *LoadSpec) Missing(name string) {
+	l.assert_col_type(name, _NO_VAL)
+}

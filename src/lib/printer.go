@@ -489,8 +489,20 @@ func printTablesToOutput(tables []string) {
 
 func (t *Table) getColsOfType(wanted_type int8) []string {
 	print_keys := make([]string, 0)
-	for name, name_id := range t.KeyTable {
-		col_type := t.KeyTypes[name_id]
+
+	key_table := t.KeyTable
+	key_types := t.KeyTypes
+
+	// If we shortened the KeyTable during the query, we need to look into
+	// AllKeyInfo for column information because KeyTable and KeyTypes were
+	// truncated with only necessary columns
+	if t.AllKeyInfo != nil {
+		key_table = t.AllKeyInfo.KeyTable
+		key_types = t.AllKeyInfo.KeyTypes
+	}
+
+	for name, name_id := range key_table {
+		col_type := key_types[name_id]
 		if int8(col_type) != wanted_type {
 			continue
 		}

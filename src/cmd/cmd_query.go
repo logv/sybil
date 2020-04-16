@@ -2,7 +2,6 @@ package sybil_cmd
 
 import (
 	"flag"
-	"fmt"
 	"path"
 	"runtime/debug"
 	"strings"
@@ -245,10 +244,11 @@ func runQueryCmdLine() {
 			loadSpec.Str(v)
 		case sybil.INT_VAL:
 			loadSpec.Int(v)
+		case sybil.SET_VAL:
+			sybil.Error("Grouping by Set columns is currently not supported")
 		default:
 			t.PrintTableInfo()
-			fmt.Println("")
-			sybil.Error("Unknown column type for column: ", v, t.GetColumnType(v))
+			loadSpec.Missing(v)
 		}
 
 	}

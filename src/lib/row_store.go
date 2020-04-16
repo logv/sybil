@@ -52,7 +52,45 @@ func (srb *SavedRecordBlock) init_data_structures(t *Table) {
 	srb.max_key_id = max_key_id
 }
 
+func get_short_key_id(t *Table, key_exchange map[int16]int16, key_id int16) int16 {
+	if t.ShortKeyInfo == nil || t.ShortKeyInfo.KeyExchange == nil {
+		return key_id
+	}
+
+	key_id, ok := key_exchange[key_id]
+	if !ok {
+		return -1
+	}
+
+	vv, ok := t.ShortKeyInfo.KeyExchange[int16(key_id)]
+	if ok {
+		key_id = int16(vv)
+	} else {
+		return -1
+	}
+
+	return key_id
+
+}
+
 func (srb *SavedRecordBlock) toRecord(t *Table, s *SavedRecord) *Record {
+	// SITUATION:
+	// the saved record is saved as integers arrays which align either with the
+	// srb.KeyTable (if using save-srb flag) or with the table's KeyTable.
+	// When we use --shorten-key-table we remap the table's KeyTable though, so
+	// we need to actually re-do the layout of the SavedRecord to map to the
+	// modified table's KeyTable.
+
+	// if we don't, we end up with SavedRecords having the wrong indeces and the column types
+	// will be incorrect
+	// SOLUTION:
+	// when using a shortened key table, we have to build a keyxchange for remapping SavedRecords
+	// this means we have two key exchange tables: one for SRB and one for Shortened Key Tables.
+	// the reason we have SRB exchange is for gouthamve's use case of generating
+	// many new columns on the fly.
+	// so in the end, what we do is:
+	// first we do the SRB <-> KeyTable exchange (using srb.key_exchange), then we do get_short_key_id
+	// on the resulting key in case we are using a shortened key table during querying
 	r := Record{}
 	r.Ints = IntArr{}
 	r.Strs = StrArr{}
@@ -68,16 +106,30 @@ func (srb *SavedRecordBlock) toRecord(t *Table, s *SavedRecord) *Record {
 	key_exchange := srb.key_exchange
 	r.ResizeFields(int16(max_key_id))
 
+	var key_id int
 	for _, v := range s.Ints {
-		r.AddIntField(t.get_string_for_key(int(key_exchange[v.Name])), v.Value)
+		key_id = int(get_short_key_id(t, key_exchange, v.Name))
+		if key_id == -1 {
+			continue
+		}
+
+		r.AddIntField(t.get_string_for_key(key_id), v.Value)
 	}
 
 	for _, v := range s.Strs {
-		r.AddStrField(t.get_string_for_key(int(key_exchange[v.Name])), v.Value)
+		key_id = int(get_short_key_id(t, key_exchange, v.Name))
+		if key_id == -1 {
+			continue
+		}
+		r.AddStrField(t.get_string_for_key(key_id), v.Value)
 	}
 
 	for _, v := range s.Sets {
-		r.AddSetField(t.get_string_for_key(int(key_exchange[v.Name])), v.Value)
+		key_id = int(get_short_key_id(t, key_exchange, v.Name))
+		if key_id == -1 {
+			continue
+		}
+		r.AddSetField(t.get_string_for_key(key_id), v.Value)
 	}
 
 	return &r

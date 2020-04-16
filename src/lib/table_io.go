@@ -161,8 +161,8 @@ func (t *Table) LoadTableInfoFrom(filename string) bool {
 	}
 
 	// if we shortened the key table already we won't override it
-	// t.KeyInfo is set during a query command and nowhere else usually
-	if t.KeyInfo == nil {
+	// t.ShortKeyInfo is set during a query command and nowhere else usually
+	if t.ShortKeyInfo == nil {
 		if len(saved_table.KeyTable) > 0 {
 			t.KeyTable = saved_table.KeyTable
 		}
