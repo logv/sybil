@@ -66,7 +66,7 @@ func addQueryFlags() {
 
 	flag.BoolVar(&sybil.FLAGS.RECYCLE_MEM, "recycle-mem", true, "recycle memory slabs (versus using Go's GC)")
 	flag.BoolVar(&sybil.FLAGS.FAST_RECYCLE, "fast-recycle", true, "faster memory recycling")
-	flag.BoolVar(&sybil.FLAGS.SHORTEN_KEY_TABLE, "shorten-key-table", false, "faster queries by shortening the key table")
+	flag.BoolVar(&sybil.FLAGS.SHORTEN_KEY_TABLE, "shorten-key-table", true, "faster queries on wide tabes by shortening the key lookup")
 
 	flag.BoolVar(&sybil.FLAGS.CACHED_QUERIES, "cache-queries", false, "Cache query results per block")
 
@@ -178,6 +178,12 @@ func runQueryCmdLine() {
 	if sybil.FLAGS.SAMPLES && !has_sample_cols {
 		shorten_key_table = false
 	}
+
+	if sybil.FLAGS.READ_ROWSTORE && shorten_key_table {
+		sybil.Debug("DISABLING SHORT KEY TABLE BECAUSE OF ROWSTORE")
+		shorten_key_table = false
+	}
+	sybil.Debug("SHORTEN KEY TABLE?", shorten_key_table)
 
 	if shorten_key_table {
 		t.UseKeys(strs)

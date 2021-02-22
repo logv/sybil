@@ -1,5 +1,6 @@
 GOBIN=$(shell which go)
-BUILD_CMD = ${GOBIN} install
+ARCH?=
+BUILD_CMD = GOARCH=${ARCH} ${GOBIN} install
 BINDIR = ./bin
 GOBINDIR = `readlink -f ./bin`
 PROFILE = -tags profile
