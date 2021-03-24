@@ -1,6 +1,7 @@
 GOBIN=$(shell which go)
 ARCH?=
-BUILD_CMD = GOARCH=${ARCH} ${GOBIN} install
+BUILD_CMD = GOARCH=${ARCH} ${GOBIN} build
+INSTALL_CMD = GOARCH=${ARCH} ${GOBIN} install
 BINDIR = ./bin
 GOBINDIR = `readlink -f ./bin`
 PROFILE = -tags profile
@@ -19,6 +20,7 @@ deps:
 
 sybil: bindir
 	GOBIN=$(GOBINDIR) $(BUILD_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
+	GOBIN=$(GOBINDIR) $(INSTALL_CMD) $(GO_FLAGS) $(BUILD_FLAGS) ./
 
 fake-data: fake-uptime
 

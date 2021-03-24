@@ -56,16 +56,8 @@ func get_short_key_id(t *Table, key_exchange map[int16]int16, key_id int16) int1
 	if t.ShortKeyInfo == nil || t.ShortKeyInfo.KeyExchange == nil {
 		return key_id
 	}
-
 	key_id, ok := key_exchange[key_id]
 	if !ok {
-		return -1
-	}
-
-	vv, ok := t.ShortKeyInfo.KeyExchange[int16(key_id)]
-	if ok {
-		key_id = int16(vv)
-	} else {
 		return -1
 	}
 
@@ -102,7 +94,7 @@ func (srb *SavedRecordBlock) toRecord(t *Table, s *SavedRecord) *Record {
 	b.table = t
 	r.block = &b
 
-	max_key_id := srb.max_key_id
+	max_key_id := int16(srb.max_key_id)
 	key_exchange := srb.key_exchange
 	r.ResizeFields(int16(max_key_id))
 
@@ -121,6 +113,7 @@ func (srb *SavedRecordBlock) toRecord(t *Table, s *SavedRecord) *Record {
 		if key_id == -1 {
 			continue
 		}
+
 		r.AddStrField(t.get_string_for_key(key_id), v.Value)
 	}
 
@@ -182,7 +175,7 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 	// If the KeyTable doesn't exist, it means we are loading old records that
 	// were ingested without a keytable
 	if srb.KeyTable == nil {
-		srb.KeyTable = &t.KeyTable
+		srb.KeyTable = get_key_table(t)
 	}
 
 	srb.init_data_structures(t)
@@ -192,6 +185,13 @@ func (t *Table) LoadRecordsFromLog(filename string) RecordList {
 
 	return ret
 
+}
+
+func get_key_table(t *Table) *map[string]int16 {
+	if t.AllKeyInfo != nil {
+		return &t.AllKeyInfo.KeyTable
+	}
+	return &t.KeyTable
 }
 
 func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
@@ -224,7 +224,7 @@ func (t *Table) AppendRecordsToLog(records RecordList, blockname string) {
 		Debug("SAVING INTO SRB")
 		srb := SavedRecordBlock{}
 		srb.RecordList = marshalled_records
-		srb.KeyTable = &t.KeyTable
+		srb.KeyTable = get_key_table(t)
 		err = enc.Encode(srb)
 	} else {
 		err = enc.Encode(marshalled_records)
