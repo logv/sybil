@@ -50,6 +50,8 @@ func (l *LoadSpec) assert_col_type(name string, col_type int8) {
 			col_type_name = "Str"
 		case SET_VAL:
 			col_type_name = "Set"
+		case FLOAT_VAL:
+			col_type_name = "Float"
 		}
 
 		Error("Query Error! Key ", name, " exists, but is not of type ", col_type_name)
@@ -65,6 +67,11 @@ func (l *LoadSpec) Int(name string) {
 	l.assert_col_type(name, INT_VAL)
 	l.columns[name] = true
 	l.files["int_"+name+".db"] = true
+}
+func (l *LoadSpec) Float(name string) {
+	l.assert_col_type(name, FLOAT_VAL)
+	l.columns[name] = true
+	l.files["float_"+name+".db"] = true
 }
 func (l *LoadSpec) Set(name string) {
 	l.assert_col_type(name, SET_VAL)

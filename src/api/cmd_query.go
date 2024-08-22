@@ -21,13 +21,15 @@ type SybilQuery struct {
 	TimeBucket int
 	TimeCol    string
 
-	Strs []string
-	Ints []string
-	Sets []string
+	Strs   []string
+	Ints   []string
+	Sets   []string
+	Floats []string
 
-	IntFilters []SybilFilter
-	StrFilters []SybilFilter
-	SetFilters []SybilFilter
+	IntFilters   []SybilFilter
+	StrFilters   []SybilFilter
+	SetFilters   []SybilFilter
+	FloatFilters []SybilFilter
 
 	Results string
 

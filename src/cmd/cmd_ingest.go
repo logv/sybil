@@ -3,7 +3,8 @@ package sybil_cmd
 import sybil "github.com/logv/sybil/src/lib"
 
 import (
-	"bufio"
+	"bytes"
+	"encoding/binary"
 	"encoding/csv"
 	"encoding/json"
 	"flag"
@@ -22,6 +23,26 @@ var JSON_PATH string
 
 // how many times we try to grab table info when ingesting
 var TABLE_INFO_GRABS = 10
+
+func float64ToBytes(f float64) []byte {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, f)
+	return buf.Bytes()
+}
+
+func bytesToInt64(b []byte) int64 {
+	var i int64
+	buf := bytes.NewReader(b)
+	binary.Read(buf, binary.LittleEndian, &i)
+	return i
+}
+
+func bytesToFloat64(b []byte) float64 {
+	var i float64
+	buf := bytes.NewReader(b)
+	binary.Read(buf, binary.LittleEndian, &i)
+	return i
+}
 
 func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string, timestampFormat string) {
 	for k, v := range *recordmap {
@@ -54,10 +75,21 @@ func ingest_dictionary(r *sybil.Record, recordmap *Dictionary, prefix string, ti
 				r.AddStrField(key_name, iv)
 
 			}
-		case int64:
-			r.AddIntField(key_name, int64(iv))
+		case json.Number:
+			iiv, err := iv.Int64()
+			if err == nil {
+				r.AddIntField(key_name, iiv)
+				continue
+			}
+
+			fv, err := iv.Float64()
+			if err == nil {
+				r.AddFloatField(key_name, fv)
+				continue
+			}
+
 		case float64:
-			r.AddIntField(key_name, int64(iv))
+			r.AddFloatField(key_name, iv)
 		case bool:
 			if iv {
 				r.AddIntField(key_name, 1)
@@ -191,15 +223,15 @@ func import_json_records(timestampFormat string) {
 	path := strings.Split(JSON_PATH, ".")
 	sybil.Debug("PATH IS", path)
 
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		var decoded interface{}
+	dec := json.NewDecoder(os.Stdin)
+	dec.UseNumber()
 
-		if err := json.Unmarshal(scanner.Bytes(), &decoded); err != nil {
-			if err != nil {
-				sybil.Debug("ERR", err)
-				continue
-			}
+	for {
+		var decoded interface{}
+		if err := dec.Decode(&decoded); err == io.EOF {
+			break
+		} else if err != nil {
+			sybil.Debug("ERR", err)
 		}
 
 		records := json_query(&decoded, path)

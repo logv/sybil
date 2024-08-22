@@ -35,9 +35,11 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 	var bigIntArr IntArr
 	var bigStrArr StrArr
 	var bigPopArr []int8
+	var bigFloatArr FloatArr
 	var has_sets = false
 	var has_strs = false
 	var has_ints = false
+	var has_floats = false
 	max_key_id := 0
 
 	t.string_id_m.RLock()
@@ -61,6 +63,8 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 				has_sets = true
 			case STR_VAL:
 				has_strs = true
+			case FLOAT_VAL:
+				has_floats = true
 			default:
 				Error("MISSING KEY TYPE FOR COL", v)
 			}
@@ -69,6 +73,7 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		has_sets = true
 		has_ints = true
 		has_strs = true
+		has_floats = true
 	}
 
 	if loadSpec != nil || load_records {
@@ -80,6 +85,9 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 		}
 		if has_strs {
 			bigStrArr = make(StrArr, max_key_id*int(info.NumRecords))
+		}
+		if has_floats {
+			bigFloatArr = make(FloatArr, max_key_id*int(info.NumRecords))
 		}
 		bigPopArr = make([]int8, max_key_id*int(info.NumRecords))
 		mend := time.Now()
@@ -93,6 +101,10 @@ func (tb *TableBlock) makeRecordSlab(loadSpec *LoadSpec, info SavedColumnInfo, l
 			r = &alloced[i]
 			if has_ints {
 				r.Ints = bigIntArr[i*max_key_id : (i+1)*max_key_id]
+			}
+
+			if has_floats {
+				r.Floats = bigFloatArr[i*max_key_id : (i+1)*max_key_id]
 			}
 
 			if has_strs {

@@ -46,6 +46,7 @@ type FlagDefs struct {
 	INTS        string
 	STRS        string
 	SETS        string
+	FLOATS      string
 	SAMPLE_COLS string
 	GROUPS      string
 	DISTINCT    string

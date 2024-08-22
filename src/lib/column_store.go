@@ -73,8 +73,21 @@ type SavedSetColumn struct {
 	VERSION         int32
 }
 
+type SavedFloatColumn struct {
+	Name    string
+	Values  []float64
+	VERSION int32
+}
+
 func NewSavedIntColumn() SavedIntColumn {
 	ret := SavedIntColumn{}
+
+	ret.VERSION = BLOCK_VERSION
+	return ret
+
+}
+func NewSavedFloatColumn() SavedFloatColumn {
+	ret := SavedFloatColumn{}
 
 	ret.VERSION = BLOCK_VERSION
 	return ret

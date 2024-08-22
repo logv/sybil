@@ -53,6 +53,7 @@ func addQueryFlags() {
 	flag.BoolVar(&sybil.FLAGS.UPDATE_TABLE_INFO, "update-info", false, "Re-compute cached column data")
 
 	flag.StringVar(&sybil.FLAGS.INTS, "int", "", "Integer values to aggregate")
+	flag.StringVar(&sybil.FLAGS.FLOATS, "float", "", "Float values to aggregate")
 	flag.StringVar(&sybil.FLAGS.STRS, "str", "", "String values to load")
 	flag.StringVar(&sybil.FLAGS.SETS, "set", "", "Set values to load")
 	flag.StringVar(&sybil.FLAGS.SAMPLE_COLS, "sample-cols", "", "Columns to load for samples query")
@@ -109,6 +110,7 @@ func runQueryCmdLine() {
 	}
 
 	ints := make([]string, 0)
+	floats := make([]string, 0)
 	groups := make([]string, 0)
 	strs := make([]string, 0)
 	sets := make([]string, 0)
@@ -131,6 +133,10 @@ func runQueryCmdLine() {
 	}
 	if sybil.FLAGS.INTS != "" {
 		ints = strings.Split(sybil.FLAGS.INTS, sybil.FLAGS.FIELD_SEPARATOR)
+		has_sample_cols = true
+	}
+	if sybil.FLAGS.FLOATS != "" {
+		floats = strings.Split(sybil.FLAGS.FLOATS, sybil.FLAGS.FIELD_SEPARATOR)
 		has_sample_cols = true
 	}
 	if sybil.FLAGS.SETS != "" {
@@ -190,6 +196,7 @@ func runQueryCmdLine() {
 		t.UseKeys(strs)
 		t.UseKeys(sets)
 		t.UseKeys(ints)
+		t.UseKeys(floats)
 		t.UseKeys(groups)
 		t.UseKeys(distinct)
 		t.UseKeys(sample_cols)
@@ -208,6 +215,9 @@ func runQueryCmdLine() {
 	aggs := []sybil.Aggregation{}
 	if !sybil.FLAGS.SAMPLES {
 		for _, agg := range ints {
+			aggs = append(aggs, t.Aggregation(agg, sybil.FLAGS.OP))
+		}
+		for _, agg := range floats {
 			aggs = append(aggs, t.Aggregation(agg, sybil.FLAGS.OP))
 		}
 	}
@@ -268,6 +278,8 @@ func runQueryCmdLine() {
 			strs = append(strs, v)
 		case sybil.SET_VAL:
 			sets = append(sets, v)
+		case sybil.FLOAT_VAL:
+			floats = append(floats, v)
 
 		}
 	}
@@ -280,6 +292,9 @@ func runQueryCmdLine() {
 	}
 	for _, v := range ints {
 		loadSpec.Int(v)
+	}
+	for _, v := range floats {
+		loadSpec.Float(v)
 	}
 
 	if sybil.FLAGS.SORT != "" {

@@ -291,6 +291,8 @@ func (t *Table) LoadBlockFromDir(dirname string, loadSpec *LoadSpec, load_record
 			err = tb.unpackSetCol(dec, *info)
 		case strings.HasPrefix(fname, "int"):
 			err = tb.unpackIntCol(dec, *info)
+		case strings.HasPrefix(fname, "float"):
+			err = tb.unpackFloatCol(dec, *info)
 		}
 
 		dec.CloseFile()

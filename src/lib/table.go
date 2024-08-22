@@ -191,6 +191,12 @@ func (t *Table) PrintRecord(r *Record) {
 			Print("  ", name, col.get_string_for_key(name), val)
 		}
 	}
+	for name, val := range r.Floats {
+		if r.Populated[name] == FLOAT_VAL {
+			col := r.block.GetColumnInfo(int16(name))
+			Print("  ", name, col.get_string_for_key(name), val)
+		}
+	}
 	for name, val := range r.Strs {
 		if r.Populated[name] == STR_VAL {
 			col := r.block.GetColumnInfo(int16(name))

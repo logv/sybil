@@ -3,6 +3,7 @@ package sybil
 type Record struct {
 	Strs      []StrField
 	Ints      []IntField
+	Floats    []FloatField
 	SetMap    map[int16]SetField
 	Populated []int8
 
@@ -12,10 +13,11 @@ type Record struct {
 }
 
 const (
-	_NO_VAL = iota
-	INT_VAL = iota
-	STR_VAL = iota
-	SET_VAL = iota
+	_NO_VAL   = iota
+	INT_VAL   = iota
+	FLOAT_VAL = iota
+	STR_VAL   = iota
+	SET_VAL   = iota
 )
 
 func (r *Record) GetStrVal(name string) (string, bool) {
@@ -98,6 +100,12 @@ func (r *Record) ResizeFields(length int16) {
 		r.Ints = append(r.Ints, delta_records...)
 	}
 
+	if int(length) >= len(r.Floats) {
+		delta_records := make([]FloatField, int(float64(length)))
+
+		r.Floats = append(r.Floats, delta_records...)
+	}
+
 }
 
 func (r *Record) AddStrField(name string, val string) {
@@ -124,6 +132,17 @@ func (r *Record) AddIntField(name string, val int64) {
 	r.Populated[name_id] = INT_VAL
 	if r.block.table.set_key_type(name_id, INT_VAL) == false {
 		Error("COULDNT SET INT VAL", name, val, name_id)
+	}
+}
+
+func (r *Record) AddFloatField(name string, f_val float64) {
+	name_id := r.block.get_key_id(name)
+
+	r.ResizeFields(name_id)
+	r.Floats[name_id] = FloatField(f_val)
+	r.Populated[name_id] = FLOAT_VAL
+	if r.block.table.set_key_type(name_id, FLOAT_VAL) == false {
+		Error("COULDN'T SET FLOAT VAL", name, f_val, name_id)
 	}
 }
 

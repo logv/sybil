@@ -114,7 +114,9 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		}
 
 		var network bytes.Buffer
-		col_fname := fmt.Sprintf("%s/int_%s.db", dirname, tb.get_string_for_key(k))
+
+		col_type := "int"
+		col_fname := fmt.Sprintf("%s/%s_%s.db", dirname, col_type, tb.get_string_for_key(k))
 		// Create an encoder and send a value.
 		enc := gob.NewEncoder(&network)
 		err := enc.Encode(intCol)
@@ -134,6 +136,42 @@ func (tb *TableBlock) SaveIntsToColumns(dirname string, same_ints map[int16]Valu
 		network.WriteTo(w)
 	}
 
+}
+
+func (tb *TableBlock) SaveFloatsToColumns(dirname string, floats map[int16][]FloatField) {
+	// now make the dir and shoot each blob out into a separate file
+	// SAVED TO A SINGLE BLOCK ON DISK, NOW TO SAVE IT OUT TO SEPARATE VALUES
+	os.MkdirAll(dirname, 0777)
+	for k, v := range floats {
+		col_name := tb.get_string_for_key(k)
+		if col_name == "" {
+			Debug("CANT FIGURE OUT FIELD NAME FOR", k, "SOMETHING IS PROBABLY AWRY")
+			continue
+		}
+		floatCol := NewSavedFloatColumn()
+
+		floatCol.Name = col_name
+		floatCol.Values = make([]float64, len(v))
+		for i, v := range v {
+			floatCol.Values[i] = float64(v)
+		}
+
+		var network bytes.Buffer
+		enc := gob.NewEncoder(&network)
+		err := enc.Encode(floatCol)
+		if err != nil {
+			Error("encode:", err)
+		}
+
+		col_type := "float"
+		col_fname := fmt.Sprintf("%s/%s_%s.db", dirname, col_type, tb.get_string_for_key(k))
+
+		Debug("SERIALIZED COLUMN BLOCK", col_fname, network.Len(), "BYTES", "( PER RECORD", network.Len()/len(tb.RecordList), ")")
+
+		w, _ := os.Create(col_fname)
+
+		network.WriteTo(w)
+	}
 }
 
 func (tb *TableBlock) SaveSetsToColumns(dirname string, same_sets map[int16]ValueMap) {
@@ -358,9 +396,10 @@ func (tb *TableBlock) SaveInfoToColumns(dirname string) {
 }
 
 type SeparatedColumns struct {
-	ints map[int16]ValueMap
-	strs map[int16]ValueMap
-	sets map[int16]ValueMap
+	ints   map[int16]ValueMap
+	strs   map[int16]ValueMap
+	sets   map[int16]ValueMap
+	floats map[int16][]FloatField
 }
 
 func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
@@ -371,6 +410,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 	same_ints := make(map[int16]ValueMap)
 	same_strs := make(map[int16]ValueMap)
 	same_sets := make(map[int16]ValueMap)
+	same_floats := make(map[int16][]FloatField)
 
 	// parse record list and transfer book keeping data into the current
 	// table block, as well as separate record values by column type
@@ -378,6 +418,17 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 		for k, v := range r.Ints {
 			if r.Populated[k] == INT_VAL {
 				record_value(same_ints, int32(i), int16(k), int64(v))
+			}
+		}
+		for k, v := range r.Floats {
+			if r.Populated[k] == FLOAT_VAL {
+				ik := int16(k)
+				_, ok := same_floats[ik]
+				if !ok {
+					same_floats[ik] = make([]FloatField, 0)
+				}
+
+				same_floats[ik] = append(same_floats[ik], v)
 			}
 		}
 		for k, v := range r.Strs {
@@ -411,7 +462,7 @@ func (tb *TableBlock) SeparateRecordsIntoColumns() SeparatedColumns {
 	delta_encode(same_strs)
 	delta_encode(same_sets)
 
-	ret := SeparatedColumns{ints: same_ints, strs: same_strs, sets: same_sets}
+	ret := SeparatedColumns{ints: same_ints, strs: same_strs, sets: same_sets, floats: same_floats}
 	return ret
 
 }
@@ -441,6 +492,7 @@ func (tb *TableBlock) SaveToColumns(filename string) bool {
 	tb.SaveIntsToColumns(partialname, separated_columns.ints)
 	tb.SaveStrsToColumns(partialname, separated_columns.strs)
 	tb.SaveSetsToColumns(partialname, separated_columns.sets)
+	tb.SaveFloatsToColumns(partialname, separated_columns.floats)
 	tb.SaveInfoToColumns(partialname)
 
 	end = time.Now()
@@ -774,6 +826,30 @@ func (tb *TableBlock) unpackIntCol(dec FileDecoder, info SavedColumnInfo) error 
 			}
 
 		}
+	}
+
+	return nil
+}
+
+func (tb *TableBlock) unpackFloatCol(dec FileDecoder, info SavedColumnInfo) error {
+	records := tb.RecordList[:]
+
+	into := &SavedFloatColumn{}
+	err := dec.Decode(into)
+	if err != nil {
+		Debug("DECODE COL ERR:", err)
+	}
+
+	key_table_len := len(records[0].Floats)
+	col_id := tb.table.get_key_id(into.Name)
+	if int(col_id) >= key_table_len {
+		Debug("IGNORING FLOAT COLUMN", into.Name, "SINCE ITS NOT IN KEY TABLE IN BLOCK", tb.Name)
+		return nil
+	}
+
+	for r, v := range into.Values {
+		records[r].Floats[col_id] = FloatField(v)
+		records[r].Populated[col_id] = FLOAT_VAL
 	}
 
 	return nil

@@ -12,6 +12,10 @@ type RowSavedInt struct {
 	Name  int16
 	Value int64
 }
+type RowSavedFloat struct {
+	Name  int16
+	Value float64
+}
 
 type RowSavedStr struct {
 	Name  int16
@@ -24,9 +28,10 @@ type RowSavedSet struct {
 }
 
 type SavedRecord struct {
-	Ints []RowSavedInt
-	Strs []RowSavedStr
-	Sets []RowSavedSet
+	Ints   []RowSavedInt
+	Strs   []RowSavedStr
+	Sets   []RowSavedSet
+	Floats []RowSavedFloat
 }
 
 type SavedRecordBlock struct {
@@ -107,6 +112,14 @@ func (srb *SavedRecordBlock) toRecord(t *Table, s *SavedRecord) *Record {
 
 		r.AddIntField(t.get_string_for_key(key_id), v.Value)
 	}
+	for _, v := range s.Floats {
+		key_id = int(get_short_key_id(t, key_exchange, v.Name))
+		if key_id == -1 {
+			continue
+		}
+
+		r.AddFloatField(t.get_string_for_key(key_id), v.Value)
+	}
 
 	for _, v := range s.Strs {
 		key_id = int(get_short_key_id(t, key_exchange, v.Name))
@@ -133,6 +146,12 @@ func (r Record) toSavedRecord() *SavedRecord {
 	for k, v := range r.Ints {
 		if r.Populated[k] == INT_VAL {
 			s.Ints = append(s.Ints, RowSavedInt{int16(k), int64(v)})
+		}
+	}
+
+	for k, v := range r.Floats {
+		if r.Populated[k] == FLOAT_VAL {
+			s.Floats = append(s.Floats, RowSavedFloat{int16(k), float64(v)})
 		}
 	}
 
