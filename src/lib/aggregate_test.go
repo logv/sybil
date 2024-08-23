@@ -26,6 +26,7 @@ func TestTableLoadRecords(t *testing.T) {
 		r.AddIntField("id", int64(index))
 		age := int64(rand.Intn(20)) + 10
 		r.AddIntField("age", age)
+		r.AddFloatField("age_float", float64(age))
 		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
 	}, blockCount)
 
@@ -35,6 +36,7 @@ func TestTableLoadRecords(t *testing.T) {
 
 	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age_float", "avg"))
 
 	nt.MatchAndAggregate(querySpec)
 

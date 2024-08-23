@@ -38,10 +38,11 @@ type FlagDefs struct {
 	ENCODE_FLAGS   bool // print the query flags to stdout as binary
 	ENCODE_RESULTS bool // print the querySpec results to stdout as binary
 
-	INT_FILTERS string
-	STR_FILTERS string
-	STR_REPLACE string // regex replacement for strings
-	SET_FILTERS string
+	INT_FILTERS   string
+	STR_FILTERS   string
+	STR_REPLACE   string // regex replacement for strings
+	SET_FILTERS   string
+	FLOAT_FILTERS string
 
 	INTS        string
 	STRS        string

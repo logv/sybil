@@ -7,9 +7,10 @@ import "strconv"
 
 // This is the passed in flags
 type FilterSpec struct {
-	Int string
-	Str string
-	Set string
+	Int   string
+	Str   string
+	Set   string
+	Float string
 }
 
 func checkTable(tokens []string, t *Table) bool {
@@ -24,9 +25,14 @@ func (filterSpec *FilterSpec) GetFilterCols() []string {
 	strfilters := make([]string, 0)
 	intfilters := make([]string, 0)
 	setfilters := make([]string, 0)
+	floatfilters := make([]string, 0)
+
 	filtercols := make([]string, 0)
 	if filterSpec.Int != "" {
 		intfilters = strings.Split(filterSpec.Int, FLAGS.FIELD_SEPARATOR)
+	}
+	if filterSpec.Float != "" {
+		floatfilters = strings.Split(filterSpec.Float, FLAGS.FIELD_SEPARATOR)
 	}
 	if filterSpec.Str != "" {
 		strfilters = strings.Split(filterSpec.Str, FLAGS.FIELD_SEPARATOR)
@@ -37,6 +43,11 @@ func (filterSpec *FilterSpec) GetFilterCols() []string {
 	}
 
 	for _, filt := range intfilters {
+		tokens := strings.Split(filt, FLAGS.FILTER_SEPARATOR)
+		col := tokens[0]
+		filtercols = append(filtercols, col)
+	}
+	for _, filt := range floatfilters {
 		tokens := strings.Split(filt, FLAGS.FILTER_SEPARATOR)
 		col := tokens[0]
 		filtercols = append(filtercols, col)
@@ -59,9 +70,13 @@ func (filterSpec *FilterSpec) GetFilterCols() []string {
 func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter {
 	strfilters := make([]string, 0)
 	intfilters := make([]string, 0)
+	floatfilters := make([]string, 0)
 	setfilters := make([]string, 0)
 	if filterSpec.Int != "" {
 		intfilters = strings.Split(filterSpec.Int, FLAGS.FIELD_SEPARATOR)
+	}
+	if filterSpec.Float != "" {
+		floatfilters = strings.Split(filterSpec.Float, FLAGS.FIELD_SEPARATOR)
 	}
 	if filterSpec.Str != "" {
 		strfilters = strings.Split(filterSpec.Str, FLAGS.FIELD_SEPARATOR)
@@ -96,6 +111,31 @@ func BuildFilters(t *Table, loadSpec *LoadSpec, filterSpec FilterSpec) []Filter 
 
 		filters = append(filters, t.IntFilter(col, op, int(val)))
 		loadSpec.Int(col)
+	}
+
+	for _, filt := range floatfilters {
+		tokens := strings.Split(filt, FLAGS.FILTER_SEPARATOR)
+		col := tokens[0]
+		op := tokens[1]
+		val, _ := strconv.ParseFloat(tokens[2], 10)
+
+		if checkTable(tokens, t) != true {
+			continue
+		}
+
+		// we align the Time Filter to the Time Bucket iff we are doing a time series query
+		if col == FLAGS.TIME_COL && FLAGS.TIME {
+			bucket := float64(FLAGS.TIME_BUCKET)
+			new_val := int64(val/bucket) * int64(bucket)
+
+			if val != float64(new_val) {
+				Debug("ALIGNING TIME FILTER TO BUCKET", val, new_val)
+				val = float64(new_val)
+			}
+		}
+
+		filters = append(filters, t.FloatFilter(col, op, int(val)))
+		loadSpec.Float(col)
 	}
 
 	for _, filter := range setfilters {
@@ -149,6 +189,15 @@ type IntFilter struct {
 	table *Table
 }
 
+type FloatFilter struct {
+	Field   string
+	FieldId int16
+	Op      string
+	Value   int
+
+	table *Table
+}
+
 type StrFilter struct {
 	Field   string
 	FieldId int16
@@ -186,6 +235,32 @@ func (filter IntFilter) Filter(r *Record) bool {
 
 	case "neq":
 		return int(field) != int(filter.Value)
+
+	default:
+
+	}
+
+	return false
+}
+
+func (filter FloatFilter) Filter(r *Record) bool {
+	if r.Populated[filter.FieldId] == 0 {
+		return false
+	}
+
+	field := r.Floats[filter.FieldId]
+	switch filter.Op {
+	case "gt":
+		return float64(field) > float64(filter.Value)
+
+	case "lt":
+		return float64(field) < float64(filter.Value)
+
+	case "eq":
+		return float64(field) == float64(filter.Value)
+
+	case "neq":
+		return float64(field) != float64(filter.Value)
 
 	default:
 
@@ -289,6 +364,14 @@ func (t *Table) IntFilter(name string, op string, value int) IntFilter {
 	intFilter.table = t
 
 	return intFilter
+
+}
+
+func (t *Table) FloatFilter(name string, op string, value int) FloatFilter {
+	floatFilter := FloatFilter{Field: name, FieldId: t.get_key_id(name), Op: op, Value: value}
+	floatFilter.table = t
+
+	return floatFilter
 
 }
 

@@ -256,6 +256,17 @@ func FilterAndAggRecords(querySpec *QuerySpec, recordsPtr *RecordList) int {
 				}
 
 				hist.AddWeightedValue(val, weight)
+			case FLOAT_VAL:
+				val := float64(r.Floats[a.name_id])
+
+				hist, ok := added_record.Hists[a.Name]
+
+				if !ok {
+					hist = r.block.table.NewHist(r.block.table.get_int_info(a.name_id))
+					added_record.Hists[a.Name] = hist
+				}
+
+				hist.AddWeightedValue(int64(val), weight)
 			}
 
 		} // }}}

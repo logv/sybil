@@ -46,6 +46,7 @@ func addQueryFlags() {
 	flag.BoolVar(&sybil.FLAGS.DECODE_FLAGS, "decode-flags", false, "Use the query flags supplied on stdin")
 	flag.StringVar(&sybil.FLAGS.INT_FILTERS, "int-filter", "", "Int filters, format: col:op:val")
 	flag.IntVar(&sybil.FLAGS.HIST_BUCKET, "int-bucket", 0, "Int hist bucket size")
+	flag.StringVar(&sybil.FLAGS.FLOAT_FILTERS, "float-filter", "", "Float filters, format: col:op:val")
 
 	flag.StringVar(&sybil.FLAGS.STR_REPLACE, "str-replace", "", "Str replacement, format: col:find:replace")
 	flag.StringVar(&sybil.FLAGS.STR_FILTERS, "str-filter", "", "Str filters, format: col:op:val")
@@ -167,7 +168,7 @@ func runQueryCmdLine() {
 	t.LoadRecords(nil)
 
 	// Make filterSpec before shortening key table
-	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS}
+	filterSpec := sybil.FilterSpec{Int: sybil.FLAGS.INT_FILTERS, Str: sybil.FLAGS.STR_FILTERS, Set: sybil.FLAGS.SET_FILTERS, Float: sybil.FLAGS.FLOAT_FILTERS}
 
 	count := 0
 	for _, block := range t.BlockList {

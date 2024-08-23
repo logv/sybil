@@ -152,8 +152,14 @@ func (tb *TableBlock) SaveFloatsToColumns(dirname string, floats map[int16][]Flo
 
 		floatCol.Name = col_name
 		floatCol.Values = make([]float64, len(v))
-		for i, v := range v {
-			floatCol.Values[i] = float64(v)
+		for i, vv := range v {
+			floatCol.Values[i] = float64(vv)
+
+			// bookkeeping for info.db
+			tb.update_int_info(k, int64(vv+1))
+			tb.table.update_int_info(k, int64(vv+1))
+			tb.update_int_info(k, int64(vv))
+			tb.table.update_int_info(k, int64(vv))
 		}
 
 		var network bytes.Buffer
@@ -850,6 +856,13 @@ func (tb *TableBlock) unpackFloatCol(dec FileDecoder, info SavedColumnInfo) erro
 	for r, v := range into.Values {
 		records[r].Floats[col_id] = FloatField(v)
 		records[r].Populated[col_id] = FLOAT_VAL
+
+		if FLAGS.UPDATE_TABLE_INFO {
+			tb.update_int_info(col_id, int64(v+1))
+			tb.table.update_int_info(col_id, int64(v+1))
+			tb.update_int_info(col_id, int64(v))
+			tb.table.update_int_info(col_id, int64(v))
+		}
 	}
 
 	return nil
