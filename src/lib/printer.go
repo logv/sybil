@@ -385,27 +385,74 @@ func (r *Record) toSample() *Sample {
 	return &sample
 }
 
-func (t *Table) PrintSamples() {
+type SortMatchedByCol struct {
+	Matched []*Record
+
+	Col string
+}
+
+func (a SortMatchedByCol) Len() int      { return len(a.Matched) }
+func (a SortMatchedByCol) Swap(i, j int) { a.Matched[i], a.Matched[j] = a.Matched[j], a.Matched[i] }
+
+// This sorts the records in descending order
+func (a SortMatchedByCol) Less(i, j int) bool {
+	if a.Col == SORT_COUNT {
+		return i > j
+	}
+
+	t1, ok := a.Matched[i].getVal(a.Col)
+	if !ok {
+		return true
+	}
+
+	t2, ok := a.Matched[j].getVal(a.Col)
+	if !ok {
+		return false
+	}
+
+	return t1 > t2
+}
+
+func (t *Table) PrintSamples(qs *QuerySpec) {
 	count := 0
-	records := make(RecordList, FLAGS.LIMIT)
+	records := make(RecordList, 0)
 	for _, b := range t.BlockList {
 		for _, r := range b.Matched {
 			if r == nil {
-				records = records[:count]
 				break
 			}
 
-			if count >= FLAGS.LIMIT {
-				break
-			}
-
-			records[count] = r
+			records = append(records, r)
 			count++
 		}
+	}
 
-		if count >= FLAGS.LIMIT {
-			break
+	reverse := false
+	if qs != nil && qs.OrderBy != SORT_COUNT {
+		sorter := SortMatchedByCol{}
+		sorter.Matched = records
+		sorter.Col = qs.OrderBy
+
+		start := time.Now()
+		sort.Sort(sorter)
+		end := time.Now()
+		if DEBUG_TIMING {
+			Debug("SORTING MATCHES TOOK", end.Sub(start))
 		}
+
+		reverse = qs.OrderAsc
+	} else { // backwards sort for samples
+		reverse = true
+	}
+
+	if reverse {
+		for i, j := 0, len(records)-1; i < j; i, j = i+1, j-1 {
+			records[i], records[j] = records[j], records[i]
+		}
+	}
+
+	if len(records) > FLAGS.LIMIT {
+		records = records[:FLAGS.LIMIT]
 	}
 
 	samples := make([]*Sample, 0)
@@ -425,7 +472,6 @@ func (t *Table) PrintSamples() {
 	}
 
 	if FLAGS.JSON {
-
 		printJson(samples)
 		return
 	}

@@ -30,6 +30,7 @@ type savedQueryParams struct {
 	StrReplace   map[string]StrReplace `json:",omitempty"`
 
 	OrderBy     string `json:",omitempty"`
+	OrderAsc    bool   `json:",omitempty"`
 	PruneBy     string `json:",omitempty"`
 	Limit       int    `json:",omitempty"`
 	NumDistinct int    `json:",omitempty"` // Exit early once we have NumDistinct records
