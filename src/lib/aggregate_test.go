@@ -304,18 +304,88 @@ func TestOrderBy(t *testing.T) {
 
 	querySpec := newQuerySpec()
 	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
 
 	nt.MatchAndAggregate(querySpec)
 
 	for k, v := range querySpec.Results {
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		age, _ := strconv.ParseInt(k, 10, 64)
 
-		if math.Abs(float64(avgAge)-float64(v.Hists["age"].Mean())) > 0.1 {
+		if math.Abs(float64(age)-float64(v.Hists["age"].Mean())) > 0.1 {
 			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avgAge, v.Hists["age"].Mean())
 		}
 	}
 
 	querySpec.OrderBy = "age"
+	querySpec.OrderAsc = false
+	nt.MatchAndAggregate(querySpec)
+
+	prevAvg := float64(1e9)
+	// testing that a histogram with single value looks uniform
+
+	if len(querySpec.Results) <= 0 {
+		t.Error("NO RESULTS RETURNED FOR QUERY!")
+	}
+
+	for _, v := range querySpec.Sorted {
+		k := v.GroupByKey
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		avg := v.Hists["age"].Mean()
+
+		if avg > prevAvg {
+			t.Error("RESULTS CAME BACK OUT OF COUNT ORDER")
+		}
+
+		prevAvg = avg
+
+	}
+
+	deleteTestDb(tableName)
+
+}
+
+func TestOrderByDesc(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping test in short mode")
+		return
+	}
+
+	blockCount := 3
+
+	totalAge := int64(0)
+	count := 0
+	tableName := getTestTableName(t)
+	addRecords(tableName, func(r *Record, index int) {
+		count++
+		r.AddIntField("id", int64(index))
+		age := int64(rand.Intn(20)) + 10
+		totalAge += age
+		r.AddIntField("age", age)
+		r.AddStrField("age_str", strconv.FormatInt(int64(age), 10))
+	}, blockCount)
+
+	avgAge := float64(totalAge) / float64(count)
+
+	nt := saveAndReloadTable(t, tableName, blockCount)
+
+	querySpec := newQuerySpec()
+	querySpec.Aggregations = append(querySpec.Aggregations, nt.Aggregation("age", "avg"))
+	querySpec.Groups = append(querySpec.Groups, nt.Grouping("age_str"))
+
+	nt.MatchAndAggregate(querySpec)
+
+	for k, v := range querySpec.Results {
+		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
+		age, _ := strconv.ParseInt(k, 10, 64)
+
+		if math.Abs(float64(age)-float64(v.Hists["age"].Mean())) > 0.1 {
+			t.Error("GROUP BY YIELDED UNEXPECTED RESULTS", k, avgAge, v.Hists["age"].Mean())
+		}
+	}
+
+	querySpec.OrderBy = "age"
+	querySpec.OrderAsc = true
 	nt.MatchAndAggregate(querySpec)
 
 	prevAvg := float64(0)
@@ -325,7 +395,8 @@ func TestOrderBy(t *testing.T) {
 		t.Error("NO RESULTS RETURNED FOR QUERY!")
 	}
 
-	for k, v := range querySpec.Results {
+	for _, v := range querySpec.Sorted {
+		k := v.GroupByKey
 		k = strings.Replace(k, GROUP_DELIMITER, "", 1)
 		avg := v.Hists["age"].Mean()
 

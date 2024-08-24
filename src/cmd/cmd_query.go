@@ -32,6 +32,7 @@ func addQueryFlags() {
 	}
 
 	flag.StringVar(&sybil.FLAGS.SORT, "sort", SORT_COUNT, "Int Column to sort by")
+	flag.BoolVar(&sybil.FLAGS.SORT_ASC, "sort-asc", false, "Sort in ascending order")
 	flag.StringVar(&sybil.FLAGS.PRUNE_BY, "prune-sort", SORT_COUNT, "Int Column to prune intermediate results by")
 
 	flag.BoolVar(&sybil.FLAGS.TIME, "time", false, "make a time rollup")
@@ -287,8 +288,10 @@ func runQueryCmdLine() {
 			loadSpec.Int(sybil.FLAGS.SORT)
 		}
 		querySpec.OrderBy = sybil.FLAGS.SORT
+		querySpec.OrderAsc = sybil.FLAGS.SORT_ASC
 	} else {
 		querySpec.OrderBy = ""
+		querySpec.OrderAsc = false
 	}
 
 	if sybil.FLAGS.PRUNE_BY != "" {
@@ -335,7 +338,7 @@ func runQueryCmdLine() {
 
 		t.LoadAndQueryRecords(&loadSpec, &querySpec)
 
-		t.PrintSamples()
+		t.PrintSamples(&querySpec)
 
 		return
 	}

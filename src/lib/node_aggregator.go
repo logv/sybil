@@ -172,7 +172,7 @@ func (vt *VTable) AggregateSpecs(dirs []string) {
 	combined_result := CombineResults(&final_result, all_specs)
 	combined_result.QueryParams = qs.QueryParams
 
-	combined_result.SortResults(combined_result.OrderBy)
+	combined_result.SortResults(combined_result.OrderBy, combined_result.OrderAsc)
 	combined_result.PrintResults()
 }
 

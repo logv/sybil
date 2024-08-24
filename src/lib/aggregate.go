@@ -347,12 +347,12 @@ func CombineMatches(block_specs map[string]*QuerySpec) RecordList {
 func CombineAndPrune(querySpec *QuerySpec, block_specs map[string]*QuerySpec) *QuerySpec {
 
 	for _, spec := range block_specs {
-		spec.SortResults(spec.PruneBy)
+		spec.SortResults(spec.PruneBy, false)
 		spec.PruneResults(FLAGS.LIMIT)
 	}
 
 	resultSpec := CombineResults(querySpec, block_specs)
-	resultSpec.SortResults(resultSpec.PruneBy)
+	resultSpec.SortResults(resultSpec.PruneBy, false)
 	resultSpec.PruneResults(FLAGS.LIMIT)
 
 	return resultSpec
@@ -494,7 +494,7 @@ func (qs *QuerySpec) PruneResults(limit int) {
 	}
 }
 
-func (qs *QuerySpec) SortResults(orderBy string) {
+func (qs *QuerySpec) SortResults(orderBy string, orderAsc bool) {
 	// SORT THE RESULTS
 	if orderBy != "" {
 		start := time.Now()
@@ -511,6 +511,12 @@ func (qs *QuerySpec) SortResults(orderBy string) {
 		end := time.Now()
 		if DEBUG_TIMING {
 			Debug("SORTING TOOK", end.Sub(start))
+		}
+
+		if orderAsc {
+			for i, j := 0, len(sorter.Results)-1; i < j; i, j = i+1, j-1 {
+				sorter.Results[i], sorter.Results[j] = sorter.Results[j], sorter.Results[i]
+			}
 		}
 
 		qs.Sorted = sorter.Results
@@ -575,7 +581,7 @@ func (t *Table) MatchAndAggregate(querySpec *QuerySpec) {
 
 	end := time.Now()
 
-	querySpec.SortResults(querySpec.OrderBy)
+	querySpec.SortResults(querySpec.OrderBy, querySpec.OrderAsc)
 
 	Debug(string(len(matched)), "RECORDS FILTERED AND AGGREGATED INTO", len(querySpec.Results), "RESULTS, TOOK", end.Sub(start))
 

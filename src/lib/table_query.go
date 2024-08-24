@@ -412,7 +412,7 @@ func (t *Table) LoadAndQueryRecords(loadSpec *LoadSpec, querySpec *QuerySpec) in
 		querySpec.TimeResults = resultSpec.TimeResults
 		querySpec.MatchedCount = count + cached_count
 
-		querySpec.SortResults(querySpec.OrderBy)
+		querySpec.SortResults(querySpec.OrderBy, querySpec.OrderAsc)
 	}
 
 	t.WriteBlockCache()
